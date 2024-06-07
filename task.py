@@ -41,12 +41,15 @@ async def create_client() -> t.Optional[str]:
         logger.error(str(e))
         return None
 
+# TODO: show terminal and chain of thoughts in seperate panels
+
 
 async def execute_command(
     client: t.Any, command: str, *, max_output_len: int = 555_000, timeout: int = 300
 ) -> str:
     print(f"# {command}")
 
+    # gives the model a little help since we don't have a real interactive session
     if 'apt' in command and 'install' in command:
         command += ' -y'
 
