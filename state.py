@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 from loguru import logger
 from pydantic import StringConstraints
-from task import (create_client, execute_command, get_task_description,
+from task import (create_task_context, execute_task_action, get_task_description,
                   validate_task_completion)
 
 import rigging as rg
@@ -94,7 +94,7 @@ class TryCommand(Action):
         return TryCommand(content="whoami | grep abc").to_pretty_xml()
 
     async def run(self, state: "State") -> str:
-        return await execute_command(state.client, self.content)
+        return await execute_task_action(state.task_context, self.content)
 
 
 class PerformTaskCompletion(Action):
@@ -107,7 +107,7 @@ class PerformTaskCompletion(Action):
     async def run(self, state: "State") -> str:
         if validate_task_completion(state):
             logger.warning("TASK COMPLETED")
-            state.finish()
+            state.finish(state.toJSON())
             return "Success"
 
         return "invalid solution, try again."
@@ -140,7 +140,7 @@ class State:
     result: t.Optional[str] = ""
 
     # Task
-    client: t.Optional[t.Any] = None
+    task_context: t.Optional[t.Any] = None
     task_description: str = ""
 
     # Core
@@ -160,12 +160,12 @@ class State:
             sort_keys=True,
             indent=4)
 
-    def finish(self) -> None:
+    def finish(self, result) -> None:
         logger.info("state::finish")
-        quit()
+        self.result = result
 
     async def prep(self) -> None:
-        self.client = await create_client()
+        self.task_context = await create_task_context()
         self.task_description = get_task_description()
         print()
         self.goals.append(f"complete the task.")

@@ -25,14 +25,10 @@ def get_task_description() -> str:
 
 
 def validate_task_completion(state) -> bool:
-    try:
-        logger.success("\n\n%s\n\n" % state.toJSON())
-    except Exception as e:
-        logger.error(f"can't serialize state: {e}")
     return True
 
 
-async def create_client() -> t.Optional[str]:
+async def create_task_context() -> t.Optional[t.Any]:
     try:
         conn = await asyncssh.connect(SSH_HOST, SSH_PORT, username=SSH_USER, password=SSH_PASS, known_hosts=None)
         logger.success(f"connected to {SSH_USER}@{SSH_HOST}:{SSH_PORT} ...")
@@ -45,7 +41,7 @@ async def create_client() -> t.Optional[str]:
 # TODO: show terminal and chain of thoughts in seperate panels
 
 
-async def execute_command(
+async def execute_task_action(
     client: t.Any, command: str, *, max_output_len: int = 555_000, timeout: int = 300
 ) -> str:
     print(f"# {command}")
