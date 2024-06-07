@@ -4,6 +4,7 @@ import typing as t
 import asyncssh
 from loguru import logger
 
+# TODO: read from command line
 SSH_HOST = 'zippo.local'
 SSH_PORT = 22
 SSH_USER = 'zippo'
@@ -16,8 +17,11 @@ You are a senior developer and computer expert with years of linux experience. Y
 complex tasks by executing a series of shell commands.
 """
 
+
 def get_task_description() -> str:
+    # TODO: read from command line if not interactive
     return input('\nenter task description> ')
+
 
 def validate_task_completion(state) -> bool:
     try:
@@ -25,6 +29,7 @@ def validate_task_completion(state) -> bool:
     except Exception as e:
         logger.error(f"can't serialize state: {e}")
     return True
+
 
 async def create_client() -> t.Optional[str]:
     try:
@@ -36,11 +41,11 @@ async def create_client() -> t.Optional[str]:
         logger.error(str(e))
         return None
 
+
 async def execute_command(
     client: t.Any, command: str, *, max_output_len: int = 555_000, timeout: int = 300
 ) -> str:
     print(f"# {command}")
-
 
     if 'apt' in command and 'install' in command:
         command += ' -y'
