@@ -10,11 +10,6 @@ from task import (create_client, execute_command, get_task_description,
 
 import rigging as rg
 
-# TODO: read from command line
-MAX_PINS = 10
-MAX_HISTORY = 5
-
-
 str_strip = t.Annotated[str, StringConstraints(strip_whitespace=True)]
 
 
@@ -87,7 +82,7 @@ class PinToTop(Action):
     async def run(self, state: "State") -> str:
         logger.success(f"[{state.id}] pinning '{self.content.strip()}'")
         state.pins.append(self.content)
-        state.pins = state.pins[:MAX_PINS]
+        state.pins = state.pins[:state.max_pins]
         return "Pinned."
 
 
@@ -136,6 +131,9 @@ class State:
     # Required
     id: int
     max_actions: int
+    max_tokens: int
+    max_pins: int
+    max_history: int
     base_chat: rg.PendingChat
 
     # Progress
@@ -178,13 +176,13 @@ class State:
             self.history.append((action, await action.run(self)))
         self.next_actions.clear()
 
-    def get_prompt(self, max_history: int = MAX_HISTORY) -> str:
+    def get_prompt(self) -> str:
         memories = "\n".join(self.memories.keys())
         previous_goals = "\n".join(
             self.goals[:-1] if len(self.goals) > 1 else [])
         current_goal = self.goals[-1]
         history = "\n---\n".join([h[0].to_pretty_xml() + "\n" + h[1]
-                                 for h in self.history[-max_history:]])
+                                 for h in self.history[-self.max_history:]])
         pinned = "\n".join(self.pins)
         return f"""\
 # Context
@@ -197,9 +195,9 @@ class State:
 {memories or 'No memories yet.'}
 </memories>
 
-<last-{max_history}-actions>
+<last-{self.max_history}-actions>
 {history or 'No actions taken yet'}
-</last-{max_history}-actions>
+</last-{self.max_history}-actions>
 
 <pinned>
 {pinned or 'No pinned context yet.'}
@@ -234,7 +232,7 @@ To forget a memory:
 
 ## Pinned Context
 
-In addition to long term memories, you can pin important short term information to be displayed before every future action (maximum of {MAX_PINS}). Use this to keep data like tokens, passwords, usernames, endpoints, critical notes, etc.
+In addition to long term memories, you can pin important short term information to be displayed before every future action (maximum of {self.max_pins}). Use this to keep data like tokens, passwords, usernames, endpoints, critical notes, etc.
 
 To pin important information:
 {PinToTop.xml_example()}

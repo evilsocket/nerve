@@ -42,11 +42,8 @@ async def agent_loop(state: State) -> State:
 
 
 async def main(
-    generator_id: str, max_iterations: int, parallel_agents: int, max_actions: int, max_tokens: int
+    generator_id: str, max_iterations: int, max_actions: int, max_tokens: int, max_pins: int, max_history: int
 ) -> None:
-    if parallel_agents > 1:
-        logger.success(f"starting with {parallel_agents} agents")
-
     logger.success(f"using '{generator_id}'")
 
     generator = rg.get_generator(generator_id)
@@ -57,21 +54,22 @@ async def main(
     for i in range(max_iterations):
         logger.debug(f"Starting task ...")
 
-        states: list[State] = [
-            State(id=i, max_actions=max_actions, base_chat=base_chat.with_(
-                temperature=random.uniform(0.25, 1)))
-            for i in range(parallel_agents)
-        ]
-        for state in states:
-            await state.prep()
+        state = State(id=i,
+                      max_actions=max_actions,
+                      max_tokens=max_tokens,
+                      max_pins=max_pins,
+                      max_history=max_history,
+                      base_chat=base_chat.with_(temperature=random.uniform(0.25, 1)))
 
-        loops = [asyncio.create_task(agent_loop(state)) for state in states]
+        await state.prep()
+
+        loops = [asyncio.create_task(agent_loop(state))]
         _, pending = await asyncio.wait(loops, return_when=asyncio.FIRST_COMPLETED)
 
         for task in pending:
             task.cancel()
 
-    logger.debug("Finished task.")
+    logger.debug("finished task.")
 
 
 @click.command()
@@ -91,25 +89,28 @@ async def main(
     help="Maximum number of iterations",
 )
 @click.option(
-    "-p",
-    "--parallel-agents",
-    type=int,
-    default=1,
-    help="Number of parallel agents",
-)
-@click.option(
-    "-m",
     "--max-actions",
     type=int,
     default=3,
     help="Maximum number of actions allowed per generation round",
 )
 @click.option(
-    "-m",
     "--max-tokens",
     type=int,
     default=4096,
     help="Maximum number of context tokens",
+)
+@click.option(
+    "--max-pins",
+    type=int,
+    default=10,
+    help="Maximum number of elements the model can pin",
+)
+@click.option(
+    "--max-history",
+    type=int,
+    default=5,
+    help="Maximum number of elements in the model history",
 )
 @click.option(
     "--log-level",
@@ -125,15 +126,17 @@ async def main(
 def cli(
     generator_id: str,
     max_iterations: int,
-    parallel_agents: int,
     max_actions: int,
+    max_tokens: int,
+    max_pins: int,
+    max_history: int,
     log_level: logging.LogLevelLiteral,
     log_file: pathlib.Path,
     log_file_level: logging.LogLevelLiteral,
 ) -> None:
     logging.configure_logging(log_level, log_file, log_file_level)
-    asyncio.run(main(generator_id, max_iterations,
-                parallel_agents, max_actions))
+    asyncio.run(main(generator_id, max_iterations, max_actions,
+                max_tokens, max_pins, max_history))
 
 
 if __name__ == "__main__":
