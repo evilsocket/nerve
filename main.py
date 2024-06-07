@@ -7,7 +7,7 @@ import typing as t
 import click
 from loguru import logger
 from state import Actions, ActionsList, State
-from task import get_task_main_story
+from task import get_task_main_prompt
 
 import rigging as rg
 from rigging import logging
@@ -51,7 +51,7 @@ async def main(
 
     generator = rg.get_generator(generator_id)
     base_chat = generator.chat(
-        [{"role": "system", "content": get_task_main_story()}],
+        [{"role": "system", "content": get_task_main_prompt()}],
     ).with_(max_tokens=max_tokens)
 
     for i in range(max_iterations):

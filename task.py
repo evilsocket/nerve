@@ -12,7 +12,7 @@ SSH_PASS = 'zippo'
 SHELL = '/usr/bin/bash'
 
 
-def get_task_main_story() -> str:
+def get_task_main_prompt() -> str:
     return """\
 You are a senior developer and computer expert with years of linux experience. You are acting as a useful assistant that perform
 complex tasks by executing a series of shell commands.
