@@ -9,10 +9,11 @@ SSH_HOST = 'zippo.local'
 SSH_PORT = 22
 SSH_USER = 'zippo'
 SSH_PASS = 'zippo'
-
 SHELL = '/usr/bin/bash'
 
-SYSTEM_PROMPT = """\
+
+def get_task_main_story() -> str:
+    return """\
 You are a senior developer and computer expert with years of linux experience. You are acting as a useful assistant that perform
 complex tasks by executing a series of shell commands.
 """
