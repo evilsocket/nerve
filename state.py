@@ -9,9 +9,8 @@ from task import (create_client, execute_command, get_task_description,
                   validate_task_completion)
 
 import rigging as rg
-from rigging import logging
 
-# Constants
+# TODO: read from command line
 MAX_PINS = 10
 MAX_HISTORY = 5
 
@@ -115,11 +114,12 @@ class PerformTaskCompletion(Action):
             logger.warning("TASK COMPLETED")
             state.finish()
             return "Success"
-        
+
         return "invalid solution, try again."
 
 
-Actions = t.Union[UpdateGoal, SaveMemory, RecallMemory, DeleteMemory, PinToTop, TryCommand, PerformTaskCompletion]
+Actions = t.Union[UpdateGoal, SaveMemory, RecallMemory,
+                  DeleteMemory, PinToTop, TryCommand, PerformTaskCompletion]
 ActionsList: list[type[Actions]] = [
     UpdateGoal,
     SaveMemory,
@@ -158,10 +158,10 @@ class State:
     def toJSON(self):
         return json.dumps(
             self,
-            default=lambda o: str(o), 
+            default=lambda o: str(o),
             sort_keys=True,
             indent=4)
-    
+
     def finish(self) -> None:
         logger.info("state::finish")
         quit()
@@ -180,9 +180,11 @@ class State:
 
     def get_prompt(self, max_history: int = MAX_HISTORY) -> str:
         memories = "\n".join(self.memories.keys())
-        previous_goals = "\n".join(self.goals[:-1] if len(self.goals) > 1 else [])
+        previous_goals = "\n".join(
+            self.goals[:-1] if len(self.goals) > 1 else [])
         current_goal = self.goals[-1]
-        history = "\n---\n".join([h[0].to_pretty_xml() + "\n" + h[1] for h in self.history[-max_history:]])
+        history = "\n---\n".join([h[0].to_pretty_xml() + "\n" + h[1]
+                                 for h in self.history[-max_history:]])
         pinned = "\n".join(self.pins)
         return f"""\
 # Context
