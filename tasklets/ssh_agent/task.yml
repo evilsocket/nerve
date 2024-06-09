@@ -28,5 +28,6 @@ functions:
         # provides an example payload to the model
         example_payload: whoami
         # each action is mapped to a custom command
+        # TODO: why not using /usr/bin/ssh here directly?
         tool: ./run-command.py
         
