@@ -1,0 +1,32 @@
+# the agent can't set the task as completed autonomously
+agent_autonomous: false
+
+# agent background story
+system_prompt: > 
+  You are a senior security researcher and linux exploitation expert. 
+  You are acting as a useful assistant that performs fuzzing on a target binary until it crashes.
+
+# agent specific goal
+prompt: >
+  Find an input for which the executable crashes.
+
+# optional rules to add to the basic ones
+guidance:
+  - Do not use bash or python expressions as the payload but full strings.
+  - Try to often change the first characters of the payload in order to possibly trigger different execution paths.
+
+# the agent toolbox
+functions:
+  # divided in action groups
+  - name: Fuzzing
+    description: You will use these actions to interact with the fuzzing session.
+    actions:
+      - name: fuzz
+        # explains to the model when to use this action
+        description: "To execute the binary with a given input string:"
+        # provides an example payload to the model, in this case it'd be ./fuzz.py "aaa"
+        example_payload: aaa
+        # each action is mapped to a custom command
+        tool: ./fuzz.py
+        
+        

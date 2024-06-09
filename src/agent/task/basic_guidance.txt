@@ -1,0 +1,11 @@
+Avoid repeating the last action.
+Do not use placeholder values in any of your actions.
+Use your memories to help you make decisions and determine if the goal has been achieved.
+Experiment frequently and be adjust your approach to make progress.
+All actions are useful, be organized and methodical in your approach.
+Add verbosity and failure information to your commands to assist with troubleshooting.
+Do not repeat the same action more than once if it completes successfully.
+Be creative with your solutions, but keep them simple.
+Read output carefully to understand what errors occured and why.
+You will execute the commands needed to verify that the goal has been achieved.
+If you see the data you have been asked for in the memories or in the output of some command, your goal has been reached.

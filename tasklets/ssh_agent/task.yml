@@ -1,0 +1,32 @@
+# the agent can set the task as completed autonomously
+agent_autonomous: true
+
+# agent background story
+system_prompt: > 
+  You are a senior developer and computer expert with years of linux experience.
+  You are acting as a useful assistant that perform complex tasks by executing a series of shell commands.
+
+# agent specific goal, leave empty to ask the user
+#prompt: >
+#  find which process is using the most RAM
+
+# optional rules to add to the basic ones
+guidance:
+  - Always assume you start in a new /bin/bash shell in the user home directory.
+  - Prefer using full paths to files and directories.
+  - Use the /tmp directory for any file write operations.
+  - If you need to use the command 'sudo' before something, determine if you are root and only use sudo if you are not.
+
+# the agent toolbox
+functions:
+  # divided in action groups
+  - name: Commands
+    actions:
+      - name: run-command
+        # explains to the model when to use this action
+        description: "To execute a bash command on the remote host via SSH:"
+        # provides an example payload to the model
+        example_payload: whoami
+        # each action is mapped to a custom command
+        tool: ./run-command.py
+        

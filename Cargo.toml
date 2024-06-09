@@ -1,0 +1,16 @@
+[package]
+name = "zippo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+clap = { version = "4.5.6", features = ["derive"] }
+colored = "2.1.0"
+html2text = "0.12.5"
+ollama-rs = { version = "0.1.9", features = ["rustls", "tokio"] }
+regex = "1.10.5"
+serde = { version = "1.0.203", features = ["derive", "serde_derive"] }
+serde_yaml = "0.9.34"
+tokio = "1.38.0"
+urlencoding = "2.1.3"
