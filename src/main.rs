@@ -11,6 +11,10 @@ use ollama_rs::Ollama;
 
 mod agent;
 
+// TODO: add max iterations
+// TODO: add current iteration to state
+// TODO: different namespaces of actions: memory, task, net?, move mouse, ui interactions, etc
+
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
