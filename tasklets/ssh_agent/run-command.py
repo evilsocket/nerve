@@ -8,8 +8,6 @@ SSH_USER_HOST = "zippo@zippo.local"
 
 command = sys.argv[1]
 
-print(f"# {command}")
-
 cmd = [
     "/usr/bin/ssh",
     SSH_USER_HOST,

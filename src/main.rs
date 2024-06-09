@@ -10,7 +10,6 @@ use colored::Colorize;
 use ollama_rs::Ollama;
 
 mod agent;
-mod example_tasks;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -48,6 +47,7 @@ pub fn get_user_input(prompt: &str) -> String {
         Ok(_goes_into_input_above) => {}
         Err(_no_updates_is_fine) => {}
     }
+    println!();
     input.trim().to_string()
 }
 

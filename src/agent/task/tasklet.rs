@@ -11,6 +11,9 @@ use super::Task;
 
 const STATE_COMPLETE_EXIT_CODE: i32 = 65;
 
+// TODO: read this from command line
+const SHOW_MAX_OUTPUT: usize = 256;
+
 #[derive(Default, Deserialize, Debug, Clone)]
 pub struct TaskletAction {
     #[serde(skip_deserializing, skip_serializing)]
@@ -49,6 +52,11 @@ impl Action for TaskletAction {
         println!(
             "{}{}{}",
             self.name.bold(),
+            if payload.is_some() {
+                format!(" {}", payload.as_ref().unwrap().red())
+            } else {
+                "".to_string()
+            },
             if attributes.is_some() {
                 format!(
                     " {}",
@@ -56,18 +64,13 @@ impl Action for TaskletAction {
                         .as_ref()
                         .unwrap()
                         .iter()
-                        .map(|(key, value)| format!("{key}={value}"))
+                        .map(|(key, value)| format!("{key}{}{}", "=".dimmed(), value.bright_blue()))
                         .collect::<Vec<String>>()
                         .join(" ")
                 )
             } else {
                 "".to_string()
             },
-            if payload.is_some() {
-                format!(" {}", payload.as_ref().unwrap().red())
-            } else {
-                "".to_string()
-            }
         );
 
         if self.tool.is_empty() {
@@ -95,11 +98,29 @@ impl Action for TaskletAction {
             let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
             if !err.is_empty() {
-                println!("{}", &err);
+                println!(
+                    "\n{}\n",
+                    if err.len() > SHOW_MAX_OUTPUT {
+                        format!(
+                            "{}\n{}",
+                            &err[0..SHOW_MAX_OUTPUT].red(),
+                            "<truncated>".yellow()
+                        )
+                    } else {
+                        err.red().to_string()
+                    }
+                );
             }
 
             if !out.is_empty() {
-                println!("{}", &out);
+                println!(
+                    "\n{}\n",
+                    if out.len() > SHOW_MAX_OUTPUT {
+                        format!("{}\n{}", &out[0..SHOW_MAX_OUTPUT], "<truncated>".yellow())
+                    } else {
+                        out.to_string()
+                    }
+                );
             }
 
             let exit_code = output.status.code().unwrap_or(0);

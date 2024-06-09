@@ -65,7 +65,7 @@ impl State {
     }
 
     pub fn add_memory(&self, key: String, data: String) {
-        println!("\n! <{}>: {}\n", &key, &data.bold().yellow());
+        println!("\n{}: {}\n", key.bold(), &data.yellow());
 
         if let Ok(mut guard) = self.memories.lock() {
             guard.insert(key, Memory::new(data));
@@ -74,14 +74,14 @@ impl State {
 
     pub fn remove_memory(&self, key: &str) -> Option<Memory> {
         if let Ok(mut guard) = self.memories.lock() {
-            println!("\n! clear <{}>\n", key.bold());
+            println!("\n{} clear\n", key.bold());
             return guard.remove(key);
         }
         None
     }
 
     pub fn set_new_goal(&self, goal: String) {
-        println!("! goal ='{}'", &goal);
+        println!("{}: '{}'", "goal".bold(), goal.yellow());
 
         if let Ok(mut curr_g) = self.curr_goal.lock() {
             let prev = curr_g.to_string();
@@ -90,7 +90,6 @@ impl State {
 
             if let Ok(mut prev_g) = self.prev_goal.lock() {
                 prev_g.replace(prev);
-                println!("! prev_g set: {:?}", &prev_g);
             } else {
                 println!("FAILED to acquire prev lock");
             }
