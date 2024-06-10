@@ -10,7 +10,7 @@ use anyhow::Result;
 use colored::Colorize;
 
 use super::{
-    actions::{self, Group},
+    actions::{self, Namespace},
     history::{Execution, History},
     memory::{Memories, Memory},
     task::Task,
@@ -22,14 +22,14 @@ pub struct State {
     task: Box<dyn Task>,
     prev_goal: Mutex<Option<String>>,
     curr_goal: Mutex<String>,
-    step: usize,
-    max_iterations: usize,
+    curr_iter: usize,
+    max_iters: usize,
 
     // model memories
     memories: Mutex<Memories>,
 
     // available actions and execution history
-    action_groups: Vec<Group>,
+    action_groups: Vec<Namespace>,
     action_history: Mutex<History>,
 
     complete: AtomicBool,
@@ -55,8 +55,6 @@ impl State {
         let prev_goal = Mutex::new(None);
         let curr_goal = Mutex::new(task.to_prompt()?);
 
-        let step = 0;
-
         Ok(Self {
             task,
             memories,
@@ -65,14 +63,14 @@ impl State {
             complete,
             prev_goal,
             curr_goal,
-            max_iterations,
-            step,
+            max_iters: max_iterations,
+            curr_iter: 0,
         })
     }
 
-    pub fn set_current_iteration(&mut self, num: usize) -> Result<()> {
-        self.step = num;
-        if self.max_iterations > 0 && self.step >= self.max_iterations {
+    pub fn on_next_iteration(&mut self) -> Result<()> {
+        self.curr_iter += 1;
+        if self.max_iters > 0 && self.curr_iter >= self.max_iters {
             Err(anyhow!("maximum number of iterations reached"))
         } else {
             Ok(())
@@ -135,11 +133,11 @@ impl State {
 
     pub fn to_pretty_string(&self) -> Result<String> {
         let current_goal = self.curr_goal.lock().unwrap().to_string();
-        let iterations = if self.max_iterations > 0 {
+        let iterations = if self.max_iters > 0 {
             format!(
                 "You are currently at step {} of a maximum of {}.\n",
-                self.step + 1,
-                self.max_iterations
+                self.curr_iter + 1,
+                self.max_iters
             )
         } else {
             "".to_string()
@@ -179,11 +177,11 @@ impl State {
             .join("\n");
         let available_actions = self.available_actions_to_string()?;
 
-        let iterations = if self.max_iterations > 0 {
+        let iterations = if self.max_iters > 0 {
             format!(
                 "You are currently at step {} of a maximum of {}.",
-                self.step + 1,
-                self.max_iterations
+                self.curr_iter + 1,
+                self.max_iters
             )
         } else {
             "".to_string()

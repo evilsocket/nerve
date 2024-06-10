@@ -35,7 +35,7 @@ impl Generator for OllamaGenerator {
 
         let req = GenerationRequest::new(self.model.to_owned(), prompt.to_owned())
             .system(system_prompt.to_owned())
-            // TODO: allow user to specific these options
+            // TODO: allow user to specify these options
             .options(
                 GenerationOptions::default()
                     .num_ctx(10000)

@@ -5,7 +5,7 @@ use anyhow::Result;
 use colored::Colorize;
 use serde::Deserialize;
 
-use crate::agent::actions::{Action, Group};
+use crate::agent::actions::{Action, Namespace};
 
 use super::Task;
 
@@ -160,7 +160,7 @@ pub struct FunctionGroup {
 }
 
 impl FunctionGroup {
-    fn compile(&self, working_directory: &str) -> Result<Group> {
+    fn compile(&self, working_directory: &str) -> Result<Namespace> {
         let mut actions: Vec<Box<dyn Action>> = vec![];
         for tasklet_action in &self.actions {
             let mut action = tasklet_action.clone();
@@ -168,7 +168,7 @@ impl FunctionGroup {
             actions.push(Box::new(action));
         }
 
-        Ok(Group::new(
+        Ok(Namespace::new(
             self.name.to_string(),
             if let Some(desc) = &self.description {
                 desc.to_string()
@@ -242,7 +242,7 @@ impl Task for Tasklet {
         Ok([base, self.guidance.clone()].concat())
     }
 
-    fn get_functions(&self) -> Vec<Group> {
+    fn get_functions(&self) -> Vec<Namespace> {
         let mut groups = vec![];
 
         for group in &self.functions {

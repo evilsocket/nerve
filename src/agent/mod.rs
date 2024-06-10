@@ -69,7 +69,6 @@ pub struct Agent {
     generator: Box<dyn Generator>,
     state: State,
     options: AgentOptions,
-    current_step: usize,
 }
 
 impl Agent {
@@ -79,12 +78,10 @@ impl Agent {
         options: AgentOptions,
     ) -> Result<Self> {
         let state = State::new(task, options.max_iterations)?;
-        let current_step = 0;
         Ok(Self {
             generator,
             state,
             options,
-            current_step,
         })
     }
 
@@ -178,8 +175,7 @@ impl Agent {
     }
 
     pub async fn step(&mut self) -> Result<()> {
-        self.state.set_current_iteration(self.current_step)?;
-        self.current_step += 1;
+        self.state.on_next_iteration()?;
 
         // TODO: explore passing the dynamic parts of the state as user prompt instead of system prompt
         let system_prompt = self.state.to_system_prompt()?;

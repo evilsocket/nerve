@@ -7,13 +7,13 @@ pub(crate) mod memory;
 pub(crate) mod task;
 
 #[derive(Debug, Default)]
-pub struct Group {
+pub struct Namespace {
     pub name: String,
     pub description: String,
     pub actions: Vec<Box<dyn Action>>,
 }
 
-impl Group {
+impl Namespace {
     pub fn new(name: String, description: String, actions: Vec<Box<dyn Action>>) -> Self {
         Self {
             name,

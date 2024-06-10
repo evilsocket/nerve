@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate anyhow;
 
-use std::io::{self, Write};
-
 use crate::agent::task::Task;
 use agent::{generator, task::tasklet::Tasklet, Agent};
 use clap::Parser;
@@ -12,19 +10,6 @@ mod agent;
 mod cli;
 
 // TODO: different namespaces of actions: memory, task, net?, move mouse, ui interactions, etc
-
-pub fn get_user_input(prompt: &str) -> String {
-    print!("{}", prompt);
-    let _ = io::stdout().flush();
-
-    let mut input = String::new();
-    match io::stdin().read_line(&mut input) {
-        Ok(_goes_into_input_above) => {}
-        Err(_no_updates_is_fine) => {}
-    }
-    println!();
-    input.trim().to_string()
-}
 
 #[tokio::main]
 async fn main() {
@@ -51,7 +36,7 @@ async fn main() {
         tasklet.prompt = Some(if let Some(prompt) = &args.prompt {
             prompt.to_string()
         } else {
-            get_user_input("enter task> ")
+            cli::get_user_input("enter task> ")
         });
     }
     let task = Box::new(tasklet);

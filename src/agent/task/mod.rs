@@ -1,13 +1,13 @@
 use anyhow::Result;
 
-use super::actions::Group;
+use super::actions::Namespace;
 
 pub(crate) mod tasklet;
 
 pub trait Task: std::fmt::Debug {
     fn to_system_prompt(&self) -> Result<String>;
     fn to_prompt(&self) -> Result<String>;
-    fn get_functions(&self) -> Vec<Group>;
+    fn get_functions(&self) -> Vec<Namespace>;
 
     fn max_history_visibility(&self) -> usize {
         15

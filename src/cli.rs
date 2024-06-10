@@ -1,3 +1,5 @@
+use std::io::{self, Write};
+
 use clap::Parser;
 
 use crate::agent::AgentOptions;
@@ -43,4 +45,17 @@ impl Args {
             persist_state_path: self.persist_state_path.clone(),
         }
     }
+}
+
+pub(crate) fn get_user_input(prompt: &str) -> String {
+    print!("{}", prompt);
+    let _ = io::stdout().flush();
+
+    let mut input = String::new();
+    match io::stdin().read_line(&mut input) {
+        Ok(_goes_into_input_above) => {}
+        Err(_no_updates_is_fine) => {}
+    }
+    println!();
+    input.trim().to_string()
 }

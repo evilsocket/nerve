@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::agent::state::State;
 
-use super::{Action, Group};
+use super::{Action, Namespace};
 
 #[derive(Debug, Default)]
 struct UpdateGoal {}
@@ -46,7 +46,7 @@ impl Action for CompleteTask {
     }
 
     fn example_payload(&self) -> Option<&str> {
-        Some("put jere a brief report about why the task is complete")
+        Some("a brief report about why the task is complete")
     }
 
     fn run(
@@ -60,10 +60,10 @@ impl Action for CompleteTask {
     }
 }
 
-pub(crate) fn get_functions() -> Group {
-    Group::new(
+pub(crate) fn get_functions() -> Namespace {
+    Namespace::new(
         "Task".to_string(),
-        "".to_string(),
+        "Use these actions to set the task as completed or update your current goal.".to_string(),
         vec![Box::<CompleteTask>::default(), Box::<UpdateGoal>::default()],
     )
 }

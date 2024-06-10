@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::agent::state::State;
 use anyhow::Result;
 
-use super::{Action, Group};
+use super::{Action, Namespace};
 
 #[derive(Debug, Default)]
 struct SaveMemory {}
@@ -102,8 +102,8 @@ impl Action for DeleteMemory {
     }
 }
 
-pub(crate) fn get_functions() -> Group {
-    Group::new(
+pub(crate) fn get_functions() -> Namespace {
+    Namespace::new(
         "Memory".to_string(), 
         "You can use the memory actions to store and retrieve long term information as you work. Use memories often to keep track of important information like your planning, analysis, important web responses, etc.".to_string(),
         vec![Box::<SaveMemory>::default(), Box::<DeleteMemory>::default()],
