@@ -29,8 +29,8 @@ pub struct State {
     memories: Mutex<Memories>,
 
     // available actions and execution history
-    action_groups: Vec<Namespace>,
-    action_history: Mutex<History>,
+    namespaces: Vec<Namespace>,
+    history: Mutex<History>,
 
     complete: AtomicBool,
 }
@@ -39,18 +39,18 @@ impl State {
     pub fn new(task: Box<dyn Task>, max_iterations: usize) -> Result<Self> {
         let complete = AtomicBool::new(false);
         let memories = Mutex::new(Memories::new());
-        let action_history = Mutex::new(History::new());
+        let history = Mutex::new(History::new());
 
         // add core actions
-        let mut action_groups = vec![actions::memory::get_functions()];
+        let mut namespaces = vec![actions::memory::get_functions()];
 
         // if the agent can mark as complete the task
         if task.agent_can_complete_autonomously() {
-            action_groups.push(actions::task::get_functions());
+            namespaces.push(actions::task::get_functions());
         }
 
         // add task specific actions
-        action_groups.append(&mut task.get_functions());
+        namespaces.append(&mut task.get_functions());
 
         let prev_goal = Mutex::new(None);
         let curr_goal = Mutex::new(task.to_prompt()?);
@@ -58,8 +58,8 @@ impl State {
         Ok(Self {
             task,
             memories,
-            action_history,
-            action_groups,
+            history,
+            namespaces,
             complete,
             prev_goal,
             curr_goal,
@@ -114,7 +114,7 @@ impl State {
     pub(crate) fn available_actions_to_string(&self) -> Result<String> {
         let mut md = "".to_string();
 
-        for group in &self.action_groups {
+        for group in &self.namespaces {
             md += &format!("## {}\n\n", group.name);
             if !group.description.is_empty() {
                 md += &format!("{}\n\n", group.description);
@@ -144,7 +144,7 @@ impl State {
         };
         let memories = self.memories.lock().unwrap().to_structured_string()?;
         let last_actions = self
-            .action_history
+            .history
             .lock()
             .unwrap()
             .to_structured_string(self.task.max_history_visibility())?;
@@ -164,7 +164,7 @@ impl State {
         let system_prompt = self.task.to_system_prompt()?;
         let memories = self.memories.lock().unwrap().to_structured_string()?;
         let last_actions = self
-            .action_history
+            .history
             .lock()
             .unwrap()
             .to_structured_string(self.task.max_history_visibility())?;
@@ -210,13 +210,13 @@ impl State {
         result: Option<String>,
         error: Option<String>,
     ) {
-        if let Ok(mut guard) = self.action_history.lock() {
+        if let Ok(mut guard) = self.history.lock() {
             guard.push(Execution::new(invocation, result, error));
         }
     }
 
     pub async fn execute(&self, invocation: Invocation) -> Result<()> {
-        for group in &self.action_groups {
+        for group in &self.namespaces {
             for action in &group.actions {
                 if invocation.action == action.name() {
                     // execute the action

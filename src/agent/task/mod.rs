@@ -4,6 +4,8 @@ use super::actions::Namespace;
 
 pub(crate) mod tasklet;
 
+// TODO: comment the shit out of everything.
+
 pub trait Task: std::fmt::Debug {
     fn to_system_prompt(&self) -> Result<String>;
     fn to_prompt(&self) -> Result<String>;
@@ -19,6 +21,10 @@ pub trait Task: std::fmt::Debug {
 
     fn guidance(&self) -> Result<Vec<String>> {
         self.base_guidance()
+    }
+
+    fn namespaces(&self) -> Option<Vec<String>> {
+        None
     }
 
     fn base_guidance(&self) -> Result<Vec<String>> {

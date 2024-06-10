@@ -153,7 +153,7 @@ impl Action for TaskletAction {
 }
 
 #[derive(Default, Deserialize, Debug, Clone)]
-pub struct FunctionGroup {
+struct FunctionGroup {
     pub name: String,
     pub description: Option<String>,
     pub actions: Vec<TaskletAction>,
