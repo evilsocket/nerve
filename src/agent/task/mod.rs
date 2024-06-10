@@ -9,6 +9,10 @@ pub trait Task: std::fmt::Debug {
     fn to_prompt(&self) -> Result<String>;
     fn get_functions(&self) -> Vec<Group>;
 
+    fn max_history_visibility(&self) -> usize {
+        15
+    }
+
     fn agent_can_complete_autonomously(&self) -> bool {
         true
     }

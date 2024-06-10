@@ -52,24 +52,21 @@ impl Execution {
 #[derive(Debug, Clone)]
 pub struct History(Vec<Execution>);
 
-// TODO: this should be defined by the task
-const MAX_HISTORY: usize = 15;
-
 impl History {
     pub fn new() -> Self {
         Self(vec![])
     }
 
     #[allow(clippy::wrong_self_convention)]
-    pub fn to_structured_string(&mut self) -> Result<String> {
+    pub fn to_structured_string(&mut self, max: usize) -> Result<String> {
         let mut xml = "<last-actions>\n".to_string();
 
         if self.0.is_empty() {
             xml += "  no actions taken yet\n";
         } else {
-            // only get the last MAX_HISTORY elements
-            if self.0.len() > MAX_HISTORY {
-                self.0 = self.0[self.0.len() - MAX_HISTORY..].to_vec();
+            // only get the last max elements
+            if self.0.len() > max {
+                self.0 = self.0[self.0.len() - max..].to_vec();
             }
 
             for execution in &self.0 {

@@ -121,7 +121,11 @@ impl State {
     pub fn to_pretty_string(&self) -> Result<String> {
         let current_goal = self.curr_goal.lock().unwrap().to_string();
         let memories = self.memories.lock().unwrap().to_structured_string()?;
-        let last_actions = self.action_history.lock().unwrap().to_structured_string()?;
+        let last_actions = self
+            .action_history
+            .lock()
+            .unwrap()
+            .to_structured_string(self.task.max_history_visibility())?;
 
         Ok(format!(
             "GOAL: {current_goal}\n\n{last_actions}\n{memories}"
@@ -137,7 +141,11 @@ impl State {
         };
         let system_prompt = self.task.to_system_prompt()?;
         let memories = self.memories.lock().unwrap().to_structured_string()?;
-        let last_actions = self.action_history.lock().unwrap().to_structured_string()?;
+        let last_actions = self
+            .action_history
+            .lock()
+            .unwrap()
+            .to_structured_string(self.task.max_history_visibility())?;
         let guidance = self
             .task
             .guidance()?
