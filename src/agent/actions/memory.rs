@@ -106,6 +106,6 @@ pub(crate) fn get_functions() -> Group {
     Group::new(
         "Memory".to_string(), 
         "You can use the memory actions to store and retrieve long term information as you work. Use memories often to keep track of important information like your planning, analysis, important web responses, etc.".to_string(),
-        vec![Box::new(SaveMemory::default()), Box::new(DeleteMemory::default())],
+        vec![Box::<SaveMemory>::default(), Box::<DeleteMemory>::default()],
     )
 }

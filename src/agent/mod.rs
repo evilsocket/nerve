@@ -162,7 +162,7 @@ impl Agent {
         }
 
         if let Some(prompt_path) = &self.persist_prompt_path {
-            std::fs::write(prompt_path, &prompt_path)?;
+            std::fs::write(prompt_path, prompt_path)?;
         }
 
         Ok(())

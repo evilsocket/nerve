@@ -64,9 +64,6 @@ pub(crate) fn get_functions() -> Group {
     Group::new(
         "Task".to_string(),
         "".to_string(),
-        vec![
-            Box::new(CompleteTask::default()),
-            // Box::new(UpdateGoal::default()),
-        ],
+        vec![Box::<CompleteTask>::default(), Box::<UpdateGoal>::default()],
     )
 }

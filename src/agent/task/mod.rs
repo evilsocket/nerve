@@ -20,7 +20,7 @@ pub trait Task: std::fmt::Debug {
     fn base_guidance(&self) -> Result<Vec<String>> {
         // basic rules to extend
         Ok(include_str!("basic_guidance.txt")
-            .split("\n")
+            .split('\n')
             .map(|l| l.trim().to_string())
             .filter(|l| !l.is_empty())
             .collect())

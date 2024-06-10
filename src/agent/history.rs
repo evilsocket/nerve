@@ -39,7 +39,7 @@ impl Execution {
                     output
                 );
             } else {
-                s += &format!("     <status>success</status>\n");
+                s += "     <status>success</status>\n";
             }
         }
 
@@ -60,6 +60,7 @@ impl History {
         Self(vec![])
     }
 
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_structured_string(&mut self) -> Result<String> {
         let mut xml = "<last-actions>\n".to_string();
 

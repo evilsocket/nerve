@@ -11,14 +11,16 @@ use super::Task;
 
 const STATE_COMPLETE_EXIT_CODE: i32 = 65;
 
-// TODO: read this from command line
-const SHOW_MAX_OUTPUT: usize = 256;
+fn default_max_shown_output() -> usize {
+    256
+}
 
 #[derive(Default, Deserialize, Debug, Clone)]
 pub struct TaskletAction {
     #[serde(skip_deserializing, skip_serializing)]
     working_directory: String,
-
+    #[serde(default = "default_max_shown_output")]
+    max_shown_output: usize,
     name: String,
     description: String,
     args: Option<HashMap<String, String>>,
@@ -100,10 +102,10 @@ impl Action for TaskletAction {
             if !err.is_empty() {
                 println!(
                     "\n{}\n",
-                    if err.len() > SHOW_MAX_OUTPUT {
+                    if err.len() > self.max_shown_output {
                         format!(
                             "{}\n{}",
-                            &err[0..SHOW_MAX_OUTPUT].red(),
+                            &err[0..self.max_shown_output].red(),
                             "<truncated>".yellow()
                         )
                     } else {
@@ -115,8 +117,12 @@ impl Action for TaskletAction {
             if !out.is_empty() {
                 println!(
                     "\n{}\n",
-                    if out.len() > SHOW_MAX_OUTPUT {
-                        format!("{}\n{}", &out[0..SHOW_MAX_OUTPUT], "<truncated>".yellow())
+                    if out.len() > self.max_shown_output {
+                        format!(
+                            "{}\n{}",
+                            &out[0..self.max_shown_output],
+                            "<truncated>".yellow()
+                        )
                     } else {
                         out.to_string()
                     }
@@ -180,6 +186,7 @@ pub struct Tasklet {
     folder: String,
     system_prompt: String,
     pub prompt: Option<String>,
+
     agent_autonomous: bool,
     guidance: Vec<String>,
     functions: Vec<FunctionGroup>,
