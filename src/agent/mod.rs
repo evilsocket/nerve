@@ -1,4 +1,5 @@
 use generator::Generator;
+use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::HashMap;
 
@@ -12,6 +13,10 @@ mod history;
 mod memory;
 pub mod state;
 pub mod task;
+
+lazy_static! {
+    pub static ref XML_ATTRIBUTES_PARSER: Regex = Regex::new(r#"(?m)(([^=]+)="([^"]+)")"#).unwrap();
+}
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Invocation {
@@ -82,9 +87,6 @@ impl Agent {
         let model_response_size = model_response.len();
         let mut current = 0;
 
-        // TODO: initialize this just once with lazy_static
-        let attr_regex = Regex::new(r#"(?m)(([^=]+)="([^"]+)")"#)?;
-
         // TODO: replace this with a proper xml parser
         while current < model_response_size {
             // read until < or end
@@ -108,7 +110,7 @@ impl Agent {
                                 let mut attrs = HashMap::new();
 
                                 // parse as a list of key="value"
-                                let iter = attr_regex.captures_iter(attr_str);
+                                let iter = XML_ATTRIBUTES_PARSER.captures_iter(attr_str);
                                 for caps in iter {
                                     if caps.len() == 4 {
                                         let key = caps.get(2).unwrap().as_str().trim();

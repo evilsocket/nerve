@@ -1759,6 +1759,7 @@ dependencies = [
  "clap",
  "colored",
  "html2text",
+ "lazy_static",
  "ollama-rs",
  "regex",
  "serde",
