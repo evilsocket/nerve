@@ -4,10 +4,9 @@ extern crate anyhow;
 use std::io::{self, Write};
 
 use crate::agent::task::Task;
-use agent::{task::tasklet::Tasklet, Agent};
+use agent::{generator, task::tasklet::Tasklet, Agent};
 use clap::Parser;
 use colored::Colorize;
-use ollama_rs::Ollama;
 
 mod agent;
 
@@ -19,13 +18,16 @@ mod agent;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    /// Ollama API URL.
+    /// Generator type, currently only ollama is supported.
+    #[arg(long, default_value = "ollama")]
+    generator: String,
+    /// Generator API URL.
     #[arg(long, default_value = "http://localhost")]
-    ollama_url: String,
-    /// Ollama API port.
+    generator_url: String,
+    /// Generator API port.
     #[arg(long, default_value_t = 11434)]
-    ollama_port: u16,
-    /// Model name.
+    generator_port: u16,
+    /// Generator model name.
     #[arg(long, default_value = "llama3")]
     model_name: String,
     /// Save the dynamic system prompt to this file if specified.
@@ -59,7 +61,23 @@ pub fn get_user_input(prompt: &str) -> String {
 async fn main() {
     let args = Args::parse();
 
-    let mut tasklet: Tasklet = Tasklet::from_yaml_file(&args.tasklet).unwrap();
+    let generator = generator::factory(
+        "ollama",
+        &args.generator_url,
+        args.generator_port,
+        &args.model_name,
+    )
+    .expect("could not create generator");
+
+    println!(
+        "using {}@{}:{}",
+        args.model_name.bold(),
+        args.generator_url.dimmed(),
+        args.generator_port.to_string().dimmed()
+    );
+
+    let mut tasklet: Tasklet =
+        Tasklet::from_yaml_file(&args.tasklet).expect("could not read tasklet yaml file");
     if tasklet.prompt.is_none() {
         tasklet.prompt = Some(if let Some(prompt) = &args.prompt {
             prompt.to_string()
@@ -67,31 +85,23 @@ async fn main() {
             get_user_input("enter task> ")
         });
     }
-
     let task = Box::new(tasklet);
 
     println!(
-        "{}: {}:{}",
-        "server".bold(),
-        &args.ollama_url,
-        args.ollama_port
-    );
-    println!("{}: {}", "model".bold(), args.model_name);
-    println!(
         "{}: {}\n",
         "task".bold(),
-        task.to_prompt().unwrap().yellow()
+        task.to_prompt()
+            .expect("could not convert task to prompt")
+            .yellow()
     );
 
-    let ollama = Ollama::new(args.ollama_url.to_string(), args.ollama_port);
     let mut agent = Agent::new(
-        ollama,
-        args.model_name.to_string(),
+        generator,
         task,
         args.persist_prompt_path,
         args.persist_state_path,
     )
-    .unwrap();
+    .expect("could not create agent");
 
     while !agent.is_state_complete() {
         if let Err(error) = agent.step().await {

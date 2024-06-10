@@ -1,15 +1,13 @@
+use generator::Generator;
 use regex::Regex;
 use std::collections::HashMap;
 
 use anyhow::Result;
-use ollama_rs::{
-    generation::{completion::request::GenerationRequest, options::GenerationOptions},
-    Ollama,
-};
 use state::State;
 use task::Task;
 
 pub mod actions;
+pub mod generator;
 mod history;
 mod memory;
 pub mod state;
@@ -56,8 +54,7 @@ impl Invocation {
 }
 
 pub struct Agent {
-    ollama: Ollama,
-    model_name: String,
+    generator: Box<dyn Generator>,
     persist_prompt_path: Option<String>,
     persist_state_path: Option<String>,
     state: State,
@@ -65,17 +62,14 @@ pub struct Agent {
 
 impl Agent {
     pub fn new(
-        ollama: Ollama,
-        model_name: String,
+        generator: Box<dyn Generator>,
         task: Box<dyn Task>,
         persist_prompt_path: Option<String>,
         persist_state_path: Option<String>,
     ) -> Result<Self> {
-        // TODO: refactor abstract generator into trait
         let state = State::new(task)?;
         Ok(Self {
-            ollama,
-            model_name,
+            generator,
             state,
             persist_prompt_path,
             persist_state_path,
@@ -174,36 +168,17 @@ impl Agent {
         Ok(())
     }
     pub async fn step(&mut self) -> Result<()> {
-        /*
-        pub struct GenerationRequest {
-            ...
-            TODO: images for multimodal
-            pub images: Vec<Image>,
-            ...
-        }
-        */
-
         // TODO: explore passing the dynamic parts of the state as user prompt instead of system prompt
         let system_prompt = self.state.to_system_prompt()?;
         let prompt = self.state.to_prompt()?;
 
         self.dump_state()?;
 
-        let req = GenerationRequest::new(self.model_name.clone(), prompt)
-            .system(system_prompt)
-            .options(
-                GenerationOptions::default()
-                    .num_ctx(10000)
-                    .temperature(0.9)
-                    .repeat_penalty(1.3)
-                    .top_k(20),
-            );
-        let res = self.ollama.generate(req).await?;
-
-        // println!("response: {}\n\n", res.response);
+        // run model inference
+        let response: String = self.generator.run(&system_prompt, &prompt).await?;
 
         // parse the model response into invocations
-        let invocations = self.parse_model_response(&res.response)?;
+        let invocations = self.parse_model_response(&response)?;
         let mut prev: Option<String> = None;
 
         // for each parsed invocation
