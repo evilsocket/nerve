@@ -22,6 +22,8 @@ pub struct State {
     task: Box<dyn Task>,
     prev_goal: Mutex<Option<String>>,
     curr_goal: Mutex<String>,
+    step: usize,
+    max_iterations: usize,
 
     // model memories
     memories: Mutex<Memories>,
@@ -34,7 +36,7 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(task: Box<dyn Task>) -> Result<Self> {
+    pub fn new(task: Box<dyn Task>, max_iterations: usize) -> Result<Self> {
         let complete = AtomicBool::new(false);
         let memories = Mutex::new(Memories::new());
         let action_history = Mutex::new(History::new());
@@ -53,6 +55,8 @@ impl State {
         let prev_goal = Mutex::new(None);
         let curr_goal = Mutex::new(task.to_prompt()?);
 
+        let step = 0;
+
         Ok(Self {
             task,
             memories,
@@ -61,7 +65,18 @@ impl State {
             complete,
             prev_goal,
             curr_goal,
+            max_iterations,
+            step,
         })
+    }
+
+    pub fn set_current_iteration(&mut self, num: usize) -> Result<()> {
+        self.step = num;
+        if self.max_iterations > 0 && self.step >= self.max_iterations {
+            Err(anyhow!("maximum number of iterations reached"))
+        } else {
+            Ok(())
+        }
     }
 
     pub fn add_memory(&self, key: String, data: String) {
@@ -120,6 +135,15 @@ impl State {
 
     pub fn to_pretty_string(&self) -> Result<String> {
         let current_goal = self.curr_goal.lock().unwrap().to_string();
+        let iterations = if self.max_iterations > 0 {
+            format!(
+                "You are currently at step {} of a maximum of {}.\n",
+                self.step + 1,
+                self.max_iterations
+            )
+        } else {
+            "".to_string()
+        };
         let memories = self.memories.lock().unwrap().to_structured_string()?;
         let last_actions = self
             .action_history
@@ -128,7 +152,7 @@ impl State {
             .to_structured_string(self.task.max_history_visibility())?;
 
         Ok(format!(
-            "GOAL: {current_goal}\n\n{last_actions}\n{memories}"
+            "GOAL: {current_goal}\n{iterations}\n{last_actions}\n{memories}"
         ))
     }
 
@@ -155,9 +179,20 @@ impl State {
             .join("\n");
         let available_actions = self.available_actions_to_string()?;
 
+        let iterations = if self.max_iterations > 0 {
+            format!(
+                "You are currently at step {} of a maximum of {}.",
+                self.step + 1,
+                self.max_iterations
+            )
+        } else {
+            "".to_string()
+        };
+
         Ok(format!(
             include_str!("state_system_prompt.txt"),
             current_goal = current_goal,
+            iterations = iterations,
             previous_goal = previous_goal,
             system_prompt = system_prompt,
             memories = memories,

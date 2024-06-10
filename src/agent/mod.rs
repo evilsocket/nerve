@@ -58,26 +58,33 @@ impl Invocation {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct AgentOptions {
+    pub max_iterations: usize,
+    pub persist_prompt_path: Option<String>,
+    pub persist_state_path: Option<String>,
+}
+
 pub struct Agent {
     generator: Box<dyn Generator>,
-    persist_prompt_path: Option<String>,
-    persist_state_path: Option<String>,
     state: State,
+    options: AgentOptions,
+    current_step: usize,
 }
 
 impl Agent {
     pub fn new(
         generator: Box<dyn Generator>,
         task: Box<dyn Task>,
-        persist_prompt_path: Option<String>,
-        persist_state_path: Option<String>,
+        options: AgentOptions,
     ) -> Result<Self> {
-        let state = State::new(task)?;
+        let state = State::new(task, options.max_iterations)?;
+        let current_step = 0;
         Ok(Self {
             generator,
             state,
-            persist_prompt_path,
-            persist_state_path,
+            options,
+            current_step,
         })
     }
 
@@ -159,17 +166,21 @@ impl Agent {
     }
 
     fn dump_state(&self) -> Result<()> {
-        if let Some(state_path) = &self.persist_state_path {
+        if let Some(state_path) = &self.options.persist_state_path {
             std::fs::write(state_path, self.state.to_pretty_string()?)?;
         }
 
-        if let Some(prompt_path) = &self.persist_prompt_path {
+        if let Some(prompt_path) = &self.options.persist_prompt_path {
             std::fs::write(prompt_path, prompt_path)?;
         }
 
         Ok(())
     }
+
     pub async fn step(&mut self) -> Result<()> {
+        self.state.set_current_iteration(self.current_step)?;
+        self.current_step += 1;
+
         // TODO: explore passing the dynamic parts of the state as user prompt instead of system prompt
         let system_prompt = self.state.to_system_prompt()?;
         let prompt = self.state.to_prompt()?;

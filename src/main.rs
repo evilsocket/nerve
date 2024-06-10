@@ -9,40 +9,9 @@ use clap::Parser;
 use colored::Colorize;
 
 mod agent;
+mod cli;
 
-// TODO: add max iterations
-// TODO: add current iteration to state
 // TODO: different namespaces of actions: memory, task, net?, move mouse, ui interactions, etc
-
-/// Simple program to greet a person
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    /// Generator type, currently only ollama is supported.
-    #[arg(long, default_value = "ollama")]
-    generator: String,
-    /// Generator API URL.
-    #[arg(long, default_value = "http://localhost")]
-    generator_url: String,
-    /// Generator API port.
-    #[arg(long, default_value_t = 11434)]
-    generator_port: u16,
-    /// Generator model name.
-    #[arg(long, default_value = "llama3")]
-    model_name: String,
-    /// Save the dynamic system prompt to this file if specified.
-    #[arg(long)]
-    persist_prompt_path: Option<String>,
-    /// Save the dynamic state to this file if specified.
-    #[arg(long)]
-    persist_state_path: Option<String>,
-    /// Tasklet file.
-    #[arg(short, long)]
-    tasklet: String,
-    /// Specify the prompt if not provided by the tasklet.
-    #[arg(short, long)]
-    prompt: Option<String>,
-}
 
 pub fn get_user_input(prompt: &str) -> String {
     print!("{}", prompt);
@@ -59,7 +28,7 @@ pub fn get_user_input(prompt: &str) -> String {
 
 #[tokio::main]
 async fn main() {
-    let args = Args::parse();
+    let args = cli::Args::parse();
 
     let generator = generator::factory(
         "ollama",
@@ -95,17 +64,13 @@ async fn main() {
             .yellow()
     );
 
-    let mut agent = Agent::new(
-        generator,
-        task,
-        args.persist_prompt_path,
-        args.persist_state_path,
-    )
-    .expect("could not create agent");
+    let mut agent =
+        Agent::new(generator, task, args.to_agent_options()).expect("could not create agent");
 
     while !agent.is_state_complete() {
         if let Err(error) = agent.step().await {
-            println!("ERROR: {}", &error);
+            println!("{}", error.to_string().bold().red());
+            break;
         }
     }
 }

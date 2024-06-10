@@ -5,6 +5,8 @@
 {previous_goal}
 Your current goal is: {current_goal}
 
+{iterations}
+
 {last_actions}
 
 {memories}
