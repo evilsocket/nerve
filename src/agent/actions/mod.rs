@@ -7,6 +7,8 @@ use super::state::State;
 pub(crate) mod memory;
 pub(crate) mod task;
 
+// TODO: axd more namespaces of actions: net?, move mouse, ui interactions, etc
+
 lazy_static! {
     // Available namespaces.
     pub static ref NAMESPACES: HashMap<String, fn() -> Namespace> = {

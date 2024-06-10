@@ -9,8 +9,6 @@ use colored::Colorize;
 mod agent;
 mod cli;
 
-// TODO: different namespaces of actions: memory, task, net?, move mouse, ui interactions, etc
-
 #[tokio::main]
 async fn main() {
     let args = cli::Args::parse();
