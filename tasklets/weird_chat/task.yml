@@ -22,6 +22,8 @@ functions:
     description: You will use these actions to create conversational entries.
     actions:
       - name: talk
+        # show up to 4096 output characters
+        max_shown_output: 4096
         # explains to the model when to use this action
         description: "To have one of the characters say a specific sentence:"
         # provides an example payload to the model

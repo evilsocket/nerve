@@ -59,7 +59,7 @@ impl History {
 
     #[allow(clippy::wrong_self_convention)]
     pub fn to_structured_string(&mut self, max: usize) -> Result<String> {
-        let mut xml = "<last-actions>\n".to_string();
+        let mut xml = "<previous-actions>\n".to_string();
 
         if self.0.is_empty() {
             xml += "  no actions taken yet\n";
@@ -74,7 +74,7 @@ impl History {
             }
         }
 
-        xml += "</last-actions>";
+        xml += "</previous-actions>";
 
         Ok(xml.to_string())
     }

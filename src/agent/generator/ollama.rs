@@ -27,7 +27,7 @@ impl Generator for OllamaGenerator {
         /*
         pub struct GenerationRequest {
             ...
-            TODO: images for multimodal
+            TODO: images for multimodal (see todo for screenshot action)
             pub images: Vec<Image>,
             ...
         }

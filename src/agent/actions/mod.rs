@@ -7,7 +7,7 @@ use super::state::State;
 pub(crate) mod memory;
 pub(crate) mod task;
 
-// TODO: axd more namespaces of actions: net?, move mouse, ui interactions, etc
+// TODO: axd more namespaces of actions: take screenshot, net?, move mouse, ui interactions, etc
 
 lazy_static! {
     // Available namespaces.
