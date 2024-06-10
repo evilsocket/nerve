@@ -41,15 +41,24 @@ impl State {
         let memories = Mutex::new(Memories::new());
         let history = Mutex::new(History::new());
 
-        // add core actions
-        let mut namespaces = vec![actions::memory::get_functions()];
+        let mut namespaces = vec![];
+        let using = task.namespaces();
 
-        // if the agent can mark as complete the task
-        if task.agent_can_complete_autonomously() {
-            namespaces.push(actions::task::get_functions());
+        if let Some(using) = using {
+            // add only task defined namespaces
+            for (name, ns_get_functions) in &*actions::NAMESPACES {
+                if using.contains(name) {
+                    namespaces.push(ns_get_functions());
+                }
+            }
+        } else {
+            // add all available namespaces
+            for (_, ns_get_functions) in &*actions::NAMESPACES {
+                namespaces.push(ns_get_functions());
+            }
         }
 
-        // add task specific actions
+        // add task defined actions
         namespaces.append(&mut task.get_functions());
 
         let prev_goal = Mutex::new(None);
@@ -261,5 +270,12 @@ impl State {
 
     pub fn is_complete(&self) -> bool {
         self.complete.load(Ordering::SeqCst)
+    }
+
+    pub fn used_namespaces(&self) -> Vec<String> {
+        self.namespaces
+            .iter()
+            .map(|n| n.name.to_string().to_lowercase())
+            .collect()
     }
 }

@@ -85,6 +85,10 @@ impl Agent {
         })
     }
 
+    pub fn state(&self) -> &State {
+        &self.state
+    }
+
     fn parse_model_response(&self, model_response: &str) -> Result<Vec<Invocation>> {
         let mut invocations = vec![];
 

@@ -1,6 +1,3 @@
-# the agent can set the task as completed autonomously
-agent_autonomous: true
-
 # agent background story
 system_prompt: > 
   You are a movie director writing the dialogs for two fictional characters, Alice and Bob. 

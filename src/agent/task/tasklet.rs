@@ -186,8 +186,7 @@ pub struct Tasklet {
     folder: String,
     system_prompt: String,
     pub prompt: Option<String>,
-
-    agent_autonomous: bool,
+    using: Option<Vec<String>>,
     guidance: Vec<String>,
     functions: Vec<FunctionGroup>,
 }
@@ -232,8 +231,8 @@ impl Task for Tasklet {
         }
     }
 
-    fn agent_can_complete_autonomously(&self) -> bool {
-        self.agent_autonomous
+    fn namespaces(&self) -> Option<Vec<String>> {
+        self.using.clone()
     }
 
     fn guidance(&self) -> Result<Vec<String>> {

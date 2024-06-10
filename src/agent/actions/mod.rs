@@ -1,10 +1,23 @@
 use anyhow::Result;
+use lazy_static::lazy_static;
 use std::collections::HashMap;
 
 use super::state::State;
 
 pub(crate) mod memory;
 pub(crate) mod task;
+
+lazy_static! {
+    // Available namespaces.
+    pub static ref NAMESPACES: HashMap<String, fn() -> Namespace> = {
+        let mut map = HashMap::new();
+
+        map.insert("memory".to_string(), memory::get_functions as fn() -> Namespace);
+        map.insert("task".to_string(), task::get_functions as fn() -> Namespace);
+
+        map
+    };
+}
 
 #[derive(Debug, Default)]
 pub struct Namespace {
@@ -23,7 +36,7 @@ impl Namespace {
     }
 }
 
-pub trait Action: std::fmt::Debug {
+pub trait Action: std::fmt::Debug + Sync {
     fn name(&self) -> &str;
     fn attributes(&self) -> Option<HashMap<String, String>> {
         None

@@ -42,15 +42,22 @@ async fn main() {
     let task = Box::new(tasklet);
 
     println!(
-        "{}: {}\n",
+        "{}: {}",
         "task".bold(),
         task.to_prompt()
             .expect("could not convert task to prompt")
+            .trim()
             .yellow()
     );
 
     let mut agent =
         Agent::new(generator, task, args.to_agent_options()).expect("could not create agent");
+
+    println!(
+        "{}: {}\n",
+        "namespaces".bold(),
+        agent.state().used_namespaces().join(", ")
+    );
 
     while !agent.is_state_complete() {
         if let Err(error) = agent.step().await {

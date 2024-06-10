@@ -15,10 +15,6 @@ pub trait Task: std::fmt::Debug {
         15
     }
 
-    fn agent_can_complete_autonomously(&self) -> bool {
-        true
-    }
-
     fn guidance(&self) -> Result<Vec<String>> {
         self.base_guidance()
     }

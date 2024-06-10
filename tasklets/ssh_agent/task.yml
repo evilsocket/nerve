@@ -1,6 +1,3 @@
-# the agent can set the task as completed autonomously
-agent_autonomous: true
-
 # agent background story
 system_prompt: > 
   You are a senior developer and computer expert with years of linux experience.
