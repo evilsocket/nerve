@@ -9,8 +9,6 @@ use task::Task;
 
 pub mod actions;
 pub mod generator;
-mod history;
-mod memory;
 pub mod state;
 pub mod task;
 
@@ -230,7 +228,7 @@ impl Agent {
         Ok(())
     }
 
-    pub fn is_state_complete(&self) -> bool {
-        self.state.is_complete()
+    pub fn get_state(&self) -> &State {
+        &self.state
     }
 }

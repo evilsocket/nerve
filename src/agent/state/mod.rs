@@ -8,15 +8,18 @@ use std::{
 
 use anyhow::Result;
 use colored::Colorize;
+use history::{Execution, History};
+use memory::{Memories, Memory};
 
 use super::{
     actions::{self, Namespace},
     generator::Message,
-    history::{Execution, History},
-    memory::{Memories, Memory},
     task::Task,
     Invocation,
 };
+
+mod history;
+mod memory;
 
 #[derive(Debug)]
 pub struct State {

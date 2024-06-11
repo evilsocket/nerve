@@ -34,7 +34,7 @@ async fn main() {
     );
 
     let generator = generator::factory(
-        "ollama",
+        &args.generator,
         &args.generator_url,
         args.generator_port,
         &args.model_name,
@@ -57,7 +57,7 @@ async fn main() {
         agent.state().used_namespaces().join(", ")
     );
 
-    while !agent.is_state_complete() {
+    while !agent.get_state().is_complete() {
         if let Err(error) = agent.step().await {
             println!("{}", error.to_string().bold().red());
             break;
