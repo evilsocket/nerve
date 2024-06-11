@@ -97,7 +97,7 @@ impl Action for DeleteMemory {
 pub(crate) fn get_namespace() -> Namespace {
     Namespace::new(
         "Memory".to_string(), 
-        "You can use the memory actions to store and retrieve long term information as you work. Use memories often to keep track of important information like your planning, analysis, important web responses, etc.".to_string(),
+        "You can use the memory actions to store and retrieve long term information as you work. Use memories often to keep track of important information like your analysis, important responses, etc.".to_string(),
         vec![Box::<SaveMemory>::default(), Box::<DeleteMemory>::default()],
         Some(vec![StorageDescriptor::tagged("memories")]),
     )

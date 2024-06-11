@@ -5,6 +5,7 @@ using:
   - memory
   # can update its own goal autonomously 
   - goal
+  - planning
 
 # agent background story
 system_prompt: > 

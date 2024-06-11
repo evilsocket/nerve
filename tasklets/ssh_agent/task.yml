@@ -2,6 +2,7 @@ using:
   - memory
   - goal
   - task
+  - planning
 
 # agent background story
 system_prompt: > 

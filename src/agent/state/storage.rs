@@ -145,4 +145,9 @@ impl Storage {
             inner.insert(PREVIOUS_TAG.to_string(), old_curr);
         }
     }
+
+    pub fn clear(&self) {
+        self.inner.lock().unwrap().clear();
+        println!("<{}> cleared", self.name.bold());
+    }
 }

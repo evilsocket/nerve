@@ -4,11 +4,12 @@ use std::collections::HashMap;
 
 use super::state::{storage::StorageType, State};
 
+// TODO: add more namespaces of actions: take screenshot, net?, move mouse, ui interactions, etc
+
 pub(crate) mod goal;
 pub(crate) mod memory;
+pub(crate) mod planning;
 pub(crate) mod task;
-
-// TODO: add more namespaces of actions: take screenshot, net?, move mouse, ui interactions, etc
 
 lazy_static! {
     // Available namespaces.
@@ -17,6 +18,7 @@ lazy_static! {
 
         map.insert("memory".to_string(), memory::get_namespace as fn() -> Namespace);
         map.insert("goal".to_string(), goal::get_namespace as fn() -> Namespace);
+        map.insert("planning".to_string(), planning::get_namespace as fn() -> Namespace);
         map.insert("task".to_string(), task::get_namespace as fn() -> Namespace);
 
         map
