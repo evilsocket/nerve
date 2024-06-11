@@ -2,7 +2,8 @@ using:
   - memory
   - goal
   - planning
-  
+  - task
+
 # agent background story
 system_prompt: > 
   You are a movie director writing the dialogs for two fictional characters, Alice and Bob. 
