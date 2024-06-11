@@ -247,13 +247,15 @@ impl State {
 
     pub fn on_complete(&self, reason: Option<String>) -> Result<()> {
         println!(
-            "\n!!! task-complete: reason:\n\n{}",
-            if let Some(r) = reason {
-                format!("\n{}", r)
+            "\n{}: '{}'",
+            "task complete".bold().green(),
+            if let Some(r) = &reason {
+                r
             } else {
-                "none".to_string()
+                "no reason provided"
             }
         );
+
         self.complete.store(true, Ordering::SeqCst);
         Ok(())
     }
