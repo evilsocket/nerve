@@ -19,7 +19,7 @@ async fn main() {
 
     // handle pre defines
     for keyvalue in &args.define {
-        let parts: Vec<&str> = keyvalue.splitn(2, '=').into_iter().collect();
+        let parts: Vec<&str> = keyvalue.splitn(2, '=').collect();
         if parts.len() != 2 {
             panic!("can't parse {keyvalue}, syntax is: key=value");
         }

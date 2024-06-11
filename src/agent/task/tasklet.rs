@@ -103,7 +103,7 @@ impl Action for TaskletAction {
 
         if let Some(attrs) = &attributes {
             for (key, value) in attrs {
-                cmd.args([&format!("--{}", key), &value]);
+                cmd.args([&format!("--{}", key), value]);
             }
         }
 

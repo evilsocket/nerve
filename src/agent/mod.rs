@@ -60,7 +60,6 @@ impl Agent {
     pub async fn step(&mut self) -> Result<()> {
         self.state.on_next_iteration()?;
 
-        // TODO: explore passing the dynamic parts of the state as user prompt instead of system prompt
         let system_prompt = self.state.to_system_prompt()?;
         let prompt = self.state.to_prompt()?;
 

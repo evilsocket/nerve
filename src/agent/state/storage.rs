@@ -1,17 +1,17 @@
-use std::{collections::HashMap, sync::Mutex, time::SystemTime};
+use std::{collections::HashMap, sync::Mutex /* , time::SystemTime*/};
 
 use colored::Colorize;
 
 #[derive(Debug)]
 struct Entry {
-    pub time: SystemTime,
+    //pub time: SystemTime,
     pub data: String,
 }
 
 impl Entry {
     pub fn new(data: String) -> Self {
-        let time = SystemTime::now();
-        Self { time, data }
+        //let time = SystemTime::now();
+        Self { /* time ,*/ data, }
     }
 }
 
