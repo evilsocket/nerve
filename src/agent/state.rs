@@ -54,7 +54,7 @@ impl State {
             }
         } else {
             // add all available namespaces
-            for (_, ns_get_functions) in &*actions::NAMESPACES {
+            for ns_get_functions in actions::NAMESPACES.values() {
                 namespaces.push(ns_get_functions());
             }
         }

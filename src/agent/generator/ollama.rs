@@ -87,7 +87,7 @@ impl Generator for OllamaGenerator {
         let mut request =
             ChatMessageRequest::new(self.model.to_string(), chat_history).options(options);
 
-        request.model_name = self.model.clone();
+        request.model_name.clone_from(&self.model);
 
         let res = self.client.send_chat_messages(request).await?;
 

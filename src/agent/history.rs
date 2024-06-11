@@ -24,12 +24,10 @@ impl Execution {
         messages.push(Message::Agent(self.invocation.as_xml().to_string()));
         messages.push(Message::User(if let Some(err) = &self.error {
             format!("ERROR: {err}")
+        } else if let Some(out) = &self.result {
+            out.to_string()
         } else {
-            if let Some(out) = &self.result {
-                out.to_string()
-            } else {
-                "".to_string()
-            }
+            "".to_string()
         }));
 
         messages
