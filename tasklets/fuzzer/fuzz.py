@@ -4,7 +4,7 @@ import sys
 
 STATE_COMPLETE_EXIT_CODE = 65
 
-# print("  trying '%s' ... " % sys.argv[1], end='', flush=True)
+print("  trying '%s' ... " % sys.argv[1], end='', flush=True)
 
 test_binary = './test_binary/test_binary'
 cmd = [
@@ -30,3 +30,5 @@ if 'stop reason' in output:
     print(output)
     print()
     sys.exit(STATE_COMPLETE_EXIT_CODE)
+else:
+    print('no crash')

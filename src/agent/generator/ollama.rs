@@ -2,13 +2,11 @@ use async_trait::async_trait;
 
 use ollama_rs::{
     generation::{
-        chat::{request::ChatMessageRequest, ChatMessage /*, MessageRole */},
+        chat::{request::ChatMessageRequest, ChatMessage},
         options::GenerationOptions,
     },
     Ollama,
 };
-
-// use colored::Colorize;
 
 use super::{Generator, Message};
 
@@ -59,31 +57,35 @@ impl Generator for OllamaGenerator {
         //    - ...
         //    - msg n
         let mut chat_history = vec![
-            ChatMessage::system(system_prompt.to_string()),
+            ChatMessage::system(system_prompt.trim().to_string()),
             ChatMessage::user(prompt.to_string()),
         ];
 
         for m in history {
             chat_history.push(match m {
-                Message::Agent(data) => ChatMessage::assistant(data),
-                Message::User(data) => ChatMessage::user(data),
+                Message::Agent(data) => ChatMessage::assistant(data.trim().to_string()),
+                Message::User(data) => ChatMessage::user(data.trim().to_string()),
             });
         }
         // chat_history.push(ChatMessage::user(prompt.to_string()));
 
         /*
-        println!("[CHAT]\n");
+        println!("------------------------------------------------");
+        println!("[CHAT]");
+        use colored::Colorize;
         for msg in &chat_history {
-            if msg.role == MessageRole::System {
+            if msg.role == ollama_rs::generation::chat::MessageRole::System {
                 println!("{}", "[system prompt]".yellow());
-            } else if msg.role == MessageRole::Assistant {
+            } else if msg.role == ollama_rs::generation::chat::MessageRole::Assistant {
                 println!("[{}] {}", "agent".bold(), &msg.content);
             } else {
-                println!("[{:?}] {}", msg.role, &msg.content);
+                println!("  {}", msg.content.trim());
             }
         }
+        println!("------------------------------------------------");
         println!("");
          */
+
         let mut request =
             ChatMessageRequest::new(self.model.to_string(), chat_history).options(options);
 

@@ -1,7 +1,10 @@
 # the agent can't set the task as completed autonomously
 # so it won't be using the task namespace
 using:
+  # can store memories
   - memory
+  # can update its own goal autonomously 
+  - goal
 
 # agent background story
 system_prompt: > 
@@ -26,6 +29,8 @@ functions:
       - name: fuzz
         # explains to the model when to use this action
         description: "To execute the binary with a given input string:"
+        # show up to 4096 output characters
+        max_shown_output: 4096
         # provides an example payload to the model, in this case it'd be ./fuzz.py "aaa"
         example_payload: aaa
         # each action is mapped to a custom command

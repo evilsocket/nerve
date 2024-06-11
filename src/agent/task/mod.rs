@@ -12,7 +12,7 @@ pub trait Task: std::fmt::Debug {
     fn get_functions(&self) -> Vec<Namespace>;
 
     fn max_history_visibility(&self) -> u16 {
-        15
+        50
     }
 
     fn guidance(&self) -> Result<Vec<String>> {
