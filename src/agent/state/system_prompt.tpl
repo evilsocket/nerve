@@ -2,12 +2,9 @@
             
 # Context
 
-{previous_goal}
-Your current goal is: {current_goal}
-
 {iterations}
 
-{memories}
+{storages}
 
 # Actions
 

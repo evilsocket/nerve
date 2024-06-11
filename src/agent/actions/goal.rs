@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::agent::state::State;
 
-use super::{Action, Namespace};
+use super::{Action, Namespace, StorageDescriptor};
 
 #[derive(Debug, Default)]
 struct UpdateGoal {}
@@ -19,7 +19,7 @@ impl Action for UpdateGoal {
     }
 
     fn example_payload(&self) -> Option<&str> {
-        Some("my new goal")
+        Some("your new goal")
     }
 
     fn run(
@@ -28,15 +28,18 @@ impl Action for UpdateGoal {
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        state.set_new_goal(payload.unwrap());
+        state
+            .get_storage("goal")?
+            .set_current(payload.as_ref().unwrap(), true);
         Ok(Some("goal updated".to_string()))
     }
 }
 
-pub(crate) fn get_functions() -> Namespace {
+pub(crate) fn get_namespace() -> Namespace {
     Namespace::new(
         "Goal".to_string(),
         "Use these actions to update your current goal.".to_string(),
         vec![Box::<UpdateGoal>::default()],
+        Some(vec![StorageDescriptor::previous_current("goal")]),
     )
 }

@@ -33,10 +33,11 @@ impl Action for CompleteTask {
     }
 }
 
-pub(crate) fn get_functions() -> Namespace {
+pub(crate) fn get_namespace() -> Namespace {
     Namespace::new(
         "Task".to_string(),
-        "Use these actions to set the task as completed or update your current goal.".to_string(),
+        "Use these actions to set the task as completed.".to_string(),
         vec![Box::<CompleteTask>::default()],
+        None,
     )
 }

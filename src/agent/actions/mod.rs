@@ -2,25 +2,51 @@ use anyhow::Result;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 
-use super::state::State;
+use super::state::{storage::StorageType, State};
 
 pub(crate) mod goal;
 pub(crate) mod memory;
 pub(crate) mod task;
 
-// TODO: axd more namespaces of actions: take screenshot, net?, move mouse, ui interactions, etc
+// TODO: add more namespaces of actions: take screenshot, net?, move mouse, ui interactions, etc
 
 lazy_static! {
     // Available namespaces.
     pub static ref NAMESPACES: HashMap<String, fn() -> Namespace> = {
         let mut map = HashMap::new();
 
-        map.insert("memory".to_string(), memory::get_functions as fn() -> Namespace);
-        map.insert("goal".to_string(), goal::get_functions as fn() -> Namespace);
-        map.insert("task".to_string(), task::get_functions as fn() -> Namespace);
+        map.insert("memory".to_string(), memory::get_namespace as fn() -> Namespace);
+        map.insert("goal".to_string(), goal::get_namespace as fn() -> Namespace);
+        map.insert("task".to_string(), task::get_namespace as fn() -> Namespace);
 
         map
     };
+}
+
+#[derive(Debug)]
+pub struct StorageDescriptor {
+    pub name: String,
+    pub type_: StorageType,
+}
+
+impl StorageDescriptor {
+    pub fn tagged(name: &str) -> Self {
+        let name = name.to_string();
+        let type_ = StorageType::Tagged;
+        Self { name, type_ }
+    }
+
+    pub fn untagged(name: &str) -> Self {
+        let name = name.to_string();
+        let type_ = StorageType::Untagged;
+        Self { name, type_ }
+    }
+
+    pub fn previous_current(name: &str) -> Self {
+        let name = name.to_string();
+        let type_ = StorageType::CurrentPrevious;
+        Self { name, type_ }
+    }
 }
 
 #[derive(Debug, Default)]
@@ -28,14 +54,21 @@ pub struct Namespace {
     pub name: String,
     pub description: String,
     pub actions: Vec<Box<dyn Action>>,
+    pub storages: Option<Vec<StorageDescriptor>>,
 }
 
 impl Namespace {
-    pub fn new(name: String, description: String, actions: Vec<Box<dyn Action>>) -> Self {
+    pub fn new(
+        name: String,
+        description: String,
+        actions: Vec<Box<dyn Action>>,
+        storages: Option<Vec<StorageDescriptor>>,
+    ) -> Self {
         Self {
             name,
             description,
             actions,
+            storages,
         }
     }
 }

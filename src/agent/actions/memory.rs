@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::agent::state::State;
 use anyhow::Result;
 
-use super::{Action, Namespace};
+use super::{Action, Namespace, StorageDescriptor};
 
 #[derive(Debug, Default)]
 struct SaveMemory {}
@@ -38,7 +38,7 @@ impl Action for SaveMemory {
         if let Some(attrs) = attributes {
             if let Some(key) = attrs.get("key") {
                 if let Some(data) = payload {
-                    state.add_memory(key.to_string(), data);
+                    state.get_storage("memories")?.add_tagged(key, &data);
                     return Ok(Some("memory saved".to_string()));
                 }
 
@@ -80,7 +80,7 @@ impl Action for DeleteMemory {
     ) -> Result<Option<String>> {
         if let Some(attrs) = attributes {
             if let Some(key) = attrs.get("key") {
-                return if state.remove_memory(key).is_some() {
+                return if state.get_storage("memories")?.del_tagged(key).is_some() {
                     return Ok(Some("memory deleted".to_string()));
                 } else {
                     Err(anyhow!("memory '{}' not found", key))
@@ -94,10 +94,11 @@ impl Action for DeleteMemory {
     }
 }
 
-pub(crate) fn get_functions() -> Namespace {
+pub(crate) fn get_namespace() -> Namespace {
     Namespace::new(
         "Memory".to_string(), 
         "You can use the memory actions to store and retrieve long term information as you work. Use memories often to keep track of important information like your planning, analysis, important web responses, etc.".to_string(),
         vec![Box::<SaveMemory>::default(), Box::<DeleteMemory>::default()],
+        Some(vec![StorageDescriptor::tagged("memories")]),
     )
 }

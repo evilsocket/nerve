@@ -1,5 +1,5 @@
 use std::{
-    ops::Deref,
+    collections::HashMap,
     sync::{
         atomic::{AtomicBool, Ordering},
         Mutex,
@@ -9,7 +9,7 @@ use std::{
 use anyhow::Result;
 use colored::Colorize;
 use history::{Execution, History};
-use memory::{Memories, Memory};
+use storage::Storage;
 
 use super::{
     actions::{self, Namespace},
@@ -19,30 +19,29 @@ use super::{
 };
 
 mod history;
-mod memory;
+pub(crate) mod storage;
 
 #[derive(Debug)]
 pub struct State {
+    // the task
     task: Box<dyn Task>,
-    prev_goal: Mutex<Option<String>>,
-    curr_goal: Mutex<String>,
+    // current iteration and max
     curr_iter: usize,
     max_iters: usize,
-
-    // model memories
-    memories: Mutex<Memories>,
-
+    // model memories, goals and other storages
+    storages: HashMap<String, Storage>,
     // available actions and execution history
     namespaces: Vec<Namespace>,
+    // list of executed actions
     history: Mutex<History>,
-
+    // set to true when task is complete
     complete: AtomicBool,
 }
 
 impl State {
     pub fn new(task: Box<dyn Task>, max_iterations: usize) -> Result<Self> {
         let complete = AtomicBool::new(false);
-        let memories = Mutex::new(Memories::new());
+        let mut storages = HashMap::new();
         let history = Mutex::new(History::new());
 
         let mut namespaces = vec![];
@@ -50,32 +49,50 @@ impl State {
 
         if let Some(using) = using {
             // add only task defined namespaces
-            for (name, ns_get_functions) in &*actions::NAMESPACES {
+            for (name, build_namespace) in &*actions::NAMESPACES {
                 if using.contains(name) {
-                    namespaces.push(ns_get_functions());
+                    namespaces.push(build_namespace());
                 }
             }
         } else {
             // add all available namespaces
-            for ns_get_functions in actions::NAMESPACES.values() {
-                namespaces.push(ns_get_functions());
+            for build_namespace in actions::NAMESPACES.values() {
+                namespaces.push(build_namespace());
             }
         }
 
         // add task defined actions
         namespaces.append(&mut task.get_functions());
 
-        let prev_goal = Mutex::new(None);
-        let curr_goal = Mutex::new(task.to_prompt()?);
+        // if any namespace requires a specific storage, create it
+        for namespace in &namespaces {
+            if let Some(ns_storages) = &namespace.storages {
+                for storage in ns_storages {
+                    // not created yet
+                    if !storages.contains_key(&storage.name) {
+                        storages.insert(
+                            storage.name.to_string(),
+                            Storage::new(&storage.name, storage.type_.clone()),
+                        );
+                    }
+                }
+            }
+        }
+
+        // println!("storages={:?}", &storages);
+
+        // if the goal namespace is enabled, set the current goal
+        if let Some(goal) = storages.get("goal") {
+            let prompt = task.to_prompt()?;
+            goal.set_current(&prompt, false);
+        }
 
         Ok(Self {
             task,
-            memories,
+            storages,
             history,
             namespaces,
             complete,
-            prev_goal,
-            curr_goal,
             max_iters: max_iterations,
             curr_iter: 0,
         })
@@ -94,37 +111,16 @@ impl State {
         self.history.lock().unwrap().to_chat_history(max)
     }
 
-    pub fn add_memory(&self, key: String, data: String) {
-        println!("\n{}: {}\n", key.bold(), &data.yellow());
-
-        if let Ok(mut guard) = self.memories.lock() {
-            guard.insert(key, Memory::new(data));
-        }
+    pub fn get_storages(&self) -> &HashMap<String, Storage> {
+        &self.storages
     }
 
-    pub fn remove_memory(&self, key: &str) -> Option<Memory> {
-        if let Ok(mut guard) = self.memories.lock() {
-            println!("\n{} clear\n", key.bold());
-            return guard.remove(key);
-        }
-        None
-    }
-
-    pub fn set_new_goal(&self, goal: String) {
-        println!("{}: '{}'", "goal".bold(), goal.yellow());
-
-        if let Ok(mut curr_g) = self.curr_goal.lock() {
-            let prev = curr_g.to_string();
-
-            curr_g.clone_from(&goal);
-
-            if let Ok(mut prev_g) = self.prev_goal.lock() {
-                prev_g.replace(prev);
-            } else {
-                println!("FAILED to acquire prev lock");
-            }
+    pub fn get_storage(&self, name: &str) -> Result<&Storage> {
+        if let Some(storage) = self.storages.get(name) {
+            Ok(storage)
         } else {
-            println!("FAILED to acquire curr lock");
+            println!("WARNING: requested storage '{name}' not found.");
+            Err(anyhow!("storage {name} not found"))
         }
     }
 
@@ -149,7 +145,6 @@ impl State {
     }
 
     pub fn to_pretty_string(&self) -> Result<String> {
-        let current_goal = self.curr_goal.lock().unwrap().to_string();
         let iterations = if self.max_iters > 0 {
             format!(
                 "You are currently at step {} of a maximum of {}.\n",
@@ -159,20 +154,26 @@ impl State {
         } else {
             "".to_string()
         };
-        let memories = self.memories.lock().unwrap().to_structured_string()?;
+        let mut storages = vec![];
 
-        Ok(format!("GOAL: {current_goal}\n{iterations}\n{memories}"))
+        for storage in self.storages.values() {
+            storages.push(storage.to_structured_string());
+        }
+
+        let storages = storages.join("\n");
+
+        Ok(format!("{storages}\n{iterations}"))
     }
 
     pub fn to_system_prompt(&self) -> Result<String> {
-        let current_goal = self.curr_goal.lock().unwrap().to_string();
-        let previous_goal = if let Some(goal) = self.prev_goal.lock().unwrap().deref() {
-            format!("Your previous goal was: {goal}")
-        } else {
-            "".to_string()
-        };
         let system_prompt = self.task.to_system_prompt()?;
-        let memories = self.memories.lock().unwrap().to_structured_string()?;
+        let mut storages = vec![];
+
+        for storage in self.storages.values() {
+            storages.push(storage.to_structured_string());
+        }
+
+        let storages = storages.join("\n");
         let guidance = self
             .task
             .guidance()?
@@ -194,11 +195,9 @@ impl State {
 
         Ok(format!(
             include_str!("system_prompt.tpl"),
-            current_goal = current_goal,
             iterations = iterations,
-            previous_goal = previous_goal,
             system_prompt = system_prompt,
-            memories = memories,
+            storages = storages,
             available_actions = available_actions,
             guidance = guidance,
         ))
