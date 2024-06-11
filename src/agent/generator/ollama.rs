@@ -8,7 +8,7 @@ use ollama_rs::{
     Ollama,
 };
 
-use super::{Generator, Message};
+use super::{Generator, GeneratorOptions, Message};
 
 pub struct OllamaGenerator {
     model: String,
@@ -27,12 +27,7 @@ impl Generator for OllamaGenerator {
         Ok(Self { model, client })
     }
 
-    async fn run(
-        &self,
-        system_prompt: &str,
-        prompt: &str,
-        history: Vec<Message>,
-    ) -> anyhow::Result<String> {
+    async fn run(&self, options: GeneratorOptions) -> anyhow::Result<String> {
         /*
         pub struct GenerationRequest {
             ...
@@ -42,12 +37,11 @@ impl Generator for OllamaGenerator {
         }
         */
 
-        // TODO: allow user to specify these options
-        let options = GenerationOptions::default()
-            .num_ctx(10000)
-            .temperature(0.9)
-            .repeat_penalty(1.3)
-            .top_k(20);
+        let ollama_options = GenerationOptions::default()
+            .num_ctx(options.model_options.context_window)
+            .temperature(options.model_options.temperature)
+            .repeat_penalty(options.model_options.repeat_penalty)
+            .top_k(options.model_options.top_k);
 
         // build chat history:
         //    - system prompt
@@ -57,17 +51,16 @@ impl Generator for OllamaGenerator {
         //    - ...
         //    - msg n
         let mut chat_history = vec![
-            ChatMessage::system(system_prompt.trim().to_string()),
-            ChatMessage::user(prompt.to_string()),
+            ChatMessage::system(options.system_prompt.trim().to_string()),
+            ChatMessage::user(options.prompt.to_string()),
         ];
 
-        for m in history {
+        for m in options.history {
             chat_history.push(match m {
                 Message::Agent(data) => ChatMessage::assistant(data.trim().to_string()),
                 Message::User(data) => ChatMessage::user(data.trim().to_string()),
             });
         }
-        // chat_history.push(ChatMessage::user(prompt.to_string()));
 
         /*
         println!("------------------------------------------------");
@@ -87,7 +80,7 @@ impl Generator for OllamaGenerator {
          */
 
         let mut request =
-            ChatMessageRequest::new(self.model.to_string(), chat_history).options(options);
+            ChatMessageRequest::new(self.model.to_string(), chat_history).options(ollama_options);
 
         request.model_name.clone_from(&self.model);
 

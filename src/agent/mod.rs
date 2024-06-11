@@ -1,4 +1,4 @@
-use generator::Generator;
+use generator::{Generator, GeneratorOptions, ModelOptions};
 
 use anyhow::Result;
 use parsing::parse_model_response;
@@ -62,18 +62,14 @@ impl Agent {
 
         let system_prompt = self.state.to_system_prompt()?;
         let prompt = self.state.to_prompt()?;
+        let history = self.state.to_chat_history(self.max_history as usize)?;
 
         self.dump_state()?;
 
         // run model inference
-        let response: String = self
-            .generator
-            .run(
-                &system_prompt,
-                &prompt,
-                self.state.to_chat_history(self.max_history as usize)?,
-            )
-            .await?;
+        let options =
+            GeneratorOptions::new(system_prompt, prompt, history, ModelOptions::default());
+        let response: String = self.generator.run(options).await?;
 
         // parse the model response into invocations
         let invocations = parse_model_response(&response)?;
