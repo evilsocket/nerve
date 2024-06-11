@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use super::state::{storage::StorageType, State};
 
-// TODO: add more namespaces of actions: take screenshot, net?, move mouse, ui interactions, etc
+// TODO: add more namespaces of actions: take screenshot (multimodal), networking, move mouse, ui interactions, etc
 
 pub(crate) mod goal;
 pub(crate) mod memory;
