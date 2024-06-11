@@ -232,8 +232,8 @@ pub struct Tasklet {
     system_prompt: String,
     pub prompt: Option<String>,
     using: Option<Vec<String>>,
-    guidance: Vec<String>,
-    functions: Vec<FunctionGroup>,
+    guidance: Option<Vec<String>>,
+    functions: Option<Vec<FunctionGroup>>,
 }
 
 impl Tasklet {
@@ -283,14 +283,16 @@ impl Task for Tasklet {
     fn guidance(&self) -> Result<Vec<String>> {
         let base = self.base_guidance()?;
         // extend the set of basic rules
-        Ok([base, self.guidance.clone()].concat())
+        Ok([base, self.guidance.as_ref().unwrap_or(&vec![]).clone()].concat())
     }
 
     fn get_functions(&self) -> Vec<Namespace> {
         let mut groups = vec![];
 
-        for group in &self.functions {
-            groups.push(group.compile(&self.folder).unwrap());
+        if let Some(custom_functions) = self.functions.as_ref() {
+            for group in custom_functions {
+                groups.push(group.compile(&self.folder).unwrap());
+            }
         }
 
         groups

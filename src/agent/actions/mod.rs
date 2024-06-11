@@ -7,6 +7,7 @@ use super::state::{storage::StorageType, State};
 // TODO: add more namespaces of actions: take screenshot (multimodal), networking, move mouse, ui interactions, etc
 
 pub(crate) mod goal;
+pub(crate) mod knowledge;
 pub(crate) mod memory;
 pub(crate) mod planning;
 pub(crate) mod task;
@@ -20,6 +21,7 @@ lazy_static! {
         map.insert("goal".to_string(), goal::get_namespace as fn() -> Namespace);
         map.insert("planning".to_string(), planning::get_namespace as fn() -> Namespace);
         map.insert("task".to_string(), task::get_namespace as fn() -> Namespace);
+        map.insert("knowledge".to_string(), knowledge::get_namespace as fn() -> Namespace);
 
         map
     };
