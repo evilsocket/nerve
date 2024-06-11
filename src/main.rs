@@ -17,6 +17,10 @@ mod cli;
 async fn main() {
     let args = cli::Args::parse();
 
+    let gen_options = args
+        .to_generator_options()
+        .expect("could not create generator instance");
+
     // handle pre defines
     for keyvalue in &args.define {
         let parts: Vec<&str> = keyvalue.splitn(2, '=').collect();
@@ -51,18 +55,18 @@ async fn main() {
     );
 
     let generator = generator::factory(
-        &args.generator,
-        &args.generator_url,
-        args.generator_port,
-        &args.model_name,
+        &gen_options.type_name,
+        &gen_options.host,
+        gen_options.port,
+        &gen_options.model_name,
     )
     .expect("could not create generator");
 
     println!(
         "using {}@{}:{}",
-        args.model_name.bold(),
-        args.generator_url.dimmed(),
-        args.generator_port.to_string().dimmed()
+        gen_options.model_name.bold(),
+        gen_options.host.dimmed(),
+        gen_options.port.to_string().dimmed()
     );
 
     let mut agent =

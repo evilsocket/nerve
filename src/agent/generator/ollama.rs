@@ -21,6 +21,12 @@ impl Generator for OllamaGenerator {
     where
         Self: Sized,
     {
+        let mut url = url.to_string();
+        if !url.contains("://") {
+            // ollama-rs is picky about this and wants the schema
+            url = format!("http://{url}");
+        }
+
         let client = Ollama::new(url.to_string(), port);
         let model = model_name.to_string();
 
