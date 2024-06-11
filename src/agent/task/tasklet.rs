@@ -1,15 +1,21 @@
-use std::collections::HashMap;
 use std::process::Command;
+use std::{collections::HashMap, sync::Mutex};
 
 use anyhow::Result;
 use colored::Colorize;
+use lazy_static::lazy_static;
 use serde::Deserialize;
 
 use crate::agent::actions::{Action, Namespace};
+use crate::cli;
 
 use super::Task;
 
 const STATE_COMPLETE_EXIT_CODE: i32 = 65;
+
+lazy_static! {
+    pub static ref VAR_CACHE: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
+}
 
 fn default_max_shown_output() -> usize {
     256
@@ -51,6 +57,61 @@ impl Action for TaskletAction {
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
+        let parts: Vec<String> = self
+            .tool
+            .split_whitespace()
+            .map(|x| x.trim())
+            .filter(|x| !x.is_empty())
+            .map(|x| x.to_string())
+            .collect();
+
+        if parts.is_empty() {
+            return Err(anyhow!("no tool defined"));
+        }
+
+        let mut cmd = Command::new(&parts[0]);
+        if parts.len() > 1 {
+            let mut var_cache = VAR_CACHE.lock().unwrap();
+
+            // more complex command line
+            for part in &parts[1..] {
+                if part.as_bytes()[0] == b'$' {
+                    // variable, the order of lookup is:
+                    //  0. environment variable
+                    //  1. cache
+                    //  2. ask the user (and cache)
+                    let var_name = part.trim_start_matches('$');
+                    if let Ok(value) = std::env::var(var_name) {
+                        cmd.arg(value);
+                    } else if let Some(cached) = var_cache.get(var_name) {
+                        cmd.arg(cached);
+                    } else {
+                        let var_value =
+                            cli::get_user_input(&format!("\nplease set ${}: ", var_name.yellow()));
+
+                        var_cache.insert(var_name.to_owned(), var_value.clone());
+                        cmd.arg(var_value);
+                    }
+                } else {
+                    // raw value
+                    cmd.arg(part);
+                }
+            }
+        }
+
+        cmd.current_dir(&self.working_directory);
+
+        if let Some(attrs) = &attributes {
+            for (key, value) in attrs {
+                cmd.args([&format!("--{}", key), &value]);
+            }
+        }
+
+        if let Some(payload) = &payload {
+            // println!("# {}", payload.bold());
+            cmd.arg(payload);
+        }
+
         println!(
             "{}{}{}",
             self.name.bold(),
@@ -75,24 +136,7 @@ impl Action for TaskletAction {
             },
         );
 
-        if self.tool.is_empty() {
-            return Err(anyhow!("no tool defined"));
-        }
-
-        let mut cmd = Command::new(&self.tool);
-
-        cmd.current_dir(&self.working_directory);
-
-        if let Some(attrs) = attributes {
-            for (key, value) in attrs {
-                cmd.args([&format!("--{}", key), &value]);
-            }
-        }
-
-        if let Some(payload) = &payload {
-            // println!("# {}", payload.bold());
-            cmd.arg(payload);
-        }
+        // println!("! {:?}", &cmd);
 
         let output = cmd.output();
         if let Ok(output) = output {

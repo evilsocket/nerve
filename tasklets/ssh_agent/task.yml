@@ -25,12 +25,11 @@ functions:
   # divided in action groups
   - name: Commands
     actions:
-      - name: run-command
+      - name: ssh
         # explains to the model when to use this action
         description: "To execute a bash command on the remote host via SSH:"
         # provides an example payload to the model
         example_payload: whoami
         # each action is mapped to a custom command
-        # TODO: why not using /usr/bin/ssh here directly?
-        tool: ./run-command.py
-        
+        # strings starting with $ have to be provided by the user
+        tool: /usr/bin/ssh $SSH_USER_HOST_STRING

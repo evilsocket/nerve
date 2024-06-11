@@ -111,10 +111,6 @@ impl State {
         self.history.lock().unwrap().to_chat_history(max)
     }
 
-    pub fn get_storages(&self) -> &HashMap<String, Storage> {
-        &self.storages
-    }
-
     pub fn get_storage(&self, name: &str) -> Result<&Storage> {
         if let Some(storage) = self.storages.get(name) {
             Ok(storage)
@@ -222,6 +218,20 @@ impl State {
         for group in &self.namespaces {
             for action in &group.actions {
                 if invocation.action == action.name() {
+                    // check if valid payload has been provided
+                    if let Some(payload) = invocation.payload.as_ref() {
+                        if action.example_payload().unwrap() == payload {
+                            return Err(anyhow!("do not use the example values but use the information you have to create new ones"));
+                        }
+                    }
+
+                    // check if valid attributes have been provided
+                    if let Some(attrs) = invocation.attributes.as_ref() {
+                        if action.attributes().as_ref().unwrap() == attrs {
+                            return Err(anyhow!("do not use the example values but use the information you have to create new ones"));
+                        }
+                    }
+
                     // execute the action
                     let inv = invocation.clone();
                     let ret = action.run(self, invocation.attributes, invocation.payload);
