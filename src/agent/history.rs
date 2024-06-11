@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use super::Invocation;
+use super::{generator::Message, Invocation};
 
 #[derive(Debug, Clone, Default)]
 pub struct Execution {
@@ -18,34 +18,21 @@ impl Execution {
         }
     }
 
-    pub fn to_structured_string(&self) -> String {
-        let mut s = format!(
-            "<action>\n     {}\n",
-            self.invocation.to_structured_string()
-        );
+    pub fn to_messages(&self) -> Vec<Message> {
+        let mut messages = vec![];
 
-        if let Some(err) = &self.error {
-            s += &format!("     <error>{}</error>\n", err);
+        messages.push(Message::Agent(self.invocation.as_xml().to_string()));
+        messages.push(Message::User(if let Some(err) = &self.error {
+            format!("ERROR: {err}")
         } else {
-            let output = if let Some(res) = &self.result {
-                res.clone()
+            if let Some(out) = &self.result {
+                out.to_string()
             } else {
                 "".to_string()
-            };
-
-            if !output.is_empty() {
-                s += &format!(
-                    "     <status>success</status>\n     <output>{}</output>\n",
-                    output
-                );
-            } else {
-                s += "     <status>success</status>\n";
             }
-        }
+        }));
 
-        s += "  </action>\n";
-
-        s
+        messages
     }
 }
 
@@ -57,26 +44,19 @@ impl History {
         Self(vec![])
     }
 
-    #[allow(clippy::wrong_self_convention)]
-    pub fn to_structured_string(&mut self, max: usize) -> Result<String> {
-        let mut xml = "<previous-actions>\n".to_string();
-
-        if self.0.is_empty() {
-            xml += "  no actions taken yet\n";
+    pub fn to_chat_history(&self, max: usize) -> Result<Vec<Message>> {
+        let mut history = vec![];
+        let latest = if self.0.len() > max {
+            self.0[self.0.len() - max..].to_vec()
         } else {
-            // only get the last max elements
-            if self.0.len() > max {
-                self.0 = self.0[self.0.len() - max..].to_vec();
-            }
+            self.0.to_vec().to_vec()
+        };
 
-            for execution in &self.0 {
-                xml += &format!("  {}\n", execution.to_structured_string());
-            }
+        for entry in latest {
+            history.extend(entry.to_messages());
         }
 
-        xml += "</previous-actions>";
-
-        Ok(xml.to_string())
+        Ok(history)
     }
 }
 

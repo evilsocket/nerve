@@ -53,7 +53,7 @@ impl Invocation {
         }
     }
 
-    pub fn to_structured_string(&self) -> &str {
+    pub fn as_xml(&self) -> &str {
         return self.xml.as_str();
     }
 }
@@ -69,6 +69,7 @@ pub struct Agent {
     generator: Box<dyn Generator>,
     state: State,
     options: AgentOptions,
+    max_history: u16,
 }
 
 impl Agent {
@@ -77,11 +78,13 @@ impl Agent {
         task: Box<dyn Task>,
         options: AgentOptions,
     ) -> Result<Self> {
+        let max_history = task.max_history_visibility();
         let state = State::new(task, options.max_iterations)?;
         Ok(Self {
             generator,
             state,
             options,
+            max_history,
         })
     }
 
@@ -172,7 +175,7 @@ impl Agent {
         }
 
         if let Some(prompt_path) = &self.options.persist_prompt_path {
-            std::fs::write(prompt_path, prompt_path)?;
+            std::fs::write(prompt_path, self.state.to_system_prompt()?)?;
         }
 
         Ok(())
@@ -188,7 +191,14 @@ impl Agent {
         self.dump_state()?;
 
         // run model inference
-        let response: String = self.generator.run(&system_prompt, &prompt).await?;
+        let response: String = self
+            .generator
+            .run(
+                &system_prompt,
+                &prompt,
+                self.state.to_chat_history(self.max_history as usize)?,
+            )
+            .await?;
 
         // parse the model response into invocations
         let invocations = self.parse_model_response(&response)?;

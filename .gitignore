@@ -1,4 +1,5 @@
 /target
 /state.txt
+/system.txt
 /system-prompt.txt
 /tasklets/fuzzer/test_binary/test_binary

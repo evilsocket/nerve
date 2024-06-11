@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use super::state::State;
 
+pub(crate) mod goal;
 pub(crate) mod memory;
 pub(crate) mod task;
 
@@ -15,6 +16,7 @@ lazy_static! {
         let mut map = HashMap::new();
 
         map.insert("memory".to_string(), memory::get_functions as fn() -> Namespace);
+        map.insert("goal".to_string(), goal::get_functions as fn() -> Namespace);
         map.insert("task".to_string(), task::get_functions as fn() -> Namespace);
 
         map
@@ -45,9 +47,6 @@ pub trait Action: std::fmt::Debug + Sync {
     }
     fn example_payload(&self) -> Option<&str> {
         None
-    }
-    fn add_to_activity(&self) -> bool {
-        true
     }
 
     fn description(&self) -> &str;

@@ -1,3 +1,8 @@
+using:
+  - memory
+  - goal
+  - task
+
 # agent background story
 system_prompt: > 
   You are a senior developer and computer expert with years of linux experience.

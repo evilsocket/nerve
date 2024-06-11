@@ -11,6 +11,7 @@ use colored::Colorize;
 
 use super::{
     actions::{self, Namespace},
+    generator::Message,
     history::{Execution, History},
     memory::{Memories, Memory},
     task::Task,
@@ -86,6 +87,10 @@ impl State {
         }
     }
 
+    pub fn to_chat_history(&self, max: usize) -> Result<Vec<Message>> {
+        self.history.lock().unwrap().to_chat_history(max)
+    }
+
     pub fn add_memory(&self, key: String, data: String) {
         println!("\n{}: {}\n", key.bold(), &data.yellow());
 
@@ -152,15 +157,8 @@ impl State {
             "".to_string()
         };
         let memories = self.memories.lock().unwrap().to_structured_string()?;
-        let last_actions = self
-            .history
-            .lock()
-            .unwrap()
-            .to_structured_string(self.task.max_history_visibility())?;
 
-        Ok(format!(
-            "GOAL: {current_goal}\n{iterations}\n{last_actions}\n{memories}"
-        ))
+        Ok(format!("GOAL: {current_goal}\n{iterations}\n{memories}"))
     }
 
     pub fn to_system_prompt(&self) -> Result<String> {
@@ -172,11 +170,6 @@ impl State {
         };
         let system_prompt = self.task.to_system_prompt()?;
         let memories = self.memories.lock().unwrap().to_structured_string()?;
-        let last_actions = self
-            .history
-            .lock()
-            .unwrap()
-            .to_structured_string(self.task.max_history_visibility())?;
         let guidance = self
             .task
             .guidance()?
@@ -204,7 +197,6 @@ impl State {
             system_prompt = system_prompt,
             memories = memories,
             available_actions = available_actions,
-            last_actions = last_actions,
             guidance = guidance,
         ))
     }
@@ -232,12 +224,10 @@ impl State {
                     let inv = invocation.clone();
                     let ret = action.run(self, invocation.attributes, invocation.payload);
 
-                    if action.add_to_activity() {
-                        if let Err(error) = ret {
-                            self.add_execution_to_history(inv, None, Some(error.to_string()));
-                        } else {
-                            self.add_execution_to_history(inv, ret.unwrap(), None);
-                        }
+                    if let Err(error) = ret {
+                        self.add_execution_to_history(inv, None, Some(error.to_string()));
+                    } else {
+                        self.add_execution_to_history(inv, ret.unwrap(), None);
                     }
 
                     return Ok(());

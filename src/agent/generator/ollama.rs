@@ -1,10 +1,16 @@
 use async_trait::async_trait;
+
 use ollama_rs::{
-    generation::{completion::request::GenerationRequest, options::GenerationOptions},
+    generation::{
+        chat::{request::ChatMessageRequest, ChatMessage /*, MessageRole */},
+        options::GenerationOptions,
+    },
     Ollama,
 };
 
-use super::Generator;
+// use colored::Colorize;
+
+use super::{Generator, Message};
 
 pub struct OllamaGenerator {
     model: String,
@@ -23,7 +29,12 @@ impl Generator for OllamaGenerator {
         Ok(Self { model, client })
     }
 
-    async fn run(&self, system_prompt: &str, prompt: &str) -> anyhow::Result<String> {
+    async fn run(
+        &self,
+        system_prompt: &str,
+        prompt: &str,
+        history: Vec<Message>,
+    ) -> anyhow::Result<String> {
         /*
         pub struct GenerationRequest {
             ...
@@ -33,17 +44,58 @@ impl Generator for OllamaGenerator {
         }
         */
 
-        let req = GenerationRequest::new(self.model.to_owned(), prompt.to_owned())
-            .system(system_prompt.to_owned())
-            // TODO: allow user to specify these options
-            .options(
-                GenerationOptions::default()
-                    .num_ctx(10000)
-                    .temperature(0.9)
-                    .repeat_penalty(1.3)
-                    .top_k(20),
-            );
-        let res = self.client.generate(req).await?;
-        Ok(res.response)
+        // TODO: allow user to specify these options
+        let options = GenerationOptions::default()
+            .num_ctx(10000)
+            .temperature(0.9)
+            .repeat_penalty(1.3)
+            .top_k(20);
+
+        // build chat history:
+        //    - system prompt
+        //    - user prompt
+        //    - msg 0
+        //    - msg 1
+        //    - ...
+        //    - msg n
+        let mut chat_history = vec![
+            ChatMessage::system(system_prompt.to_string()),
+            ChatMessage::user(prompt.to_string()),
+        ];
+
+        for m in history {
+            chat_history.push(match m {
+                Message::Agent(data) => ChatMessage::assistant(data),
+                Message::User(data) => ChatMessage::user(data),
+            });
+        }
+        // chat_history.push(ChatMessage::user(prompt.to_string()));
+
+        /*
+        println!("[CHAT]\n");
+        for msg in &chat_history {
+            if msg.role == MessageRole::System {
+                println!("{}", "[system prompt]".yellow());
+            } else if msg.role == MessageRole::Assistant {
+                println!("[{}] {}", "agent".bold(), &msg.content);
+            } else {
+                println!("[{:?}] {}", msg.role, &msg.content);
+            }
+        }
+        println!("");
+         */
+        let mut request =
+            ChatMessageRequest::new(self.model.to_string(), chat_history).options(options);
+
+        request.model_name = self.model.clone();
+
+        let res = self.client.send_chat_messages(request).await?;
+
+        if let Some(msg) = res.message {
+            Ok(msg.content)
+        } else {
+            println!("WARNING: model returned an empty message.");
+            Ok("".to_string())
+        }
     }
 }

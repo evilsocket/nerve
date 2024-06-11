@@ -17,10 +17,6 @@ impl Action for SaveMemory {
         "To store a memory:"
     }
 
-    fn add_to_activity(&self) -> bool {
-        false
-    }
-
     fn attributes(&self) -> Option<HashMap<String, String>> {
         let mut attributes = HashMap::new();
 
@@ -43,7 +39,7 @@ impl Action for SaveMemory {
             if let Some(key) = attrs.get("key") {
                 if let Some(data) = payload {
                     state.add_memory(key.to_string(), data);
-                    return Ok(None);
+                    return Ok(Some("memory saved".to_string()));
                 }
 
                 return Err(anyhow!("no content specified for save-memory"));
@@ -68,10 +64,6 @@ impl Action for DeleteMemory {
         "To delete a memory you previously stored given its key:"
     }
 
-    fn add_to_activity(&self) -> bool {
-        false
-    }
-
     fn attributes(&self) -> Option<HashMap<String, String>> {
         let mut attributes = HashMap::new();
 
@@ -89,7 +81,7 @@ impl Action for DeleteMemory {
         if let Some(attrs) = attributes {
             if let Some(key) = attrs.get("key") {
                 return if state.remove_memory(key).is_some() {
-                    Ok(None)
+                    return Ok(Some("memory deleted".to_string()));
                 } else {
                     Err(anyhow!("memory '{}' not found", key))
                 };
