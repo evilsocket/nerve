@@ -215,25 +215,30 @@ impl State {
     }
 
     pub async fn execute(&self, invocation: Invocation) -> Result<()> {
+        // println!("[INVOKE]");
+
         for group in &self.namespaces {
             for action in &group.actions {
                 if invocation.action == action.name() {
+                    let inv = invocation.clone();
+
                     // check if valid payload has been provided
                     if let Some(payload) = invocation.payload.as_ref() {
                         if action.example_payload().unwrap() == payload {
-                            return Err(anyhow!("do not use the example values but use the information you have to create new ones"));
+                            self.add_execution_to_history(inv, None, Some("do not use the example values but use the information you have to create new ones".to_string()));
+                            return Ok(());
                         }
                     }
 
                     // check if valid attributes have been provided
                     if let Some(attrs) = invocation.attributes.as_ref() {
                         if action.attributes().as_ref().unwrap() == attrs {
-                            return Err(anyhow!("do not use the example values but use the information you have to create new ones"));
+                            self.add_execution_to_history(inv, None, Some("do not use the example values but use the information you have to create new ones".to_string()));
+                            return Ok(());
                         }
                     }
 
                     // execute the action
-                    let inv = invocation.clone();
                     let ret = action.run(self, invocation.attributes, invocation.payload);
 
                     if let Err(error) = ret {
@@ -257,16 +262,28 @@ impl State {
         Ok(())
     }
 
-    pub fn on_complete(&self, reason: Option<String>) -> Result<()> {
-        println!(
-            "\n{}: '{}'",
-            "task complete".bold().green(),
-            if let Some(r) = &reason {
-                r
-            } else {
-                "no reason provided"
-            }
-        );
+    pub fn on_complete(&self, impossible: bool, reason: Option<String>) -> Result<()> {
+        if impossible {
+            println!(
+                "\n{}: '{}'",
+                "task is impossible".bold().red(),
+                if let Some(r) = &reason {
+                    r
+                } else {
+                    "no reason provided"
+                }
+            );
+        } else {
+            println!(
+                "\n{}: '{}'",
+                "task complete".bold().green(),
+                if let Some(r) = &reason {
+                    r
+                } else {
+                    "no reason provided"
+                }
+            );
+        }
 
         self.complete.store(true, Ordering::SeqCst);
         Ok(())

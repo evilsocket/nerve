@@ -2,7 +2,11 @@
 extern crate anyhow;
 
 use crate::agent::task::Task;
-use agent::{generator, task::tasklet::Tasklet, Agent};
+use agent::{
+    generator,
+    task::{self, tasklet::Tasklet},
+    Agent,
+};
 use clap::Parser;
 use colored::Colorize;
 
@@ -12,6 +16,19 @@ mod cli;
 #[tokio::main]
 async fn main() {
     let args = cli::Args::parse();
+
+    // handle pre defines
+    for keyvalue in &args.define {
+        let parts: Vec<&str> = keyvalue.splitn(2, '=').into_iter().collect();
+        if parts.len() != 2 {
+            panic!("can't parse {keyvalue}, syntax is: key=value");
+        }
+
+        task::tasklet::VAR_CACHE
+            .lock()
+            .unwrap()
+            .insert(parts[0].to_owned(), parts[1].to_owned());
+    }
 
     let mut tasklet: Tasklet =
         Tasklet::from_yaml_file(&args.tasklet).expect("could not read tasklet yaml file");

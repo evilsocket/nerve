@@ -27,8 +27,12 @@ impl Action for AddStep {
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        state.get_storage("plan")?.add_untagged(&payload.unwrap());
-        Ok(Some("step added to the plan".to_string()))
+        if payload.is_none() {
+            Err(anyhow!("no step description provided"))
+        } else {
+            state.get_storage("plan")?.add_untagged(&payload.unwrap());
+            Ok(Some("step added to the plan".to_string()))
+        }
     }
 }
 

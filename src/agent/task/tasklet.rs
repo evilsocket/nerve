@@ -14,7 +14,7 @@ use super::Task;
 const STATE_COMPLETE_EXIT_CODE: i32 = 65;
 
 lazy_static! {
-    pub static ref VAR_CACHE: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
+    pub(crate) static ref VAR_CACHE: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
 }
 
 fn default_max_shown_output() -> usize {
@@ -176,7 +176,7 @@ impl Action for TaskletAction {
             let exit_code = output.status.code().unwrap_or(0);
             // println!("exit_code={}", exit_code);
             if exit_code == STATE_COMPLETE_EXIT_CODE {
-                state.on_complete(Some("task complete".to_string()))?;
+                state.on_complete(true, Some(out))?;
                 return Ok(Some("task complete".to_string()));
             }
 

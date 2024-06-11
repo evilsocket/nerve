@@ -32,4 +32,4 @@ functions:
         example_payload: whoami
         # each action is mapped to a custom command
         # strings starting with $ have to be provided by the user
-        tool: /usr/bin/ssh $SSH_USER_HOST_STRING
+        tool: gtimeout -v 5 /usr/bin/ssh $SSH_USER_HOST_STRING
