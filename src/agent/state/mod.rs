@@ -190,7 +190,7 @@ impl State {
         };
 
         Ok(format!(
-            include_str!("state_system_prompt.txt"),
+            include_str!("system_prompt.tpl"),
             current_goal = current_goal,
             iterations = iterations,
             previous_goal = previous_goal,
