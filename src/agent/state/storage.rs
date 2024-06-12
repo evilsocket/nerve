@@ -17,12 +17,22 @@ impl Entry {
 
 #[derive(Debug, Clone, Copy)]
 pub enum StorageType {
-    // a single state with an optional previous state
-    CurrentPrevious = 0,
     // a list indexed by element position
-    Untagged = 1,
+    Untagged,
     // a key=value store
-    Tagged = 2,
+    Tagged,
+    // a single state with an optional previous state
+    CurrentPrevious,
+}
+
+impl StorageType {
+    pub fn as_u8(&self) -> u8 {
+        match self {
+            StorageType::CurrentPrevious => 0,
+            StorageType::Untagged => 1,
+            StorageType::Tagged => 2,
+        }
+    }
 }
 
 const CURRENT_TAG: &str = "__current";
@@ -42,8 +52,8 @@ impl Storage {
         Self { name, type_, inner }
     }
 
-    pub fn get_type_int(&self) -> usize {
-        self.type_ as usize
+    pub fn get_type(&self) -> &StorageType {
+        &self.type_
     }
 
     pub fn to_structured_string(&self) -> String {

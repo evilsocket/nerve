@@ -1,3 +1,4 @@
+use colored::Colorize;
 use generator::{Generator, GeneratorOptions, ModelOptions};
 
 use anyhow::Result;
@@ -78,8 +79,13 @@ impl Agent {
         if invocations.is_empty() {
             // TODO: handle this situation
             println!(
-                "WARNING: agent did not provide any instruction: {}",
-                &response
+                "{}: agent did not provide any instruction: {}",
+                "WARNING".bold().red(),
+                if response.is_empty() {
+                    "empty response".dimmed().to_string()
+                } else {
+                    response
+                }
             );
         }
 

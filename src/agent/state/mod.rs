@@ -72,7 +72,7 @@ impl State {
                     if !storages.contains_key(&storage.name) {
                         storages.insert(
                             storage.name.to_string(),
-                            Storage::new(&storage.name, storage.type_.clone()),
+                            Storage::new(&storage.name, storage.type_),
                         );
                     }
                 }
@@ -151,10 +151,9 @@ impl State {
             "".to_string()
         };
         let mut storages = vec![];
-
         let mut sorted: Vec<&Storage> = self.storages.values().collect();
 
-        sorted.sort_by_key(|x| x.get_type_int());
+        sorted.sort_by_key(|x| x.get_type().as_u8());
 
         for storage in sorted {
             storages.push(storage.to_structured_string());
@@ -168,8 +167,11 @@ impl State {
     pub fn to_system_prompt(&self) -> Result<String> {
         let system_prompt = self.task.to_system_prompt()?;
         let mut storages = vec![];
+        let mut sorted: Vec<&Storage> = self.storages.values().collect();
 
-        for storage in self.storages.values() {
+        sorted.sort_by_key(|x| x.get_type().as_u8());
+
+        for storage in sorted {
             storages.push(storage.to_structured_string());
         }
 
@@ -207,14 +209,15 @@ impl State {
         self.task.to_prompt()
     }
 
-    fn add_execution_to_history(
-        &self,
-        invocation: Invocation,
-        result: Option<String>,
-        error: Option<String>,
-    ) {
+    pub fn add_success_to_history(&self, invocation: Invocation, result: Option<String>) {
         if let Ok(mut guard) = self.history.lock() {
-            guard.push(Execution::new(invocation, result, error));
+            guard.push(Execution::new(invocation, result, None));
+        }
+    }
+
+    pub fn add_error_to_history(&self, invocation: Invocation, error: String) {
+        if let Ok(mut guard) = self.history.lock() {
+            guard.push(Execution::new(invocation, None, Some(error)));
         }
     }
 
@@ -224,12 +227,10 @@ impl State {
         for group in &self.namespaces {
             for action in &group.actions {
                 if invocation.action == action.name() {
-                    let inv = invocation.clone();
-
                     // check if valid payload has been provided
                     if let Some(payload) = invocation.payload.as_ref() {
                         if action.example_payload().unwrap() == payload {
-                            self.add_execution_to_history(inv, None, Some("do not use the example values but use the information you have to create new ones".to_string()));
+                            self.add_error_to_history(invocation.clone(), "do not use the example values but use the information you have to create new ones".to_string());
                             return Ok(());
                         }
                     }
@@ -237,18 +238,20 @@ impl State {
                     // check if valid attributes have been provided
                     if let Some(attrs) = invocation.attributes.as_ref() {
                         if action.attributes().as_ref().unwrap() == attrs {
-                            self.add_execution_to_history(inv, None, Some("do not use the example values but use the information you have to create new ones".to_string()));
+                            self.add_error_to_history(invocation.clone(), "do not use the example values but use the information you have to create new ones".to_string());
                             return Ok(());
                         }
                     }
 
                     // execute the action
+                    let inv = invocation.clone();
                     let ret = action.run(self, invocation.attributes, invocation.payload);
-
                     if let Err(error) = ret {
-                        self.add_execution_to_history(inv, None, Some(error.to_string()));
+                        // tell the model about the error
+                        self.add_error_to_history(inv, error.to_string());
                     } else {
-                        self.add_execution_to_history(inv, ret.unwrap(), None);
+                        // tell the model about the output
+                        self.add_success_to_history(inv, ret.unwrap());
                     }
 
                     return Ok(());
@@ -256,13 +259,12 @@ impl State {
             }
         }
 
-        /*
-        Err(anyhow!(
-            "action '{}' not available: {:?}",
-            &invocation.action,
-            &invocation.xml
-        ))
-         */
+        // tell the model that the action name is wrong
+        self.add_error_to_history(
+            invocation.clone(),
+            format!("'{}' is not a valid action name", invocation.action),
+        );
+
         Ok(())
     }
 

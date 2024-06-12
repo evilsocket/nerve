@@ -72,9 +72,18 @@ impl Args {
             return Err(anyhow!("can't parse {raw} generator string"));
         }
 
-        generator.type_name = caps.get(1).unwrap().as_str().to_owned();
-        generator.model_name = caps.get(2).unwrap().as_str().to_owned();
-        generator.host = caps.get(3).unwrap().as_str().to_owned();
+        caps.get(1)
+            .unwrap()
+            .as_str()
+            .clone_into(&mut generator.type_name);
+        caps.get(2)
+            .unwrap()
+            .as_str()
+            .clone_into(&mut generator.model_name);
+        caps.get(3)
+            .unwrap()
+            .as_str()
+            .clone_into(&mut generator.host);
         generator.port = caps.get(4).unwrap().as_str().parse::<u16>().unwrap();
 
         Ok(generator)
