@@ -44,10 +44,11 @@ impl Generator for OllamaGenerator {
         */
 
         let ollama_options = GenerationOptions::default()
+        /*
             .num_ctx(options.model_options.context_window)
             .temperature(options.model_options.temperature)
             .repeat_penalty(options.model_options.repeat_penalty)
-            .top_k(options.model_options.top_k);
+            .top_k(options.model_options.top_k) */;
 
         // build chat history:
         //    - system prompt

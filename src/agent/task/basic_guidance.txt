@@ -10,3 +10,4 @@ Read output carefully to understand what errors occured and why.
 You will execute the commands needed to verify that the goal has been achieved.
 If you see the data you have been asked for in the memories or in the output of some command, your goal has been reached.
 If one command you executed returns an error, you will use the error message to change the command accordingly.
+If a maximum number of steps is shown, you will try not to exceed it.

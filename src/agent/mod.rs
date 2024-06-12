@@ -72,21 +72,33 @@ impl Agent {
         // run model inference
         let options =
             GeneratorOptions::new(system_prompt, prompt, history, ModelOptions::default());
-        let response: String = self.generator.run(options).await?;
+        let response = self.generator.run(options).await?.trim().to_string();
 
         // parse the model response into invocations
         let invocations = parse_model_response(&response)?;
         let mut prev: Option<String> = None;
 
+        // nothing parsed, report the problem to the model
         if invocations.is_empty() {
-            // TODO: handle this situation
+            if response.is_empty() {
+                self.state.add_unparsed_response_to_history(
+                    &response,
+                    "Do not return an empty responses.".to_string(),
+                );
+            } else {
+                self.state.add_unparsed_response_to_history(
+                    &response,
+                    "I could not parse any valid actions from your response, please correct it according to the instructions.".to_string(),
+                );
+            }
+
             println!(
-                "{}: agent did not provide any instruction: {}",
+                "{}: agent did not provide valid instructions: '{}'",
                 "WARNING".bold().red(),
                 if response.is_empty() {
-                    "empty response".dimmed().to_string()
+                    "".to_string()
                 } else {
-                    response
+                    format!("\n{}\n", response)
                 }
             );
         }

@@ -188,13 +188,19 @@ impl State {
 
     pub fn add_success_to_history(&self, invocation: Invocation, result: Option<String>) {
         if let Ok(mut guard) = self.history.lock() {
-            guard.push(Execution::new(invocation, result, None));
+            guard.push(Execution::with_result(invocation, result));
         }
     }
 
     pub fn add_error_to_history(&self, invocation: Invocation, error: String) {
         if let Ok(mut guard) = self.history.lock() {
-            guard.push(Execution::new(invocation, None, Some(error)));
+            guard.push(Execution::with_error(invocation, error));
+        }
+    }
+
+    pub fn add_unparsed_response_to_history(&self, response: &str, error: String) {
+        if let Ok(mut guard) = self.history.lock() {
+            guard.push(Execution::with_unparsed_response(response, error));
         }
     }
 
@@ -204,19 +210,25 @@ impl State {
         for group in &self.namespaces {
             for action in &group.actions {
                 if invocation.action == action.name() {
+                    let example_payload = action.example_payload();
                     // check if valid payload has been provided
                     if let Some(payload) = invocation.payload.as_ref() {
-                        if action.example_payload().unwrap() == payload {
-                            self.add_error_to_history(invocation.clone(), "do not use the example values but use the information you have to create new ones".to_string());
-                            return Ok(());
+                        if let Some(example) = example_payload.as_ref() {
+                            if example == payload {
+                                self.add_error_to_history(invocation.clone(), "do not use the example values but use the information you have to create new ones".to_string());
+                                return Ok(());
+                            }
                         }
                     }
 
                     // check if valid attributes have been provided
+                    let example_attributes = action.attributes();
                     if let Some(attrs) = invocation.attributes.as_ref() {
-                        if action.attributes().as_ref().unwrap() == attrs {
-                            self.add_error_to_history(invocation.clone(), "do not use the example values but use the information you have to create new ones".to_string());
-                            return Ok(());
+                        if let Some(example) = example_attributes.as_ref() {
+                            if example == attrs {
+                                self.add_error_to_history(invocation.clone(), "do not use the example values but use the information you have to create new ones".to_string());
+                                return Ok(());
+                            }
                         }
                     }
 

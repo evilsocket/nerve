@@ -3,7 +3,6 @@ using:
   - goal
   - task
   - planning
-  - knowledge
 
 # agent background story
 system_prompt: > 

@@ -4,24 +4,52 @@ use crate::agent::{generator::Message, parsing::Invocation};
 
 #[derive(Debug, Clone, Default)]
 pub struct Execution {
-    pub invocation: Invocation,
-    pub result: Option<String>,
-    pub error: Option<String>,
+    // unparsed response caused an error
+    response: Option<String>,
+    // parsed invocation
+    invocation: Option<Invocation>,
+
+    result: Option<String>,
+    error: Option<String>,
 }
 
 impl Execution {
-    pub fn new(invocation: Invocation, result: Option<String>, error: Option<String>) -> Self {
+    pub fn with_unparsed_response(response: &str, error: String) -> Self {
         Self {
-            invocation,
-            result,
-            error,
+            invocation: None,
+            response: Some(response.to_string()),
+            result: None,
+            error: Some(error),
+        }
+    }
+
+    pub fn with_error(invocation: Invocation, error: String) -> Self {
+        Self {
+            invocation: Some(invocation),
+            response: None,
+            result: None,
+            error: Some(error),
+        }
+    }
+
+    pub fn with_result(invocation: Invocation, result: Option<String>) -> Self {
+        Self {
+            invocation: Some(invocation),
+            response: None,
+            result: result,
+            error: None,
         }
     }
 
     pub fn to_messages(&self) -> Vec<Message> {
         let mut messages = vec![];
 
-        messages.push(Message::Agent(self.invocation.as_xml().to_string()));
+        if let Some(response) = self.response.as_ref() {
+            messages.push(Message::Agent(response.to_string()));
+        } else if let Some(invocation) = self.invocation.as_ref() {
+            messages.push(Message::Agent(invocation.as_xml().to_string()));
+        }
+
         messages.push(Message::User(if let Some(err) = &self.error {
             format!("ERROR: {err}")
         } else if let Some(out) = &self.result {
