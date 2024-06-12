@@ -10,11 +10,7 @@ clap = { version = "4.5.6", features = ["derive"] }
 colored = "2.1.0"
 html2text = "0.12.5"
 lazy_static = "1.4.0"
-ollama-rs = { version = "0.1.9", features = [
-    "rustls",
-    "tokio",
-    "chat-history",
-] }
+ollama-rs = { version = "0.1.9", features = ["rustls", "tokio", "chat-history"], default-features = false }
 regex = "1.10.5"
 serde = { version = "1.0.203", features = ["derive", "serde_derive"] }
 serde_yaml = "0.9.34"
