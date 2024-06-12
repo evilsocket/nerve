@@ -140,30 +140,7 @@ impl State {
         Ok(md)
     }
 
-    pub fn to_pretty_string(&self) -> Result<String> {
-        let iterations = if self.max_iters > 0 {
-            format!(
-                "You are currently at step {} of a maximum of {}.\n",
-                self.curr_iter + 1,
-                self.max_iters
-            )
-        } else {
-            "".to_string()
-        };
-        let mut storages = vec![];
-        let mut sorted: Vec<&Storage> = self.storages.values().collect();
-
-        sorted.sort_by_key(|x| x.get_type().as_u8());
-
-        for storage in sorted {
-            storages.push(storage.to_structured_string());
-        }
-
-        let storages = storages.join("\n");
-
-        Ok(format!("{storages}\n{iterations}"))
-    }
-
+    // TODO: abstract serialization logic into a trait so we can test xml, json, etc
     pub fn to_system_prompt(&self) -> Result<String> {
         let system_prompt = self.task.to_system_prompt()?;
         let mut storages = vec![];

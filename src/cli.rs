@@ -38,20 +38,16 @@ pub(crate) struct Args {
     /// Maximum number of steps to complete the task or 0 for no limit.
     #[arg(long, default_value_t = 0)]
     pub max_iterations: usize,
-    /// Save the dynamic system prompt to this file if specified.
+    /// At every step, save the dynamic system prompt contents to this file.
     #[arg(long)]
-    pub persist_prompt_path: Option<String>,
-    /// Save the dynamic state to this file if specified.
-    #[arg(long)]
-    pub persist_state_path: Option<String>,
+    pub persist_path: Option<String>,
 }
 
 impl Args {
     pub fn to_agent_options(&self) -> AgentOptions {
         AgentOptions {
             max_iterations: self.max_iterations,
-            persist_prompt_path: self.persist_prompt_path.clone(),
-            persist_state_path: self.persist_state_path.clone(),
+            persist_path: self.persist_path.clone(),
         }
     }
 

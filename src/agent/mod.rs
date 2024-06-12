@@ -15,8 +15,7 @@ pub mod task;
 #[derive(Debug, Clone)]
 pub struct AgentOptions {
     pub max_iterations: usize,
-    pub persist_prompt_path: Option<String>,
-    pub persist_state_path: Option<String>,
+    pub persist_path: Option<String>,
 }
 
 pub struct Agent {
@@ -46,13 +45,16 @@ impl Agent {
         &self.state
     }
 
-    fn dump_state(&self) -> Result<()> {
-        if let Some(state_path) = &self.options.persist_state_path {
-            std::fs::write(state_path, self.state.to_pretty_string()?)?;
-        }
+    fn save_system_prompt_if_needed(&self, system_prompt: Option<&str>) -> Result<()> {
+        if let Some(prompt_path) = &self.options.persist_path {
+            let data = match system_prompt {
+                // regenerate
+                None => self.state.to_system_prompt()?,
+                // use the provided one
+                Some(p) => p.to_string(),
+            };
 
-        if let Some(prompt_path) = &self.options.persist_prompt_path {
-            std::fs::write(prompt_path, self.state.to_system_prompt()?)?;
+            std::fs::write(prompt_path, data)?;
         }
 
         Ok(())
@@ -65,7 +67,7 @@ impl Agent {
         let prompt = self.state.to_prompt()?;
         let history = self.state.to_chat_history(self.max_history as usize)?;
 
-        self.dump_state()?;
+        self.save_system_prompt_if_needed(Some(&system_prompt))?;
 
         // run model inference
         let options =
@@ -106,7 +108,7 @@ impl Agent {
                 println!("ERROR: {}", e);
             }
 
-            self.dump_state()?;
+            self.save_system_prompt_if_needed(None)?;
             if self.state.is_complete() {
                 break;
             }
