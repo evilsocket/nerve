@@ -34,8 +34,8 @@ async fn main() {
             .insert(parts[0].to_owned(), parts[1].to_owned());
     }
 
-    let mut tasklet: Tasklet =
-        Tasklet::from_yaml_file(&args.tasklet).expect("could not read tasklet yaml file");
+    let mut tasklet: Tasklet = Tasklet::from_path(&args.tasklet).expect("could not read tasklet");
+
     if tasklet.prompt.is_none() {
         tasklet.prompt = Some(if let Some(prompt) = &args.prompt {
             prompt.to_string()

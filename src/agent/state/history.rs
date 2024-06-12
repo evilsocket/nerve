@@ -36,7 +36,7 @@ impl Execution {
         Self {
             invocation: Some(invocation),
             response: None,
-            result: result,
+            result,
             error: None,
         }
     }

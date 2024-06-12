@@ -1,4 +1,6 @@
+use std::path::PathBuf;
 use std::process::Command;
+use std::str::FromStr;
 use std::{collections::HashMap, sync::Mutex};
 
 use anyhow::Result;
@@ -237,9 +239,24 @@ pub struct Tasklet {
 }
 
 impl Tasklet {
+    pub fn from_path(path: &str) -> Result<Self> {
+        let ppath = PathBuf::from_str(path)?;
+        if ppath.is_dir() {
+            Self::from_folder(path)
+        } else {
+            Self::from_yaml_file(path)
+        }
+    }
+
+    pub fn from_folder(path: &str) -> Result<Self> {
+        let filepath = PathBuf::from_str(path)?.join("task.yml");
+
+        Self::from_yaml_file(filepath.to_str().unwrap())
+    }
+
     pub fn from_yaml_file(filepath: &str) -> Result<Self> {
         let filepath = std::fs::canonicalize(filepath)?;
-        let folder = if let Some(folder) = filepath.parent() {
+        let tasklet_parent_folder = if let Some(folder) = filepath.parent() {
             folder
         } else {
             return Err(anyhow!(
@@ -251,10 +268,10 @@ impl Tasklet {
         let yaml = std::fs::read_to_string(&filepath)?;
         let mut tasklet: Self = serde_yaml::from_str(&yaml)?;
 
-        tasklet.folder = if let Some(folder) = folder.to_str() {
+        tasklet.folder = if let Some(folder) = tasklet_parent_folder.to_str() {
             folder.to_string()
         } else {
-            return Err(anyhow!("can't get string of {:?}", folder));
+            return Err(anyhow!("can't get string of {:?}", tasklet_parent_folder));
         };
 
         // println!("tasklet = {:?}", &tasklet);
