@@ -15,14 +15,14 @@ impl Entry {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum StorageType {
-    // a key=value store
-    Tagged,
-    // a list indexed by element position
-    Untagged,
     // a single state with an optional previous state
-    CurrentPrevious,
+    CurrentPrevious = 0,
+    // a list indexed by element position
+    Untagged = 1,
+    // a key=value store
+    Tagged = 2,
 }
 
 const CURRENT_TAG: &str = "__current";
@@ -40,6 +40,10 @@ impl Storage {
         let name = name.to_string();
         let inner = Mutex::new(HashMap::new());
         Self { name, type_, inner }
+    }
+
+    pub fn get_type_int(&self) -> usize {
+        self.type_ as usize
     }
 
     pub fn to_structured_string(&self) -> String {
@@ -84,7 +88,7 @@ impl Storage {
                     }
                     str
                 } else {
-                    "".to_string()
+                    "\n".to_string()
                 }
             }
         }

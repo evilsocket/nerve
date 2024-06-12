@@ -152,7 +152,11 @@ impl State {
         };
         let mut storages = vec![];
 
-        for storage in self.storages.values() {
+        let mut sorted: Vec<&Storage> = self.storages.values().collect();
+
+        sorted.sort_by_key(|x| x.get_type_int());
+
+        for storage in sorted {
             storages.push(storage.to_structured_string());
         }
 
@@ -169,7 +173,7 @@ impl State {
             storages.push(storage.to_structured_string());
         }
 
-        let storages = storages.join("\n");
+        let storages = storages.join("\n\n");
         let guidance = self
             .task
             .guidance()?
