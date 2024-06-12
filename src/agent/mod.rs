@@ -75,6 +75,14 @@ impl Agent {
         let invocations = parse_model_response(&response)?;
         let mut prev: Option<String> = None;
 
+        if invocations.is_empty() {
+            // TODO: handle this situation
+            println!(
+                "WARNING: agent did not provide any instruction: {}",
+                &response
+            );
+        }
+
         // for each parsed invocation
         for inv in invocations {
             // avoid running the same command twince in a row
