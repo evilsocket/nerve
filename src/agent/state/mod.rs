@@ -172,6 +172,7 @@ impl State {
             "".to_string()
         };
 
+        // TODO: fix whitespaces in prompt
         Ok(format!(
             include_str!("system_prompt.tpl"),
             iterations = iterations,
