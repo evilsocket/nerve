@@ -1,8 +1,8 @@
-use lazy_static::lazy_static;
-use regex::Regex;
 use std::collections::HashMap;
 
 use anyhow::Result;
+use lazy_static::lazy_static;
+use regex::Regex;
 
 lazy_static! {
     pub static ref XML_ATTRIBUTES_PARSER: Regex = Regex::new(r#"(?m)(([^=]+)="([^"]+)")"#).unwrap();

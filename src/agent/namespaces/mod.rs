@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use lazy_static::lazy_static;
-use std::collections::HashMap;
 
 use super::state::{storage::StorageType, State};
 

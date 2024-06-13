@@ -1,10 +1,9 @@
-use anyhow::Result;
-
 use std::collections::HashMap;
 
-use crate::agent::state::State;
+use anyhow::Result;
 
 use super::{Action, Namespace};
+use crate::agent::state::State;
 
 #[derive(Debug, Default)]
 struct Complete {}
@@ -32,8 +31,6 @@ impl Action for Complete {
         Ok(None)
     }
 }
-
-// TODO: implement stop action
 
 #[derive(Debug, Default)]
 struct Impossible {}

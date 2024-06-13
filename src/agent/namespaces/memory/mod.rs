@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
-// TODO: reorganize imports
-use crate::agent::state::State;
 use anyhow::Result;
 use colored::Colorize;
 
 use super::{Action, Namespace, StorageDescriptor};
+use crate::agent::state::State;
 
 #[derive(Debug, Default)]
 struct SaveMemory {}

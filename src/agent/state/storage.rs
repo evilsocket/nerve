@@ -1,7 +1,7 @@
-use indexmap::IndexMap;
 use std::{sync::Mutex /* , time::SystemTime*/};
 
 use colored::Colorize;
+use indexmap::IndexMap;
 
 // TODO: investigate other uses of IndexMap around the project
 

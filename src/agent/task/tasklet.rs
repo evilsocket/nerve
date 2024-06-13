@@ -9,10 +9,11 @@ use lazy_static::lazy_static;
 use serde::Deserialize;
 use serde_trim::*;
 
-use crate::agent::namespaces::{Action, Namespace};
-use crate::cli;
-
 use super::Task;
+use crate::{
+    agent::namespaces::{Action, Namespace},
+    cli,
+};
 
 const STATE_COMPLETE_EXIT_CODE: i32 = 65;
 

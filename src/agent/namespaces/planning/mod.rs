@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::agent::state::State;
 use anyhow::Result;
 
 use super::{Action, Namespace, StorageDescriptor};
+use crate::agent::state::State;
 
 // TODO: implement step complete/not complete state and changes
 

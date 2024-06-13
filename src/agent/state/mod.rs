@@ -8,8 +8,6 @@ use std::{
 
 use anyhow::Result;
 use colored::Colorize;
-use history::{Execution, History};
-use storage::Storage;
 
 use super::{
     model::Message,
@@ -17,6 +15,8 @@ use super::{
     parsing::Invocation,
     task::Task,
 };
+use history::{Execution, History};
+use storage::Storage;
 
 mod history;
 pub(crate) mod storage;

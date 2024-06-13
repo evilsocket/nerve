@@ -2,9 +2,8 @@ use anyhow::Result;
 
 use std::collections::HashMap;
 
-use crate::agent::state::State;
-
 use super::{Action, Namespace, StorageDescriptor};
+use crate::agent::state::State;
 
 #[derive(Debug, Default)]
 struct UpdateGoal {}

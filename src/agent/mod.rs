@@ -1,7 +1,7 @@
-use colored::Colorize;
-use model::{Client, Options};
-
 use anyhow::Result;
+use colored::Colorize;
+
+use model::{Client, Options};
 use parsing::parse_model_response;
 use state::State;
 use task::Task;
