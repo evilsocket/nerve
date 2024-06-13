@@ -1,5 +1,5 @@
 use colored::Colorize;
-use generator::{Generator, GeneratorOptions, ModelOptions};
+use generator::{Generator, GeneratorOptions};
 
 use anyhow::Result;
 use parsing::parse_model_response;
@@ -70,8 +70,7 @@ impl Agent {
         self.save_system_prompt_if_needed(Some(&system_prompt))?;
 
         // run model inference
-        let options =
-            GeneratorOptions::new(system_prompt, prompt, history, ModelOptions::default());
+        let options = GeneratorOptions::new(system_prompt, prompt, history);
         let response = self.generator.run(options).await?.trim().to_string();
 
         // parse the model response into invocations

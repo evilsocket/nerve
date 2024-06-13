@@ -1,10 +1,7 @@
 use async_trait::async_trait;
 
 use ollama_rs::{
-    generation::{
-        chat::{request::ChatMessageRequest, ChatMessage},
-        options::GenerationOptions,
-    },
+    generation::chat::{request::ChatMessageRequest, ChatMessage},
     Ollama,
 };
 
@@ -43,13 +40,6 @@ impl Generator for OllamaGenerator {
         }
         */
 
-        let ollama_options = GenerationOptions::default()
-        /*
-            .num_ctx(options.model_options.context_window)
-            .temperature(options.model_options.temperature)
-            .repeat_penalty(options.model_options.repeat_penalty)
-            .top_k(options.model_options.top_k) */;
-
         // build chat history:
         //    - system prompt
         //    - user prompt
@@ -86,8 +76,8 @@ impl Generator for OllamaGenerator {
         println!("");
          */
 
-        let mut request =
-            ChatMessageRequest::new(self.model.to_string(), chat_history).options(ollama_options);
+        // Do not provide model options so that we'll use whatever was specified in the modelfile.
+        let mut request = ChatMessageRequest::new(self.model.to_string(), chat_history);
 
         request.model_name.clone_from(&self.model);
 
