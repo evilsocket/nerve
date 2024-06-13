@@ -123,6 +123,15 @@ impl Storage {
         }
     }
 
+    pub fn get_tagged(&self, key: &str) -> Option<String> {
+        assert!(matches!(self.type_, StorageType::Tagged));
+        self.inner
+            .lock()
+            .unwrap()
+            .get(key)
+            .map(|va| va.data.to_string())
+    }
+
     pub fn add_untagged(&self, data: &str) {
         assert!(matches!(self.type_, StorageType::Untagged));
         println!("<{}> {}", self.name.bold(), data.yellow());

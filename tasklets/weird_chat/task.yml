@@ -38,6 +38,6 @@ functions:
         tool: ./talk.py
         # in case the command requires arguments, declare them with an example value
         args:
-          character_name: Alice
+          character_name: NameOfTheSpeakingCharacter
         
         

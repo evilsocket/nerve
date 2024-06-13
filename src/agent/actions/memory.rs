@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
+// TODO: reorganize imports
 use crate::agent::state::State;
 use anyhow::Result;
+use colored::Colorize;
 
 use super::{Action, Namespace, StorageDescriptor};
 
@@ -83,6 +85,50 @@ impl Action for DeleteMemory {
                 return if state.get_storage("memories")?.del_tagged(key).is_some() {
                     return Ok(Some("memory deleted".to_string()));
                 } else {
+                    Err(anyhow!("memory '{}' not found", key))
+                };
+            }
+
+            return Err(anyhow!("no key attribute specified for delete-memory"));
+        }
+
+        Err(anyhow!("no attributes specified for delete-memory"))
+    }
+}
+
+#[derive(Debug, Default)]
+struct RecallMemory {}
+
+impl Action for RecallMemory {
+    fn name(&self) -> &str {
+        "recall-memory"
+    }
+
+    fn description(&self) -> &str {
+        "To recall a memory you previously stored given its key:"
+    }
+
+    fn attributes(&self) -> Option<HashMap<String, String>> {
+        let mut attributes = HashMap::new();
+
+        attributes.insert("key".to_string(), "my-note".to_string());
+
+        Some(attributes)
+    }
+
+    fn run(
+        &self,
+        state: &State,
+        attributes: Option<HashMap<String, String>>,
+        _: Option<String>,
+    ) -> Result<Option<String>> {
+        if let Some(attrs) = attributes {
+            if let Some(key) = attrs.get("key") {
+                return if let Some(memory) = state.get_storage("memories")?.get_tagged(key) {
+                    println!("<{}> recalling {}", "memories".bold(), key);
+                    return Ok(Some(memory));
+                } else {
+                    eprintln!("<{}> memory {} does not exist", "memories".bold(), key);
                     Err(anyhow!("memory '{}' not found", key))
                 };
             }
