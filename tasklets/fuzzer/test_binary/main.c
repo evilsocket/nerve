@@ -11,11 +11,11 @@ int main(int argc, char **argv)
 
     char buffer[3] = {0};
 
-    // if (strlen(argv[1]) >= 3 && argv[1][0] == 'x')
-    //{
-    //   printf("copy!\n");
-    strcpy(buffer, argv[1]);
-    //}
+    if (strlen(argv[1]) >= 3 && argv[1][0] != 'a')
+    {
+        printf("copy!\n");
+        strcpy(buffer, argv[1]);
+    }
 
     printf("all good boss!\n");
 

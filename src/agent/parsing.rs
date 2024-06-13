@@ -47,6 +47,8 @@ impl Invocation {
     }
 }
 
+// TODO: parse stuff like:
+//      <task-complete reason="The conversation has reached a conclusive point, with Alice agreeing to continue the date."/>
 pub(crate) fn parse_model_response(model_response: &str) -> Result<Vec<Invocation>> {
     let mut invocations = vec![];
 

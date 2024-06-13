@@ -15,7 +15,7 @@ pub mod task;
 #[derive(Debug, Clone)]
 pub struct AgentOptions {
     pub max_iterations: usize,
-    pub persist_path: Option<String>,
+    pub save_prompt_to: Option<String>,
 }
 
 pub struct Agent {
@@ -46,7 +46,7 @@ impl Agent {
     }
 
     fn save_system_prompt_if_needed(&self, system_prompt: Option<&str>) -> Result<()> {
-        if let Some(prompt_path) = &self.options.persist_path {
+        if let Some(prompt_path) = &self.options.save_prompt_to {
             let data = match system_prompt {
                 // regenerate
                 None => self.state.to_system_prompt()?,

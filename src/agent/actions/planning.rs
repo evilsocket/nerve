@@ -95,7 +95,7 @@ impl Action for Clear {
 pub(crate) fn get_namespace() -> Namespace {
     Namespace::new(
         "Planning".to_string(),
-        "You can use the planning actions ".to_string(),
+        "You can use the planning actions to create a step by step plan of how you are going to achieve your goal.".to_string(),
         vec![
             Box::<AddStep>::default(),
             Box::<DeleteStep>::default(),

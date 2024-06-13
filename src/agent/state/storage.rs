@@ -58,17 +58,16 @@ impl Storage {
 
     pub fn to_structured_string(&self) -> String {
         let inner = self.inner.lock().unwrap();
+        if inner.is_empty() {
+            return "".to_string();
+        }
 
         match self.type_ {
             StorageType::Tagged => {
-                let mut xml = format!("<{}>\n", &self.name);
+                let mut xml: String = format!("<{}>\n", &self.name);
 
-                if inner.is_empty() {
-                    xml += "  no entries yet\n";
-                } else {
-                    for (key, entry) in &*inner {
-                        xml += &format!("  - {}: {}\n", key, &entry.data);
-                    }
+                for (key, entry) in &*inner {
+                    xml += &format!("  - {}={}\n", key, &entry.data);
                 }
 
                 xml += &format!("</{}>", &self.name);
@@ -78,12 +77,8 @@ impl Storage {
             StorageType::Untagged => {
                 let mut xml = format!("<{}>\n", &self.name);
 
-                if inner.is_empty() {
-                    xml += "  no entries yet\n";
-                } else {
-                    for entry in inner.values() {
-                        xml += &format!("  - {}\n", &entry.data);
-                    }
+                for entry in inner.values() {
+                    xml += &format!("  - {}\n", &entry.data);
                 }
 
                 xml += &format!("</{}>", &self.name);

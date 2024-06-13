@@ -33,6 +33,8 @@ impl Action for Complete {
     }
 }
 
+// TODO: implement stop action
+
 #[derive(Debug, Default)]
 struct Impossible {}
 

@@ -44,14 +44,14 @@ pub(crate) struct Args {
     pub max_iterations: usize,
     /// At every step, save the dynamic system prompt contents to this file.
     #[arg(long)]
-    pub persist_path: Option<String>,
+    pub save_prompt_to: Option<String>,
 }
 
 impl Args {
     pub fn to_agent_options(&self) -> AgentOptions {
         AgentOptions {
             max_iterations: self.max_iterations,
-            persist_path: self.persist_path.clone(),
+            save_prompt_to: self.save_prompt_to.clone(),
         }
     }
 
