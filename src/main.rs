@@ -15,6 +15,7 @@ mod cli;
 
 #[tokio::main]
 async fn main() {
+    // TODO: print better errors from main
     let args = cli::Args::parse();
 
     let gen_options = args
