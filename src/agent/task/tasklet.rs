@@ -9,7 +9,7 @@ use lazy_static::lazy_static;
 use serde::Deserialize;
 use serde_trim::*;
 
-use crate::agent::actions::{Action, Namespace};
+use crate::agent::namespaces::{Action, Namespace};
 use crate::cli;
 
 use super::Task;

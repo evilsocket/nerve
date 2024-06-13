@@ -113,7 +113,7 @@ impl Storage {
 
     pub fn del_tagged(&self, key: &str) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Tagged));
-        if let Some(old) = self.inner.lock().unwrap().remove(key) {
+        if let Some(old) = self.inner.lock().unwrap().shift_remove(key) {
             println!("<{}> {} removed\n", self.name.bold(), key);
             Some(old.data)
         } else {
@@ -143,7 +143,7 @@ impl Storage {
     pub fn del_untagged(&self, pos: usize) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Untagged));
         let tag = format!("{}", pos);
-        if let Some(old) = self.inner.lock().unwrap().remove(&tag) {
+        if let Some(old) = self.inner.lock().unwrap().shift_remove(&tag) {
             println!("<{}> element {} removed\n", self.name.bold(), pos);
             Some(old.data)
         } else {
@@ -159,7 +159,7 @@ impl Storage {
             println!("<{}> current={}", self.name.bold(), data.yellow());
         }
 
-        let old_current = inner.remove(CURRENT_TAG);
+        let old_current = inner.shift_remove(CURRENT_TAG);
 
         inner.insert(CURRENT_TAG.to_string(), Entry::new(data.to_string()));
         if let Some(old_curr) = old_current {

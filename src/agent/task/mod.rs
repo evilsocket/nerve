@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use super::actions::Namespace;
+use super::namespaces::Namespace;
 
 pub(crate) mod tasklet;
 

@@ -6,8 +6,8 @@ use parsing::parse_model_response;
 use state::State;
 use task::Task;
 
-pub mod actions;
 pub mod model;
+pub mod namespaces;
 mod parsing;
 pub mod state;
 pub mod task;

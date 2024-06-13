@@ -12,8 +12,8 @@ use history::{Execution, History};
 use storage::Storage;
 
 use super::{
-    actions::{self, Namespace},
     model::Message,
+    namespaces::{self, Namespace},
     parsing::Invocation,
     task::Task,
 };
@@ -49,14 +49,14 @@ impl State {
 
         if let Some(using) = using {
             // add only task defined namespaces
-            for (name, build_namespace) in &*actions::NAMESPACES {
+            for (name, build_namespace) in &*namespaces::NAMESPACES {
                 if using.contains(name) {
                     namespaces.push(build_namespace());
                 }
             }
         } else {
             // add all available namespaces
-            for build_namespace in actions::NAMESPACES.values() {
+            for build_namespace in namespaces::NAMESPACES.values() {
                 namespaces.push(build_namespace());
             }
         }
