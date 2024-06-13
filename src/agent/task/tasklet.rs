@@ -249,34 +249,39 @@ impl Tasklet {
     }
 
     pub fn from_folder(path: &str) -> Result<Self> {
-        let filepath = PathBuf::from_str(path)?.join("task.yml");
-
-        Self::from_yaml_file(filepath.to_str().unwrap())
+        let filepath = PathBuf::from_str(path);
+        if let Err(err) = filepath {
+            Err(anyhow!("could not read {path}: {err}"))
+        } else {
+            Self::from_yaml_file(filepath.unwrap().to_str().unwrap())
+        }
     }
 
     pub fn from_yaml_file(filepath: &str) -> Result<Self> {
-        let filepath = std::fs::canonicalize(filepath)?;
-        let tasklet_parent_folder = if let Some(folder) = filepath.parent() {
-            folder
+        let canon = std::fs::canonicalize(filepath);
+        if let Err(err) = canon {
+            Err(anyhow!("could not read {filepath}: {err}"))
         } else {
-            return Err(anyhow!(
-                "can't find parent folder of {}",
-                filepath.display()
-            ));
-        };
+            let canon = canon.unwrap();
+            let tasklet_parent_folder = if let Some(folder) = canon.parent() {
+                folder
+            } else {
+                return Err(anyhow!("can't find parent folder of {}", canon.display()));
+            };
 
-        let yaml = std::fs::read_to_string(&filepath)?;
-        let mut tasklet: Self = serde_yaml::from_str(&yaml)?;
+            let yaml = std::fs::read_to_string(&canon)?;
+            let mut tasklet: Self = serde_yaml::from_str(&yaml)?;
 
-        tasklet.folder = if let Some(folder) = tasklet_parent_folder.to_str() {
-            folder.to_string()
-        } else {
-            return Err(anyhow!("can't get string of {:?}", tasklet_parent_folder));
-        };
+            tasklet.folder = if let Some(folder) = tasklet_parent_folder.to_str() {
+                folder.to_string()
+            } else {
+                return Err(anyhow!("can't get string of {:?}", tasklet_parent_folder));
+            };
 
-        // println!("tasklet = {:?}", &tasklet);
+            // println!("tasklet = {:?}", &tasklet);
 
-        Ok(tasklet)
+            Ok(tasklet)
+        }
     }
 }
 

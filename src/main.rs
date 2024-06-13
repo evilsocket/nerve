@@ -1,32 +1,30 @@
 #[macro_use]
 extern crate anyhow;
 
-use crate::agent::task::Task;
-use agent::{
-    generator,
-    task::{self, tasklet::Tasklet},
-    Agent,
-};
+use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
+
+use agent::{
+    generator,
+    task::{self, tasklet::Tasklet, Task},
+    Agent,
+};
 
 mod agent;
 mod cli;
 
 #[tokio::main]
-async fn main() {
-    // TODO: print better errors from main
+async fn main() -> Result<()> {
     let args = cli::Args::parse();
 
-    let gen_options = args
-        .to_generator_options()
-        .expect("could not create generator instance");
+    let gen_options = args.to_generator_options()?;
 
     // handle pre defines
     for keyvalue in &args.define {
         let parts: Vec<&str> = keyvalue.splitn(2, '=').collect();
         if parts.len() != 2 {
-            panic!("can't parse {keyvalue}, syntax is: key=value");
+            return Err(anyhow!("can't parse {keyvalue}, syntax is: key=value"));
         }
 
         task::tasklet::VAR_CACHE
@@ -35,7 +33,7 @@ async fn main() {
             .insert(parts[0].to_owned(), parts[1].to_owned());
     }
 
-    let mut tasklet: Tasklet = Tasklet::from_path(&args.tasklet).expect("could not read tasklet");
+    let mut tasklet: Tasklet = Tasklet::from_path(&args.tasklet)?;
 
     if tasklet.prompt.is_none() {
         tasklet.prompt = Some(if let Some(prompt) = &args.prompt {
@@ -46,22 +44,14 @@ async fn main() {
     }
     let task = Box::new(tasklet);
 
-    println!(
-        "{}: {}",
-        "task".bold(),
-        task.to_prompt()
-            .expect("could not convert task to prompt")
-            .trim()
-            .yellow()
-    );
+    println!("{}: {}", "task".bold(), task.to_prompt()?.trim().yellow());
 
     let generator = generator::factory(
         &gen_options.type_name,
         &gen_options.host,
         gen_options.port,
         &gen_options.model_name,
-    )
-    .expect("could not create generator");
+    )?;
 
     println!(
         "using {}@{}:{}",
@@ -70,8 +60,7 @@ async fn main() {
         gen_options.port.to_string().dimmed()
     );
 
-    let mut agent =
-        Agent::new(generator, task, args.to_agent_options()).expect("could not create agent");
+    let mut agent = Agent::new(generator, task, args.to_agent_options())?;
 
     println!(
         "{}: {}\n",
@@ -82,7 +71,9 @@ async fn main() {
     while !agent.get_state().is_complete() {
         if let Err(error) = agent.step().await {
             println!("{}", error.to_string().bold().red());
-            break;
+            return Err(error);
         }
     }
+
+    Ok(())
 }
