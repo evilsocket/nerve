@@ -173,7 +173,7 @@ impl State {
         };
 
         Ok(format!(
-            include_str!("system_prompt.tpl"),
+            include_str!("system.prompt"),
             iterations = iterations,
             system_prompt = system_prompt,
             storages = storages,
