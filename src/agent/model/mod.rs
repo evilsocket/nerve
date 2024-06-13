@@ -3,7 +3,6 @@ use async_trait::async_trait;
 
 pub mod ollama;
 
-// TODO: serialize this whole chat object to disk for debugging.
 #[derive(Clone, Debug)]
 pub struct Options {
     pub system_prompt: String,
