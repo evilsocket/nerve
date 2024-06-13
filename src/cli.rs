@@ -15,6 +15,7 @@ lazy_static! {
 pub(crate) struct Generator {
     pub type_name: String,
     pub model_name: String,
+    pub context_window: u32,
     pub host: String,
     pub port: u16,
 }
@@ -35,6 +36,9 @@ pub(crate) struct Args {
     /// Pre define variables.
     #[arg(short = 'D', long, value_parser, num_args = 1.., value_delimiter = ' ')]
     pub define: Vec<String>,
+    /// Context window size.
+    #[arg(long, default_value_t = 8000)]
+    pub context_window: u32,
     /// Maximum number of steps to complete the task or 0 for no limit.
     #[arg(long, default_value_t = 0)]
     pub max_iterations: usize,
@@ -81,6 +85,7 @@ impl Args {
             .as_str()
             .clone_into(&mut generator.host);
         generator.port = caps.get(4).unwrap().as_str().parse::<u16>().unwrap();
+        generator.context_window = self.context_window;
 
         Ok(generator)
     }

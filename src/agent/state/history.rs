@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::agent::{generator::Message, parsing::Invocation};
+use crate::agent::{model::Message, parsing::Invocation};
 
 #[derive(Debug, Clone, Default)]
 pub struct Execution {

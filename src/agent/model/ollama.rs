@@ -1,20 +1,24 @@
 use async_trait::async_trait;
 
 use ollama_rs::{
-    generation::chat::{request::ChatMessageRequest, ChatMessage},
+    generation::{
+        chat::{request::ChatMessageRequest, ChatMessage},
+        options::GenerationOptions,
+    },
     Ollama,
 };
 
-use super::{Generator, GeneratorOptions, Message};
+use super::{Client, Message, Options};
 
-pub struct OllamaGenerator {
+pub struct OllamaClient {
     model: String,
+    options: GenerationOptions,
     client: Ollama,
 }
 
 #[async_trait]
-impl Generator for OllamaGenerator {
-    fn new(url: &str, port: u16, model_name: &str) -> anyhow::Result<Self>
+impl Client for OllamaClient {
+    fn new(url: &str, port: u16, model_name: &str, context_window: u32) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
@@ -26,11 +30,18 @@ impl Generator for OllamaGenerator {
 
         let client = Ollama::new(url.to_string(), port);
         let model = model_name.to_string();
+        // Do not provide model options other than the context window size so that we'll use whatever was
+        // specified in the modelfile.
+        let options = GenerationOptions::default().num_ctx(context_window);
 
-        Ok(Self { model, client })
+        Ok(Self {
+            model,
+            client,
+            options,
+        })
     }
 
-    async fn run(&self, options: GeneratorOptions) -> anyhow::Result<String> {
+    async fn chat(&self, options: Options) -> anyhow::Result<String> {
         /*
         pub struct GenerationRequest {
             ...
@@ -76,8 +87,10 @@ impl Generator for OllamaGenerator {
         println!("");
          */
 
-        // Do not provide model options so that we'll use whatever was specified in the modelfile.
-        let mut request = ChatMessageRequest::new(self.model.to_string(), chat_history);
+        // Do not provide model options other than the context window size so that we'll use whatever was
+        // specified in the modelfile.
+        let mut request = ChatMessageRequest::new(self.model.to_string(), chat_history)
+            .options(self.options.clone());
 
         request.model_name.clone_from(&self.model);
 

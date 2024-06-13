@@ -1,5 +1,5 @@
 use colored::Colorize;
-use generator::{Generator, GeneratorOptions};
+use model::{Client, Options};
 
 use anyhow::Result;
 use parsing::parse_model_response;
@@ -7,7 +7,7 @@ use state::State;
 use task::Task;
 
 pub mod actions;
-pub mod generator;
+pub mod model;
 mod parsing;
 pub mod state;
 pub mod task;
@@ -19,7 +19,7 @@ pub struct AgentOptions {
 }
 
 pub struct Agent {
-    generator: Box<dyn Generator>,
+    generator: Box<dyn Client>,
     state: State,
     options: AgentOptions,
     max_history: u16,
@@ -27,7 +27,7 @@ pub struct Agent {
 
 impl Agent {
     pub fn new(
-        generator: Box<dyn Generator>,
+        generator: Box<dyn Client>,
         task: Box<dyn Task>,
         options: AgentOptions,
     ) -> Result<Self> {
@@ -70,8 +70,8 @@ impl Agent {
         self.save_system_prompt_if_needed(Some(&system_prompt))?;
 
         // run model inference
-        let options = GeneratorOptions::new(system_prompt, prompt, history);
-        let response = self.generator.run(options).await?.trim().to_string();
+        let options = Options::new(system_prompt, prompt, history);
+        let response = self.generator.chat(options).await?.trim().to_string();
 
         // parse the model response into invocations
         let invocations = parse_model_response(&response)?;

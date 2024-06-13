@@ -13,7 +13,7 @@ use storage::Storage;
 
 use super::{
     actions::{self, Namespace},
-    generator::Message,
+    model::Message,
     parsing::Invocation,
     task::Task,
 };
