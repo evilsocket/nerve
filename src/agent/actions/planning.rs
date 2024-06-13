@@ -7,6 +7,8 @@ use super::{Action, Namespace, StorageDescriptor};
 
 // TODO: implement step complete/not complete state and changes
 
+// TODO: move important strings to include_str!() files with proper naming convention
+
 #[derive(Debug, Default)]
 struct AddStep {}
 
