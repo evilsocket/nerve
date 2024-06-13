@@ -5,6 +5,8 @@ use anyhow::Result;
 
 use super::{Action, Namespace, StorageDescriptor};
 
+// TODO: implement step complete/not complete state and changes
+
 #[derive(Debug, Default)]
 struct AddStep {}
 
@@ -14,7 +16,7 @@ impl Action for AddStep {
     }
 
     fn description(&self) -> &str {
-        "To add a step to your plan if it's not already there:"
+        "To add a step to your plan:"
     }
 
     fn example_payload(&self) -> Option<&str> {
@@ -78,7 +80,7 @@ impl Action for Clear {
     }
 
     fn description(&self) -> &str {
-        "Sometimes starting from scratch is good, you can clear the plan with:"
+        "Sometimes starting from scratch is good. If the plan is not working, you can clear it with:"
     }
 
     fn run(
@@ -95,7 +97,8 @@ impl Action for Clear {
 pub(crate) fn get_namespace() -> Namespace {
     Namespace::new(
         "Planning".to_string(),
-        "You can use the planning actions to create a step by step plan of how you are going to achieve your goal.".to_string(),
+        // TODO: improve this - it should be clear to the model that it should deconstruct complex problems in smaller ones using this tool.
+        "You can use these actions to create a step by step plan of how you are going to achieve your current goal.".to_string(),
         vec![
             Box::<AddStep>::default(),
             Box::<DeleteStep>::default(),

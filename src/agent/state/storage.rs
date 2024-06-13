@@ -1,6 +1,9 @@
-use std::{collections::HashMap, sync::Mutex /* , time::SystemTime*/};
+use indexmap::IndexMap;
+use std::{sync::Mutex /* , time::SystemTime*/};
 
 use colored::Colorize;
+
+// TODO: investigate other uses of IndexMap around the project
 
 #[derive(Debug)]
 struct Entry {
@@ -42,13 +45,13 @@ const PREVIOUS_TAG: &str = "__previous";
 pub struct Storage {
     name: String,
     type_: StorageType,
-    inner: Mutex<HashMap<String, Entry>>,
+    inner: Mutex<IndexMap<String, Entry>>,
 }
 
 impl Storage {
     pub fn new(name: &str, type_: StorageType) -> Self {
         let name = name.to_string();
-        let inner = Mutex::new(HashMap::new());
+        let inner = Mutex::new(IndexMap::new());
         Self { name, type_, inner }
     }
 

@@ -563,6 +563,7 @@ dependencies = [
  "clap",
  "colored",
  "html2text",
+ "indexmap",
  "lazy_static",
  "ollama-rs",
  "regex",
