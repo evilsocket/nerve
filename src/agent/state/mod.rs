@@ -130,7 +130,7 @@ impl State {
             }
             for action in &group.actions {
                 md += &format!(
-                    "{}\n{}\n\n",
+                    "{} {}\n\n",
                     action.description(),
                     action.structured_example()
                 );
@@ -172,7 +172,6 @@ impl State {
             "".to_string()
         };
 
-        // TODO: fix whitespaces in prompt
         Ok(format!(
             include_str!("system_prompt.tpl"),
             iterations = iterations,

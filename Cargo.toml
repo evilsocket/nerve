@@ -13,6 +13,7 @@ lazy_static = "1.4.0"
 ollama-rs = { version = "0.1.9", features = ["rustls", "tokio", "chat-history"], default-features = false }
 regex = "1.10.5"
 serde = { version = "1.0.203", features = ["derive", "serde_derive"] }
+serde_trim = "1.1.0"
 serde_yaml = "0.9.34"
 tokio = "1.38.0"
 urlencoding = "2.1.3"

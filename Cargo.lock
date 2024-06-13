@@ -567,6 +567,7 @@ dependencies = [
  "ollama-rs",
  "regex",
  "serde",
+ "serde_trim",
  "serde_yaml",
  "tokio",
  "urlencoding",
@@ -978,6 +979,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_trim"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70d1324d30004a76bf70a0bf2a409cf4a7f31b0c28b8c29b00e739cfe90b1e82"
+dependencies = [
+ "serde",
+ "trim-in-place",
+]
+
+[[package]]
 name = "serde_urlencoded"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1226,6 +1237,12 @@ checksum = "c06d3da6113f116aaee68e4d601191614c9053067f9ab7f6edbcb161237daa54"
 dependencies = [
  "once_cell",
 ]
+
+[[package]]
+name = "trim-in-place"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "343e926fc669bc8cde4fa3129ab681c63671bae288b1f1081ceee6d9d37904fc"
 
 [[package]]
 name = "try-lock"

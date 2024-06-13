@@ -7,6 +7,7 @@ use anyhow::Result;
 use colored::Colorize;
 use lazy_static::lazy_static;
 use serde::Deserialize;
+use serde_trim::*;
 
 use crate::agent::actions::{Action, Namespace};
 use crate::cli;
@@ -45,10 +46,13 @@ pub struct TaskletAction {
     working_directory: String,
     #[serde(default = "default_max_shown_output")]
     max_shown_output: usize,
+    #[serde(deserialize_with = "string_trim")]
     name: String,
+    #[serde(deserialize_with = "string_trim")]
     description: String,
     args: Option<HashMap<String, String>>,
     example_payload: String,
+    #[serde(deserialize_with = "string_trim")]
     tool: String,
 }
 
@@ -216,6 +220,7 @@ impl Action for TaskletAction {
 
 #[derive(Default, Deserialize, Debug, Clone)]
 struct FunctionGroup {
+    #[serde(deserialize_with = "string_trim")]
     pub name: String,
     pub description: Option<String>,
     pub actions: Vec<TaskletAction>,
@@ -247,6 +252,7 @@ impl FunctionGroup {
 pub struct Tasklet {
     #[serde(skip_deserializing, skip_serializing)]
     folder: String,
+    #[serde(deserialize_with = "string_trim")]
     system_prompt: String,
     pub prompt: Option<String>,
     using: Option<Vec<String>>,
@@ -271,7 +277,7 @@ impl Tasklet {
         if let Err(err) = filepath {
             Err(anyhow!("could not read {path}: {err}"))
         } else {
-            Self::from_yaml_file(filepath.unwrap().to_str().unwrap())
+            Self::from_yaml_file(filepath.unwrap().join("task.yml").to_str().unwrap())
         }
     }
 

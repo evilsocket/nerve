@@ -93,12 +93,12 @@ impl Agent {
             }
 
             println!(
-                "{}: agent did not provide valid instructions: '{}'",
+                "{}: agent did not provide valid instructions: {}",
                 "WARNING".bold().red(),
                 if response.is_empty() {
-                    "".to_string()
+                    "empty response".dimmed().to_string()
                 } else {
-                    format!("\n{}\n", response)
+                    format!("\n\n{}\n\n", response.dimmed().yellow())
                 }
             );
         }
