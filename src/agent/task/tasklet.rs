@@ -19,6 +19,22 @@ lazy_static! {
     pub(crate) static ref VAR_CACHE: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
 }
 
+fn parse_pre_defined_values(defines: &Vec<String>) -> Result<()> {
+    for keyvalue in defines {
+        let parts: Vec<&str> = keyvalue.splitn(2, '=').collect();
+        if parts.len() != 2 {
+            return Err(anyhow!("can't parse {keyvalue}, syntax is: key=value"));
+        }
+
+        VAR_CACHE
+            .lock()
+            .unwrap()
+            .insert(parts[0].to_owned(), parts[1].to_owned());
+    }
+
+    Ok(())
+}
+
 fn default_max_shown_output() -> usize {
     256
 }
@@ -239,7 +255,9 @@ pub struct Tasklet {
 }
 
 impl Tasklet {
-    pub fn from_path(path: &str) -> Result<Self> {
+    pub fn from_path(path: &str, defines: &Vec<String>) -> Result<Self> {
+        parse_pre_defined_values(defines)?;
+
         let ppath = PathBuf::from_str(path)?;
         if ppath.is_dir() {
             Self::from_folder(path)
@@ -248,7 +266,7 @@ impl Tasklet {
         }
     }
 
-    pub fn from_folder(path: &str) -> Result<Self> {
+    fn from_folder(path: &str) -> Result<Self> {
         let filepath = PathBuf::from_str(path);
         if let Err(err) = filepath {
             Err(anyhow!("could not read {path}: {err}"))
@@ -257,7 +275,7 @@ impl Tasklet {
         }
     }
 
-    pub fn from_yaml_file(filepath: &str) -> Result<Self> {
+    fn from_yaml_file(filepath: &str) -> Result<Self> {
         let canon = std::fs::canonicalize(filepath);
         if let Err(err) = canon {
             Err(anyhow!("could not read {filepath}: {err}"))

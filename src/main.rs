@@ -7,7 +7,7 @@ use colored::Colorize;
 
 use agent::{
     generator,
-    task::{self, tasklet::Tasklet, Task},
+    task::{tasklet::Tasklet, Task},
     Agent,
 };
 
@@ -20,20 +20,7 @@ async fn main() -> Result<()> {
 
     let gen_options = args.to_generator_options()?;
 
-    // handle pre defines
-    for keyvalue in &args.define {
-        let parts: Vec<&str> = keyvalue.splitn(2, '=').collect();
-        if parts.len() != 2 {
-            return Err(anyhow!("can't parse {keyvalue}, syntax is: key=value"));
-        }
-
-        task::tasklet::VAR_CACHE
-            .lock()
-            .unwrap()
-            .insert(parts[0].to_owned(), parts[1].to_owned());
-    }
-
-    let mut tasklet: Tasklet = Tasklet::from_path(&args.tasklet)?;
+    let mut tasklet: Tasklet = Tasklet::from_path(&args.tasklet, &args.define)?;
 
     if tasklet.prompt.is_none() {
         tasklet.prompt = Some(if let Some(prompt) = &args.prompt {
