@@ -92,9 +92,9 @@ impl Storage {
             }
             StorageType::CurrentPrevious => {
                 if let Some(current) = inner.get(CURRENT_TAG) {
-                    let mut str = format!("* Current {}: {}", &self.name, &current.data);
+                    let mut str = format!("* Current {}: {}", &self.name, current.data.trim());
                     if let Some(prev) = inner.get(PREVIOUS_TAG) {
-                        str += &format!("\n* Previous {}: {}", &self.name, &prev.data);
+                        str += &format!("\n* Previous {}: {}", &self.name, prev.data.trim());
                     }
                     str
                 } else {

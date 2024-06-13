@@ -14,7 +14,7 @@ impl Action for AddStep {
     }
 
     fn description(&self) -> &str {
-        "To add a step to your plan:"
+        "To add a step to your plan if it's not already there:"
     }
 
     fn example_payload(&self) -> Option<&str> {
