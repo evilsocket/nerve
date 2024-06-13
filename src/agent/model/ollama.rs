@@ -41,7 +41,7 @@ impl Client for OllamaClient {
         })
     }
 
-    async fn chat(&self, options: Options) -> anyhow::Result<String> {
+    async fn chat(&self, options: &Options) -> anyhow::Result<String> {
         /*
         pub struct GenerationRequest {
             ...
@@ -63,29 +63,12 @@ impl Client for OllamaClient {
             ChatMessage::user(options.prompt.to_string()),
         ];
 
-        for m in options.history {
+        for m in &options.history {
             chat_history.push(match m {
                 Message::Agent(data) => ChatMessage::assistant(data.trim().to_string()),
-                Message::User(data) => ChatMessage::user(data.trim().to_string()),
+                Message::Feedback(data) => ChatMessage::user(data.trim().to_string()),
             });
         }
-
-        /*
-        println!("------------------------------------------------");
-        println!("[CHAT]");
-        use colored::Colorize;
-        for msg in &chat_history {
-            if msg.role == ollama_rs::generation::chat::MessageRole::System {
-                println!("{}", "[system prompt]".yellow());
-            } else if msg.role == ollama_rs::generation::chat::MessageRole::Assistant {
-                println!("[{}] {}", "agent".bold(), &msg.content);
-            } else {
-                println!("  {}", msg.content.trim());
-            }
-        }
-        println!("------------------------------------------------");
-        println!("");
-         */
 
         // Do not provide model options other than the context window size so that we'll use whatever was
         // specified in the modelfile.

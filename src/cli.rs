@@ -44,14 +44,18 @@ pub(crate) struct Args {
     pub max_iterations: usize,
     /// At every step, save the dynamic system prompt contents to this file.
     #[arg(long)]
-    pub save_prompt_to: Option<String>,
+    pub save_to: Option<String>,
+    /// Dump the system prompt and the entire chat history to file.
+    #[arg(long)]
+    pub full_dump: bool,
 }
 
 impl Args {
     pub fn to_agent_options(&self) -> AgentOptions {
         AgentOptions {
             max_iterations: self.max_iterations,
-            save_prompt_to: self.save_prompt_to.clone(),
+            save_to: self.save_to.clone(),
+            full_dump: self.full_dump,
         }
     }
 

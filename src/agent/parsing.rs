@@ -47,8 +47,6 @@ impl Invocation {
     }
 }
 
-// TODO: parse stuff like:
-//      <task-complete reason="The conversation has reached a conclusive point, with Alice agreeing to continue the date."/>
 pub(crate) fn parse_model_response(model_response: &str) -> Result<Vec<Invocation>> {
     let mut invocations = vec![];
 
@@ -71,6 +69,7 @@ pub(crate) fn parse_model_response(model_response: &str) -> Result<Vec<Invocatio
                     current += tag_close_idx + tag_name.len();
                     let tag_closing = format!("</{}>", tag_name);
                     let tag_closing_idx = ptr.find(&tag_closing);
+
                     if let Some(tag_closing_idx) = tag_closing_idx {
                         // parse attributes if any
                         let attributes = if ptr.as_bytes()[tag_name_term_idx] == b' ' {

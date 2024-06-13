@@ -23,8 +23,8 @@ impl Options {
 
 #[derive(Clone, Debug)]
 pub enum Message {
-    User(String),
     Agent(String),
+    Feedback(String),
 }
 
 #[async_trait]
@@ -33,7 +33,7 @@ pub trait Client {
     where
         Self: Sized;
 
-    async fn chat(&self, options: Options) -> Result<String>;
+    async fn chat(&self, options: &Options) -> Result<String>;
 }
 
 pub fn factory(

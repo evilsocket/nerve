@@ -50,7 +50,7 @@ impl Execution {
             messages.push(Message::Agent(invocation.as_xml().to_string()));
         }
 
-        messages.push(Message::User(if let Some(err) = &self.error {
+        messages.push(Message::Feedback(if let Some(err) = &self.error {
             format!("ERROR: {err}")
         } else if let Some(out) = &self.result {
             out.to_string()

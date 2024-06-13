@@ -15,7 +15,8 @@ pub mod task;
 #[derive(Debug, Clone)]
 pub struct AgentOptions {
     pub max_iterations: usize,
-    pub save_prompt_to: Option<String>,
+    pub save_to: Option<String>,
+    pub full_dump: bool,
 }
 
 pub struct Agent {
@@ -45,13 +46,28 @@ impl Agent {
         &self.state
     }
 
-    fn save_system_prompt_if_needed(&self, system_prompt: Option<&str>) -> Result<()> {
-        if let Some(prompt_path) = &self.options.save_prompt_to {
-            let data = match system_prompt {
-                // regenerate
-                None => self.state.to_system_prompt()?,
-                // use the provided one
-                Some(p) => p.to_string(),
+    fn save_if_needed(&self, options: &Options, refresh: bool) -> Result<()> {
+        if let Some(prompt_path) = &self.options.save_to {
+            let mut opts = options.clone();
+            if refresh {
+                opts.system_prompt = self.state.to_system_prompt()?;
+                opts.history = self.state.to_chat_history(self.max_history as usize)?;
+            }
+
+            let data = if self.options.full_dump {
+                format!(
+                    "[SYSTEM PROMPT]\n\n{}\n[PROMPT]\n\n{}\n[CHAT]\n\n{}",
+                    &options.system_prompt,
+                    &options.prompt,
+                    options
+                        .history
+                        .iter()
+                        .map(|m| format!("{:?}", &m))
+                        .collect::<Vec<String>>()
+                        .join("\n")
+                )
+            } else {
+                opts.system_prompt.to_string()
             };
 
             std::fs::write(prompt_path, data)?;
@@ -67,11 +83,12 @@ impl Agent {
         let prompt = self.state.to_prompt()?;
         let history = self.state.to_chat_history(self.max_history as usize)?;
 
-        self.save_system_prompt_if_needed(Some(&system_prompt))?;
+        let options = Options::new(system_prompt, prompt, history);
+
+        self.save_if_needed(&options, false)?;
 
         // run model inference
-        let options = Options::new(system_prompt, prompt, history);
-        let response = self.generator.chat(options).await?.trim().to_string();
+        let response = self.generator.chat(&options).await?.trim().to_string();
 
         // parse the model response into invocations
         let invocations = parse_model_response(&response)?;
@@ -115,11 +132,11 @@ impl Agent {
             prev = Some(inv.xml.clone());
 
             // see if valid action and execute
-            if let Err(e) = self.state.execute(inv).await {
+            if let Err(e) = self.state.execute(inv.clone()).await {
                 println!("ERROR: {}", e);
             }
 
-            self.save_system_prompt_if_needed(None)?;
+            self.save_if_needed(&options, true)?;
             if self.state.is_complete() {
                 break;
             }

@@ -100,7 +100,7 @@ struct RecallMemory {}
 
 impl Action for RecallMemory {
     fn name(&self) -> &str {
-        "recall-memory"
+        "get-memory"
     }
 
     fn description(&self) -> &str {
