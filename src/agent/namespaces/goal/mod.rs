@@ -15,7 +15,7 @@ impl Action for UpdateGoal {
     }
 
     fn description(&self) -> &str {
-        "When you believe you need a new goal:"
+        include_str!("update.prompt")
     }
 
     fn example_payload(&self) -> Option<&str> {
@@ -38,7 +38,7 @@ impl Action for UpdateGoal {
 pub(crate) fn get_namespace() -> Namespace {
     Namespace::new(
         "Goal".to_string(),
-        "Use these actions to update your current goal.".to_string(),
+        include_str!("ns.prompt").to_string(),
         vec![Box::<UpdateGoal>::default()],
         Some(vec![StorageDescriptor::previous_current("goal")]),
     )

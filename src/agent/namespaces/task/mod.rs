@@ -15,7 +15,7 @@ impl Action for Complete {
     }
 
     fn description(&self) -> &str {
-        "When your objective has been reached:"
+        include_str!("complete.prompt")
     }
 
     fn example_payload(&self) -> Option<&str> {
@@ -44,7 +44,7 @@ impl Action for Impossible {
     }
 
     fn description(&self) -> &str {
-        "If you determine that the given goal or task is impossible given the information you have:"
+        include_str!("impossible.prompt")
     }
 
     fn example_payload(&self) -> Option<&str> {
@@ -65,7 +65,7 @@ impl Action for Impossible {
 pub(crate) fn get_namespace() -> Namespace {
     Namespace::new(
         "Task".to_string(),
-        "Use these actions to set the task as completed.".to_string(),
+        include_str!("ns.prompt").to_string(),
         vec![Box::<Complete>::default(), Box::<Impossible>::default()],
         None,
     )

@@ -16,7 +16,7 @@ impl Action for SaveMemory {
     }
 
     fn description(&self) -> &str {
-        "To store a memory:"
+        include_str!("save.prompt")
     }
 
     fn attributes(&self) -> Option<HashMap<String, String>> {
@@ -63,7 +63,7 @@ impl Action for DeleteMemory {
     }
 
     fn description(&self) -> &str {
-        "To delete a memory you previously stored given its key:"
+        include_str!("delete.prompt")
     }
 
     fn attributes(&self) -> Option<HashMap<String, String>> {
@@ -105,7 +105,7 @@ impl Action for RecallMemory {
     }
 
     fn description(&self) -> &str {
-        "To recall a memory you previously stored given its key:"
+        include_str!("recall.prompt")
     }
 
     fn attributes(&self) -> Option<HashMap<String, String>> {
@@ -142,8 +142,8 @@ impl Action for RecallMemory {
 
 pub(crate) fn get_namespace() -> Namespace {
     Namespace::new(
-        "Memory".to_string(), 
-        "You can use the memory actions to store and retrieve long term information as you work. Use memories often to keep track of important information like your analysis, important responses, etc.".to_string(),
+        "Memory".to_string(),
+        include_str!("ns.prompt").to_string(),
         vec![Box::<SaveMemory>::default(), Box::<DeleteMemory>::default()],
         Some(vec![StorageDescriptor::tagged("memories")]),
     )

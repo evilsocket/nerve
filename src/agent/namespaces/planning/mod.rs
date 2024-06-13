@@ -7,8 +7,6 @@ use super::{Action, Namespace, StorageDescriptor};
 
 // TODO: implement step complete/not complete state and changes
 
-// TODO: move important strings to include_str!() files with proper naming convention
-
 #[derive(Debug, Default)]
 struct AddStep {}
 
@@ -18,7 +16,7 @@ impl Action for AddStep {
     }
 
     fn description(&self) -> &str {
-        "To add a step to your plan:"
+        include_str!("add.prompt")
     }
 
     fn example_payload(&self) -> Option<&str> {
@@ -49,7 +47,7 @@ impl Action for DeleteStep {
     }
 
     fn description(&self) -> &str {
-        "To remove a step from your plan given its position:"
+        include_str!("delete.prompt")
     }
 
     fn example_payload(&self) -> Option<&str> {
@@ -82,7 +80,7 @@ impl Action for Clear {
     }
 
     fn description(&self) -> &str {
-        "Sometimes starting from scratch is good. If the plan is not working, you can clear it with:"
+        include_str!("clear.prompt")
     }
 
     fn run(
@@ -100,7 +98,7 @@ pub(crate) fn get_namespace() -> Namespace {
     Namespace::new(
         "Planning".to_string(),
         // TODO: improve this - it should be clear to the model that it should deconstruct complex problems in smaller ones using this tool.
-        "You can use these actions to create a step by step plan of how you are going to achieve your current goal.".to_string(),
+        include_str!("ns.prompt").to_string(),
         vec![
             Box::<AddStep>::default(),
             Box::<DeleteStep>::default(),
