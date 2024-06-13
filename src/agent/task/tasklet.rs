@@ -101,13 +101,28 @@ impl Action for TaskletAction {
                     // variable, the order of lookup is:
                     //  0. environment variable
                     //  1. cache
-                    //  2. ask the user (and cache)
+                    //  2. if an alternative default was provided via || use it
+                    //  3. ask the user (and cache)
                     let var_name = part.trim_start_matches('$');
+
+                    let (var_name, var_default) =
+                        if let Some((name, default_value)) = var_name.split_once("||") {
+                            (name, Some(default_value))
+                        } else {
+                            (var_name, None)
+                        };
+
                     if let Ok(value) = std::env::var(var_name) {
+                        // get from env
                         cmd.arg(value);
                     } else if let Some(cached) = var_cache.get(var_name) {
+                        // get from cached
                         cmd.arg(cached);
+                    } else if let Some(var_default) = var_default {
+                        // get from default
+                        cmd.arg(var_default);
                     } else {
+                        // get from user
                         let var_value =
                             cli::get_user_input(&format!("\nplease set ${}: ", var_name.yellow()));
 
