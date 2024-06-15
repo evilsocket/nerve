@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 
 use super::state::{storage::StorageType, State};
 
-// TODO: add more namespaces of actions: take screenshot (multimodal), networking, move mouse, ui interactions, etc
+// TODO: add more namespaces of actions: fs (read only), take screenshot (multimodal), networking, move mouse, ui interactions, etc
 
 pub(crate) mod goal;
 pub(crate) mod memory;
