@@ -5,8 +5,6 @@ use anyhow::Result;
 use super::{Action, Namespace, StorageDescriptor};
 use crate::agent::state::State;
 
-// TODO: implement step complete/not complete state and changes
-
 #[derive(Debug, Default)]
 struct AddStep {}
 
@@ -32,7 +30,7 @@ impl Action for AddStep {
         if payload.is_none() {
             Err(anyhow!("no step description provided"))
         } else {
-            state.get_storage("plan")?.add_untagged(&payload.unwrap());
+            state.get_storage("plan")?.add_completion(&payload.unwrap());
             Ok(Some("step added to the plan".to_string()))
         }
     }
@@ -66,8 +64,78 @@ impl Action for DeleteStep {
 
         state
             .get_storage("plan")?
-            .del_untagged(payload.unwrap().parse::<usize>()?);
-        Ok(Some("step added to the plan".to_string()))
+            .del_completion(payload.unwrap().parse::<usize>()?);
+        Ok(Some("step removed from the plan".to_string()))
+    }
+}
+
+#[derive(Debug, Default)]
+struct SetComplete {}
+
+impl Action for SetComplete {
+    fn name(&self) -> &str {
+        "set-step-completed"
+    }
+
+    fn description(&self) -> &str {
+        include_str!("set-complete.prompt")
+    }
+
+    fn example_payload(&self) -> Option<&str> {
+        Some("2")
+    }
+
+    fn run(
+        &self,
+        state: &State,
+        _: Option<HashMap<String, String>>,
+        payload: Option<String>,
+    ) -> Result<Option<String>> {
+        if payload.is_none() {
+            return Err(anyhow!("no position provided"));
+        }
+
+        let pos = payload.unwrap().parse::<usize>()?;
+        if state.get_storage("plan")?.set_complete(pos).is_some() {
+            Ok(Some(format!("step {} marked as completed", pos)))
+        } else {
+            Err(anyhow!("no plan step at position {}", pos))
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+struct SetIncomplete {}
+
+impl Action for SetIncomplete {
+    fn name(&self) -> &str {
+        "set-step-incomplete"
+    }
+
+    fn description(&self) -> &str {
+        include_str!("set-incomplete.prompt")
+    }
+
+    fn example_payload(&self) -> Option<&str> {
+        Some("2")
+    }
+
+    fn run(
+        &self,
+        state: &State,
+        _: Option<HashMap<String, String>>,
+        payload: Option<String>,
+    ) -> Result<Option<String>> {
+        if payload.is_none() {
+            return Err(anyhow!("no position provided"));
+        }
+
+        let pos = payload.unwrap().parse::<usize>()?;
+        if state.get_storage("plan")?.set_incomplete(pos).is_some() {
+            Ok(Some(format!("step {} marked as incomplete", pos)))
+        } else {
+            Err(anyhow!("no plan step at position {}", pos))
+        }
     }
 }
 
@@ -102,8 +170,10 @@ pub(crate) fn get_namespace() -> Namespace {
         vec![
             Box::<AddStep>::default(),
             Box::<DeleteStep>::default(),
+            Box::<SetComplete>::default(),
+            Box::<SetIncomplete>::default(),
             Box::<Clear>::default(),
         ],
-        Some(vec![StorageDescriptor::untagged("plan")]),
+        Some(vec![StorageDescriptor::completion("plan")]),
     )
 }

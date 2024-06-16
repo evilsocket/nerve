@@ -8,13 +8,18 @@ use indexmap::IndexMap;
 #[derive(Debug)]
 struct Entry {
     //pub time: SystemTime,
+    pub complete: bool, // for Completion storage
     pub data: String,
 }
 
 impl Entry {
     pub fn new(data: String) -> Self {
         //let time = SystemTime::now();
-        Self { /* time ,*/ data, }
+        let complete = false;
+        Self {
+            /* time ,*/ data,
+            complete,
+        }
     }
 }
 
@@ -26,14 +31,17 @@ pub enum StorageType {
     Tagged,
     // a single state with an optional previous state
     CurrentPrevious,
+    // a list of tasks that can be set as complete
+    Completion,
 }
 
 impl StorageType {
     pub fn as_u8(&self) -> u8 {
         match self {
             StorageType::CurrentPrevious => 0,
-            StorageType::Untagged => 1,
-            StorageType::Tagged => 2,
+            StorageType::Completion => 1,
+            StorageType::Untagged => 2,
+            StorageType::Tagged => 3,
         }
     }
 }
@@ -88,6 +96,25 @@ impl Storage {
 
                 xml.to_string()
             }
+            StorageType::Completion => {
+                let mut xml = format!("<{}>\n", &self.name);
+
+                for entry in inner.values() {
+                    xml += &format!(
+                        "  - {} : {}\n",
+                        &entry.data,
+                        if entry.complete {
+                            "COMPLETED"
+                        } else {
+                            "not completed"
+                        }
+                    );
+                }
+
+                xml += &format!("</{}>", &self.name);
+
+                xml.to_string()
+            }
             StorageType::CurrentPrevious => {
                 if let Some(current) = inner.get(CURRENT_TAG) {
                     let mut str = format!("* Current {}: {}", &self.name, current.data.trim());
@@ -128,6 +155,53 @@ impl Storage {
             .unwrap()
             .get(key)
             .map(|va| va.data.to_string())
+    }
+
+    pub fn add_completion(&self, data: &str) {
+        assert!(matches!(self.type_, StorageType::Completion));
+        println!("<{}> {}", self.name.bold(), data.yellow());
+
+        let mut inner = self.inner.lock().unwrap();
+
+        let tag = format!("{}", inner.len() + 1);
+        inner.insert(tag, Entry::new(data.to_string()));
+    }
+
+    pub fn del_completion(&self, pos: usize) -> Option<String> {
+        assert!(matches!(self.type_, StorageType::Completion));
+        let tag = format!("{}", pos);
+        if let Some(old) = self.inner.lock().unwrap().shift_remove(&tag) {
+            println!("<{}> element {} removed\n", self.name.bold(), pos);
+            Some(old.data)
+        } else {
+            None
+        }
+    }
+
+    pub fn set_complete(&self, pos: usize) -> Option<bool> {
+        assert!(matches!(self.type_, StorageType::Completion));
+        let tag = format!("{}", pos);
+        if let Some(entry) = self.inner.lock().unwrap().get_mut(&tag) {
+            println!("<{}> element {} set as complete\n", self.name.bold(), pos);
+            let prev = entry.complete;
+            entry.complete = true;
+            Some(prev)
+        } else {
+            None
+        }
+    }
+
+    pub fn set_incomplete(&self, pos: usize) -> Option<bool> {
+        assert!(matches!(self.type_, StorageType::Completion));
+        let tag = format!("{}", pos);
+        if let Some(entry) = self.inner.lock().unwrap().get_mut(&tag) {
+            println!("<{}> element {} set as incomplete\n", self.name.bold(), pos);
+            let prev = entry.complete;
+            entry.complete = false;
+            Some(prev)
+        } else {
+            None
+        }
     }
 
     pub fn add_untagged(&self, data: &str) {

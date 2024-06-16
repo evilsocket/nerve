@@ -50,6 +50,12 @@ impl StorageDescriptor {
         let type_ = StorageType::CurrentPrevious;
         Self { name, type_ }
     }
+
+    pub fn completion(name: &str) -> Self {
+        let name = name.to_string();
+        let type_ = StorageType::Completion;
+        Self { name, type_ }
+    }
 }
 
 #[derive(Debug, Default)]
