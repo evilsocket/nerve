@@ -1,0 +1,6 @@
+FROM llama3:latest
+
+PARAMETER num_ctx 8000
+PARAMETER repeat_penalty 1.3
+PARAMETER temperature 1.0
+
