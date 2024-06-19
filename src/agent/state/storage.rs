@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 // TODO: investigate other uses of IndexMap around the project
 
 #[derive(Debug)]
-struct Entry {
+pub(crate) struct Entry {
     //pub time: SystemTime,
     pub complete: bool, // for Completion storage
     pub data: String,
@@ -23,6 +23,7 @@ impl Entry {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub enum StorageType {
     // a list indexed by element position
@@ -46,8 +47,8 @@ impl StorageType {
     }
 }
 
-const CURRENT_TAG: &str = "__current";
-const PREVIOUS_TAG: &str = "__previous";
+pub(crate) const CURRENT_TAG: &str = "__current";
+pub(crate) const PREVIOUS_TAG: &str = "__previous";
 
 #[derive(Debug)]
 pub struct Storage {
@@ -56,6 +57,7 @@ pub struct Storage {
     inner: Mutex<IndexMap<String, Entry>>,
 }
 
+#[allow(dead_code)]
 impl Storage {
     pub fn new(name: &str, type_: StorageType) -> Self {
         let name = name.to_string();
@@ -63,70 +65,16 @@ impl Storage {
         Self { name, type_, inner }
     }
 
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
     pub fn get_type(&self) -> &StorageType {
         &self.type_
     }
 
-    pub fn to_structured_string(&self) -> String {
-        let inner = self.inner.lock().unwrap();
-        if inner.is_empty() {
-            return "".to_string();
-        }
-
-        match self.type_ {
-            StorageType::Tagged => {
-                let mut xml: String = format!("<{}>\n", &self.name);
-
-                for (key, entry) in &*inner {
-                    xml += &format!("  - {}={}\n", key, &entry.data);
-                }
-
-                xml += &format!("</{}>", &self.name);
-
-                xml.to_string()
-            }
-            StorageType::Untagged => {
-                let mut xml = format!("<{}>\n", &self.name);
-
-                for entry in inner.values() {
-                    xml += &format!("  - {}\n", &entry.data);
-                }
-
-                xml += &format!("</{}>", &self.name);
-
-                xml.to_string()
-            }
-            StorageType::Completion => {
-                let mut xml = format!("<{}>\n", &self.name);
-
-                for entry in inner.values() {
-                    xml += &format!(
-                        "  - {} : {}\n",
-                        &entry.data,
-                        if entry.complete {
-                            "COMPLETED"
-                        } else {
-                            "not completed"
-                        }
-                    );
-                }
-
-                xml += &format!("</{}>", &self.name);
-
-                xml.to_string()
-            }
-            StorageType::CurrentPrevious => {
-                if let Some(current) = inner.get(CURRENT_TAG) {
-                    let mut str = format!("* Current {}: {}", &self.name, current.data.trim());
-                    if let Some(prev) = inner.get(PREVIOUS_TAG) {
-                        str += &format!("\n* Previous {}: {}", &self.name, prev.data.trim());
-                    }
-                    str
-                } else {
-                    "".to_string()
-                }
-            }
-        }
+    pub fn get_inner(&self) -> &Mutex<IndexMap<String, Entry>> {
+        &self.inner
     }
 
     pub fn add_tagged(&self, key: &str, data: &str) {

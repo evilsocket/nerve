@@ -12,7 +12,7 @@ use colored::Colorize;
 use super::{
     model::Message,
     namespaces::{self, Namespace},
-    parsing::Invocation,
+    serialization::{self, Invocation},
     task::Task,
 };
 use history::{Execution, History};
@@ -132,7 +132,7 @@ impl State {
                 md += &format!(
                     "{} {}\n\n",
                     action.description(),
-                    action.structured_example()
+                    serialization::xml::serialize_action(action)
                 );
             }
         }
@@ -140,7 +140,6 @@ impl State {
         Ok(md)
     }
 
-    // TODO: abstract serialization logic into a trait so we can test xml, json, etc
     pub fn to_system_prompt(&self) -> Result<String> {
         let system_prompt = self.task.to_system_prompt()?;
         let mut storages = vec![];
@@ -149,7 +148,7 @@ impl State {
         sorted.sort_by_key(|x| x.get_type().as_u8());
 
         for storage in sorted {
-            storages.push(storage.to_structured_string());
+            storages.push(serialization::xml::serialize_storage(storage));
         }
 
         let storages = storages.join("\n\n");

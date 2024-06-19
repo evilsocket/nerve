@@ -32,6 +32,7 @@ pub struct StorageDescriptor {
     pub type_: StorageType,
 }
 
+#[allow(dead_code)]
 impl StorageDescriptor {
     pub fn tagged(name: &str) -> Self {
         let name = name.to_string();
@@ -92,25 +93,6 @@ pub trait Action: std::fmt::Debug + Sync {
     }
 
     fn description(&self) -> &str;
-
-    fn structured_example(&self) -> String {
-        let mut xml = format!("<{}", self.name());
-
-        if let Some(attrs) = self.attributes() {
-            for (name, example_value) in &attrs {
-                xml += &format!(" {}=\"{}\"", name, example_value);
-            }
-        }
-        xml += ">";
-
-        if let Some(payload) = self.example_payload() {
-            xml += payload; // TODO: escape payload?
-        }
-
-        xml += &format!("</{}>", self.name());
-
-        xml
-    }
 
     fn run(
         &self,

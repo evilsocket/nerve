@@ -2,13 +2,13 @@ use anyhow::Result;
 use colored::Colorize;
 
 use model::{Client, Options};
-use parsing::parse_model_response;
+use serialization::Invocation;
 use state::State;
 use task::Task;
 
 pub mod model;
 pub mod namespaces;
-mod parsing;
+mod serialization;
 pub mod state;
 pub mod task;
 
@@ -91,8 +91,8 @@ impl Agent {
         let response = self.generator.chat(&options).await?.trim().to_string();
 
         // parse the model response into invocations
-        let invocations = parse_model_response(&response)?;
-        let mut prev: Option<String> = None;
+        let invocations = serialization::xml::parse_model_response(&response)?;
+        let mut prev: Option<Invocation> = None;
 
         // nothing parsed, report the problem to the model
         if invocations.is_empty() {
@@ -123,13 +123,13 @@ impl Agent {
         for inv in invocations {
             // avoid running the same command twince in a row
             if let Some(p) = prev.as_ref() {
-                if inv.xml == *p {
+                if inv.is_same(p) {
                     println!(".");
                     continue;
                 }
             }
 
-            prev = Some(inv.xml.clone());
+            prev = Some(inv.clone());
 
             // see if valid action and execute
             if let Err(e) = self.state.execute(inv.clone()).await {
