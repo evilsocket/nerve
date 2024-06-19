@@ -1,9 +1,9 @@
 Nerve is a tool that allows creating stateful agents with any LLM of your choice - without writing a single line of code. 
 The tool provides to the model a framework of functionalities for planning, saving or recalling memories, etc (you can think about it as a "standard library" of functions for the LLM to use) by dynamically adapting the prompt and making it stateful over multiple inferences. The model will be able to access and use these functionalities in order to accomplish the task you provided.
 
-```sh
-nerve -T ssh_agent -P 'find which process is using the most RAM'
-```
+<p align="center">
+  <img alt="Nerve" src="https://raw.githubusercontent.com/evilsocket/nerve/main/image.jpg"/>
+</p>
 
 While Nerve was inspired by other projects such as [Dreadnode's Rigging framework](https://github.com/dreadnode/rigging), its main goal and core difference with other tools is to allow the user to instrument smart agents without writing code (unless required for custom functionalities).
 
