@@ -5,3 +5,4 @@
 /system-prompt.txt
 /tasklets/fuzzer/test_binary/test_binary
 /tasklets/test
+.DS_Store
