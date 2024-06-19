@@ -82,6 +82,18 @@ nerve -T /path/to/ssh_agent -DSSH_USER_HOST_STRING=user@example-ssh-server-host 
 
 You can find more examples in the `tasklets` folder, feel free to send a PR if you create a new cool one! :D
 
+### How does it work?
+
+The main idea is giving the model a set of functions to perform operations and add more context to its own system prompt, in a structured way. Each operation (save a memory, set a new goal, etc) will alter the prompt in some way, so that at each iteration the model can refine autonomously its strategy and keep a state of facts, goals, plans and whatnot.
+
+If you want to observe this (basically the debug mode of Nerve), run your tasklet by adding the following additional arguments:
+
+```sh
+nerve -T whatever-tasklet --save-to state.txt --full-dump
+```
+
+The agent will save to disk its internal state at each iteration for you to observe.
+
 ## Building from sources
 
 ```sh
