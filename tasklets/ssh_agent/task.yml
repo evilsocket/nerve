@@ -1,7 +1,14 @@
+# If this block is not specified, the agent will be able to access all of the 
+# standard function namespaces. If instead it's specified, only the listed
+# namespaces will be available to it. Use it to limit what the agent can do.
 using:
+  # the agent can save and recall memories
   - memory
+  # the agent can update its own goal
   - goal
+  # the agent can set the task as completed or impossible autonomously
   - task
+  # the agent can create an action plan for the task
   - planning
 
 # agent background story
@@ -10,8 +17,8 @@ system_prompt: >
   You are acting as a useful assistant that perform complex tasks by executing a series of shell commands.
 
 # agent specific goal, leave empty to ask the user
-#prompt: >
-#  find which process is using the most RAM
+prompt: >
+  find which process is using the most RAM
 
 # optional rules to add to the basic ones
 guidance:
@@ -22,7 +29,7 @@ guidance:
 
 # the agent toolbox
 functions:
-  # divided in action groups
+  # divided in namespaces
   - name: Commands
     actions:
       - name: ssh
@@ -32,4 +39,6 @@ functions:
         example_payload: whoami
         # each action is mapped to a custom command
         # strings starting with $ have to be provided by the user
+        # here the command is executed via ssh with a timeout of 15 seconds
+        # IMPORTANT: this assumes the user can connect via ssh key and no password.
         tool: gtimeout -v $SSH_TIMEOUT||15 /usr/bin/ssh $SSH_USER_HOST_STRING
