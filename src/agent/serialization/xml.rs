@@ -7,9 +7,8 @@ use regex::Regex;
 use crate::agent::{
     namespaces::Action,
     state::storage::{Storage, StorageType, CURRENT_TAG, PREVIOUS_TAG},
+    Invocation,
 };
-
-use super::Invocation;
 
 lazy_static! {
     pub static ref XML_ATTRIBUTES_PARSER: Regex = Regex::new(r#"(?m)(([^=]+)="([^"]+)")"#).unwrap();

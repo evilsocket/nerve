@@ -1,8 +1,9 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use colored::Colorize;
 
 use model::{Client, Options};
-use serialization::Invocation;
 use state::State;
 use task::Task;
 
@@ -11,6 +12,27 @@ pub mod namespaces;
 mod serialization;
 pub mod state;
 pub mod task;
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct Invocation {
+    pub action: String,
+    pub attributes: Option<HashMap<String, String>>,
+    pub payload: Option<String>,
+}
+
+impl Invocation {
+    pub fn new(
+        action: String,
+        attributes: Option<HashMap<String, String>>,
+        payload: Option<String>,
+    ) -> Self {
+        Self {
+            action,
+            attributes,
+            payload,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct AgentOptions {
@@ -123,7 +145,7 @@ impl Agent {
         for inv in invocations {
             // avoid running the same command twince in a row
             if let Some(p) = prev.as_ref() {
-                if inv.is_same(p) {
+                if inv.eq(p) {
                     println!(".");
                     continue;
                 }

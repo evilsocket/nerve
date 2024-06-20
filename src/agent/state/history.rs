@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::agent::{model::Message, serialization::Invocation};
+use crate::agent::{model::Message, Invocation};
 
 #[derive(Debug, Clone, Default)]
 pub struct Execution {
@@ -47,7 +47,9 @@ impl Execution {
         if let Some(response) = self.response.as_ref() {
             messages.push(Message::Agent(response.to_string()));
         } else if let Some(invocation) = self.invocation.as_ref() {
-            messages.push(Message::Agent(invocation.as_serialized_str().to_string()));
+            messages.push(Message::Agent(
+                crate::agent::serialization::xml::serialize_invocation(invocation),
+            ));
         }
 
         messages.push(Message::Feedback(if let Some(err) = &self.error {
