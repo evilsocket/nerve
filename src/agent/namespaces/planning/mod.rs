@@ -165,7 +165,6 @@ impl Action for Clear {
 pub(crate) fn get_namespace() -> Namespace {
     Namespace::new(
         "Planning".to_string(),
-        // TODO: improve this - it should be clear to the model that it should deconstruct complex problems in smaller ones using this tool.
         include_str!("ns.prompt").to_string(),
         vec![
             Box::<AddStep>::default(),
