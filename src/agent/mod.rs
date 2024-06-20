@@ -113,7 +113,7 @@ impl Agent {
         let response = self.generator.chat(&options).await?.trim().to_string();
 
         // parse the model response into invocations
-        let invocations = serialization::xml::try_parse(&response)?;
+        let invocations = serialization::xml::parsing::try_parse(&response)?;
         let mut prev: Option<Invocation> = None;
 
         // nothing parsed, report the problem to the model

@@ -48,7 +48,7 @@ impl Execution {
             messages.push(Message::Agent(response.to_string()));
         } else if let Some(invocation) = self.invocation.as_ref() {
             messages.push(Message::Agent(
-                crate::agent::serialization::xml::serialize_invocation(invocation),
+                crate::agent::serialization::xml::serialize::invocation(invocation),
             ));
         }
 

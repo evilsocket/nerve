@@ -133,7 +133,7 @@ impl State {
                 md += &format!(
                     "{} {}\n\n",
                     action.description(),
-                    serialization::xml::serialize_action(action)
+                    serialization::xml::serialize::action(action)
                 );
             }
         }
@@ -149,7 +149,7 @@ impl State {
         sorted.sort_by_key(|x| x.get_type().as_u8());
 
         for storage in sorted {
-            storages.push(serialization::xml::serialize_storage(storage));
+            storages.push(serialization::xml::serialize::storage(storage));
         }
 
         let storages = storages.join("\n\n");
