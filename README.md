@@ -7,8 +7,11 @@
   <a href="https://github.com/evilsocket/nerve/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square"></a>
 </p>
 
-Nerve is a tool that allows creating stateful agents with any LLM of your choice - without writing a single line of code. 
-The tool provides to the model a framework of functionalities for planning, saving or recalling memories, etc (you can think about it as a "standard library" of functions for the LLM to use) by dynamically adapting the prompt and making it stateful over multiple inferences. The model will be able to access and use these functionalities in order to accomplish the task you provided.
+**Nerve is a tool that creates stateful agents with any LLM — without writing a single line of code.** Agents created with Nerve are capable of both planning _and_ enacting step-by-step whatever actions are required to complete a user-defined task. This is done by dynamically updating the system prompt with new information gathered during previous actions, making the agent stateful across multiple inferences.
+- **Automated Problem Solving:** Nerve provides a standard library of actions the agent uses autonomously to inform and enhance its performance. These include identifying specific goals required to complete the task, devising and revising a plan to achieve those goals, and creating and recalling memories comprised of pertinent information gleaned during previous actions.
+- **User-Defined Agents:** Agents are defined using a standard YAML template. _The sky is the limit!_ You can define an agent for any task you desire — check out the existing examples for inspiration: a [two-person chatroom](examples/weird_chat/task.yml), an [SSH agent that completes tasks using bash](examples/ssh_agent/task.yml), a [fuzzer](examples/fuzzer/task.yml), and a [web vulnerability scanner](examples/web_vulnerability_scanner/task.yml).
+- **Works with any LLM:** Nerve is an LLM-agnostic tool. Currently, it features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama) or [OpenAI](https://openai.com/index/openai-api/) APIs.
+
 
 <p align="center">
   <img alt="Nerve" src="https://raw.githubusercontent.com/evilsocket/nerve/main/concept.png"/>
