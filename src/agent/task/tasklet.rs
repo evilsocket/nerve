@@ -214,7 +214,7 @@ impl Action for TaskletAction {
             let exit_code = output.status.code().unwrap_or(0);
             // println!("exit_code={}", exit_code);
             if exit_code == STATE_COMPLETE_EXIT_CODE {
-                state.on_complete(true, Some(out))?;
+                state.on_complete(false, Some(out))?;
                 return Ok(Some("task complete".to_string()));
             }
 
