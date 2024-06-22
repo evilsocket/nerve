@@ -11,6 +11,8 @@ use colored::Colorize;
 use super::{Action, Namespace};
 use crate::agent::state::State;
 
+// cast needed for Darwin apparently
+#[allow(clippy::unnecessary_cast)]
 fn parse_permissions(mode: u32) -> String {
     let user = triplet(mode, S_IRUSR as u32, S_IWUSR as u32, S_IXUSR as u32);
     let group = triplet(mode, S_IRGRP as u32, S_IWGRP as u32, S_IXGRP as u32);
