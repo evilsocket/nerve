@@ -1,8 +1,29 @@
 use anyhow::Result;
 
-use super::state::State;
+use super::{namespaces::NAMESPACES, state::State};
 
 pub(crate) mod xml;
+
+pub(crate) fn available_actions() -> String {
+    let mut md = "".to_string();
+
+    for build_fn in NAMESPACES.values() {
+        let group = build_fn();
+        md += &format!("## {}\n\n", group.name);
+        if !group.description.is_empty() {
+            md += &format!("{}\n\n", group.description);
+        }
+        for action in &group.actions {
+            md += &format!(
+                "{} {}\n\n",
+                action.description(),
+                self::xml::serialize::action(action)
+            );
+        }
+    }
+
+    md.trim().to_string()
+}
 
 fn state_available_actions(state: &State) -> Result<String> {
     let mut md = "".to_string();

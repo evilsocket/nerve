@@ -6,7 +6,7 @@ use clap::Parser;
 use colored::Colorize;
 
 use agent::{
-    model,
+    model, serialization,
     task::{tasklet::Tasklet, Task},
     Agent,
 };
@@ -18,9 +18,21 @@ mod cli;
 async fn main() -> Result<()> {
     let args = cli::Args::parse();
 
+    if args.generate_doc {
+        // generate action namespaces documentation and exit
+        println!("{}", serialization::available_actions());
+
+        return Ok(());
+    }
+
+    let tasklet = if let Some(t) = &args.tasklet {
+        t
+    } else {
+        return Err(anyhow!("--tasklet/-T not specified"));
+    };
+
     // TODO: investigate CUDA crashes for low context window sizes.
     // An error occurred with ollama-rs: {"error":"an unknown error was encountered while running the model CUDA error: an illegal memory access was encountered\n  current device: 0, in function ggml_backend_cuda_synchronize at /go/src/github.com/ollama/ollama/llm/llama.cpp/ggml-cuda.cu:2463\n  cudaStreamSynchronize(cuda_ctx-\u003estream())\nGGML_ASSERT: /go/src/github.com/ollama/ollama/llm/llama.cpp/ggml-cuda.cu:100: !\"CUDA error\""}
-
     // create generator
     let gen_options = args.to_generator_options()?;
     let generator = model::factory(
@@ -40,7 +52,7 @@ async fn main() -> Result<()> {
     );
 
     // read and create the tasklet
-    let mut tasklet: Tasklet = Tasklet::from_path(&args.tasklet, &args.define)?;
+    let mut tasklet: Tasklet = Tasklet::from_path(tasklet, &args.define)?;
     // if the tasklet doesn't provide a prompt
     if tasklet.prompt.is_none() {
         tasklet.prompt = Some(if let Some(prompt) = &args.prompt {

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use indexmap::IndexMap;
 use lazy_static::lazy_static;
 
 use super::state::{storage::StorageType, State};
@@ -15,8 +16,8 @@ pub(crate) mod task;
 
 lazy_static! {
     // Available namespaces.
-    pub static ref NAMESPACES: HashMap<String, fn() -> Namespace> = {
-        let mut map = HashMap::new();
+    pub static ref NAMESPACES: IndexMap<String, fn() -> Namespace> = {
+        let mut map = IndexMap::new();
 
         map.insert("memory".to_string(), memory::get_namespace as fn() -> Namespace);
         map.insert("goal".to_string(), goal::get_namespace as fn() -> Namespace);

@@ -29,7 +29,7 @@ pub(crate) struct Args {
     pub generator: String,
     /// Tasklet file.
     #[arg(short = 'T', long)]
-    pub tasklet: String,
+    pub tasklet: Option<String>,
     /// Specify the prompt if not provided by the tasklet.
     #[arg(short = 'P', long)]
     pub prompt: Option<String>,
@@ -48,6 +48,9 @@ pub(crate) struct Args {
     /// Dump the system prompt and the entire chat history to file.
     #[arg(long)]
     pub full_dump: bool,
+    /// Print the documentation of the available action namespaces.
+    #[arg(long)]
+    pub generate_doc: bool,
 }
 
 impl Args {

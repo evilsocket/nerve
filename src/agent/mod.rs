@@ -9,7 +9,7 @@ use task::Task;
 
 pub mod model;
 pub mod namespaces;
-mod serialization;
+pub mod serialization;
 pub mod state;
 pub mod task;
 

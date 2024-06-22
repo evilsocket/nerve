@@ -1,8 +1,7 @@
 using:
   # all default namespaces
   #- '*'
-  - memory
-  - task
+  - '*'
   # plus this, which is not a default namespace, it must be added explicitly
   - filesystem
 
