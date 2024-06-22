@@ -1,7 +1,14 @@
 [package]
 name = "nerve"
 version = "0.1.0"
+description = "Nerve is a tool that allows creating stateful agents with any LLM of your choice - without writing a single line of code. The tool provides to the model a framework of functionalities for planning, saving or recalling memories, etc by dynamically adapting the prompt and making it stateful over multiple inferences. The model will be able to access and use these functionalities in order to accomplish the task you provided."
 edition = "2021"
+keywords = ["llm", "agent", "stateful agents", "ai"]
+authors = ["Simone Margaritelli <evilsocket@gmail.com>"]
+license = "GPL-3.0"
+readme = "README.md"
+repository = "https://github.com/evilsocket/nerve"
+homepage = "https://github.com/evilsocket/nerve"
 
 [dependencies]
 anyhow = "1.0.86"
@@ -24,3 +31,9 @@ serde_trim = "1.1.0"
 serde_yaml = "0.9.34"
 tokio = "1.38.0"
 xml-rs = "0.8.20"
+
+[profile.release]
+lto = true        # Enable link-time optimization
+codegen-units = 1 # Reduce number of codegen units to increase optimizations
+panic = 'abort'   # Abort on panic
+strip = true      # Strip symbols from binary*
