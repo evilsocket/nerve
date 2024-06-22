@@ -5,14 +5,13 @@ use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
 
-use agent::{
-    generator, serialization,
-    task::{tasklet::Tasklet, Task},
-    Agent,
-};
+use agent::{generator, serialization, task::tasklet::Tasklet, Agent};
 
 mod agent;
 mod cli;
+
+const APP_NAME: &str = env!("CARGO_PKG_NAME");
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -45,24 +44,12 @@ async fn main() -> Result<()> {
 
     // read and create the tasklet
     let mut tasklet: Tasklet = Tasklet::from_path(tasklet, &args.define)?;
-    // if the tasklet doesn't provide a prompt
-    if tasklet.prompt.is_none() {
-        tasklet.prompt = Some(if let Some(prompt) = &args.prompt {
-            // if passed by command line
-            prompt.to_string()
-        } else {
-            // ask the user
-            cli::get_user_input("enter task> ")
-        });
-    }
     let tasklet_name = tasklet.name.clone();
-    let task = Box::new(tasklet);
-
-    // create the agent given the generator, task and a set of options
-    let mut agent = Agent::new(generator, task, args.to_agent_options())?;
 
     println!(
-        "🧠 {}{} > {}\n",
+        "{} v{} 🧠 {}{} > {}\n",
+        APP_NAME,
+        APP_VERSION,
         gen_options.model_name.bold(),
         if gen_options.port == 0 {
             format!("@{}", gen_options.type_name.dimmed())
@@ -75,6 +62,21 @@ async fn main() -> Result<()> {
         },
         tasklet_name.green().bold(),
     );
+
+    // if the tasklet doesn't provide a prompt
+    if tasklet.prompt.is_none() {
+        tasklet.prompt = Some(if let Some(prompt) = &args.prompt {
+            // if passed by command line
+            prompt.to_string()
+        } else {
+            // ask the user
+            cli::get_user_input("enter task> ")
+        });
+    }
+    let task = Box::new(tasklet);
+
+    // create the agent given the generator, task and a set of options
+    let mut agent = Agent::new(generator, task, args.to_agent_options())?;
 
     // keep going until the task is complete or a fatal error is reached
     while !agent.get_state().is_complete() {
