@@ -27,12 +27,8 @@ impl Action for AddStep {
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        if payload.is_none() {
-            Err(anyhow!("no step description provided"))
-        } else {
-            state.get_storage("plan")?.add_completion(&payload.unwrap());
-            Ok(Some("step added to the plan".to_string()))
-        }
+        state.get_storage("plan")?.add_completion(&payload.unwrap());
+        Ok(Some("step added to the plan".to_string()))
     }
 }
 
@@ -58,10 +54,6 @@ impl Action for DeleteStep {
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        if payload.is_none() {
-            return Err(anyhow!("no position provided"));
-        }
-
         state
             .get_storage("plan")?
             .del_completion(payload.unwrap().parse::<usize>()?);
@@ -91,10 +83,6 @@ impl Action for SetComplete {
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        if payload.is_none() {
-            return Err(anyhow!("no position provided"));
-        }
-
         let pos = payload.unwrap().parse::<usize>()?;
         if state.get_storage("plan")?.set_complete(pos).is_some() {
             Ok(Some(format!("step {} marked as completed", pos)))
@@ -126,10 +114,6 @@ impl Action for SetIncomplete {
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        if payload.is_none() {
-            return Err(anyhow!("no position provided"));
-        }
-
         let pos = payload.unwrap().parse::<usize>()?;
         if state.get_storage("plan")?.set_incomplete(pos).is_some() {
             Ok(Some(format!("step {} marked as incomplete", pos)))

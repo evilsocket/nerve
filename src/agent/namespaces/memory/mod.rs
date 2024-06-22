@@ -36,20 +36,14 @@ impl Action for SaveMemory {
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        if let Some(attrs) = attributes {
-            if let Some(key) = attrs.get("key") {
-                if let Some(data) = payload {
-                    state.get_storage("memories")?.add_tagged(key, &data);
-                    return Ok(Some("memory saved".to_string()));
-                }
+        let attrs = attributes.unwrap();
+        let key = attrs.get("key").unwrap();
 
-                return Err(anyhow!("no content specified for save-memory"));
-            }
+        state
+            .get_storage("memories")?
+            .add_tagged(key, payload.unwrap().as_str());
 
-            return Err(anyhow!("no key attribute specified for save-memory"));
-        }
-
-        Err(anyhow!("no attributes specified for save-memory"))
+        Ok(Some("memory saved".to_string()))
     }
 }
 
@@ -79,19 +73,13 @@ impl Action for DeleteMemory {
         attributes: Option<HashMap<String, String>>,
         _: Option<String>,
     ) -> Result<Option<String>> {
-        if let Some(attrs) = attributes {
-            if let Some(key) = attrs.get("key") {
-                return if state.get_storage("memories")?.del_tagged(key).is_some() {
-                    return Ok(Some("memory deleted".to_string()));
-                } else {
-                    Err(anyhow!("memory '{}' not found", key))
-                };
-            }
-
-            return Err(anyhow!("no key attribute specified for delete-memory"));
+        let attrs = attributes.unwrap();
+        let key = attrs.get("key").unwrap();
+        if state.get_storage("memories")?.del_tagged(key).is_some() {
+            Ok(Some("memory deleted".to_string()))
+        } else {
+            Err(anyhow!("memory '{}' not found", key))
         }
-
-        Err(anyhow!("no attributes specified for delete-memory"))
     }
 }
 
@@ -121,21 +109,16 @@ impl Action for RecallMemory {
         attributes: Option<HashMap<String, String>>,
         _: Option<String>,
     ) -> Result<Option<String>> {
-        if let Some(attrs) = attributes {
-            if let Some(key) = attrs.get("key") {
-                return if let Some(memory) = state.get_storage("memories")?.get_tagged(key) {
-                    println!("<{}> recalling {}", "memories".bold(), key);
-                    return Ok(Some(memory));
-                } else {
-                    eprintln!("<{}> memory {} does not exist", "memories".bold(), key);
-                    Err(anyhow!("memory '{}' not found", key))
-                };
-            }
+        let attrs = attributes.unwrap();
+        let key = attrs.get("key").unwrap();
 
-            return Err(anyhow!("no key attribute specified for delete-memory"));
+        if let Some(memory) = state.get_storage("memories")?.get_tagged(key) {
+            println!("<{}> recalling {}", "memories".bold(), key);
+            Ok(Some(memory))
+        } else {
+            eprintln!("<{}> memory {} does not exist", "memories".bold(), key);
+            Err(anyhow!("memory '{}' not found", key))
         }
-
-        Err(anyhow!("no attributes specified for delete-memory"))
     }
 }
 

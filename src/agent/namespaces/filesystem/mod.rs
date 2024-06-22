@@ -75,49 +75,45 @@ impl Action for ReadFolder {
         _attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        if let Some(folder) = payload {
-            // adapted from https://gist.github.com/mre/91ebb841c34df69671bd117ead621a8b
-            let ret = fs::read_dir(&folder);
-            if let Ok(paths) = ret {
-                let mut output = format!("Contents of {} :\n\n", &folder);
+        // adapted from https://gist.github.com/mre/91ebb841c34df69671bd117ead621a8b
+        let folder = payload.unwrap();
+        let ret = fs::read_dir(&folder);
+        if let Ok(paths) = ret {
+            let mut output = format!("Contents of {} :\n\n", &folder);
 
-                for path in paths {
-                    if let Ok(entry) = path {
-                        let full_path = entry.path().canonicalize().unwrap();
-                        let metadata = entry.metadata().unwrap();
-                        let size = metadata.len();
-                        let modified: DateTime<Local> =
-                            DateTime::from(metadata.modified().unwrap());
-                        let mode = metadata.permissions().mode();
+            for path in paths {
+                if let Ok(entry) = path {
+                    let full_path = entry.path().canonicalize().unwrap();
+                    let metadata = entry.metadata().unwrap();
+                    let size = metadata.len();
+                    let modified: DateTime<Local> = DateTime::from(metadata.modified().unwrap());
+                    let mode = metadata.permissions().mode();
 
-                        output += &format!(
-                            "{} {:>5} {} [{}] {}\n",
-                            parse_permissions(mode),
-                            size,
-                            modified.format("%_d %b %H:%M"),
-                            parse_type(metadata.file_type()),
-                            full_path.display()
-                        );
-                    } else {
-                        eprintln!("ERROR: {:?}", path);
-                    }
+                    output += &format!(
+                        "{} {:>5} {} [{}] {}\n",
+                        parse_permissions(mode),
+                        size,
+                        modified.format("%_d %b %H:%M"),
+                        parse_type(metadata.file_type()),
+                        full_path.display()
+                    );
+                } else {
+                    eprintln!("ERROR: {:?}", path);
                 }
-
-                println!(
-                    "<{}> {} -> {} bytes",
-                    self.name().bold(),
-                    folder.yellow(),
-                    output.len()
-                );
-
-                return Ok(Some(output));
-            } else {
-                eprintln!("<{}> {} -> {:?}", self.name().bold(), folder.red(), &ret);
-                return Err(anyhow!("can't read {}: {:?}", folder, ret));
             }
-        }
 
-        Err(anyhow!("no content specified for read-file"))
+            println!(
+                "<{}> {} -> {} bytes",
+                self.name().bold(),
+                folder.yellow(),
+                output.len()
+            );
+
+            Ok(Some(output))
+        } else {
+            eprintln!("<{}> {} -> {:?}", self.name().bold(), folder.red(), &ret);
+            Err(anyhow!("can't read {}: {:?}", folder, ret))
+        }
     }
 }
 
@@ -143,31 +139,27 @@ impl Action for ReadFile {
         _attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        if let Some(filepath) = payload {
-            let ret = std::fs::read_to_string(&filepath);
-            if let Ok(contents) = ret {
-                println!(
-                    "<{}> {} -> {} bytes",
-                    self.name().bold(),
-                    filepath.yellow(),
-                    contents.len()
-                );
-                return Ok(Some(contents));
-            } else {
-                let err = ret.err().unwrap();
-                println!(
-                    "<{}> {} -> {:?}",
-                    self.name().bold(),
-                    filepath.yellow(),
-                    &err
-                );
+        let filepath = payload.unwrap();
+        let ret = std::fs::read_to_string(&filepath);
+        if let Ok(contents) = ret {
+            println!(
+                "<{}> {} -> {} bytes",
+                self.name().bold(),
+                filepath.yellow(),
+                contents.len()
+            );
+            Ok(Some(contents))
+        } else {
+            let err = ret.err().unwrap();
+            println!(
+                "<{}> {} -> {:?}",
+                self.name().bold(),
+                filepath.yellow(),
+                &err
+            );
 
-                return Err(anyhow!(err));
-            }
+            Err(anyhow!(err))
         }
-
-        // TODO: check for mandatory payload and attributes while parsing
-        Err(anyhow!("no content specified for read-file"))
     }
 }
 

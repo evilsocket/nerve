@@ -212,6 +212,7 @@ impl State {
 
     pub fn add_error_to_history(&self, invocation: Invocation, error: String) {
         if let Ok(mut guard) = self.history.lock() {
+            // eprintln!("[{}] -> {}", &invocation.action, error.red());
             guard.push(Execution::with_error(invocation, error));
         }
     }
@@ -222,33 +223,86 @@ impl State {
         }
     }
 
-    pub async fn execute(&self, invocation: Invocation) -> Result<()> {
-        // println!("[INVOKE]");
-
+    #[allow(clippy::borrowed_box)]
+    fn get_action(&self, name: &str) -> Option<&Box<dyn namespaces::Action>> {
         for group in &self.namespaces {
             for action in &group.actions {
-                if invocation.action == action.name() {
-                    // execute the action
-                    let inv = invocation.clone();
-                    let ret = action.run(self, invocation.attributes, invocation.payload);
-                    if let Err(error) = ret {
-                        // tell the model about the error
-                        self.add_error_to_history(inv, error.to_string());
-                    } else {
-                        // tell the model about the output
-                        self.add_success_to_history(inv, ret.unwrap());
-                    }
-
-                    return Ok(());
+                if name == action.name() {
+                    return Some(action);
                 }
             }
         }
 
-        // tell the model that the action name is wrong
-        self.add_error_to_history(
-            invocation.clone(),
-            format!("'{}' is not a valid action name", invocation.action),
-        );
+        None
+    }
+
+    pub async fn execute(&self, invocation: Invocation) -> Result<()> {
+        if let Some(action) = self.get_action(&invocation.action) {
+            // validate prerequisites
+            let payload_required = action.example_payload().is_some();
+            let attrs_required = action.attributes().is_some();
+
+            if payload_required && invocation.payload.is_none() {
+                // payload required and not specified
+                self.add_error_to_history(
+                    invocation.clone(),
+                    format!("no content specified for '{}'", invocation.action),
+                );
+                return Ok(());
+            } else if attrs_required && invocation.attributes.is_none() {
+                // attributes required and not specified at all
+                self.add_error_to_history(
+                    invocation.clone(),
+                    format!("no attributes specified for '{}'", invocation.action),
+                );
+                return Ok(());
+            } else if attrs_required {
+                // validate each required attribute
+                let required_attrs: Vec<String> = action
+                    .attributes()
+                    .unwrap()
+                    .keys()
+                    .map(|s| s.to_owned())
+                    .collect();
+                let passed_attrs: Vec<String> = invocation
+                    .clone()
+                    .attributes
+                    .unwrap()
+                    .keys()
+                    .map(|s| s.to_owned())
+                    .collect();
+
+                for required in required_attrs {
+                    if !passed_attrs.contains(&required) {
+                        self.add_error_to_history(
+                            invocation.clone(),
+                            format!(
+                                "no '{}' attribute specified for '{}'",
+                                required, invocation.action
+                            ),
+                        );
+                        return Ok(());
+                    }
+                }
+            }
+
+            // execute the action
+            let inv = invocation.clone();
+            let ret = action.run(self, invocation.attributes, invocation.payload);
+            if let Err(error) = ret {
+                // tell the model about the error
+                self.add_error_to_history(inv, error.to_string());
+            } else {
+                // tell the model about the output
+                self.add_success_to_history(inv, ret.unwrap());
+            }
+        } else {
+            // tell the model that the action name is wrong
+            self.add_error_to_history(
+                invocation.clone(),
+                format!("'{}' is not a valid action name", invocation.action),
+            );
+        }
 
         Ok(())
     }
