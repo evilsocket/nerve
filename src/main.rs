@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
     println!(
         "{}: {}\n",
         "namespaces".bold(),
-        agent.state().used_namespaces().join(", ")
+        agent.state().get_used_namespaces_names().join(", ")
     );
 
     // keep going until the task is complete or a fatal error is reached

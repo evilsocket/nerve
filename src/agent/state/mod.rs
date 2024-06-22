@@ -12,7 +12,6 @@ use colored::Colorize;
 use super::{
     model::Message,
     namespaces::{self, Namespace},
-    serialization,
     task::Task,
     Invocation,
 };
@@ -27,8 +26,8 @@ pub struct State {
     // the task
     task: Box<dyn Task>,
     // current iteration and max
-    curr_iter: usize,
-    max_iters: usize,
+    pub curr_iter: usize,
+    pub max_iters: usize,
     // model memories, goals and other storages
     storages: HashMap<String, Storage>,
     // available actions and execution history
@@ -130,6 +129,15 @@ impl State {
         self.history.lock().unwrap().to_chat_history(max)
     }
 
+    #[allow(clippy::borrowed_box)]
+    pub fn get_task(&self) -> &Box<dyn Task> {
+        &self.task
+    }
+
+    pub fn get_storages(&self) -> Vec<&Storage> {
+        self.storages.values().collect()
+    }
+
     pub fn get_storage(&self, name: &str) -> Result<&Storage> {
         if let Some(storage) = self.storages.get(name) {
             Ok(storage)
@@ -139,69 +147,23 @@ impl State {
         }
     }
 
-    pub(crate) fn available_actions_to_string(&self) -> Result<String> {
-        let mut md = "".to_string();
-
-        for group in &self.namespaces {
-            md += &format!("## {}\n\n", group.name);
-            if !group.description.is_empty() {
-                md += &format!("{}\n\n", group.description);
-            }
-            for action in &group.actions {
-                md += &format!(
-                    "{} {}\n\n",
-                    action.description(),
-                    serialization::xml::serialize::action(action)
-                );
-            }
-        }
-
-        Ok(md)
-    }
-
-    pub fn to_system_prompt(&self) -> Result<String> {
-        let system_prompt = self.task.to_system_prompt()?;
-        let mut storages = vec![];
-        let mut sorted: Vec<&Storage> = self.storages.values().collect();
-
-        sorted.sort_by_key(|x| x.get_type().as_u8());
-
-        for storage in sorted {
-            storages.push(serialization::xml::serialize::storage(storage));
-        }
-
-        let storages = storages.join("\n\n");
-        let guidance = self
-            .task
-            .guidance()?
-            .into_iter()
-            .map(|s| format!("- {}", s))
-            .collect::<Vec<String>>()
-            .join("\n");
-        let available_actions = self.available_actions_to_string()?;
-
-        let iterations = if self.max_iters > 0 {
-            format!(
-                "You are currently at step {} of a maximum of {}.",
-                self.curr_iter + 1,
-                self.max_iters
-            )
-        } else {
-            "".to_string()
-        };
-
-        Ok(format!(
-            include_str!("system.prompt"),
-            iterations = iterations,
-            system_prompt = system_prompt,
-            storages = storages,
-            available_actions = available_actions,
-            guidance = guidance,
-        ))
-    }
-
     pub fn to_prompt(&self) -> Result<String> {
         self.task.to_prompt()
+    }
+
+    pub fn is_complete(&self) -> bool {
+        self.complete.load(Ordering::SeqCst)
+    }
+
+    pub fn get_namespaces(&self) -> &Vec<Namespace> {
+        &self.namespaces
+    }
+
+    pub fn get_used_namespaces_names(&self) -> Vec<String> {
+        self.namespaces
+            .iter()
+            .map(|n| n.name.to_string().to_lowercase())
+            .collect()
     }
 
     pub fn add_success_to_history(&self, invocation: Invocation, result: Option<String>) {
@@ -332,16 +294,5 @@ impl State {
 
         self.complete.store(true, Ordering::SeqCst);
         Ok(())
-    }
-
-    pub fn is_complete(&self) -> bool {
-        self.complete.load(Ordering::SeqCst)
-    }
-
-    pub fn used_namespaces(&self) -> Vec<String> {
-        self.namespaces
-            .iter()
-            .map(|n| n.name.to_string().to_lowercase())
-            .collect()
     }
 }

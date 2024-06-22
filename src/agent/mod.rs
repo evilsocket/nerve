@@ -80,7 +80,7 @@ impl Agent {
         if let Some(prompt_path) = &self.options.save_to {
             let mut opts = options.clone();
             if refresh {
-                opts.system_prompt = self.state.to_system_prompt()?;
+                opts.system_prompt = serialization::state_to_system_prompt(&self.state)?;
                 opts.history = self.state.to_chat_history(self.max_history as usize)?;
             }
 
@@ -109,7 +109,7 @@ impl Agent {
     pub async fn step(&mut self) -> Result<()> {
         self.state.on_next_iteration()?;
 
-        let system_prompt = self.state.to_system_prompt()?;
+        let system_prompt = serialization::state_to_system_prompt(&self.state)?;
         let prompt = self.state.to_prompt()?;
         let history = self.state.to_chat_history(self.max_history as usize)?;
 
