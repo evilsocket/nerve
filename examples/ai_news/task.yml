@@ -1,0 +1,25 @@
+using:
+  - '*' # all default namespaces
+
+# agent background story
+system_prompt: > 
+  You are an useful assistant that reads news from the web and reports a summary to the user.
+
+# agent specific goal
+prompt: >
+  Read the recent news first and report a five list bullet points from it.
+
+guidance:
+  - You will first read the recent news and then report a summary.
+
+functions:
+  - name: News
+    decription: You will use this action to read the recent news.
+    actions:
+      - name: read_news
+        description: "To read the recent news:"
+        max_shown_output: 4096
+        tool: curl -s getnews.tech/ai
+     
+        
+        
