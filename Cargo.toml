@@ -30,6 +30,7 @@ regex = "1.10.5"
 serde = { version = "1.0.203", features = ["derive", "serde_derive"] }
 serde_trim = "1.1.0"
 serde_yaml = "0.9.34"
+simple-home-dir = "0.3.5"
 tokio = "1.38.0"
 xml-rs = "0.8.20"
 

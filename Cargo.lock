@@ -608,6 +608,7 @@ dependencies = [
  "serde",
  "serde_trim",
  "serde_yaml",
+ "simple-home-dir",
  "tokio",
  "xml-rs",
 ]
@@ -1013,6 +1014,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9e9e0b4211b72e7b8b6e85c807d36c212bdb33ea8587f7569562a84df5465b1"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "simple-home-dir"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c221cbc8c1ff6bdf949b12cc011456c510ec6840654b444c7374c78e928ce344"
+dependencies = [
+ "windows-sys 0.52.0",
 ]
 
 [[package]]

@@ -8,6 +8,7 @@ use colored::Colorize;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use serde_trim::*;
+use simple_home_dir::home_dir;
 
 use super::Task;
 use crate::{
@@ -282,11 +283,22 @@ impl Tasklet {
     pub fn from_path(path: &str, defines: &Vec<String>) -> Result<Self> {
         parse_pre_defined_values(defines)?;
 
-        let ppath = PathBuf::from_str(path)?;
+        let mut ppath = PathBuf::from_str(path)?;
+
+        // try to look it up in ~/.nerve/tasklets
+        if !ppath.exists() {
+            let in_home = home_dir()
+                .unwrap()
+                .join(PathBuf::from_str(".nerve/tasklets")?.join(&ppath));
+            if in_home.exists() {
+                ppath = in_home;
+            }
+        }
+
         if ppath.is_dir() {
-            Self::from_folder(path)
+            Self::from_folder(ppath.to_str().unwrap())
         } else {
-            Self::from_yaml_file(path)
+            Self::from_yaml_file(ppath.to_str().unwrap())
         }
     }
 
