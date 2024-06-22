@@ -19,7 +19,7 @@ While Nerve was inspired by other projects such as Autogen and Rigging, its main
 
 ## Example
 
-Let's take a look at the `tasklets/ssh_agent` example tasklet (a "tasklet" is a YAML file describing a task and the instructions):
+Let's take a look at the `examples/ssh_agent` example tasklet (a "tasklet" is a YAML file describing a task and the instructions):
 
 ```yaml
 # If this block is not specified, the agent will be able to access all of the 
@@ -88,7 +88,7 @@ You can also not specify a `prompt` section in the tasklet file, in which case y
 nerve -T /path/to/ssh_agent -DSSH_USER_HOST_STRING=user@example-ssh-server-host -P 'find which process is using the most RAM'
 ```
 
-You can find more examples in the `tasklets` folder, feel free to send a PR if you create a new cool one! :D
+You can find more tasklet examples in the `examples` folder, feel free to send a PR if you create a new cool one! :D
 
 ### How does it work?
 

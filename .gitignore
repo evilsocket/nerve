@@ -3,6 +3,6 @@
 /system.txt
 /prompt.txt
 /system-prompt.txt
-/tasklets/fuzzer/test_binary/test_binary
-/tasklets/test
+/examples/fuzzer/test_binary/test_binary
+/examples/test
 .DS_Store
