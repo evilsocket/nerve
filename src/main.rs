@@ -43,21 +43,6 @@ async fn main() -> Result<()> {
         gen_options.context_window,
     )?;
 
-    println!(
-        "using {}{} (context_window={})",
-        gen_options.model_name.bold(),
-        if gen_options.port == 0 {
-            format!("@{}", gen_options.type_name.dimmed())
-        } else {
-            format!(
-                "@{}:{}",
-                gen_options.host.dimmed(),
-                gen_options.port.to_string().dimmed()
-            )
-        },
-        gen_options.context_window
-    );
-
     // read and create the tasklet
     let mut tasklet: Tasklet = Tasklet::from_path(tasklet, &args.define)?;
     // if the tasklet doesn't provide a prompt
@@ -70,17 +55,25 @@ async fn main() -> Result<()> {
             cli::get_user_input("enter task> ")
         });
     }
+    let tasklet_name = tasklet.name.clone();
     let task = Box::new(tasklet);
-
-    println!("{}: {}", "task".bold(), task.to_prompt()?.trim().yellow());
 
     // create the agent given the generator, task and a set of options
     let mut agent = Agent::new(generator, task, args.to_agent_options())?;
 
     println!(
-        "{}: {}\n",
-        "namespaces".bold(),
-        agent.state().get_used_namespaces_names().join(", ")
+        "🧠 {}{} > {}\n",
+        gen_options.model_name.bold(),
+        if gen_options.port == 0 {
+            format!("@{}", gen_options.type_name.dimmed())
+        } else {
+            format!(
+                "@{}:{}",
+                gen_options.host.dimmed(),
+                gen_options.port.to_string().dimmed()
+            )
+        },
+        tasklet_name.green().bold(),
     );
 
     // keep going until the task is complete or a fatal error is reached

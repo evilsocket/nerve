@@ -268,6 +268,8 @@ impl FunctionGroup {
 pub struct Tasklet {
     #[serde(skip_deserializing, skip_serializing)]
     folder: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub name: String,
     #[serde(deserialize_with = "string_trim")]
     system_prompt: String,
     pub prompt: Option<String>,
@@ -316,6 +318,17 @@ impl Tasklet {
                 folder.to_string()
             } else {
                 return Err(anyhow!("can't get string of {:?}", tasklet_parent_folder));
+            };
+
+            tasklet.name = if canon.ends_with("task.yaml") || canon.ends_with("task.yml") {
+                tasklet_parent_folder
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_owned()
+            } else {
+                canon.file_stem().unwrap().to_str().unwrap().to_owned()
             };
 
             // println!("tasklet = {:?}", &tasklet);
