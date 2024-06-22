@@ -8,7 +8,6 @@ anyhow = "1.0.86"
 async-trait = "0.1.80"
 clap = { version = "4.5.6", features = ["derive"] }
 colored = "2.1.0"
-html2text = "0.12.5"
 indexmap = "2.2.6"
 lazy_static = "1.4.0"
 ollama-rs = { version = "0.1.9", features = [
@@ -21,5 +20,4 @@ serde = { version = "1.0.203", features = ["derive", "serde_derive"] }
 serde_trim = "1.1.0"
 serde_yaml = "0.9.34"
 tokio = "1.38.0"
-urlencoding = "2.1.3"
 xml-rs = "0.8.20"
