@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use itertools::Itertools;
 use xml::{reader::XmlEvent, EventReader};
 
 use crate::agent::Invocation;
@@ -137,7 +138,8 @@ pub(crate) fn try_parse(raw: &str) -> Result<Vec<Invocation>> {
         }
     }
 
-    Ok(parsed)
+    // avoid running the same command twince in a row
+    Ok(parsed.into_iter().unique().collect())
 }
 
 // TODO: add waaaaay more tests

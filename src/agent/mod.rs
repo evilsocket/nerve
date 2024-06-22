@@ -13,11 +13,19 @@ mod serialization;
 pub mod state;
 pub mod task;
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Invocation {
     pub action: String,
     pub attributes: Option<HashMap<String, String>>,
     pub payload: Option<String>,
+}
+
+impl std::hash::Hash for Invocation {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.action.hash(state);
+        state.write(format!("{:?}", &self.attributes).as_bytes());
+        self.payload.hash(state);
+    }
 }
 
 impl Invocation {
@@ -114,7 +122,6 @@ impl Agent {
 
         // parse the model response into invocations
         let invocations = serialization::xml::parsing::try_parse(&response)?;
-        let mut prev: Option<Invocation> = None;
 
         // nothing parsed, report the problem to the model
         if invocations.is_empty() {
@@ -143,16 +150,6 @@ impl Agent {
 
         // for each parsed invocation
         for inv in invocations {
-            // avoid running the same command twince in a row
-            if let Some(p) = prev.as_ref() {
-                if inv.eq(p) {
-                    println!(".");
-                    continue;
-                }
-            }
-
-            prev = Some(inv.clone());
-
             // see if valid action and execute
             if let Err(e) = self.state.execute(inv.clone()).await {
                 println!("ERROR: {}", e);
