@@ -17,8 +17,8 @@ system_prompt: >
   You are acting as a useful assistant that perform complex tasks by executing a series of shell commands.
 
 # agent specific goal, leave empty to ask the user
-prompt: >
-  find which process is using the most RAM
+#prompt: >
+#  find which process is using the most RAM
 
 # optional rules to add to the basic ones
 guidance:
