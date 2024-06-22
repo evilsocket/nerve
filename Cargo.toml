@@ -6,11 +6,13 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 async-trait = "0.1.80"
+chrono = "0.4.38"
 clap = { version = "4.5.6", features = ["derive"] }
 colored = "2.1.0"
 indexmap = "2.2.6"
 itertools = "0.13.0"
 lazy_static = "1.4.0"
+libc = "0.2.155"
 ollama-rs = { version = "0.1.9", features = [
     "rustls",
     "tokio",

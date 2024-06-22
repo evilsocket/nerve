@@ -1,15 +1,13 @@
 using:
   # all default namespaces
   #- '*'
-  - planning
   - memory
   - task
   # plus this, which is not a default namespace, it must be added explicitly
   - filesystem
 
 system_prompt: > 
-  You are a senior developer and computer expert with years of linux experience.
-  You are acting as a useful assistant that perform complex tasks by exploring the filesystem.
+  You are a computer expert with years of linux experience acting as a useful assistant that perform complex tasks by exploring the filesystem.
 
 prompt: >
   read the file in /etc that contains mappings for hostnames to IP addresses and save its contents in your memory

@@ -228,28 +228,6 @@ impl State {
         for group in &self.namespaces {
             for action in &group.actions {
                 if invocation.action == action.name() {
-                    let example_payload = action.example_payload();
-                    // check if valid payload has been provided
-                    if let Some(payload) = invocation.payload.as_ref() {
-                        if let Some(example) = example_payload.as_ref() {
-                            if example == payload {
-                                self.add_error_to_history(invocation.clone(), "do not use the example values but use the information you have to create new ones".to_string());
-                                return Ok(());
-                            }
-                        }
-                    }
-
-                    // check if valid attributes have been provided
-                    let example_attributes = action.attributes();
-                    if let Some(attrs) = invocation.attributes.as_ref() {
-                        if let Some(example) = example_attributes.as_ref() {
-                            if example == attrs {
-                                self.add_error_to_history(invocation.clone(), "do not use the example values but use the information you have to create new ones".to_string());
-                                return Ok(());
-                            }
-                        }
-                    }
-
                     // execute the action
                     let inv = invocation.clone();
                     let ret = action.run(self, invocation.attributes, invocation.payload);
