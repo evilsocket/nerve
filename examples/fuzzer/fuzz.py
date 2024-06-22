@@ -14,7 +14,7 @@ cmd = [
     "-o", "run",
     "-o", "q",
     test_binary,
-    sys.argv[1]
+    "'%s'" % sys.argv[1]
 ]
 
 result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

@@ -33,13 +33,13 @@ pub(crate) fn action(action: &Box<dyn Action>) -> String {
             xml += &format!(" {}=\"{}\"", name, example_value);
         }
     }
-    xml += ">";
 
     if let Some(payload) = action.example_payload() {
-        xml += payload; // TODO: escape payload?
+        // TODO: escape payload?
+        xml += &format!(">{}</{}>", payload, action.name());
+    } else {
+        xml += "/>";
     }
-
-    xml += &format!("</{}>", action.name());
 
     xml
 }

@@ -52,7 +52,7 @@ pub struct TaskletAction {
     #[serde(deserialize_with = "string_trim")]
     description: String,
     args: Option<HashMap<String, String>>,
-    example_payload: String,
+    example_payload: Option<String>,
     #[serde(deserialize_with = "string_trim")]
     tool: String,
 }
@@ -67,7 +67,7 @@ impl Action for TaskletAction {
     }
 
     fn example_payload(&self) -> Option<&str> {
-        Some(self.example_payload.as_str())
+        self.example_payload.as_deref()
     }
 
     fn attributes(&self) -> Option<HashMap<String, String>> {

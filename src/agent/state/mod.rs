@@ -203,22 +203,40 @@ impl State {
             // validate prerequisites
             let payload_required = action.example_payload().is_some();
             let attrs_required = action.attributes().is_some();
+            let has_payload = invocation.payload.is_some();
+            let has_attributes = invocation.attributes.is_some();
 
-            if payload_required && invocation.payload.is_none() {
+            if payload_required && !has_payload {
                 // payload required and not specified
                 self.add_error_to_history(
                     invocation.clone(),
-                    format!("no content specified for '{}'", invocation.action),
+                    format!("no xml content specified for '{}'", invocation.action),
                 );
                 return Ok(());
-            } else if attrs_required && invocation.attributes.is_none() {
+            } else if attrs_required && !has_attributes {
                 // attributes required and not specified at all
                 self.add_error_to_history(
                     invocation.clone(),
-                    format!("no attributes specified for '{}'", invocation.action),
+                    format!("no xml attributes specified for '{}'", invocation.action),
                 );
                 return Ok(());
-            } else if attrs_required {
+            } else if !payload_required && has_payload {
+                // payload not required but specified
+                self.add_error_to_history(
+                    invocation.clone(),
+                    format!("no xml content needed for '{}'", invocation.action),
+                );
+                return Ok(());
+            } else if !attrs_required && has_attributes {
+                // attributes not required but specified
+                self.add_error_to_history(
+                    invocation.clone(),
+                    format!("no xml attributes needed for '{}'", invocation.action),
+                );
+                return Ok(());
+            }
+
+            if attrs_required {
                 // validate each required attribute
                 let required_attrs: Vec<String> = action
                     .attributes()
@@ -239,7 +257,7 @@ impl State {
                         self.add_error_to_history(
                             invocation.clone(),
                             format!(
-                                "no '{}' attribute specified for '{}'",
+                                "no '{}' xml attribute specified for '{}'",
                                 required, invocation.action
                             ),
                         );
