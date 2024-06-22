@@ -14,6 +14,8 @@ use agent::{
 mod agent;
 mod cli;
 
+// TODO: collect & report statistics (steps, model errors, etc)
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = cli::Args::parse();
