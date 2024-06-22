@@ -48,17 +48,35 @@ impl State {
         let mut namespaces = vec![];
         let using = task.namespaces();
 
-        if let Some(using) = using {
+        if let Some(mut using) = using {
+            let wild_card_idx = using.iter().position(|n| n == "*");
+            if let Some(wild_card_idx) = wild_card_idx {
+                // wildcard used, add all default namespaces and remove it from 'using'
+                using.remove(wild_card_idx);
+                for build_fn in namespaces::NAMESPACES.values() {
+                    let ns = build_fn();
+                    if ns.default {
+                        namespaces.push(ns);
+                    }
+                }
+            }
+
             // add only task defined namespaces
-            for (name, build_namespace) in &*namespaces::NAMESPACES {
-                if using.contains(name) {
-                    namespaces.push(build_namespace());
+            for used_ns_name in &using {
+                if let Some(build_fn) = namespaces::NAMESPACES.get(used_ns_name) {
+                    let ns = build_fn();
+                    namespaces.push(ns);
+                } else {
+                    return Err(anyhow!("no namespace '{}' defined", used_ns_name));
                 }
             }
         } else {
-            // add all available namespaces
-            for build_namespace in namespaces::NAMESPACES.values() {
-                namespaces.push(build_namespace());
+            // add all default namespaces
+            for build_fn in namespaces::NAMESPACES.values() {
+                let ns = build_fn();
+                if ns.default {
+                    namespaces.push(ns);
+                }
             }
         }
 

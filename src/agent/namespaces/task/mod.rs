@@ -60,7 +60,7 @@ impl Action for Impossible {
 }
 
 pub(crate) fn get_namespace() -> Namespace {
-    Namespace::new(
+    Namespace::new_default(
         "Task".to_string(),
         include_str!("ns.prompt").to_string(),
         vec![Box::<Complete>::default(), Box::<Impossible>::default()],

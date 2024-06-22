@@ -5,8 +5,9 @@ use lazy_static::lazy_static;
 
 use super::state::{storage::StorageType, State};
 
-// TODO: add more namespaces of actions: fs (read only), take screenshot (multimodal), networking, move mouse, ui interactions, etc
+// TODO: add more namespaces of actions: take screenshot (multimodal), networking, move mouse, ui interactions, etc
 
+pub(crate) mod filesystem;
 pub(crate) mod goal;
 pub(crate) mod memory;
 pub(crate) mod planning;
@@ -21,6 +22,7 @@ lazy_static! {
         map.insert("goal".to_string(), goal::get_namespace as fn() -> Namespace);
         map.insert("planning".to_string(), planning::get_namespace as fn() -> Namespace);
         map.insert("task".to_string(), task::get_namespace as fn() -> Namespace);
+        map.insert("filesystem".to_string(), filesystem::get_namespace as fn() -> Namespace);
 
         map
     };
@@ -65,20 +67,39 @@ pub struct Namespace {
     pub description: String,
     pub actions: Vec<Box<dyn Action>>,
     pub storages: Option<Vec<StorageDescriptor>>,
+    pub default: bool,
 }
 
 impl Namespace {
-    pub fn new(
+    pub fn new_non_default(
         name: String,
         description: String,
         actions: Vec<Box<dyn Action>>,
         storages: Option<Vec<StorageDescriptor>>,
     ) -> Self {
+        let default = false;
         Self {
             name,
             description,
             actions,
             storages,
+            default,
+        }
+    }
+
+    pub fn new_default(
+        name: String,
+        description: String,
+        actions: Vec<Box<dyn Action>>,
+        storages: Option<Vec<StorageDescriptor>>,
+    ) -> Self {
+        let default = true;
+        Self {
+            name,
+            description,
+            actions,
+            storages,
+            default,
         }
     }
 }

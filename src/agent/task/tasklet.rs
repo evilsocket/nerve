@@ -251,7 +251,7 @@ impl FunctionGroup {
             actions.push(Box::new(action));
         }
 
-        Ok(Namespace::new(
+        Ok(Namespace::new_default(
             self.name.to_string(),
             if let Some(desc) = &self.description {
                 desc.to_string()
