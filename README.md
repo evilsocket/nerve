@@ -10,7 +10,7 @@ Nerve is a tool that allows creating stateful agents with any LLM of your choice
 The tool provides to the model a framework of functionalities for planning, saving or recalling memories, etc (you can think about it as a "standard library" of functions for the LLM to use) by dynamically adapting the prompt and making it stateful over multiple inferences. The model will be able to access and use these functionalities in order to accomplish the task you provided.
 
 <p align="center">
-  <img alt="Nerve" src="https://raw.githubusercontent.com/evilsocket/nerve/main/image.jpg"/>
+  <img alt="Nerve" src="https://raw.githubusercontent.com/evilsocket/nerve/main/concept.png"/>
 </p>
 
 While Nerve was inspired by other projects such as Autogen and Rigging, its main goal and core difference with other tools is to allow the user to instrument smart agents without writing code (unless required for custom functionalities). Another advantage of Nerve is being a single static binary (or docker container) that does not require heavy runtimes (such as Python) while offering maximum efficiency and memory safety.
