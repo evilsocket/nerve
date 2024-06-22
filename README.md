@@ -76,13 +76,13 @@ In order to run this tasklet, you'll need an [OLLAMA server](https://ollama.ai/)
 To use Nerve with an OpenAI account:
 
 ```sh
-OPENAI_API_KEY=you-api-key nerve  "openai://gpt-4" ...
+OPENAI_API_KEY=you-api-key nerve -G "openai://gpt-4" ...
 ```
 
 To use it with an Ollama server:
 
 ```sh
-nerve "ollama://<model-name>@<ollama-host>:11434" ...
+nerve -G "ollama://<model-name>@<ollama-host>:11434" ...
 ```
 
 Therefore you'll run for instance (see the below section on how to build Nerve):
