@@ -10,7 +10,7 @@ use anyhow::Result;
 use colored::Colorize;
 
 use super::{
-    model::Message,
+    generator::Message,
     namespaces::{self, Namespace},
     task::Task,
     Invocation,

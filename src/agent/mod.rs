@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use anyhow::Result;
 use colored::Colorize;
 
-use model::{Client, Options};
+use generator::{Client, Options};
 use state::State;
 use task::Task;
 
-pub mod model;
+pub mod generator;
 pub mod namespaces;
 pub mod serialization;
 pub mod state;

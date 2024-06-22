@@ -70,8 +70,10 @@ impl Args {
             return Err(anyhow!("generator string can't be empty".to_string()));
         }
 
-        let mut generator = Generator::default();
-        generator.context_window = self.context_window;
+        let mut generator = Generator {
+            context_window: self.context_window,
+            ..Default::default()
+        };
 
         if raw.contains('@') {
             let caps = if let Some(caps) = LOCAL_GENERATOR_PARSER.captures_iter(raw).next() {

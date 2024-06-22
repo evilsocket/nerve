@@ -6,7 +6,7 @@ use clap::Parser;
 use colored::Colorize;
 
 use agent::{
-    model, serialization,
+    generator, serialization,
     task::{tasklet::Tasklet, Task},
     Agent,
 };
@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
     // An error occurred with ollama-rs: {"error":"an unknown error was encountered while running the model CUDA error: an illegal memory access was encountered\n  current device: 0, in function ggml_backend_cuda_synchronize at /go/src/github.com/ollama/ollama/llm/llama.cpp/ggml-cuda.cu:2463\n  cudaStreamSynchronize(cuda_ctx-\u003estream())\nGGML_ASSERT: /go/src/github.com/ollama/ollama/llm/llama.cpp/ggml-cuda.cu:100: !\"CUDA error\""}
     // create generator
     let gen_options = args.to_generator_options()?;
-    let generator = model::factory(
+    let generator = generator::factory(
         &gen_options.type_name,
         &gen_options.host,
         gen_options.port,

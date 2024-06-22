@@ -1,5 +1,4 @@
 use openai_api_rust::chat::*;
-use openai_api_rust::completions::*;
 use openai_api_rust::*;
 
 use async_trait::async_trait;
@@ -13,7 +12,7 @@ pub struct OpenAIClient {
 
 #[async_trait]
 impl Client for OpenAIClient {
-    fn new(url: &str, port: u16, model_name: &str, context_window: u32) -> anyhow::Result<Self>
+    fn new(_: &str, _: u16, model_name: &str, _: u32) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
