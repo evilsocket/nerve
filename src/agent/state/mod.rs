@@ -159,13 +159,6 @@ impl State {
         &self.namespaces
     }
 
-    pub fn get_used_namespaces_names(&self) -> Vec<String> {
-        self.namespaces
-            .iter()
-            .map(|n| n.name.to_string().to_lowercase())
-            .collect()
-    }
-
     pub fn add_success_to_history(&self, invocation: Invocation, result: Option<String>) {
         if let Ok(mut guard) = self.history.lock() {
             guard.push(Execution::with_result(invocation, result));

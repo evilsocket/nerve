@@ -72,10 +72,6 @@ impl Agent {
         })
     }
 
-    pub fn state(&self) -> &State {
-        &self.state
-    }
-
     fn save_if_needed(&self, options: &Options, refresh: bool) -> Result<()> {
         if let Some(prompt_path) = &self.options.save_to {
             let mut opts = options.clone();
