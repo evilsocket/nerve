@@ -71,10 +71,24 @@ functions:
 
 In this example we created an agent with the default functionalities that is also capable of executing any ssh command on a given host by using the "tool" we described to it.
 
-In order to run this tasklet, you'll need an [OLLAMA server](https://ollama.ai/) with the model of your choice, and to define the `SSH_USER_HOST_STRING` variable. Therefore you'll run (see the below section on how to build Nerve):
+In order to run this tasklet, you'll need an [OLLAMA server](https://ollama.ai/) with the model of your choice, or an OpenAI account, and to define the `SSH_USER_HOST_STRING` variable. 
+
+To use Nerve with an OpenAI account:
 
 ```sh
-nerve -T /path/to/ssh_agent -G "ollama://<model-name>@<ollama-host>:11434" -DSSH_USER_HOST_STRING=user@example-ssh-server-host
+OPENAI_API_KEY=you-api-key nerve  "openai://gpt-4" ...
+```
+
+To use it with an Ollama server:
+
+```sh
+nerve "ollama://<model-name>@<ollama-host>:11434" ...
+```
+
+Therefore you'll run for instance (see the below section on how to build Nerve):
+
+```sh
+nerve -T /path/to/ssh_agent -G "ollama://your-server-host@<ollama-host>:11434" -DSSH_USER_HOST_STRING=user@example-ssh-server-host
 ```
 
 For instance, if we wanted to use LLama3 on a server running on localhost (`ollama://llama3@localhost:11434` also happens to be the default value for the `-G` argument, in which case you can avoid to pass it alltogether):

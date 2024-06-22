@@ -1,7 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
-pub mod ollama;
+mod ollama;
+mod openai;
 
 #[derive(Clone, Debug)]
 pub struct Options {
@@ -42,10 +43,19 @@ pub fn factory(
     model_name: &str,
     context_window: u32,
 ) -> Result<Box<dyn Client>> {
-    let gen = match name {
-        "ollama" => ollama::OllamaClient::new(url, port, model_name, context_window)?,
-        _ => return Err(anyhow!("generator '{name} not supported yet")),
-    };
-
-    Ok(Box::new(gen))
+    match name {
+        "ollama" => Ok(Box::new(ollama::OllamaClient::new(
+            url,
+            port,
+            model_name,
+            context_window,
+        )?)),
+        "openai" => Ok(Box::new(openai::OpenAIClient::new(
+            url,
+            port,
+            model_name,
+            context_window,
+        )?)),
+        _ => Err(anyhow!("generator '{name} not supported yet")),
+    }
 }

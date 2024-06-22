@@ -25,6 +25,7 @@ ollama-rs = { version = "0.1.9", features = [
     "tokio",
     "chat-history",
 ], default-features = false }
+openai_api_rust = "0.1.9"
 regex = "1.10.5"
 serde = { version = "1.0.203", features = ["derive", "serde_derive"] }
 serde_trim = "1.1.0"

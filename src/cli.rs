@@ -8,7 +8,9 @@ use regex::Regex;
 use crate::agent::AgentOptions;
 
 lazy_static! {
-    pub static ref GENERATOR_PARSER: Regex = Regex::new(r"(?m)^(.+)://(.+)@(.+):(\d+)$").unwrap();
+    pub static ref PUBLIC_GENERATOR_PARSER: Regex = Regex::new(r"(?m)^(.+)://(.+)$").unwrap();
+    pub static ref LOCAL_GENERATOR_PARSER: Regex =
+        Regex::new(r"(?m)^(.+)://(.+)@(.+):(\d+)$").unwrap();
 }
 
 #[derive(Default)]
@@ -69,30 +71,57 @@ impl Args {
         }
 
         let mut generator = Generator::default();
-        let caps = if let Some(caps) = GENERATOR_PARSER.captures_iter(raw).next() {
-            caps
-        } else {
-            return Err(anyhow!("can't parse {raw} generator string"));
-        };
-
-        if caps.len() != 5 {
-            return Err(anyhow!("can't parse {raw} generator string"));
-        }
-
-        caps.get(1)
-            .unwrap()
-            .as_str()
-            .clone_into(&mut generator.type_name);
-        caps.get(2)
-            .unwrap()
-            .as_str()
-            .clone_into(&mut generator.model_name);
-        caps.get(3)
-            .unwrap()
-            .as_str()
-            .clone_into(&mut generator.host);
-        generator.port = caps.get(4).unwrap().as_str().parse::<u16>().unwrap();
         generator.context_window = self.context_window;
+
+        if raw.contains('@') {
+            let caps = if let Some(caps) = LOCAL_GENERATOR_PARSER.captures_iter(raw).next() {
+                caps
+            } else {
+                return Err(anyhow!("can't parse {raw} generator string"));
+            };
+
+            if caps.len() != 5 {
+                return Err(anyhow!("can't parse {raw} generator string"));
+            }
+
+            caps.get(1)
+                .unwrap()
+                .as_str()
+                .clone_into(&mut generator.type_name);
+            caps.get(2)
+                .unwrap()
+                .as_str()
+                .clone_into(&mut generator.model_name);
+            caps.get(3)
+                .unwrap()
+                .as_str()
+                .clone_into(&mut generator.host);
+            generator.port = caps.get(4).unwrap().as_str().parse::<u16>().unwrap();
+        } else {
+            let caps = if let Some(caps) = PUBLIC_GENERATOR_PARSER.captures_iter(raw).next() {
+                caps
+            } else {
+                return Err(anyhow!(
+                    "can't parse {raw} generator string, invalid expression"
+                ));
+            };
+
+            if caps.len() != 3 {
+                return Err(anyhow!(
+                    "can't parse {raw} generator string, expected 3 captures, got {}",
+                    caps.len()
+                ));
+            }
+
+            caps.get(1)
+                .unwrap()
+                .as_str()
+                .clone_into(&mut generator.type_name);
+            caps.get(2)
+                .unwrap()
+                .as_str()
+                .clone_into(&mut generator.model_name);
+        }
 
         Ok(generator)
     }

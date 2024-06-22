@@ -44,10 +44,17 @@ async fn main() -> Result<()> {
     )?;
 
     println!(
-        "using {}@{}:{} (context_window={})",
+        "using {}{} (context_window={})",
         gen_options.model_name.bold(),
-        gen_options.host.dimmed(),
-        gen_options.port.to_string().dimmed(),
+        if gen_options.port == 0 {
+            format!("@{}", gen_options.type_name.dimmed())
+        } else {
+            format!(
+                "@{}:{}",
+                gen_options.host.dimmed(),
+                gen_options.port.to_string().dimmed()
+            )
+        },
         gen_options.context_window
     );
 
