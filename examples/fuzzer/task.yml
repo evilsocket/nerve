@@ -1,8 +1,9 @@
 # the agent can't set the task as completed autonomously
 # so it won't be using the task namespace
 using:
-  # can store memories
+  # can store memories and plan
   - memory
+  - planning
 
 # agent background story
 system_prompt: > 
