@@ -1,4 +1,8 @@
 <p align="center">
+    <img src="assets/logo.svg" alt="nerve" width="300" align='center'/>
+</p>
+
+<p align="center">
   <a href="https://crates.io/crates/nerve-ai"><img alt="Crate" src="https://img.shields.io/crates/v/nerve-ai.svg"></a>
   <a href="https://github.com/evilsocket/nerve/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/evilsocket/nerve.svg?style=flat-square"></a>
   <a href="https://hub.docker.com/r/evilsocket/nerve"><img alt="Docker Hub" src="https://img.shields.io/docker/v/evilsocket/nerve?logo=docker"></a>
@@ -13,7 +17,7 @@
 - **Works with any LLM:** Nerve is an LLM-agnostic tool.
 
 <p align="center">
-  <img alt="Nerve" src="https://raw.githubusercontent.com/evilsocket/nerve/main/concept.png"/>
+  <img alt="Nerve" src="assets/concept.png"/>
 </p>
 
 While Nerve was inspired by other projects such as Autogen and Rigging, its main goal and core difference with other tools is to allow the user to instrument smart agents without writing code (unless required for custom functionalities). Another advantage of Nerve is being a single static binary (or docker container) that does not require heavy runtimes (such as Python) while offering maximum efficiency and memory safety.
