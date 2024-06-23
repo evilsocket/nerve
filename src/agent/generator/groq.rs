@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use colored::Colorize;
+use duration_string::DurationString;
 use groq_api_rs::completion::{client::Groq, request::builder, response::ErrorResponse};
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -11,7 +12,8 @@ use crate::agent::generator::Message;
 use super::{Client, Options};
 
 lazy_static! {
-    static ref RETRY_TIME_PARSER: Regex = Regex::new(r"(?m)^.+try again in (.+)s\..*").unwrap();
+    static ref RETRY_TIME_PARSER: Regex =
+        Regex::new(r"(?m)^.+try again in (.+)\. Visit.*").unwrap();
 }
 
 pub struct GroqClient {
@@ -114,21 +116,33 @@ impl Client for GroqClient {
                                 .as_str()
                                 .clone_into(&mut retry_time_str);
 
-                            if let Ok(retry_time) = retry_time_str.parse::<f32>() {
+                            // DurationString can't handle decimals like Xm3.838383s
+                            if retry_time_str.contains('.') {
+                                let (val, _) = retry_time_str.split_once('.').unwrap();
+                                retry_time_str = format!("{}s", val);
+                            }
+
+                            if let Ok(retry_time) = retry_time_str.parse::<DurationString>() {
                                 println!(
-                                    "{}: rate limit reached for this model, retrying in {}s ...\n",
+                                    "{}: rate limit reached for this model, retrying in {} ...\n",
                                     "WARNING".bold().yellow(),
                                     retry_time,
                                 );
 
-                                tokio::time::sleep(Duration::from_millis(
-                                    ((retry_time + 1.0) * 1000.0) as u64,
-                                ))
+                                tokio::time::sleep(
+                                    retry_time.checked_add(Duration::from_millis(1000)).unwrap(),
+                                )
                                 .await;
 
                                 return self.chat(options).await;
+                            } else {
+                                eprintln!("can't parse '{}'", &retry_time_str);
                             }
+                        } else {
+                            eprintln!("cap len wrong");
                         }
+                    } else {
+                        eprintln!("regex failed");
                     }
 
                     eprintln!(

@@ -273,6 +273,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "duration-string"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2334658684d7c213e18602aa72ce37e94d1c9b535882ef6e30bc444b7514a1ee"
+
+[[package]]
 name = "either"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -815,6 +821,7 @@ dependencies = [
  "chrono",
  "clap",
  "colored",
+ "duration-string",
  "groq-api-rs",
  "indexmap",
  "itertools",
