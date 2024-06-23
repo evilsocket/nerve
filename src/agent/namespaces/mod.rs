@@ -19,7 +19,6 @@ lazy_static! {
     pub static ref NAMESPACES: IndexMap<String, fn() -> Namespace> = {
         let mut map = IndexMap::new();
 
-        // TODO: use features for namespaces, especially the non default ones
         map.insert("memory".to_string(), memory::get_namespace as fn() -> Namespace);
         map.insert("goal".to_string(), goal::get_namespace as fn() -> Namespace);
         map.insert("planning".to_string(), planning::get_namespace as fn() -> Namespace);
