@@ -146,7 +146,15 @@ docker build . -t nerve
 In order to run it, keep in mind that you'll probably want the same network as the host in order to reach the OLLAMA server, and remember to share in a volume the tasklet files:
 
 ```sh
-docker run -it --network=host -v /path/to/your/tasklet:/root/.nerve/tasklets nerve -h
+docker run -it --network=host -v ./examples:/root/.nerve/tasklets nerve -h
+```
+
+An example with the `ssh_agent` tasklet via an Ollama server running on localhost:
+
+```sh
+docker run -it --network=host \
+  -v ./examples:/root/.nerve/tasklets \
+  nerve -G "ollama://llama3@localhost:11434" -T ssh_agent -P'find which process is consuming more ram'
 ```
 
 ## License
