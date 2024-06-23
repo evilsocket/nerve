@@ -10,7 +10,7 @@ use agent::{generator, serialization, task::tasklet::Tasklet, Agent};
 mod agent;
 mod cli;
 
-const APP_NAME: &str = env!("CARGO_PKG_NAME");
+const APP_NAME: &str = env!("CARGO_BIN_NAME");
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
