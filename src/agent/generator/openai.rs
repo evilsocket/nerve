@@ -116,8 +116,6 @@ impl Client for OpenAIClient {
                 } else {
                     eprintln!("cap len wrong");
                 }
-            } else {
-                eprintln!("regex failed");
             }
 
             return Err(anyhow!(error));
