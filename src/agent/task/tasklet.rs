@@ -201,7 +201,12 @@ impl Action for TaskletAction {
                 println!(
                     "\n{}\n",
                     if out.len() > self.max_shown_output {
-                        let ascii = &out[0..self.max_shown_output];
+                        let end = out
+                            .char_indices()
+                            .map(|(i, _)| i)
+                            .nth(self.max_shown_output)
+                            .unwrap();
+                        let ascii = &out[0..end];
                         format!("{}\n{}", ascii, "<truncated>".yellow())
                     } else {
                         out.to_string()
