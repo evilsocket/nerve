@@ -126,7 +126,37 @@ nerve -G ... -T whatever-tasklet --save-to state.txt --full-dump
 
 The agent will save to disk its internal state at each iteration for you to observe.
 
+## Installing from Crates.io
+
+Nerve is published as a binary crate on [crates.io](https://crates.io/crates/nerve-ai), if you have [Cargo installed](https://rustup.rs/) you can:
+
+```sh
+cargo install nerve-ai
+```
+
+This will compile its sources and install the binary in `$HOME/.cargo/bin/nerve`.
+
+## Installing from DockerHub
+
+A Docker image is available on [Docker Hub](https://hub.docker.com/r/evilsocket/nerve):
+
+In order to run it, keep in mind that you'll probably want the same network as the host in order to reach the OLLAMA server, and remember to share in a volume the tasklet files:
+
+```sh
+docker run -it --network=host -v ./examples:/root/.nerve/tasklets evilsocket/nerve -h
+```
+
+An example with the `ssh_agent` tasklet via an Ollama server running on localhost:
+
+```sh
+docker run -it --network=host \
+  -v ./examples:/root/.nerve/tasklets \
+  evilsocket/nerve -G "ollama://llama3@localhost:11434" -T ssh_agent -P'find which process is consuming more ram'
+```
+
 ## Building from sources
+
+To build from source:
 
 ```sh
 cargo build --release
@@ -142,20 +172,6 @@ Run a tasklet with a given OLLAMA server:
 
 ```sh
 docker build . -t nerve
-```
-
-In order to run it, keep in mind that you'll probably want the same network as the host in order to reach the OLLAMA server, and remember to share in a volume the tasklet files:
-
-```sh
-docker run -it --network=host -v ./examples:/root/.nerve/tasklets nerve -h
-```
-
-An example with the `ssh_agent` tasklet via an Ollama server running on localhost:
-
-```sh
-docker run -it --network=host \
-  -v ./examples:/root/.nerve/tasklets \
-  nerve -G "ollama://llama3@localhost:11434" -T ssh_agent -P'find which process is consuming more ram'
 ```
 
 ## License
