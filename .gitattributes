@@ -1,2 +1,3 @@
-/tasklets/** linguist-vendored
+/examples/** linguist-vendored
 /Dockerfile linguist-vendored
+/release.py linguist-vendored
