@@ -146,7 +146,7 @@ docker build . -t nerve
 In order to run it, keep in mind that you'll probably want the same network as the host in order to reach the OLLAMA server, and remember to share in a volume the tasklet files:
 
 ```sh
-docker run -it --network=host -v /path/to/your/tasklet:/app/tasklet nerve -h
+docker run -it --network=host -v /path/to/your/tasklet:/root/.nerve/tasklets nerve -h
 ```
 
 ## License
