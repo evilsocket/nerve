@@ -19,7 +19,7 @@
 
 While Nerve was inspired by other projects such as Autogen and Rigging, its main goal and core difference with other tools is to allow the user to instrument smart agents without writing code (unless required for custom functionalities). Another advantage of Nerve is being a single static binary (or docker container) that does not require heavy runtimes (such as Python) while offering maximum efficiency and memory safety.
 
-**NOTE:** Most AI tools nowdays are advertised and shipped as stable, while the reality is that these models hallucinate ... **a lot**. Nerve is an experimental tool. Its API is subject to changes at any time before a stable release is reached. While it is still a valuable learning and experimenting resource, using it in production environments and/or in unsupervised contextes is discouraged. To have an idea of the project readiness, you can `grep -r TODO src` :)
+**WARNING:** Using Nerve in production environments is currently discouraged! Nerve is an experimental tool that is still being actively developed. Its API is subject to change at any time until a stable version is released. _(You can `grep -r TODO src` to get a sense of what remains to be done.)_ Furthermore, while many AI tools nowadays are advertised and shipped as stable, in reality these models hallucinate . . . **a lot**. It is highly recommended to manually supervise any Nerve agents for the time being, as they can sometimes [make bad decisions you may wish to interrupt](https://x.com/evilsocket/status/1800539389321486398).
 
 ## Example
 
