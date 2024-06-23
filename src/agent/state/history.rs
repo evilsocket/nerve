@@ -45,20 +45,24 @@ impl Execution {
         let mut messages = vec![];
 
         if let Some(response) = self.response.as_ref() {
-            messages.push(Message::Agent(response.to_string()));
+            messages.push(Message::Agent(response.to_string(), None));
         } else if let Some(invocation) = self.invocation.as_ref() {
             messages.push(Message::Agent(
                 crate::agent::serialization::xml::serialize::invocation(invocation),
+                Some(invocation.clone()),
             ));
         }
 
-        messages.push(Message::Feedback(if let Some(err) = &self.error {
-            format!("ERROR: {err}")
-        } else if let Some(out) = &self.result {
-            out.to_string()
-        } else {
-            "".to_string()
-        }));
+        messages.push(Message::Feedback(
+            if let Some(err) = &self.error {
+                format!("ERROR: {err}")
+            } else if let Some(out) = &self.result {
+                out.to_string()
+            } else {
+                "".to_string()
+            },
+            self.invocation.clone(),
+        ));
 
         messages
     }

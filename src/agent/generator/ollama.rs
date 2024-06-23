@@ -65,8 +65,8 @@ impl Client for OllamaClient {
 
         for m in &options.history {
             chat_history.push(match m {
-                Message::Agent(data) => ChatMessage::assistant(data.trim().to_string()),
-                Message::Feedback(data) => ChatMessage::user(data.trim().to_string()),
+                Message::Agent(data, _) => ChatMessage::assistant(data.trim().to_string()),
+                Message::Feedback(data, _) => ChatMessage::user(data.trim().to_string()),
             });
         }
 

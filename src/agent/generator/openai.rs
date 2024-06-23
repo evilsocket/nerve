@@ -39,11 +39,11 @@ impl Client for OpenAIClient {
 
         for m in &options.history {
             chat_history.push(match m {
-                Message::Agent(data) => openai_api_rust::Message {
+                Message::Agent(data, _) => openai_api_rust::Message {
                     role: Role::Assistant,
                     content: data.trim().to_string(),
                 },
-                Message::Feedback(data) => openai_api_rust::Message {
+                Message::Feedback(data, _) => openai_api_rust::Message {
                     role: Role::User,
                     content: data.trim().to_string(),
                 },

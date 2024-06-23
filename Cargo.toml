@@ -11,21 +11,22 @@ repository = "https://github.com/evilsocket/nerve"
 homepage = "https://github.com/evilsocket/nerve"
 
 [dependencies]
+ollama-rs = { version = "0.1.9", features = [
+    "rustls",
+    "tokio",
+    "chat-history",
+], default-features = false, optional = true }
 anyhow = "1.0.86"
 async-trait = "0.1.80"
 chrono = "0.4.38"
 clap = { version = "4.5.6", features = ["derive"] }
 colored = "2.1.0"
+groq-api-rs = { version = "0.1.0", optional = true }
 indexmap = "2.2.6"
 itertools = "0.13.0"
 lazy_static = "1.4.0"
 libc = "0.2.155"
-ollama-rs = { version = "0.1.9", features = [
-    "rustls",
-    "tokio",
-    "chat-history",
-], default-features = false }
-openai_api_rust = "0.1.9"
+openai_api_rust = { version = "0.1.9", optional = true }
 regex = "1.10.5"
 serde = { version = "1.0.203", features = ["derive", "serde_derive"] }
 serde_trim = "1.1.0"
@@ -33,6 +34,14 @@ serde_yaml = "0.9.34"
 simple-home-dir = "0.3.5"
 tokio = "1.38.0"
 xml-rs = "0.8.20"
+
+[features]
+default = ["ollama", "groq", "openai"]
+
+ollama = ["dep:ollama-rs"]
+groq = ["dep:groq-api-rs"]
+openai = ["dep:openai_api_rust"]
+
 
 [profile.release]
 lto = true        # Enable link-time optimization

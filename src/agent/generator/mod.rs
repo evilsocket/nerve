@@ -1,7 +1,13 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
+use super::Invocation;
+
+#[cfg(feature = "groq")]
+mod groq;
+#[cfg(feature = "ollama")]
 mod ollama;
+#[cfg(feature = "openai")]
 mod openai;
 
 #[derive(Clone, Debug)]
@@ -23,8 +29,8 @@ impl Options {
 
 #[derive(Clone, Debug)]
 pub enum Message {
-    Agent(String),
-    Feedback(String),
+    Agent(String, Option<Invocation>),
+    Feedback(String, Option<Invocation>),
 }
 
 #[async_trait]
@@ -44,13 +50,22 @@ pub fn factory(
     context_window: u32,
 ) -> Result<Box<dyn Client>> {
     match name {
+        #[cfg(feature = "ollama")]
         "ollama" => Ok(Box::new(ollama::OllamaClient::new(
             url,
             port,
             model_name,
             context_window,
         )?)),
+        #[cfg(feature = "openai")]
         "openai" => Ok(Box::new(openai::OpenAIClient::new(
+            url,
+            port,
+            model_name,
+            context_window,
+        )?)),
+        #[cfg(feature = "groq")]
+        "groq" => Ok(Box::new(groq::GroqClient::new(
             url,
             port,
             model_name,

@@ -10,8 +10,7 @@
 **Nerve is a tool that creates stateful agents with any LLM — without writing a single line of code.** Agents created with Nerve are capable of both planning _and_ enacting step-by-step whatever actions are required to complete a user-defined task. This is done by dynamically updating the system prompt with new information gathered during previous actions, making the agent stateful across multiple inferences.
 - **Automated Problem Solving:** Nerve provides a standard library of actions the agent uses autonomously to inform and enhance its performance. These include identifying specific goals required to complete the task, devising and revising a plan to achieve those goals, and creating and recalling memories comprised of pertinent information gleaned during previous actions.
 - **User-Defined Agents:** Agents are defined using a standard YAML template. _The sky is the limit!_ You can define an agent for any task you desire — check out the existing examples for inspiration: a [two-person chatroom](examples/weird_chat/task.yml), an [SSH agent that completes tasks using bash](examples/ssh_agent/task.yml), a [fuzzer](examples/fuzzer/task.yml), and a [web vulnerability scanner](examples/web_vulnerability_scanner/task.yml).
-- **Works with any LLM:** Nerve is an LLM-agnostic tool. Currently, it features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama) or [OpenAI](https://openai.com/index/openai-api/) APIs.
-
+- **Works with any LLM:** Nerve is an LLM-agnostic tool.
 
 <p align="center">
   <img alt="Nerve" src="https://raw.githubusercontent.com/evilsocket/nerve/main/concept.png"/>
@@ -20,6 +19,28 @@
 While Nerve was inspired by other projects such as Autogen and Rigging, its main goal and core difference with other tools is to allow the user to instrument smart agents without writing code (unless required for custom functionalities). Another advantage of Nerve is being a single static binary (or docker container) that does not require heavy runtimes (such as Python) while offering maximum efficiency and memory safety.
 
 **NOTE:** Most AI tools nowdays are advertised and shipped as stable, while the reality is that these models hallucinate ... **a lot**. Nerve is an experimental tool. Its API is subject to changes at any time before a stable release is reached. While it is still a valuable learning and experimenting resource, using it in production environments and/or in unsupervised contextes is discouraged. To have an idea of the project readiness, you can `grep -r TODO src` :)
+
+## LLM Support
+
+Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com) or [OpenAI](https://openai.com/index/openai-api/) APIs. You can specify which provider and which model to use via the `-G` (or `--generator`) argument:
+
+For **Ollama**:
+
+```sh
+nerve -G "ollama://llama3@localhost:11434" ...
+```
+
+For **Groq**:
+
+```sh
+GROQ_API_KEY=you-api-key nerve -G "groq://llama3-70b-8192" ...
+```
+
+For **OpenAI**:
+
+```sh
+OPENAI_API_KEY=you-api-key nerve -G "openai://gpt-4" ...
+```
 
 ## Example
 
@@ -74,36 +95,21 @@ functions:
 
 In this example we created an agent with the default functionalities that is also capable of executing any ssh command on a given host by using the "tool" we described to it.
 
-In order to run this tasklet, you'll need an [OLLAMA server](https://ollama.ai/) with the model of your choice, or an OpenAI account, and to define the `SSH_USER_HOST_STRING` variable. 
-
-To use Nerve with an OpenAI account:
+In order to run this tasklet, you'll need to define the `SSH_USER_HOST_STRING` variable, therefore you'll run for instance (see the below section on how to build Nerve):
 
 ```sh
-OPENAI_API_KEY=you-api-key nerve -G "openai://gpt-4" ...
+nerve -G "ollama:/ollama://llama3@localhost:11434" \
+  -T /path/to/ssh_agent \
+  -DSSH_USER_HOST_STRING=user@example-ssh-server-host
 ```
 
-To use it with an Ollama server:
+You can also not specify a `prompt` section in the tasklet file, in which case you can dynamically pass it via command line via the `-P`/`--prompt` argument:
 
 ```sh
-nerve -G "ollama://<model-name>@<ollama-host>:11434" ...
-```
-
-Therefore you'll run for instance (see the below section on how to build Nerve):
-
-```sh
-nerve -T /path/to/ssh_agent -G "ollama://your-server-host@<ollama-host>:11434" -DSSH_USER_HOST_STRING=user@example-ssh-server-host
-```
-
-For instance, if we wanted to use LLama3 on a server running on localhost (`ollama://llama3@localhost:11434` also happens to be the default value for the `-G` argument, in which case you can avoid to pass it alltogether):
-
-```sh
-nerve -T /path/to/ssh_agent -G "ollama://llama3@localhost:11434" -DSSH_USER_HOST_STRING=user@example-ssh-server-host
-```
-
-You can also not specify a `prompt` section in the tasklet file, in which case you can dynamically pass it via command line:
-
-```sh
-nerve -T /path/to/ssh_agent -DSSH_USER_HOST_STRING=user@example-ssh-server-host -P 'find which process is using the most RAM'
+nerve -G "ollama:/ollama://llama3@localhost:11434" \
+  -T /path/to/ssh_agent \
+  -DSSH_USER_HOST_STRING=user@example-ssh-server-host \
+  -P 'find which process is using the most RAM'
 ```
 
 You can find more tasklet examples in the `examples` folder, feel free to send a PR if you create a new cool one! :D
@@ -115,7 +121,7 @@ The main idea is giving the model a set of functions to perform operations and a
 If you want to observe this (basically the debug mode of Nerve), run your tasklet by adding the following additional arguments:
 
 ```sh
-nerve -T whatever-tasklet --save-to state.txt --full-dump
+nerve -G ... -T whatever-tasklet --save-to state.txt --full-dump
 ```
 
 The agent will save to disk its internal state at each iteration for you to observe.
@@ -129,7 +135,7 @@ cargo build --release
 Run a tasklet with a given OLLAMA server:
 
 ```sh
-./target/release/nerve -T /path/to/tasklet -G "ollama://<model-name>@<ollama-host>:11434"
+./target/release/nerve -G "ollama://<model-name>@<ollama-host>:11434" -T /path/to/tasklet 
 ```
 
 ## Building with Docker
