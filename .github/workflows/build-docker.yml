@@ -6,12 +6,6 @@ on:
       paths-ignore:
         - 'README.md'
         - 'examples'
-      
-    pull_request:
-      branches: [ "main" ]
-      paths-ignore:
-        - 'README.md'
-        - 'examples'
 
 jobs:
   docker:
