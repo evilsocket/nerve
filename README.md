@@ -98,7 +98,7 @@ In this example we created an agent with the default functionalities that is als
 In order to run this tasklet, you'll need to define the `SSH_USER_HOST_STRING` variable, therefore you'll run for instance (see the below section on how to build Nerve):
 
 ```sh
-nerve -G "ollama:/ollama://llama3@localhost:11434" \
+nerve -G "ollama://llama3@localhost:11434" \
   -T /path/to/ssh_agent \
   -DSSH_USER_HOST_STRING=user@example-ssh-server-host
 ```
@@ -106,7 +106,7 @@ nerve -G "ollama:/ollama://llama3@localhost:11434" \
 You can also not specify a `prompt` section in the tasklet file, in which case you can dynamically pass it via command line via the `-P`/`--prompt` argument:
 
 ```sh
-nerve -G "ollama:/ollama://llama3@localhost:11434" \
+nerve -G "ollama://llama3@localhost:11434" \
   -T /path/to/ssh_agent \
   -DSSH_USER_HOST_STRING=user@example-ssh-server-host \
   -P 'find which process is using the most RAM'
