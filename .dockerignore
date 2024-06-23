@@ -1,4 +1,5 @@
 /.github
 /.vscode
-/tasklets
+/examples
 /target
+/assets
