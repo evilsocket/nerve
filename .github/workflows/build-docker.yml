@@ -3,6 +3,9 @@ name: Build and Push Docker Images
 on:
     push:
       branches: [ "main" ]
+      paths-ignore:
+        - 'README.md'
+        - 'examples'
     pull_request:
       branches: [ "main" ]
 
