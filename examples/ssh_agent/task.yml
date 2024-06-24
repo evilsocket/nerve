@@ -41,4 +41,4 @@ functions:
         # strings starting with $ have to be provided by the user
         # here the command is executed via ssh with a timeout of 15 seconds
         # IMPORTANT: this assumes the user can connect via ssh key and no password.
-        tool: gtimeout -v $SSH_TIMEOUT||15 /usr/bin/ssh $SSH_USER_HOST_STRING
+        tool: ssh $SSH_USER_HOST_STRING
