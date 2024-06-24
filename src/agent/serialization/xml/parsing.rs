@@ -52,8 +52,47 @@ fn build_invocation(
     Ok(Invocation::new(action, attributes, payload))
 }
 
+fn preprocess_block(ptr: &str) -> String {
+    if ptr.len() > 2 {
+        assert_eq!(ptr.as_bytes()[0], b'<');
+        // not a closing tag
+        if ptr.as_bytes()[1] != b'/' {
+            // determine tag name
+            let tag_name = &ptr[1..ptr.find(|c| c == ' ' || c == '>').unwrap()];
+            let payload_start_idx = ptr.find('>').unwrap();
+            // if not a short <tag/>
+            if !tag_name.ends_with('/') {
+                // estimate tag closing index and get payload
+                let tag_closing = format!("</{}>", &tag_name);
+                if let Some(tag_closing_idx) = ptr.find(&tag_closing) {
+                    let payload = &ptr[payload_start_idx + 1..tag_closing_idx];
+                    if !payload.is_empty() {
+                        // if escaped payload is different, replace it
+                        let escaped = xml::escape::escape_str_pcdata(payload);
+                        if escaped != payload {
+                            return ptr.replace(payload, &escaped);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    ptr.to_string()
+}
+
 fn try_parse_block(ptr: &str) -> Parsed {
-    let mut parser = EventReader::from_str(ptr);
+    // we need some preprocessing to handle unquoted characters
+    let prev = ptr.len();
+    let ptr = preprocess_block(ptr);
+    let delta = if ptr.len() != prev {
+        // some escaping happened, account for this is number of processed chars
+        ptr.len() - prev
+    } else {
+        0
+    };
+
+    let mut parser = EventReader::from_str(&ptr);
     let mut parsed = Parsed::default();
     let src_size = parser.source().len();
 
@@ -94,6 +133,7 @@ fn try_parse_block(ptr: &str) -> Parsed {
                     } else {
                         eprintln!("WARNING: {:?}", ret.err().unwrap());
                     }
+                    break;
                 }
                 _ => {
                     eprintln!("WARNING: unexpected xml element: {:?}", event);
@@ -107,7 +147,7 @@ fn try_parse_block(ptr: &str) -> Parsed {
     let src_size_now = parser.source().len();
 
     // amount of successfully processed bytes
-    parsed.processed = src_size - src_size_now;
+    parsed.processed = src_size - src_size_now - delta;
 
     parsed
 }
@@ -142,21 +182,115 @@ pub(crate) fn try_parse(raw: &str) -> Result<Vec<Invocation>> {
     Ok(parsed.into_iter().unique().collect())
 }
 
-// TODO: add waaaaay more tests
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_block_infinite_loop() {
-        let ptr = "<clear-plan></clear-plan>
-<update-goal>test</update-goal>";
+    fn test_parse_simple() {
+        let ptr = "<clear-plan></clear-plan>";
         let parsed = try_parse_block(ptr);
 
         assert_eq!(ptr.len(), parsed.processed);
-        assert_eq!(parsed.invocations.len(), 2);
+        assert_eq!(parsed.invocations.len(), 1);
 
         assert_eq!(&parsed.invocations[0].action, "clear-plan");
-        assert_eq!(&parsed.invocations[1].action, "update-goal");
+        assert_eq!(&parsed.invocations[0].payload, &None);
+        assert_eq!(&parsed.invocations[0].attributes, &None);
+    }
+
+    #[test]
+    fn test_parse_short() {
+        let ptr = "<yo/>";
+        let parsed = try_parse_block(ptr);
+
+        assert_eq!(ptr.len(), parsed.processed);
+        assert_eq!(parsed.invocations.len(), 1);
+
+        assert_eq!(&parsed.invocations[0].action, "yo");
+        assert_eq!(&parsed.invocations[0].payload, &None);
+        assert_eq!(&parsed.invocations[0].attributes, &None);
+    }
+
+    #[test]
+    fn test_parse_payload() {
+        let ptr = "<do>this!</do>";
+        let parsed = try_parse_block(ptr);
+
+        assert_eq!(ptr.len(), parsed.processed);
+        assert_eq!(parsed.invocations.len(), 1);
+
+        assert_eq!(&parsed.invocations[0].action, "do");
+        assert_eq!(parsed.invocations[0].payload, Some("this!".to_string()));
+        assert_eq!(&parsed.invocations[0].attributes, &None);
+    }
+
+    #[test]
+    fn test_parse_attributes() {
+        let ptr = "<do foo=\"bar\">this!</do>";
+        let parsed = try_parse_block(ptr);
+
+        let attrs = {
+            let mut m = HashMap::new();
+            m.insert("foo".to_string(), "bar".to_string());
+            m
+        };
+
+        assert_eq!(ptr.len(), parsed.processed);
+        assert_eq!(parsed.invocations.len(), 1);
+
+        assert_eq!(&parsed.invocations[0].action, "do");
+        assert_eq!(parsed.invocations[0].payload, Some("this!".to_string()));
+        assert_eq!(parsed.invocations[0].attributes, Some(attrs));
+    }
+
+    #[test]
+    fn test_parse_mixed_stuff() {
+        let ptr = "irhg3984h92fh4f2 <do foo=\"bar\">this!</do> no! whaaaaat, nope ok <clear-plan></clear-plan> and then <do/> ... or not!";
+        let invocations = try_parse(ptr).unwrap();
+
+        let attrs = {
+            let mut m = HashMap::new();
+            m.insert("foo".to_string(), "bar".to_string());
+            m
+        };
+
+        assert_eq!(invocations.len(), 3);
+
+        assert_eq!(&invocations[0].action, "do");
+        assert_eq!(invocations[0].payload, Some("this!".to_string()));
+        assert_eq!(invocations[0].attributes, Some(attrs));
+
+        assert_eq!(&invocations[1].action, "clear-plan");
+        assert_eq!(&invocations[1].payload, &None);
+        assert_eq!(&invocations[1].attributes, &None);
+
+        assert_eq!(&invocations[2].action, "do");
+        assert_eq!(&invocations[2].payload, &None);
+        assert_eq!(&invocations[2].attributes, &None);
+    }
+
+    #[test]
+    fn test_parse_multiple_with_newline() {
+        let ptr = "<clear-plan></clear-plan>
+<update-goal>test</update-goal>";
+        let invocations = try_parse(ptr).unwrap();
+
+        assert_eq!(invocations.len(), 2);
+
+        assert_eq!(&invocations[0].action, "clear-plan");
+        assert_eq!(&invocations[1].action, "update-goal");
+    }
+
+    #[test]
+    fn test_parse_unquoted() {
+        let ptr = "<command>ls -la && pwd</command>  <other>yes < no</other>";
+        let invocations = try_parse(ptr).unwrap();
+        assert_eq!(invocations.len(), 2);
+
+        assert_eq!(&invocations[0].action, "command");
+        assert_eq!(invocations[0].payload, Some("ls -la && pwd".to_string()));
+        assert_eq!(&invocations[1].action, "other");
+        assert_eq!(invocations[1].payload, Some("yes < no".to_string()));
     }
 }
