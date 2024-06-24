@@ -1,0 +1,1 @@
+Uses one LLM to simulate a two people chat between Bob and Alice.

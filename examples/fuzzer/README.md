@@ -1,0 +1,1 @@
+Fuzzes a test binary in order to find a crash.

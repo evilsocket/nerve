@@ -1,0 +1,1 @@
+Fetches the latest AI news and provides a few bullet-points summary.

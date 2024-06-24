@@ -1,0 +1,1 @@
+Executes tasks on a remote computer by executing bash commands on it via ssh.
