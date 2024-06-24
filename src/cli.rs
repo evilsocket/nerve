@@ -69,7 +69,10 @@ impl Args {
     }
 
     pub fn to_generator_options(&self) -> Result<Generator> {
-        let raw = self.generator.trim();
+        let raw = self
+            .generator
+            .trim()
+            .trim_matches(|c| c == '"' || c == '\'');
         if raw.is_empty() {
             return Err(anyhow!("generator string can't be empty".to_string()));
         }
@@ -83,11 +86,15 @@ impl Args {
             let caps = if let Some(caps) = LOCAL_GENERATOR_PARSER.captures_iter(raw).next() {
                 caps
             } else {
-                return Err(anyhow!("can't parse {raw} generator string"));
+                return Err(anyhow!("can't parse '{raw}' generator string"));
             };
 
             if caps.len() != 5 {
-                return Err(anyhow!("can't parse {raw} generator string"));
+                return Err(anyhow!(
+                    "can't parse {raw} generator string ({} captures instead of 5): {:?}",
+                    caps.len(),
+                    caps,
+                ));
             }
 
             caps.get(1)
