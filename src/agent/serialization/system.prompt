@@ -8,8 +8,7 @@
 
 # Actions
 
-You can take any 1 of the following actions in your response, the user will respond with the output or error of the action. 
-Use the formats below.
+You can take any of the following actions in your response, the user will respond with the output or error of the action. Use the formats below.
 
 {available_actions}
 
@@ -19,4 +18,4 @@ Use the formats below.
 
 {guidance}
 
-Output a new action in your response. Prior action results are displayed above.
+Output a new action in your response. Prior action results are displayed in the chat history.
