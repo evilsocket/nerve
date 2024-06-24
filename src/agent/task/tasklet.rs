@@ -1,42 +1,24 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
 use std::str::FromStr;
-use std::{collections::HashMap, sync::Mutex};
 
 use anyhow::Result;
 use colored::Colorize;
-use lazy_static::lazy_static;
 use serde::Deserialize;
 use serde_trim::*;
 use simple_home_dir::home_dir;
 
-use super::Task;
+use super::{variables::interpolate_variables, Task};
 use crate::{
-    agent::namespaces::{Action, Namespace},
+    agent::{
+        namespaces::{Action, Namespace},
+        task::variables::{parse_pre_defined_values, parse_variable_expr},
+    },
     cli,
 };
 
 const STATE_COMPLETE_EXIT_CODE: i32 = 65;
-
-lazy_static! {
-    pub(crate) static ref VAR_CACHE: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
-}
-
-fn parse_pre_defined_values(defines: &Vec<String>) -> Result<()> {
-    for keyvalue in defines {
-        let parts: Vec<&str> = keyvalue.splitn(2, '=').collect();
-        if parts.len() != 2 {
-            return Err(anyhow!("can't parse {keyvalue}, syntax is: key=value"));
-        }
-
-        VAR_CACHE
-            .lock()
-            .unwrap()
-            .insert(parts[0].to_owned(), parts[1].to_owned());
-    }
-
-    Ok(())
-}
 
 fn default_max_shown_output() -> usize {
     256
@@ -95,42 +77,11 @@ impl Action for TaskletAction {
 
         let mut cmd = Command::new(&parts[0]);
         if parts.len() > 1 {
-            let mut var_cache = VAR_CACHE.lock().unwrap();
-
             // more complex command line
             for part in &parts[1..] {
                 if part.as_bytes()[0] == b'$' {
-                    // variable, the order of lookup is:
-                    //  0. environment variable
-                    //  1. cache
-                    //  2. if an alternative default was provided via || use it
-                    //  3. ask the user (and cache)
-                    let var_name = part.trim_start_matches('$');
-
-                    let (var_name, var_default) =
-                        if let Some((name, default_value)) = var_name.split_once("||") {
-                            (name, Some(default_value))
-                        } else {
-                            (var_name, None)
-                        };
-
-                    if let Ok(value) = std::env::var(var_name) {
-                        // get from env
-                        cmd.arg(value);
-                    } else if let Some(cached) = var_cache.get(var_name) {
-                        // get from cached
-                        cmd.arg(cached);
-                    } else if let Some(var_default) = var_default {
-                        // get from default
-                        cmd.arg(var_default);
-                    } else {
-                        // get from user
-                        let var_value =
-                            cli::get_user_input(&format!("\nplease set ${}: ", var_name.yellow()));
-
-                        var_cache.insert(var_name.to_owned(), var_value.clone());
-                        cmd.arg(var_value);
-                    }
+                    let (_, var_value) = parse_variable_expr(part)?;
+                    cmd.arg(var_value);
                 } else {
                     // raw value
                     cmd.arg(part);
@@ -349,6 +300,23 @@ impl Tasklet {
 
             Ok(tasklet)
         }
+    }
+
+    pub fn prepare(&mut self, user_prompt: &Option<String>) -> Result<()> {
+        if self.prompt.is_none() {
+            self.prompt = Some(if let Some(prompt) = &user_prompt {
+                // if passed by command line
+                prompt.to_string()
+            } else {
+                // ask the user
+                cli::get_user_input("enter task> ")
+            });
+        }
+
+        // parse any variable
+        self.prompt = Some(interpolate_variables(self.prompt.as_ref().unwrap().trim())?);
+
+        Ok(())
     }
 }
 

@@ -15,6 +15,8 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // TODO: save/restore session
+
     let args = cli::Args::parse();
 
     if args.generate_doc {
@@ -47,7 +49,7 @@ async fn main() -> Result<()> {
     let tasklet_name = tasklet.name.clone();
 
     println!(
-        "{} v{} 🧠 {}{} > {}\n",
+        "{} v{} 🧠 {}{} > {}",
         APP_NAME,
         APP_VERSION,
         gen_options.model_name.bold(),
@@ -63,16 +65,10 @@ async fn main() -> Result<()> {
         tasklet_name.green().bold(),
     );
 
-    // if the tasklet doesn't provide a prompt
-    if tasklet.prompt.is_none() {
-        tasklet.prompt = Some(if let Some(prompt) = &args.prompt {
-            // if passed by command line
-            prompt.to_string()
-        } else {
-            // ask the user
-            cli::get_user_input("enter task> ")
-        });
-    }
+    tasklet.prepare(&args.prompt)?;
+
+    println!("task: {}\n", tasklet.prompt.as_ref().unwrap().green());
+
     let task = Box::new(tasklet);
 
     // create the agent given the generator, task and a set of options

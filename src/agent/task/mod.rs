@@ -3,6 +3,7 @@ use anyhow::Result;
 use super::namespaces::Namespace;
 
 pub(crate) mod tasklet;
+pub(crate) mod variables;
 
 // TODO: comment the shit out of everything.
 

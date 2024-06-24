@@ -296,6 +296,7 @@ impl State {
     }
 
     pub fn on_complete(&self, impossible: bool, reason: Option<String>) -> Result<()> {
+        // TODO: unify logging logic
         if impossible {
             println!(
                 "\n{}: '{}'",
