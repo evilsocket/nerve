@@ -76,8 +76,6 @@ async fn main() -> Result<()> {
 
     // keep going until the task is complete or a fatal error is reached
     while !agent.get_state().is_complete() {
-        // TODO: collect & report statistics (steps, model errors, etc)
-
         // next step
         if let Err(error) = agent.step().await {
             println!("{}", error.to_string().bold().red());

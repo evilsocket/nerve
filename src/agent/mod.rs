@@ -47,6 +47,7 @@ pub struct AgentOptions {
     pub max_iterations: usize,
     pub save_to: Option<String>,
     pub full_dump: bool,
+    pub with_stats: bool,
 }
 
 pub struct Agent {
@@ -103,7 +104,11 @@ impl Agent {
     }
 
     pub async fn step(&mut self) -> Result<()> {
-        self.state.on_next_iteration()?;
+        self.state.on_step()?;
+
+        if self.options.with_stats {
+            println!("\n{}\n", &self.state.metrics);
+        }
 
         let system_prompt = serialization::state_to_system_prompt(&self.state)?;
         let prompt = self.state.to_prompt()?;
@@ -122,11 +127,15 @@ impl Agent {
         // nothing parsed, report the problem to the model
         if invocations.is_empty() {
             if response.is_empty() {
+                self.state.metrics.errors.empty_responses += 1;
+
                 self.state.add_unparsed_response_to_history(
                     &response,
                     "Do not return an empty responses.".to_string(),
                 );
             } else {
+                self.state.metrics.errors.unparsed_responses += 1;
+
                 self.state.add_unparsed_response_to_history(
                     &response,
                     "I could not parse any valid actions from your response, please correct it according to the instructions.".to_string(),
@@ -142,6 +151,8 @@ impl Agent {
                     format!("\n\n{}\n\n", response.dimmed().yellow())
                 }
             );
+        } else {
+            self.state.metrics.valid_responses += 1;
         }
 
         // for each parsed invocation
@@ -149,6 +160,8 @@ impl Agent {
             // see if valid action and execute
             if let Err(e) = self.state.execute(inv.clone()).await {
                 println!("ERROR: {}", e);
+            } else {
+                self.state.metrics.valid_actions += 1;
             }
 
             self.save_if_needed(&options, true)?;

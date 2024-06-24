@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use anyhow::Result;
 use async_trait::async_trait;
 
@@ -33,12 +35,16 @@ pub enum Message {
     Feedback(String, Option<Invocation>),
 }
 
-impl Message {
-    pub fn to_string(&self) -> String {
-        match self {
-            Message::Agent(data, _) => format!("[agent]\n\n{}\n", data),
-            Message::Feedback(data, _) => format!("[feedback]\n\n{}\n", data),
-        }
+impl Display for Message {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Message::Agent(data, _) => format!("[agent]\n\n{}\n", data),
+                Message::Feedback(data, _) => format!("[feedback]\n\n{}\n", data),
+            }
+        )
     }
 }
 

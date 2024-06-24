@@ -53,6 +53,9 @@ pub(crate) struct Args {
     /// Print the documentation of the available action namespaces.
     #[arg(long)]
     pub generate_doc: bool,
+    /// Report runtime statistics.
+    #[arg(long)]
+    pub stats: bool,
 }
 
 impl Args {
@@ -61,6 +64,7 @@ impl Args {
             max_iterations: self.max_iterations,
             save_to: self.save_to.clone(),
             full_dump: self.full_dump,
+            with_stats: self.stats,
         }
     }
 

@@ -66,11 +66,11 @@ pub(crate) fn state_to_system_prompt(state: &State) -> Result<String> {
         .join("\n");
     let available_actions = state_available_actions(state)?;
 
-    let iterations = if state.max_iters > 0 {
+    let iterations = if state.metrics.max_steps > 0 {
         format!(
             "You are currently at step {} of a maximum of {}.",
-            state.curr_iter + 1,
-            state.max_iters
+            state.metrics.current_step + 1,
+            state.metrics.max_steps
         )
     } else {
         "".to_string()

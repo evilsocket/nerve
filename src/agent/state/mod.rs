@@ -8,6 +8,7 @@ use std::{
 
 use anyhow::Result;
 use colored::Colorize;
+use metrics::Metrics;
 
 use super::{
     generator::Message,
@@ -19,15 +20,13 @@ use history::{Execution, History};
 use storage::Storage;
 
 mod history;
+mod metrics;
 pub(crate) mod storage;
 
 #[derive(Debug)]
 pub struct State {
     // the task
     task: Box<dyn Task>,
-    // current iteration and max
-    pub curr_iter: usize,
-    pub max_iters: usize,
     // model memories, goals and other storages
     storages: HashMap<String, Storage>,
     // available actions and execution history
@@ -36,6 +35,8 @@ pub struct State {
     history: Mutex<History>,
     // set to true when task is complete
     complete: AtomicBool,
+    // runtime metrics
+    pub metrics: Metrics,
 }
 
 impl State {
@@ -105,21 +106,25 @@ impl State {
             goal.set_current(&prompt, false);
         }
 
+        let metrics = Metrics {
+            max_steps: max_iterations,
+            ..Default::default()
+        };
+
         Ok(Self {
             task,
             storages,
             history,
             namespaces,
             complete,
-            max_iters: max_iterations,
-            curr_iter: 0,
+            metrics,
         })
     }
 
-    pub fn on_next_iteration(&mut self) -> Result<()> {
-        self.curr_iter += 1;
-        if self.max_iters > 0 && self.curr_iter >= self.max_iters {
-            Err(anyhow!("maximum number of iterations reached"))
+    pub fn on_step(&mut self) -> Result<()> {
+        self.metrics.current_step += 1;
+        if self.metrics.max_steps > 0 && self.metrics.current_step >= self.metrics.max_steps {
+            Err(anyhow!("maximum number of steps reached"))
         } else {
             Ok(())
         }
@@ -262,10 +267,11 @@ impl State {
         true
     }
 
-    pub async fn execute(&self, invocation: Invocation) -> Result<()> {
+    pub async fn execute(&mut self, invocation: Invocation) -> Result<()> {
         let action = match self.get_action(&invocation.action) {
             Some(action) => action,
             None => {
+                self.metrics.errors.unknown_actions += 1;
                 // tell the model that the action name is wrong
                 self.add_error_to_history(
                     invocation.clone(),
@@ -277,6 +283,7 @@ impl State {
 
         // validate prerequisites
         if !self.validate(&invocation, action) {
+            self.metrics.errors.invalid_actions += 1;
             // not a core error, just inform the model and return
             return Ok(());
         }
@@ -285,9 +292,11 @@ impl State {
         let inv = invocation.clone();
         let ret = action.run(self, invocation.attributes, invocation.payload);
         if let Err(error) = ret {
+            self.metrics.errors.errored_actions += 1;
             // tell the model about the error
             self.add_error_to_history(inv, error.to_string());
         } else {
+            self.metrics.success_actions += 1;
             // tell the model about the output
             self.add_success_to_history(inv, ret.unwrap());
         }

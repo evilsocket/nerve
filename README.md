@@ -125,10 +125,10 @@ The main idea is giving the model a set of functions to perform operations and a
 If you want to observe this (basically the debug mode of Nerve), run your tasklet by adding the following additional arguments:
 
 ```sh
-nerve -G ... -T whatever-tasklet --save-to state.txt --full-dump
+nerve -G ... -T whatever-tasklet --save-to state.txt --full-dump --stats
 ```
 
-The agent will save to disk its internal state at each iteration for you to observe.
+The agent will report more runtime statistics and save to disk its internal state at each iteration for you to observe.
 
 ## Installing from Crates.io
 
