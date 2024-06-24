@@ -11,7 +11,7 @@ use colored::Colorize;
 
 use super::{
     generator::Message,
-    namespaces::{self, Namespace},
+    namespaces::{self, Action, Namespace},
     task::Task,
     Invocation,
 };
@@ -191,90 +191,105 @@ impl State {
         None
     }
 
-    pub async fn execute(&self, invocation: Invocation) -> Result<()> {
-        if let Some(action) = self.get_action(&invocation.action) {
-            // validate prerequisites
-            let payload_required = action.example_payload().is_some();
-            let attrs_required = action.attributes().is_some();
-            let has_payload = invocation.payload.is_some();
-            let has_attributes = invocation.attributes.is_some();
+    #[allow(clippy::borrowed_box)]
+    fn validate(&self, invocation: &Invocation, action: &Box<dyn Action>) -> bool {
+        // validate prerequisites
+        let payload_required = action.example_payload().is_some();
+        let attrs_required = action.attributes().is_some();
+        let has_payload = invocation.payload.is_some();
+        let has_attributes = invocation.attributes.is_some();
 
-            if payload_required && !has_payload {
-                // payload required and not specified
-                self.add_error_to_history(
-                    invocation.clone(),
-                    format!("no xml content specified for '{}'", invocation.action),
-                );
-                return Ok(());
-            } else if attrs_required && !has_attributes {
-                // attributes required and not specified at all
-                self.add_error_to_history(
-                    invocation.clone(),
-                    format!("no xml attributes specified for '{}'", invocation.action),
-                );
-                return Ok(());
-            } else if !payload_required && has_payload {
-                // payload not required but specified
-                self.add_error_to_history(
-                    invocation.clone(),
-                    format!("no xml content needed for '{}'", invocation.action),
-                );
-                return Ok(());
-            } else if !attrs_required && has_attributes {
-                // attributes not required but specified
-                self.add_error_to_history(
-                    invocation.clone(),
-                    format!("no xml attributes needed for '{}'", invocation.action),
-                );
-                return Ok(());
-            }
-
-            if attrs_required {
-                // validate each required attribute
-                let required_attrs: Vec<String> = action
-                    .attributes()
-                    .unwrap()
-                    .keys()
-                    .map(|s| s.to_owned())
-                    .collect();
-                let passed_attrs: Vec<String> = invocation
-                    .clone()
-                    .attributes
-                    .unwrap()
-                    .keys()
-                    .map(|s| s.to_owned())
-                    .collect();
-
-                for required in required_attrs {
-                    if !passed_attrs.contains(&required) {
-                        self.add_error_to_history(
-                            invocation.clone(),
-                            format!(
-                                "no '{}' xml attribute specified for '{}'",
-                                required, invocation.action
-                            ),
-                        );
-                        return Ok(());
-                    }
-                }
-            }
-
-            // execute the action
-            let inv = invocation.clone();
-            let ret = action.run(self, invocation.attributes, invocation.payload);
-            if let Err(error) = ret {
-                // tell the model about the error
-                self.add_error_to_history(inv, error.to_string());
-            } else {
-                // tell the model about the output
-                self.add_success_to_history(inv, ret.unwrap());
-            }
-        } else {
-            // tell the model that the action name is wrong
+        if payload_required && !has_payload {
+            // payload required and not specified
             self.add_error_to_history(
                 invocation.clone(),
-                format!("'{}' is not a valid action name", invocation.action),
+                format!("no xml content specified for '{}'", invocation.action),
             );
+            return false;
+        } else if attrs_required && !has_attributes {
+            // attributes required and not specified at all
+            self.add_error_to_history(
+                invocation.clone(),
+                format!("no xml attributes specified for '{}'", invocation.action),
+            );
+            return false;
+        } else if !payload_required && has_payload {
+            // payload not required but specified
+            self.add_error_to_history(
+                invocation.clone(),
+                format!("no xml content needed for '{}'", invocation.action),
+            );
+            return false;
+        } else if !attrs_required && has_attributes {
+            // attributes not required but specified
+            self.add_error_to_history(
+                invocation.clone(),
+                format!("no xml attributes needed for '{}'", invocation.action),
+            );
+            return false;
+        }
+
+        if attrs_required {
+            // validate each required attribute
+            let required_attrs: Vec<String> = action
+                .attributes()
+                .unwrap()
+                .keys()
+                .map(|s| s.to_owned())
+                .collect();
+            let passed_attrs: Vec<String> = invocation
+                .clone()
+                .attributes
+                .unwrap()
+                .keys()
+                .map(|s| s.to_owned())
+                .collect();
+
+            for required in required_attrs {
+                if !passed_attrs.contains(&required) {
+                    self.add_error_to_history(
+                        invocation.clone(),
+                        format!(
+                            "no '{}' xml attribute specified for '{}'",
+                            required, invocation.action
+                        ),
+                    );
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    pub async fn execute(&self, invocation: Invocation) -> Result<()> {
+        let action = match self.get_action(&invocation.action) {
+            Some(action) => action,
+            None => {
+                // tell the model that the action name is wrong
+                self.add_error_to_history(
+                    invocation.clone(),
+                    format!("'{}' is not a valid action name", invocation.action),
+                );
+                return Ok(());
+            }
+        };
+
+        // validate prerequisites
+        if !self.validate(&invocation, action) {
+            // not a core error, just inform the model and return
+            return Ok(());
+        }
+
+        // execute the action
+        let inv = invocation.clone();
+        let ret = action.run(self, invocation.attributes, invocation.payload);
+        if let Err(error) = ret {
+            // tell the model about the error
+            self.add_error_to_history(inv, error.to_string());
+        } else {
+            // tell the model about the output
+            self.add_success_to_history(inv, ret.unwrap());
         }
 
         Ok(())
