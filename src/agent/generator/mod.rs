@@ -33,6 +33,15 @@ pub enum Message {
     Feedback(String, Option<Invocation>),
 }
 
+impl Message {
+    pub fn to_string(&self) -> String {
+        match self {
+            Message::Agent(data, _) => format!("[agent]\n\n{}\n", data),
+            Message::Feedback(data, _) => format!("[feedback]\n\n{}\n", data),
+        }
+    }
+}
+
 #[async_trait]
 pub trait Client {
     fn new(url: &str, port: u16, model_name: &str, context_window: u32) -> Result<Self>

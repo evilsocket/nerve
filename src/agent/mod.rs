@@ -82,13 +82,13 @@ impl Agent {
 
             let data = if self.options.full_dump {
                 format!(
-                    "[SYSTEM PROMPT]\n\n{}\n[PROMPT]\n\n{}\n[CHAT]\n\n{}",
+                    "[SYSTEM PROMPT]\n\n{}\n\n[PROMPT]\n\n{}\n\n[CHAT]\n\n{}",
                     &options.system_prompt,
                     &options.prompt,
                     options
                         .history
                         .iter()
-                        .map(|m| format!("{:?}", &m))
+                        .map(|m| m.to_string())
                         .collect::<Vec<String>>()
                         .join("\n")
                 )
