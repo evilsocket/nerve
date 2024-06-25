@@ -37,20 +37,16 @@ impl Action for Search {
         let docs = state.lock().await.rag_query(&query, 1).await?;
 
         if !docs.is_empty() {
-            println!(
-                "[{}] {} results for '{query}' in {:?}",
-                "rag".bold(),
-                docs.len(),
-                start.elapsed()
-            );
+            println!("\n  {} results in {:?}", docs.len(), start.elapsed());
             for (doc, score) in &docs {
-                println!("  [{score}] {} ", &doc.name);
+                println!("       * {} ({})", &doc.name, score);
             }
+            println!("");
 
             Ok(Some(format!(
                 "Here is some supporting information:\n\n{}",
                 docs.iter()
-                    .map(|(doc, _)| format!("{}", doc.data))
+                    .map(|(doc, _)| doc.data.clone())
                     .collect::<Vec<String>>()
                     .join("\n")
             )))

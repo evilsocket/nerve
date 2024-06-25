@@ -232,9 +232,10 @@ impl Agent {
 
         // for each parsed invocation
         for inv in invocations {
-            let mut mut_state = self.state.lock().await;
             // lookup action
+            let mut mut_state = self.state.lock().await;
             let action = mut_state.get_action(&inv.action);
+
             if action.is_none() {
                 mut_state.metrics.errors.unknown_actions += 1;
                 // tell the model that the action name is wrong
@@ -242,6 +243,7 @@ impl Agent {
                     inv.clone(),
                     format!("'{}' is not a valid action name", inv.action),
                 );
+                drop(mut_state);
             } else {
                 let action = action.unwrap();
                 // validate prerequisites
