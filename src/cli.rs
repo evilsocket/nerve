@@ -22,6 +22,8 @@ pub(crate) struct Generator {
     pub port: u16,
 }
 
+// TODO: add optional -E/--embedder to specify a different model for RAG.
+
 /// Get things done with LLMs.
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
