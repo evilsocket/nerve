@@ -1,20 +1,10 @@
-use std::time::Duration;
-
-use colored::Colorize;
-use duration_string::DurationString;
+use anyhow::Result;
+use async_trait::async_trait;
 use openai_api_rust::chat::*;
+use openai_api_rust::embeddings::EmbeddingsApi;
 use openai_api_rust::*;
 
-use async_trait::async_trait;
-use lazy_static::lazy_static;
-use regex::Regex;
-
-use super::{Client, Message, Options};
-
-lazy_static! {
-    static ref RETRY_TIME_PARSER: Regex =
-        Regex::new(r"(?m)^.+try again in (.+)\. Visit.*").unwrap();
-}
+use super::{Client, Embeddings, Message, Options};
 
 pub struct OpenAIClient {
     model: String,
@@ -78,52 +68,39 @@ impl Client for OpenAIClient {
         let resp = self.client.chat_completion_create(&body);
 
         if let Err(error) = resp {
-            // if rate limit exceeded, parse the retry time and retry
-            if let Some(caps) = RETRY_TIME_PARSER
-                .captures_iter(&format!("{}", &error))
-                .next()
-            {
-                if caps.len() == 2 {
-                    let mut retry_time_str = "".to_string();
-
-                    caps.get(1)
-                        .unwrap()
-                        .as_str()
-                        .clone_into(&mut retry_time_str);
-
-                    // DurationString can't handle decimals like Xm3.838383s
-                    if retry_time_str.contains('.') {
-                        let (val, _) = retry_time_str.split_once('.').unwrap();
-                        retry_time_str = format!("{}s", val);
-                    }
-
-                    if let Ok(retry_time) = retry_time_str.parse::<DurationString>() {
-                        println!(
-                            "{}: rate limit reached for this model, retrying in {} ...\n",
-                            "WARNING".bold().yellow(),
-                            retry_time,
-                        );
-
-                        tokio::time::sleep(
-                            retry_time.checked_add(Duration::from_millis(1000)).unwrap(),
-                        )
-                        .await;
-
-                        return self.chat(options).await;
-                    } else {
-                        eprintln!("can't parse '{}'", &retry_time_str);
-                    }
-                } else {
-                    eprintln!("cap len wrong");
-                }
-            }
-
-            return Err(anyhow!(error));
+            return if self.check_rate_limit(&error.to_string()).await {
+                self.chat(options).await
+            } else {
+                Err(anyhow!(error))
+            };
         }
 
         let choice = resp.unwrap().choices;
         let message = &choice[0].message.as_ref().unwrap();
 
         Ok(message.content.to_string())
+    }
+
+    async fn embeddings(&self, text: &str) -> Result<Embeddings> {
+        let body = embeddings::EmbeddingsBody {
+            model: self.model.to_string(),
+            input: vec![text.to_string()],
+            user: None,
+        };
+        let resp = self.client.embeddings_create(&body);
+        if let Err(error) = resp {
+            return if self.check_rate_limit(&error.to_string()).await {
+                self.embeddings(text).await
+            } else {
+                Err(anyhow!(error))
+            };
+        }
+
+        let embeddings = resp.unwrap().data;
+        let embedding = embeddings.as_ref().unwrap().first().unwrap();
+
+        Ok(Embeddings::from(
+            embedding.embedding.as_ref().unwrap_or(&vec![]).clone(),
+        ))
     }
 }

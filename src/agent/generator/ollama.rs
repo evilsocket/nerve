@@ -1,5 +1,5 @@
+use anyhow::Result;
 use async_trait::async_trait;
-
 use ollama_rs::{
     generation::{
         chat::{request::ChatMessageRequest, ChatMessage},
@@ -8,7 +8,7 @@ use ollama_rs::{
     Ollama,
 };
 
-use super::{Client, Message, Options};
+use super::{Client, Embeddings, Message, Options};
 
 pub struct OllamaClient {
     model: String,
@@ -85,5 +85,14 @@ impl Client for OllamaClient {
             println!("WARNING: model returned an empty message.");
             Ok("".to_string())
         }
+    }
+
+    async fn embeddings(&self, text: &str) -> Result<Embeddings> {
+        let resp = self
+            .client
+            .generate_embeddings(self.model.to_string(), text.to_string(), None)
+            .await?;
+
+        Ok(Embeddings::from(resp.embeddings))
     }
 }

@@ -1,15 +1,12 @@
-use std::time::Duration;
-
+use anyhow::Result;
 use async_trait::async_trait;
-use colored::Colorize;
-use duration_string::DurationString;
 use groq_api_rs::completion::{client::Groq, request::builder, response::ErrorResponse};
 use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::agent::generator::Message;
 
-use super::{Client, Options};
+use super::{Client, Embeddings, Options};
 
 lazy_static! {
     static ref RETRY_TIME_PARSER: Regex =
@@ -23,7 +20,7 @@ pub struct GroqClient {
 
 #[async_trait]
 impl Client for GroqClient {
-    fn new(_: &str, _: u16, model_name: &str, _: u32) -> anyhow::Result<Self>
+    fn new(_: &str, _: u16, model_name: &str, _: u32) -> Result<Self>
     where
         Self: Sized,
     {
@@ -35,7 +32,7 @@ impl Client for GroqClient {
         Ok(Self { model, api_key })
     }
 
-    async fn chat(&self, options: &Options) -> anyhow::Result<String> {
+    async fn chat(&self, options: &Options) -> Result<String> {
         let mut chat_history = vec![
             groq_api_rs::completion::message::Message::SystemMessage {
                 role: Some("system".to_string()),
@@ -104,52 +101,11 @@ impl Client for GroqClient {
             if let Some(err_resp) = error.downcast_ref::<ErrorResponse>() {
                 // if rate limit exceeded, parse the retry time and retry
                 if err_resp.code == 429 {
-                    if let Some(caps) = RETRY_TIME_PARSER
-                        .captures_iter(&err_resp.error.message)
-                        .next()
-                    {
-                        if caps.len() == 2 {
-                            let mut retry_time_str = "".to_string();
-
-                            caps.get(1)
-                                .unwrap()
-                                .as_str()
-                                .clone_into(&mut retry_time_str);
-
-                            // DurationString can't handle decimals like Xm3.838383s
-                            if retry_time_str.contains('.') {
-                                let (val, _) = retry_time_str.split_once('.').unwrap();
-                                retry_time_str = format!("{}s", val);
-                            }
-
-                            if let Ok(retry_time) = retry_time_str.parse::<DurationString>() {
-                                println!(
-                                    "{}: rate limit reached for this model, retrying in {} ...\n",
-                                    "WARNING".bold().yellow(),
-                                    retry_time,
-                                );
-
-                                tokio::time::sleep(
-                                    retry_time.checked_add(Duration::from_millis(1000)).unwrap(),
-                                )
-                                .await;
-
-                                return self.chat(options).await;
-                            } else {
-                                eprintln!("can't parse '{}'", &retry_time_str);
-                            }
-                        } else {
-                            eprintln!("cap len wrong");
-                        }
+                    return if self.check_rate_limit(&err_resp.error.message).await {
+                        self.chat(options).await
                     } else {
-                        eprintln!("regex failed");
-                    }
-
-                    eprintln!(
-                        "{}: can't parse retry time from error response: {:?}",
-                        "WARNING".bold().yellow(),
-                        &err_resp
-                    );
+                        Err(anyhow!(error))
+                    };
                 }
             }
 
@@ -166,5 +122,10 @@ impl Client for GroqClient {
         };
 
         Ok(choice.message.content.to_string())
+    }
+
+    async fn embeddings(&self, _text: &str) -> Result<Embeddings> {
+        // TODO: extend the rust client to do this
+        todo!("groq embeddings generation not yet implemented")
     }
 }
