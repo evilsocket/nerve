@@ -15,6 +15,7 @@ pub struct NaiveVectorStore {
 }
 
 impl NaiveVectorStore {
+    // TODO: add persistency
     pub async fn from_indexed_path(generator: Box<dyn Client>, path: &str) -> Result<Self> {
         let path = std::fs::canonicalize(path)?.display().to_string();
         let expr = format!("{}/**/*.txt", path);

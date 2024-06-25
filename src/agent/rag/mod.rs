@@ -7,6 +7,7 @@ use super::generator::Client;
 mod metrics;
 pub(crate) mod naive;
 
+// TODO: move to mini-rag crate.
 pub type Embeddings = Vec<f64>;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
