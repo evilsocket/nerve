@@ -4,6 +4,7 @@ use std::process::Command;
 use std::str::FromStr;
 
 use anyhow::Result;
+use async_trait::async_trait;
 use colored::Colorize;
 use serde::Deserialize;
 use serde_trim::*;
@@ -13,6 +14,8 @@ use super::{variables::interpolate_variables, Task};
 use crate::{
     agent::{
         namespaces::{Action, Namespace},
+        rag,
+        state::SharedState,
         task::variables::{parse_pre_defined_values, parse_variable_expr},
     },
     cli,
@@ -40,6 +43,7 @@ pub struct TaskletAction {
     tool: String,
 }
 
+#[async_trait]
 impl Action for TaskletAction {
     fn name(&self) -> &str {
         &self.name
@@ -57,9 +61,9 @@ impl Action for TaskletAction {
         self.args.clone()
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &crate::agent::state::State,
+        state: SharedState,
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
@@ -168,7 +172,7 @@ impl Action for TaskletAction {
             let exit_code = output.status.code().unwrap_or(0);
             // println!("exit_code={}", exit_code);
             if exit_code == STATE_COMPLETE_EXIT_CODE {
-                state.on_complete(false, Some(out))?;
+                state.lock().await.on_complete(false, Some(out))?;
                 return Ok(Some("task complete".to_string()));
             }
 
@@ -221,12 +225,13 @@ impl FunctionGroup {
 #[derive(Default, Deserialize, Debug, Clone)]
 pub struct Tasklet {
     #[serde(skip_deserializing, skip_serializing)]
-    folder: String,
+    pub folder: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub name: String,
     #[serde(deserialize_with = "string_trim")]
     system_prompt: String,
     pub prompt: Option<String>,
+    pub rag: Option<rag::Configuration>,
     using: Option<Vec<String>>,
     guidance: Option<Vec<String>>,
     functions: Option<Vec<FunctionGroup>>,
@@ -316,11 +321,26 @@ impl Tasklet {
         // parse any variable
         self.prompt = Some(interpolate_variables(self.prompt.as_ref().unwrap().trim())?);
 
+        // fix rag path
+        if let Some(rag) = self.rag.as_mut() {
+            let rag_path = PathBuf::from(&rag.path);
+            if rag_path.is_relative() {
+                rag.path = PathBuf::from(&self.folder)
+                    .join(rag_path)
+                    .display()
+                    .to_string();
+            }
+        }
+
         Ok(())
     }
 }
 
 impl Task for Tasklet {
+    fn get_rag_config(&self) -> Option<rag::Configuration> {
+        self.rag.clone()
+    }
+
     fn to_system_prompt(&self) -> Result<String> {
         Ok(self.system_prompt.to_string())
     }

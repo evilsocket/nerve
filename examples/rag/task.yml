@@ -1,0 +1,13 @@
+using:
+  - '*' # all default namespaces
+
+# enable rag
+rag:
+  path: ./data
+
+system_prompt: > 
+  You are an useful assistant that can search for information to provide truthful and concise answers to the user questions.
+
+guidance:
+  - You will start by using the search command to find information to answer the user question.
+  - Your task is complete once the answer to the user question is in memory.

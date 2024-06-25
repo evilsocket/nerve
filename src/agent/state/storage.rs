@@ -1,10 +1,10 @@
-use std::{sync::Mutex /* , time::SystemTime*/};
+use std::{ops::Deref /* , time::SystemTime*/};
 
 use colored::Colorize;
 use indexmap::IndexMap;
 
 #[derive(Debug)]
-pub(crate) struct Entry {
+pub struct Entry {
     //pub time: SystemTime,
     pub complete: bool, // for Completion storage
     pub data: String,
@@ -52,14 +52,22 @@ pub(crate) const PREVIOUS_TAG: &str = "__previous";
 pub struct Storage {
     name: String,
     type_: StorageType,
-    inner: Mutex<IndexMap<String, Entry>>,
+    inner: IndexMap<String, Entry>,
+}
+
+impl Deref for Storage {
+    type Target = IndexMap<String, Entry>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
 }
 
 #[allow(dead_code)]
 impl Storage {
     pub fn new(name: &str, type_: StorageType) -> Self {
         let name = name.to_string();
-        let inner = Mutex::new(IndexMap::new());
+        let inner = IndexMap::new();
         Self { name, type_, inner }
     }
 
@@ -71,22 +79,16 @@ impl Storage {
         &self.type_
     }
 
-    pub fn get_inner(&self) -> &Mutex<IndexMap<String, Entry>> {
-        &self.inner
-    }
-
-    pub fn add_tagged(&self, key: &str, data: &str) {
+    pub fn add_tagged(&mut self, key: &str, data: &str) {
         assert!(matches!(self.type_, StorageType::Tagged));
         println!("<{}> {}={}", self.name.bold(), key, data.yellow());
         self.inner
-            .lock()
-            .unwrap()
             .insert(key.to_string(), Entry::new(data.to_string()));
     }
 
-    pub fn del_tagged(&self, key: &str) -> Option<String> {
+    pub fn del_tagged(&mut self, key: &str) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Tagged));
-        if let Some(old) = self.inner.lock().unwrap().shift_remove(key) {
+        if let Some(old) = self.inner.shift_remove(key) {
             println!("<{}> {} removed\n", self.name.bold(), key);
             Some(old.data)
         } else {
@@ -96,27 +98,20 @@ impl Storage {
 
     pub fn get_tagged(&self, key: &str) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Tagged));
-        self.inner
-            .lock()
-            .unwrap()
-            .get(key)
-            .map(|va| va.data.to_string())
+        self.inner.get(key).map(|va| va.data.to_string())
     }
 
-    pub fn add_completion(&self, data: &str) {
+    pub fn add_completion(&mut self, data: &str) {
         assert!(matches!(self.type_, StorageType::Completion));
         println!("<{}> {}", self.name.bold(), data.yellow());
-
-        let mut inner = self.inner.lock().unwrap();
-
-        let tag = format!("{}", inner.len() + 1);
-        inner.insert(tag, Entry::new(data.to_string()));
+        let tag = format!("{}", self.inner.len() + 1);
+        self.inner.insert(tag, Entry::new(data.to_string()));
     }
 
-    pub fn del_completion(&self, pos: usize) -> Option<String> {
+    pub fn del_completion(&mut self, pos: usize) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Completion));
         let tag = format!("{}", pos);
-        if let Some(old) = self.inner.lock().unwrap().shift_remove(&tag) {
+        if let Some(old) = self.inner.shift_remove(&tag) {
             println!("<{}> element {} removed\n", self.name.bold(), pos);
             Some(old.data)
         } else {
@@ -124,10 +119,10 @@ impl Storage {
         }
     }
 
-    pub fn set_complete(&self, pos: usize) -> Option<bool> {
+    pub fn set_complete(&mut self, pos: usize) -> Option<bool> {
         assert!(matches!(self.type_, StorageType::Completion));
         let tag = format!("{}", pos);
-        if let Some(entry) = self.inner.lock().unwrap().get_mut(&tag) {
+        if let Some(entry) = self.inner.get_mut(&tag) {
             println!("<{}> element {} set as complete\n", self.name.bold(), pos);
             let prev = entry.complete;
             entry.complete = true;
@@ -137,10 +132,10 @@ impl Storage {
         }
     }
 
-    pub fn set_incomplete(&self, pos: usize) -> Option<bool> {
+    pub fn set_incomplete(&mut self, pos: usize) -> Option<bool> {
         assert!(matches!(self.type_, StorageType::Completion));
         let tag = format!("{}", pos);
-        if let Some(entry) = self.inner.lock().unwrap().get_mut(&tag) {
+        if let Some(entry) = self.inner.get_mut(&tag) {
             println!("<{}> element {} set as incomplete\n", self.name.bold(), pos);
             let prev = entry.complete;
             entry.complete = false;
@@ -150,20 +145,17 @@ impl Storage {
         }
     }
 
-    pub fn add_untagged(&self, data: &str) {
+    pub fn add_untagged(&mut self, data: &str) {
         assert!(matches!(self.type_, StorageType::Untagged));
         println!("<{}> {}", self.name.bold(), data.yellow());
-
-        let mut inner = self.inner.lock().unwrap();
-
-        let tag = format!("{}", inner.len() + 1);
-        inner.insert(tag, Entry::new(data.to_string()));
+        let tag = format!("{}", self.inner.len() + 1);
+        self.inner.insert(tag, Entry::new(data.to_string()));
     }
 
-    pub fn del_untagged(&self, pos: usize) -> Option<String> {
+    pub fn del_untagged(&mut self, pos: usize) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Untagged));
         let tag = format!("{}", pos);
-        if let Some(old) = self.inner.lock().unwrap().shift_remove(&tag) {
+        if let Some(old) = self.inner.shift_remove(&tag) {
             println!("<{}> element {} removed\n", self.name.bold(), pos);
             Some(old.data)
         } else {
@@ -171,24 +163,23 @@ impl Storage {
         }
     }
 
-    pub fn set_current(&self, data: &str, verbose: bool) {
+    pub fn set_current(&mut self, data: &str, verbose: bool) {
         assert!(matches!(self.type_, StorageType::CurrentPrevious));
-        let mut inner = self.inner.lock().unwrap();
-
         if verbose {
             println!("<{}> current={}", self.name.bold(), data.yellow());
         }
 
-        let old_current = inner.shift_remove(CURRENT_TAG);
+        let old_current = self.inner.shift_remove(CURRENT_TAG);
 
-        inner.insert(CURRENT_TAG.to_string(), Entry::new(data.to_string()));
+        self.inner
+            .insert(CURRENT_TAG.to_string(), Entry::new(data.to_string()));
         if let Some(old_curr) = old_current {
-            inner.insert(PREVIOUS_TAG.to_string(), old_curr);
+            self.inner.insert(PREVIOUS_TAG.to_string(), old_curr);
         }
     }
 
-    pub fn clear(&self) {
-        self.inner.lock().unwrap().clear();
+    pub fn clear(&mut self) {
+        self.inner.clear();
         println!("<{}> cleared", self.name.bold());
     }
 }

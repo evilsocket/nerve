@@ -45,8 +45,7 @@ pub(crate) fn action(action: &Box<dyn Action>) -> String {
 }
 
 pub(crate) fn storage(storage: &Storage) -> String {
-    let inner = storage.get_inner().lock().unwrap();
-    if inner.is_empty() {
+    if storage.is_empty() {
         return "".to_string();
     }
 
@@ -54,7 +53,7 @@ pub(crate) fn storage(storage: &Storage) -> String {
         StorageType::Tagged => {
             let mut xml: String = format!("<{}>\n", storage.get_name());
 
-            for (key, entry) in &*inner {
+            for (key, entry) in storage.iter() {
                 xml += &format!("  - {}={}\n", key, &entry.data);
             }
 
@@ -65,7 +64,7 @@ pub(crate) fn storage(storage: &Storage) -> String {
         StorageType::Untagged => {
             let mut xml = format!("<{}>\n", storage.get_name());
 
-            for entry in inner.values() {
+            for entry in storage.values() {
                 xml += &format!("  - {}\n", &entry.data);
             }
 
@@ -76,7 +75,7 @@ pub(crate) fn storage(storage: &Storage) -> String {
         StorageType::Completion => {
             let mut xml = format!("<{}>\n", storage.get_name());
 
-            for entry in inner.values() {
+            for entry in storage.values() {
                 xml += &format!(
                     "  - {} : {}\n",
                     &entry.data,
@@ -93,9 +92,9 @@ pub(crate) fn storage(storage: &Storage) -> String {
             xml.to_string()
         }
         StorageType::CurrentPrevious => {
-            if let Some(current) = inner.get(CURRENT_TAG) {
+            if let Some(current) = storage.get(CURRENT_TAG) {
                 let mut str = format!("* Current {}: {}", storage.get_name(), current.data.trim());
-                if let Some(prev) = inner.get(PREVIOUS_TAG) {
+                if let Some(prev) = storage.get(PREVIOUS_TAG) {
                     str += &format!("\n* Previous {}: {}", storage.get_name(), prev.data.trim());
                 }
                 str

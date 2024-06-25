@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs::{self, FileType};
 use std::os::unix::fs::{FileTypeExt, PermissionsExt};
 
+use async_trait::async_trait;
 use chrono::{DateTime, Local};
 use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOTH, S_IXUSR};
 
@@ -9,7 +10,7 @@ use anyhow::Result;
 use colored::Colorize;
 
 use super::{Action, Namespace};
-use crate::agent::state::State;
+use crate::agent::state::SharedState;
 
 // cast needed for Darwin apparently
 #[allow(clippy::unnecessary_cast)]
@@ -55,9 +56,10 @@ fn triplet(mode: u32, read: u32, write: u32, execute: u32) -> String {
     .to_string()
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct ReadFolder {}
 
+#[async_trait]
 impl Action for ReadFolder {
     fn name(&self) -> &str {
         "read-folder"
@@ -71,10 +73,10 @@ impl Action for ReadFolder {
         Some("/path/to/folder")
     }
 
-    fn run(
+    async fn run(
         &self,
-        _state: &State,
-        _attributes: Option<HashMap<String, String>>,
+        _: SharedState,
+        _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
         // adapted from https://gist.github.com/mre/91ebb841c34df69671bd117ead621a8b
@@ -119,9 +121,10 @@ impl Action for ReadFolder {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct ReadFile {}
 
+#[async_trait]
 impl Action for ReadFile {
     fn name(&self) -> &str {
         "read-file"
@@ -135,10 +138,10 @@ impl Action for ReadFile {
         Some("/path/to/file/to/read")
     }
 
-    fn run(
+    async fn run(
         &self,
-        _state: &State,
-        _attributes: Option<HashMap<String, String>>,
+        _: SharedState,
+        _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
         let filepath = payload.unwrap();

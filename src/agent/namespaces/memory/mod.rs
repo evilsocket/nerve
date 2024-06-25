@@ -1,14 +1,16 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use async_trait::async_trait;
 use colored::Colorize;
 
 use super::{Action, Namespace, StorageDescriptor};
-use crate::agent::state::State;
+use crate::agent::state::SharedState;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct SaveMemory {}
 
+#[async_trait]
 impl Action for SaveMemory {
     fn name(&self) -> &str {
         "save-memory"
@@ -30,9 +32,9 @@ impl Action for SaveMemory {
         Some("put here the custom data you want to keep for later")
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &State,
+        state: SharedState,
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
@@ -40,16 +42,19 @@ impl Action for SaveMemory {
         let key = attrs.get("key").unwrap();
 
         state
-            .get_storage("memories")?
+            .lock()
+            .await
+            .get_storage_mut("memories")?
             .add_tagged(key, payload.unwrap().as_str());
 
         Ok(Some("memory saved".to_string()))
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct DeleteMemory {}
 
+#[async_trait]
 impl Action for DeleteMemory {
     fn name(&self) -> &str {
         "delete-memory"
@@ -67,15 +72,21 @@ impl Action for DeleteMemory {
         Some(attributes)
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &State,
+        state: SharedState,
         attributes: Option<HashMap<String, String>>,
         _: Option<String>,
     ) -> Result<Option<String>> {
         let attrs = attributes.unwrap();
         let key = attrs.get("key").unwrap();
-        if state.get_storage("memories")?.del_tagged(key).is_some() {
+        if state
+            .lock()
+            .await
+            .get_storage_mut("memories")?
+            .del_tagged(key)
+            .is_some()
+        {
             Ok(Some("memory deleted".to_string()))
         } else {
             Err(anyhow!("memory '{}' not found", key))
@@ -83,9 +94,10 @@ impl Action for DeleteMemory {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct RecallMemory {}
 
+#[async_trait]
 impl Action for RecallMemory {
     fn name(&self) -> &str {
         "recall-memory"
@@ -103,16 +115,16 @@ impl Action for RecallMemory {
         Some(attributes)
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &State,
+        state: SharedState,
         attributes: Option<HashMap<String, String>>,
         _: Option<String>,
     ) -> Result<Option<String>> {
         let attrs = attributes.unwrap();
         let key = attrs.get("key").unwrap();
 
-        if let Some(memory) = state.get_storage("memories")?.get_tagged(key) {
+        if let Some(memory) = state.lock().await.get_storage("memories")?.get_tagged(key) {
             println!("<{}> recalling {}", "memories".bold(), key);
             Ok(Some(memory))
         } else {

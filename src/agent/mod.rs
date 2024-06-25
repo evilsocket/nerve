@@ -1,14 +1,16 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Result;
 use colored::Colorize;
 
 use generator::{Client, Options};
-use state::State;
+use namespaces::Action;
+use state::{SharedState, State};
 use task::Task;
 
 pub mod generator;
 pub mod namespaces;
+pub mod rag;
 pub mod serialization;
 pub mod state;
 pub mod task;
@@ -52,19 +54,22 @@ pub struct AgentOptions {
 
 pub struct Agent {
     generator: Box<dyn Client>,
-    state: State,
+    state: SharedState,
     options: AgentOptions,
     max_history: u16,
 }
 
 impl Agent {
-    pub fn new(
+    pub async fn new(
         generator: Box<dyn Client>,
         task: Box<dyn Task>,
         options: AgentOptions,
     ) -> Result<Self> {
         let max_history = task.max_history_visibility();
-        let state = State::new(task, options.max_iterations)?;
+        let state = Arc::new(tokio::sync::Mutex::new(
+            State::new(task, generator.copy()?, options.max_iterations).await?,
+        ));
+
         Ok(Self {
             generator,
             state,
@@ -73,12 +78,82 @@ impl Agent {
         })
     }
 
-    fn save_if_needed(&self, options: &Options, refresh: bool) -> Result<()> {
+    #[allow(clippy::borrowed_box)]
+    pub fn validate(&self, invocation: &Invocation, action: &Box<dyn Action>) -> Result<()> {
+        // validate prerequisites
+        let payload_required = action.example_payload().is_some();
+        let attrs_required = action.attributes().is_some();
+        let has_payload = invocation.payload.is_some();
+        let has_attributes = invocation.attributes.is_some();
+
+        if payload_required && !has_payload {
+            // payload required and not specified
+            return Err(anyhow!(
+                "no xml content specified for '{}'",
+                invocation.action
+            ));
+        } else if attrs_required && !has_attributes {
+            // attributes required and not specified at all
+            return Err(anyhow!(
+                "no xml attributes specified for '{}'",
+                invocation.action
+            ));
+        } else if !payload_required && has_payload {
+            // payload not required but specified
+            return Err(anyhow!("no xml content needed for '{}'", invocation.action));
+        } else if !attrs_required && has_attributes {
+            // attributes not required but specified
+            return Err(anyhow!(
+                "no xml attributes needed for '{}'",
+                invocation.action
+            ));
+        }
+
+        if attrs_required {
+            // validate each required attribute
+            let required_attrs: Vec<String> = action
+                .attributes()
+                .unwrap()
+                .keys()
+                .map(|s| s.to_owned())
+                .collect();
+            let passed_attrs: Vec<String> = invocation
+                .clone()
+                .attributes
+                .unwrap()
+                .keys()
+                .map(|s| s.to_owned())
+                .collect();
+
+            for required in required_attrs {
+                if !passed_attrs.contains(&required) {
+                    return Err(anyhow!(
+                        "no '{}' xml attribute specified for '{}'",
+                        required,
+                        invocation.action
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub async fn is_done(&self) -> bool {
+        self.state.lock().await.is_complete()
+    }
+
+    async fn save_if_needed(&self, options: &Options, refresh: bool) -> Result<()> {
         if let Some(prompt_path) = &self.options.save_to {
             let mut opts = options.clone();
             if refresh {
-                opts.system_prompt = serialization::state_to_system_prompt(&self.state)?;
-                opts.history = self.state.to_chat_history(self.max_history as usize)?;
+                opts.system_prompt =
+                    serialization::state_to_system_prompt(&*self.state.lock().await)?;
+                opts.history = self
+                    .state
+                    .lock()
+                    .await
+                    .to_chat_history(self.max_history as usize)?;
             }
 
             let data = if self.options.full_dump {
@@ -104,19 +179,21 @@ impl Agent {
     }
 
     pub async fn step(&mut self) -> Result<()> {
-        self.state.on_step()?;
+        let mut mut_state = self.state.lock().await;
+
+        mut_state.on_step()?;
 
         if self.options.with_stats {
-            println!("\n{}\n", &self.state.metrics);
+            println!("\n{}\n", &mut_state.metrics);
         }
 
-        let system_prompt = serialization::state_to_system_prompt(&self.state)?;
-        let prompt = self.state.to_prompt()?;
-        let history = self.state.to_chat_history(self.max_history as usize)?;
+        let system_prompt = serialization::state_to_system_prompt(&mut_state)?;
+        let prompt = mut_state.to_prompt()?;
+        let history = mut_state.to_chat_history(self.max_history as usize)?;
 
         let options = Options::new(system_prompt, prompt, history);
 
-        self.save_if_needed(&options, false)?;
+        self.save_if_needed(&options, false).await?;
 
         // run model inference
         let response = self.generator.chat(&options).await?.trim().to_string();
@@ -127,53 +204,86 @@ impl Agent {
         // nothing parsed, report the problem to the model
         if invocations.is_empty() {
             if response.is_empty() {
-                self.state.metrics.errors.empty_responses += 1;
+                println!(
+                    "{}: agent did not provide valid instructions: empty response",
+                    "WARNING".bold().red(),
+                );
 
-                self.state.add_unparsed_response_to_history(
+                mut_state.metrics.errors.empty_responses += 1;
+                mut_state.add_unparsed_response_to_history(
                     &response,
                     "Do not return an empty responses.".to_string(),
                 );
             } else {
-                self.state.metrics.errors.unparsed_responses += 1;
+                println!("\n\n{}\n\n", response.dimmed());
 
-                self.state.add_unparsed_response_to_history(
+                mut_state.metrics.errors.unparsed_responses += 1;
+                mut_state.add_unparsed_response_to_history(
                     &response,
                     "I could not parse any valid actions from your response, please correct it according to the instructions.".to_string(),
                 );
             }
-
-            println!(
-                "{}: agent did not provide valid instructions: {}",
-                "WARNING".bold().red(),
-                if response.is_empty() {
-                    "empty response".dimmed().to_string()
-                } else {
-                    format!("\n\n{}\n\n", response.dimmed().yellow())
-                }
-            );
         } else {
-            self.state.metrics.valid_responses += 1;
+            mut_state.metrics.valid_responses += 1;
         }
+
+        // to avoid dead locks, is this needed?
+        drop(mut_state);
 
         // for each parsed invocation
         for inv in invocations {
-            // see if valid action and execute
-            if let Err(e) = self.state.execute(inv.clone()).await {
-                println!("ERROR: {}", e);
+            let mut mut_state = self.state.lock().await;
+            // lookup action
+            let action = mut_state.get_action(&inv.action);
+            if action.is_none() {
+                mut_state.metrics.errors.unknown_actions += 1;
+                // tell the model that the action name is wrong
+                mut_state.add_error_to_history(
+                    inv.clone(),
+                    format!("'{}' is not a valid action name", inv.action),
+                );
             } else {
-                self.state.metrics.valid_actions += 1;
+                let action = action.unwrap();
+                // validate prerequisites
+                if let Err(err) = self.validate(&inv, &action) {
+                    mut_state.metrics.errors.invalid_actions += 1;
+                    mut_state.add_error_to_history(inv.clone(), err.to_string());
+                    drop(mut_state);
+                } else {
+                    mut_state.metrics.valid_actions += 1;
+                    drop(mut_state);
+
+                    // TODO: timeout logic
+
+                    // execute
+                    let ret = action
+                        .run(
+                            self.state.clone(),
+                            inv.attributes.to_owned(),
+                            inv.payload.to_owned(),
+                        )
+                        .await;
+
+                    let mut mut_state = self.state.lock().await;
+                    if let Err(error) = ret {
+                        mut_state.metrics.errors.errored_actions += 1;
+                        // tell the model about the error
+                        mut_state.add_error_to_history(inv, error.to_string());
+                    } else {
+                        mut_state.metrics.success_actions += 1;
+                        // tell the model about the output
+                        mut_state.add_success_to_history(inv, ret.unwrap());
+                    }
+                    drop(mut_state);
+                }
             }
 
-            self.save_if_needed(&options, true)?;
-            if self.state.is_complete() {
+            self.save_if_needed(&options, true).await?;
+            if self.state.lock().await.is_complete() {
                 break;
             }
         }
 
         Ok(())
-    }
-
-    pub fn get_state(&self) -> &State {
-        &self.state
     }
 }

@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use async_trait::async_trait;
 
 use super::{Action, Namespace, StorageDescriptor};
-use crate::agent::state::State;
+use crate::agent::state::SharedState;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct AddStep {}
 
+#[async_trait]
 impl Action for AddStep {
     fn name(&self) -> &str {
         "add-plan-step"
@@ -21,20 +23,25 @@ impl Action for AddStep {
         Some("complete the task")
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &State,
+        state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        state.get_storage("plan")?.add_completion(&payload.unwrap());
+        state
+            .lock()
+            .await
+            .get_storage_mut("plan")?
+            .add_completion(&payload.unwrap());
         Ok(Some("step added to the plan".to_string()))
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct DeleteStep {}
 
+#[async_trait]
 impl Action for DeleteStep {
     fn name(&self) -> &str {
         "delete-plan-step"
@@ -48,22 +55,25 @@ impl Action for DeleteStep {
         Some("2")
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &State,
+        state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
         state
-            .get_storage("plan")?
+            .lock()
+            .await
+            .get_storage_mut("plan")?
             .del_completion(payload.unwrap().parse::<usize>()?);
         Ok(Some("step removed from the plan".to_string()))
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct SetComplete {}
 
+#[async_trait]
 impl Action for SetComplete {
     fn name(&self) -> &str {
         "set-step-completed"
@@ -77,14 +87,20 @@ impl Action for SetComplete {
         Some("2")
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &State,
+        state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
         let pos = payload.unwrap().parse::<usize>()?;
-        if state.get_storage("plan")?.set_complete(pos).is_some() {
+        if state
+            .lock()
+            .await
+            .get_storage_mut("plan")?
+            .set_complete(pos)
+            .is_some()
+        {
             Ok(Some(format!("step {} marked as completed", pos)))
         } else {
             Err(anyhow!("no plan step at position {}", pos))
@@ -92,9 +108,10 @@ impl Action for SetComplete {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct SetIncomplete {}
 
+#[async_trait]
 impl Action for SetIncomplete {
     fn name(&self) -> &str {
         "set-step-incomplete"
@@ -108,14 +125,20 @@ impl Action for SetIncomplete {
         Some("2")
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &State,
+        state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
         let pos = payload.unwrap().parse::<usize>()?;
-        if state.get_storage("plan")?.set_incomplete(pos).is_some() {
+        if state
+            .lock()
+            .await
+            .get_storage_mut("plan")?
+            .set_incomplete(pos)
+            .is_some()
+        {
             Ok(Some(format!("step {} marked as incomplete", pos)))
         } else {
             Err(anyhow!("no plan step at position {}", pos))
@@ -123,9 +146,10 @@ impl Action for SetIncomplete {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct Clear {}
 
+#[async_trait]
 impl Action for Clear {
     fn name(&self) -> &str {
         "clear-plan"
@@ -135,13 +159,13 @@ impl Action for Clear {
         include_str!("clear.prompt")
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &State,
+        state: SharedState,
         _: Option<HashMap<String, String>>,
         _: Option<String>,
     ) -> Result<Option<String>> {
-        state.get_storage("plan")?.clear();
+        state.lock().await.get_storage_mut("plan")?.clear();
         Ok(Some("plan cleared".to_string()))
     }
 }

@@ -72,10 +72,10 @@ async fn main() -> Result<()> {
     let task = Box::new(tasklet);
 
     // create the agent given the generator, task and a set of options
-    let mut agent = Agent::new(generator, task, args.to_agent_options())?;
+    let mut agent = Agent::new(generator, task, args.to_agent_options()).await?;
 
     // keep going until the task is complete or a fatal error is reached
-    while !agent.get_state().is_complete() {
+    while !agent.is_done().await {
         // next step
         if let Err(error) = agent.step().await {
             println!("{}", error.to_string().bold().red());

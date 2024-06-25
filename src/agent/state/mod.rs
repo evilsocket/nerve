@@ -1,18 +1,13 @@
-use std::{
-    collections::HashMap,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Mutex,
-    },
-};
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Result;
 use colored::Colorize;
 use metrics::Metrics;
 
 use super::{
-    generator::Message,
-    namespaces::{self, Action, Namespace},
+    generator::{Client, Message},
+    namespaces::{self, Namespace},
+    rag::{self, naive::NaiveVectorStore, Document, VectorStore},
     task::Task,
     Invocation,
 };
@@ -23,7 +18,12 @@ mod history;
 mod metrics;
 pub(crate) mod storage;
 
-#[derive(Debug)]
+#[allow(clippy::upper_case_acronyms)]
+struct RAG {
+    config: rag::Configuration,
+    store: Box<dyn VectorStore>,
+}
+
 pub struct State {
     // the task
     task: Box<dyn Task>,
@@ -32,18 +32,26 @@ pub struct State {
     // available actions and execution history
     namespaces: Vec<Namespace>,
     // list of executed actions
-    history: Mutex<History>,
+    history: History,
+    // optional rag engine
+    rag: Option<RAG>,
     // set to true when task is complete
-    complete: AtomicBool,
+    complete: bool,
     // runtime metrics
     pub metrics: Metrics,
 }
 
+pub type SharedState = Arc<tokio::sync::Mutex<State>>;
+
 impl State {
-    pub fn new(task: Box<dyn Task>, max_iterations: usize) -> Result<Self> {
-        let complete = AtomicBool::new(false);
+    pub async fn new(
+        task: Box<dyn Task>,
+        generator: Box<dyn Client>,
+        max_iterations: usize,
+    ) -> Result<Self> {
+        let complete = false;
         let mut storages = HashMap::new();
-        let history = Mutex::new(History::new());
+        let history = History::new();
 
         let mut namespaces = vec![];
         let using = task.namespaces();
@@ -80,6 +88,21 @@ impl State {
             }
         }
 
+        // add RAG namespace
+        let rag = if let Some(config) = task.get_rag_config() {
+            let v_store =
+                NaiveVectorStore::from_indexed_path(generator.copy()?, &config.path).await?;
+
+            namespaces.push(namespaces::NAMESPACES.get("rag").unwrap()());
+
+            Some(RAG {
+                config: config.clone(),
+                store: Box::new(v_store),
+            })
+        } else {
+            None
+        };
+
         // add task defined actions
         namespaces.append(&mut task.get_functions());
 
@@ -101,7 +124,7 @@ impl State {
         // println!("storages={:?}", &storages);
 
         // if the goal namespace is enabled, set the current goal
-        if let Some(goal) = storages.get("goal") {
+        if let Some(goal) = storages.get_mut("goal") {
             let prompt = task.to_prompt()?;
             goal.set_current(&prompt, false);
         }
@@ -118,6 +141,7 @@ impl State {
             namespaces,
             complete,
             metrics,
+            rag,
         })
     }
 
@@ -130,8 +154,16 @@ impl State {
         }
     }
 
+    pub async fn rag_query(&mut self, query: &str, top_k: usize) -> Result<Vec<(Document, f64)>> {
+        if let Some(rag) = &self.rag {
+            rag.store.retrieve(query, top_k).await
+        } else {
+            Err(anyhow!("no RAG engine has been configured"))
+        }
+    }
+
     pub fn to_chat_history(&self, max: usize) -> Result<Vec<Message>> {
-        self.history.lock().unwrap().to_chat_history(max)
+        self.history.to_chat_history(max)
     }
 
     #[allow(clippy::borrowed_box)]
@@ -152,43 +184,47 @@ impl State {
         }
     }
 
+    pub fn get_storage_mut(&mut self, name: &str) -> Result<&mut Storage> {
+        if let Some(storage) = self.storages.get_mut(name) {
+            Ok(storage)
+        } else {
+            println!("WARNING: requested storage '{name}' not found.");
+            Err(anyhow!("storage {name} not found"))
+        }
+    }
+
     pub fn to_prompt(&self) -> Result<String> {
         self.task.to_prompt()
     }
 
     pub fn is_complete(&self) -> bool {
-        self.complete.load(Ordering::SeqCst)
+        self.complete
     }
 
     pub fn get_namespaces(&self) -> &Vec<Namespace> {
         &self.namespaces
     }
 
-    pub fn add_success_to_history(&self, invocation: Invocation, result: Option<String>) {
-        if let Ok(mut guard) = self.history.lock() {
-            guard.push(Execution::with_result(invocation, result));
-        }
+    pub fn add_success_to_history(&mut self, invocation: Invocation, result: Option<String>) {
+        self.history
+            .push(Execution::with_result(invocation, result));
     }
 
-    pub fn add_error_to_history(&self, invocation: Invocation, error: String) {
-        if let Ok(mut guard) = self.history.lock() {
-            // eprintln!("[{}] -> {}", &invocation.action, error.red());
-            guard.push(Execution::with_error(invocation, error));
-        }
+    pub fn add_error_to_history(&mut self, invocation: Invocation, error: String) {
+        // eprintln!("[{}] -> {}", &invocation.action, error.red());
+        self.history.push(Execution::with_error(invocation, error));
     }
 
-    pub fn add_unparsed_response_to_history(&self, response: &str, error: String) {
-        if let Ok(mut guard) = self.history.lock() {
-            guard.push(Execution::with_unparsed_response(response, error));
-        }
+    pub fn add_unparsed_response_to_history(&mut self, response: &str, error: String) {
+        self.history
+            .push(Execution::with_unparsed_response(response, error));
     }
 
-    #[allow(clippy::borrowed_box)]
-    fn get_action(&self, name: &str) -> Option<&Box<dyn namespaces::Action>> {
+    pub fn get_action(&self, name: &str) -> Option<Box<dyn namespaces::Action>> {
         for group in &self.namespaces {
             for action in &group.actions {
                 if name == action.name() {
-                    return Some(action);
+                    return Some(action.clone());
                 }
             }
         }
@@ -196,115 +232,52 @@ impl State {
         None
     }
 
-    #[allow(clippy::borrowed_box)]
-    fn validate(&self, invocation: &Invocation, action: &Box<dyn Action>) -> bool {
-        // validate prerequisites
-        let payload_required = action.example_payload().is_some();
-        let attrs_required = action.attributes().is_some();
-        let has_payload = invocation.payload.is_some();
-        let has_attributes = invocation.attributes.is_some();
+    /*
+       pub async fn execute(&mut self, invocation: Invocation) -> Result<()> {
+           let action = match self.get_action(&invocation.action) {
+               Some(action) => action,
+               None => {
+                   self.metrics.errors.unknown_actions += 1;
+                   // tell the model that the action name is wrong
+                   self.add_error_to_history(
+                       invocation.clone(),
+                       format!("'{}' is not a valid action name", invocation.action),
+                   );
+                   return Ok(());
+               }
+           };
 
-        if payload_required && !has_payload {
-            // payload required and not specified
-            self.add_error_to_history(
-                invocation.clone(),
-                format!("no xml content specified for '{}'", invocation.action),
-            );
-            return false;
-        } else if attrs_required && !has_attributes {
-            // attributes required and not specified at all
-            self.add_error_to_history(
-                invocation.clone(),
-                format!("no xml attributes specified for '{}'", invocation.action),
-            );
-            return false;
-        } else if !payload_required && has_payload {
-            // payload not required but specified
-            self.add_error_to_history(
-                invocation.clone(),
-                format!("no xml content needed for '{}'", invocation.action),
-            );
-            return false;
-        } else if !attrs_required && has_attributes {
-            // attributes not required but specified
-            self.add_error_to_history(
-                invocation.clone(),
-                format!("no xml attributes needed for '{}'", invocation.action),
-            );
-            return false;
-        }
+           // validate prerequisites
+           if let Err(e) = self.validate(&invocation, action) {
+               self.metrics.errors.invalid_actions += 1;
+               self.add_error_to_history(invocation.clone(), e.to_string());
+               // not a core error, just inform the model and return
+               return Ok(());
+           }
 
-        if attrs_required {
-            // validate each required attribute
-            let required_attrs: Vec<String> = action
-                .attributes()
-                .unwrap()
-                .keys()
-                .map(|s| s.to_owned())
-                .collect();
-            let passed_attrs: Vec<String> = invocation
-                .clone()
-                .attributes
-                .unwrap()
-                .keys()
-                .map(|s| s.to_owned())
-                .collect();
+           // execute the action
 
-            for required in required_attrs {
-                if !passed_attrs.contains(&required) {
-                    self.add_error_to_history(
-                        invocation.clone(),
-                        format!(
-                            "no '{}' xml attribute specified for '{}'",
-                            required, invocation.action
-                        ),
-                    );
-                    return false;
-                }
-            }
-        }
+           // TODO: add timeout logic to invocations
+           let inv = invocation.clone();
+           let shared_state = get_state_fn();
 
-        true
-    }
+           let ret = action
+               .run(shared_state, invocation.attributes, invocation.payload)
+               .await;
+           if let Err(error) = ret {
+               self.metrics.errors.errored_actions += 1;
+               // tell the model about the error
+               self.add_error_to_history(inv, error.to_string());
+           } else {
+               self.metrics.success_actions += 1;
+               // tell the model about the output
+               self.add_success_to_history(inv, ret.unwrap());
+           }
 
-    pub async fn execute(&mut self, invocation: Invocation) -> Result<()> {
-        let action = match self.get_action(&invocation.action) {
-            Some(action) => action,
-            None => {
-                self.metrics.errors.unknown_actions += 1;
-                // tell the model that the action name is wrong
-                self.add_error_to_history(
-                    invocation.clone(),
-                    format!("'{}' is not a valid action name", invocation.action),
-                );
-                return Ok(());
-            }
-        };
-
-        // validate prerequisites
-        if !self.validate(&invocation, action) {
-            self.metrics.errors.invalid_actions += 1;
-            // not a core error, just inform the model and return
-            return Ok(());
-        }
-
-        // execute the action
-        let inv = invocation.clone();
-        let ret = action.run(self, invocation.attributes, invocation.payload);
-        if let Err(error) = ret {
-            self.metrics.errors.errored_actions += 1;
-            // tell the model about the error
-            self.add_error_to_history(inv, error.to_string());
-        } else {
-            self.metrics.success_actions += 1;
-            // tell the model about the output
-            self.add_success_to_history(inv, ret.unwrap());
-        }
-
-        Ok(())
-    }
-
-    pub fn on_complete(&self, impossible: bool, reason: Option<String>) -> Result<()> {
+           Ok(())
+       }
+    */
+    pub fn on_complete(&mut self, impossible: bool, reason: Option<String>) -> Result<()> {
         // TODO: unify logging logic
         if impossible {
             println!(
@@ -328,7 +301,7 @@ impl State {
             );
         }
 
-        self.complete.store(true, Ordering::SeqCst);
+        self.complete = true;
         Ok(())
     }
 }

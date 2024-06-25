@@ -1,16 +1,20 @@
 use anyhow::Result;
 
-use super::namespaces::Namespace;
+use super::{namespaces::Namespace, rag};
 
 pub(crate) mod tasklet;
 pub(crate) mod variables;
 
 // TODO: comment the shit out of everything.
 
-pub trait Task: std::fmt::Debug {
+pub trait Task: std::fmt::Debug + Send + Sync {
     fn to_system_prompt(&self) -> Result<String>;
     fn to_prompt(&self) -> Result<String>;
     fn get_functions(&self) -> Vec<Namespace>;
+
+    fn get_rag_config(&self) -> Option<rag::Configuration> {
+        None
+    }
 
     fn max_history_visibility(&self) -> u16 {
         50

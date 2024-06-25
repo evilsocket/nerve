@@ -1,13 +1,15 @@
 use anyhow::Result;
+use async_trait::async_trait;
 
 use std::collections::HashMap;
 
 use super::{Action, Namespace, StorageDescriptor};
-use crate::agent::state::State;
+use crate::agent::state::SharedState;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct UpdateGoal {}
 
+#[async_trait]
 impl Action for UpdateGoal {
     fn name(&self) -> &str {
         "update-goal"
@@ -21,14 +23,16 @@ impl Action for UpdateGoal {
         Some("your new goal")
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &State,
+        state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
         state
-            .get_storage("goal")?
+            .lock()
+            .await
+            .get_storage_mut("goal")?
             .set_current(payload.as_ref().unwrap(), true);
         Ok(Some("goal updated".to_string()))
     }

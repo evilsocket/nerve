@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use async_trait::async_trait;
 
 use super::{Action, Namespace};
-use crate::agent::state::State;
+use crate::agent::state::SharedState;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct Complete {}
 
+#[async_trait]
 impl Action for Complete {
     fn name(&self) -> &str {
         "task-complete"
@@ -21,20 +23,21 @@ impl Action for Complete {
         Some("a brief report about why the task is complete")
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &State,
+        state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        state.on_complete(false, payload)?;
+        state.lock().await.on_complete(false, payload)?;
         Ok(None)
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct Impossible {}
 
+#[async_trait]
 impl Action for Impossible {
     fn name(&self) -> &str {
         "task-impossible"
@@ -48,13 +51,13 @@ impl Action for Impossible {
         Some("a brief report about why the task is impossible")
     }
 
-    fn run(
+    async fn run(
         &self,
-        state: &State,
+        state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        state.on_complete(true, payload)?;
+        state.lock().await.on_complete(true, payload)?;
         Ok(None)
     }
 }

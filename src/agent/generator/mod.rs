@@ -7,7 +7,7 @@ use duration_string::DurationString;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use super::Invocation;
+use super::{rag::Embeddings, Invocation};
 
 #[cfg(feature = "groq")]
 mod groq;
@@ -57,13 +57,13 @@ impl Display for Message {
     }
 }
 
-pub type Embeddings = Vec<f64>;
-
 #[async_trait]
-pub trait Client {
+pub trait Client: Send + Sync {
     fn new(url: &str, port: u16, model_name: &str, context_window: u32) -> Result<Self>
     where
         Self: Sized;
+
+    fn copy(&self) -> Result<Box<dyn Client>>;
 
     async fn chat(&self, options: &Options) -> Result<String>;
     async fn embeddings(&self, text: &str) -> Result<Embeddings>;

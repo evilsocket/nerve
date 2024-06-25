@@ -26,6 +26,13 @@ impl Client for OpenAIClient {
         Ok(Self { model, client })
     }
 
+    fn copy(&self) -> Result<Box<dyn Client>> {
+        Ok(Box::new(Self {
+            model: self.model.clone(),
+            client: self.client.clone(),
+        }))
+    }
+
     async fn chat(&self, options: &Options) -> anyhow::Result<String> {
         let mut chat_history = vec![
             openai_api_rust::Message {
