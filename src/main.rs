@@ -83,5 +83,7 @@ async fn main() -> Result<()> {
         }
     }
 
+    // TODO: report final metrics on exit
+
     Ok(())
 }
