@@ -179,85 +179,97 @@ impl Agent {
     }
 
     pub async fn step(&mut self) -> Result<()> {
-        let mut mut_state = self.state.lock().await;
+        let (invocations, options) = {
+            let mut mut_state = self.state.lock().await;
 
-        mut_state.on_step()?;
+            mut_state.on_step()?;
 
-        if self.options.with_stats {
-            println!("\n{}\n", &mut_state.metrics);
-        }
+            if self.options.with_stats {
+                println!("\n{}\n", &mut_state.metrics);
+            }
 
-        let system_prompt = serialization::state_to_system_prompt(&mut_state)?;
-        let prompt = mut_state.to_prompt()?;
-        let history = mut_state.to_chat_history(self.max_history as usize)?;
+            let system_prompt = serialization::state_to_system_prompt(&mut_state)?;
+            let prompt = mut_state.to_prompt()?;
+            let history = mut_state.to_chat_history(self.max_history as usize)?;
+            let options = Options::new(system_prompt, prompt, history);
 
-        let options = Options::new(system_prompt, prompt, history);
+            self.save_if_needed(&options, false).await?;
 
-        self.save_if_needed(&options, false).await?;
+            // run model inference
+            let response = self.generator.chat(&options).await?.trim().to_string();
 
-        // run model inference
-        let response = self.generator.chat(&options).await?.trim().to_string();
+            // parse the model response into invocations
+            let invocations = serialization::xml::parsing::try_parse(&response)?;
 
-        // parse the model response into invocations
-        let invocations = serialization::xml::parsing::try_parse(&response)?;
+            // nothing parsed, report the problem to the model
+            if invocations.is_empty() {
+                if response.is_empty() {
+                    println!(
+                        "{}: agent did not provide valid instructions: empty response",
+                        "WARNING".bold().red(),
+                    );
 
-        // nothing parsed, report the problem to the model
-        if invocations.is_empty() {
-            if response.is_empty() {
-                println!(
-                    "{}: agent did not provide valid instructions: empty response",
-                    "WARNING".bold().red(),
-                );
+                    mut_state.metrics.errors.empty_responses += 1;
+                    mut_state.add_unparsed_response_to_history(
+                        &response,
+                        "Do not return an empty responses.".to_string(),
+                    );
+                } else {
+                    println!(
+                        "{}: agent did not provide valid instructions: \n\n{}\n\n",
+                        "WARNING".bold().red(),
+                        response.dimmed()
+                    );
 
-                mut_state.metrics.errors.empty_responses += 1;
-                mut_state.add_unparsed_response_to_history(
-                    &response,
-                    "Do not return an empty responses.".to_string(),
-                );
-            } else {
-                println!("\n\n{}\n\n", response.dimmed());
-
-                mut_state.metrics.errors.unparsed_responses += 1;
-                mut_state.add_unparsed_response_to_history(
+                    mut_state.metrics.errors.unparsed_responses += 1;
+                    mut_state.add_unparsed_response_to_history(
                     &response,
                     "I could not parse any valid actions from your response, please correct it according to the instructions.".to_string(),
                 );
+                }
+            } else {
+                mut_state.metrics.valid_responses += 1;
             }
-        } else {
-            mut_state.metrics.valid_responses += 1;
-        }
 
-        // to avoid dead locks, is this needed?
-        drop(mut_state);
+            (invocations, options)
+        };
 
         // for each parsed invocation
+        // NOTE: the MutexGuard is purposedly captured in its own scope in order to avoid
+        // deadlocks and make its lifespan clearer.
         for inv in invocations {
             // lookup action
-            let mut mut_state = self.state.lock().await;
-            let action = mut_state.get_action(&inv.action);
-
+            let action = self.state.lock().await.get_action(&inv.action);
             if action.is_none() {
-                mut_state.metrics.errors.unknown_actions += 1;
-                // tell the model that the action name is wrong
-                mut_state.add_error_to_history(
-                    inv.clone(),
-                    format!("'{}' is not a valid action name", inv.action),
-                );
-                drop(mut_state);
+                {
+                    let mut mut_state = self.state.lock().await;
+                    mut_state.metrics.errors.unknown_actions += 1;
+                    // tell the model that the action name is wrong
+                    mut_state.add_error_to_history(
+                        inv.clone(),
+                        format!("'{}' is not a valid action name", inv.action),
+                    );
+                }
             } else {
                 let action = action.unwrap();
                 // validate prerequisites
-                if let Err(err) = self.validate(&inv, &action) {
-                    mut_state.metrics.errors.invalid_actions += 1;
-                    mut_state.add_error_to_history(inv.clone(), err.to_string());
-                    drop(mut_state);
-                } else {
-                    mut_state.metrics.valid_actions += 1;
-                    drop(mut_state);
+                let do_exec = {
+                    let mut mut_state = self.state.lock().await;
 
-                    // TODO: timeout logic
+                    if let Err(err) = self.validate(&inv, &action) {
+                        mut_state.metrics.errors.invalid_actions += 1;
+                        mut_state.add_error_to_history(inv.clone(), err.to_string());
+                        false
+                    } else {
+                        mut_state.metrics.valid_actions += 1;
+                        true
+                    }
+                };
 
-                    // execute
+                // TODO: timeout logic
+
+                // execute
+                if do_exec {
                     let ret = action
                         .run(
                             self.state.clone(),
@@ -266,17 +278,18 @@ impl Agent {
                         )
                         .await;
 
-                    let mut mut_state = self.state.lock().await;
-                    if let Err(error) = ret {
-                        mut_state.metrics.errors.errored_actions += 1;
-                        // tell the model about the error
-                        mut_state.add_error_to_history(inv, error.to_string());
-                    } else {
-                        mut_state.metrics.success_actions += 1;
-                        // tell the model about the output
-                        mut_state.add_success_to_history(inv, ret.unwrap());
+                    {
+                        let mut mut_state = self.state.lock().await;
+                        if let Err(error) = ret {
+                            mut_state.metrics.errors.errored_actions += 1;
+                            // tell the model about the error
+                            mut_state.add_error_to_history(inv, error.to_string());
+                        } else {
+                            mut_state.metrics.success_actions += 1;
+                            // tell the model about the output
+                            mut_state.add_success_to_history(inv, ret.unwrap());
+                        }
                     }
-                    drop(mut_state);
                 }
             }
 

@@ -28,7 +28,5 @@ pub trait VectorStore: Send {
         Self: Sized;
 
     async fn add(&mut self, document: Document) -> Result<()>;
-    async fn delete(&mut self, doc_name: &str) -> Result<()>;
-    async fn clear(&mut self) -> Result<()>;
     async fn retrieve(&self, query: &str, top_k: usize) -> Result<Vec<(Document, f64)>>;
 }

@@ -7,7 +7,7 @@ use metrics::Metrics;
 use super::{
     generator::{Client, Message},
     namespaces::{self, Namespace},
-    rag::{self, naive::NaiveVectorStore, Document, VectorStore},
+    rag::{naive::NaiveVectorStore, Document, VectorStore},
     task::Task,
     Invocation,
 };
@@ -17,12 +17,6 @@ use storage::Storage;
 mod history;
 mod metrics;
 pub(crate) mod storage;
-
-#[allow(clippy::upper_case_acronyms)]
-struct RAG {
-    config: rag::Configuration,
-    store: Box<dyn VectorStore>,
-}
 
 pub struct State {
     // the task
@@ -34,7 +28,7 @@ pub struct State {
     // list of executed actions
     history: History,
     // optional rag engine
-    rag: Option<RAG>,
+    rag: Option<Box<dyn VectorStore>>,
     // set to true when task is complete
     complete: bool,
     // runtime metrics
@@ -89,16 +83,13 @@ impl State {
         }
 
         // add RAG namespace
-        let rag = if let Some(config) = task.get_rag_config() {
-            let v_store =
+        let rag: Option<Box<dyn VectorStore>> = if let Some(config) = task.get_rag_config() {
+            let v_store: NaiveVectorStore =
                 NaiveVectorStore::from_indexed_path(generator.copy()?, &config.path).await?;
 
             namespaces.push(namespaces::NAMESPACES.get("rag").unwrap()());
 
-            Some(RAG {
-                config: config.clone(),
-                store: Box::new(v_store),
-            })
+            Some(Box::new(v_store))
         } else {
             None
         };
@@ -156,7 +147,7 @@ impl State {
 
     pub async fn rag_query(&mut self, query: &str, top_k: usize) -> Result<Vec<(Document, f64)>> {
         if let Some(rag) = &self.rag {
-            rag.store.retrieve(query, top_k).await
+            rag.retrieve(query, top_k).await
         } else {
             Err(anyhow!("no RAG engine has been configured"))
         }

@@ -41,7 +41,7 @@ impl Action for Search {
             for (doc, score) in &docs {
                 println!("       * {} ({})", &doc.name, score);
             }
-            println!("");
+            println!();
 
             Ok(Some(format!(
                 "Here is some supporting information:\n\n{}",

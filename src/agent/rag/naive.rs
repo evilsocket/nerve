@@ -82,26 +82,6 @@ impl VectorStore for NaiveVectorStore {
         Ok(())
     }
 
-    async fn delete(&mut self, doc_name: &str) -> Result<()> {
-        if self.documents.remove(doc_name).is_some() {
-            self.embeddings.remove(doc_name);
-            println!("[rag] removed document '{}'", doc_name);
-            Ok(())
-        } else {
-            Err(anyhow!(
-                "document with name '{}' not found in the index",
-                doc_name
-            ))
-        }
-    }
-
-    async fn clear(&mut self) -> Result<()> {
-        self.embeddings.clear();
-        self.documents.clear();
-        println!("[rag] index cleared");
-        Ok(())
-    }
-
     async fn retrieve(&self, query: &str, top_k: usize) -> Result<Vec<(Document, f64)>> {
         println!("[{}] {} (top {})", "rag".bold(), query, top_k);
 
