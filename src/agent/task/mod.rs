@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::Result;
 
 use super::{namespaces::Namespace, rag};
@@ -11,6 +13,10 @@ pub trait Task: std::fmt::Debug + Send + Sync {
     fn to_system_prompt(&self) -> Result<String>;
     fn to_prompt(&self) -> Result<String>;
     fn get_functions(&self) -> Vec<Namespace>;
+
+    fn get_timeout(&self) -> Option<Duration> {
+        None
+    }
 
     fn get_rag_config(&self) -> Option<rag::Configuration> {
         None

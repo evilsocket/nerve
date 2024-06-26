@@ -9,6 +9,7 @@ pub struct ErrorMetrics {
     pub unknown_actions: usize,
     pub invalid_actions: usize,
     pub errored_actions: usize,
+    pub timedout_actions: usize,
 }
 
 impl ErrorMetrics {

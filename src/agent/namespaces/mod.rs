@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -111,6 +111,11 @@ impl Namespace {
 #[async_trait]
 pub(crate) trait Action: std::fmt::Debug + Sync + Send + ActionClone {
     fn name(&self) -> &str;
+
+    fn timeout(&self) -> Option<Duration> {
+        None
+    }
+
     fn attributes(&self) -> Option<HashMap<String, String>> {
         None
     }

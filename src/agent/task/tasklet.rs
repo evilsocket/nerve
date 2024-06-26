@@ -1,11 +1,12 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
 use std::str::FromStr;
+use std::{collections::HashMap, time::Duration};
 
 use anyhow::Result;
 use async_trait::async_trait;
 use colored::Colorize;
+use duration_string::DurationString;
 use serde::Deserialize;
 use serde_trim::*;
 use simple_home_dir::home_dir;
@@ -39,6 +40,7 @@ pub struct TaskletAction {
     description: String,
     args: Option<HashMap<String, String>>,
     example_payload: Option<String>,
+    timeout: Option<String>,
     #[serde(deserialize_with = "string_trim")]
     tool: String,
 }
@@ -59,6 +61,21 @@ impl Action for TaskletAction {
 
     fn attributes(&self) -> Option<HashMap<String, String>> {
         self.args.clone()
+    }
+
+    fn timeout(&self) -> Option<Duration> {
+        if let Some(timeout) = &self.timeout {
+            if let Ok(tm) = timeout.parse::<DurationString>() {
+                return Some(*tm);
+            } else {
+                eprintln!(
+                    "{}: can't parse '{}' as duration string",
+                    "WARNING".yellow(),
+                    timeout
+                );
+            }
+        }
+        None
     }
 
     async fn run(
@@ -232,6 +249,7 @@ pub struct Tasklet {
     system_prompt: String,
     pub prompt: Option<String>,
     pub rag: Option<rag::Configuration>,
+    timeout: Option<String>,
     using: Option<Vec<String>>,
     guidance: Option<Vec<String>>,
     functions: Option<Vec<FunctionGroup>>,
@@ -337,6 +355,21 @@ impl Tasklet {
 }
 
 impl Task for Tasklet {
+    fn get_timeout(&self) -> Option<std::time::Duration> {
+        if let Some(timeout) = &self.timeout {
+            if let Ok(tm) = timeout.parse::<DurationString>() {
+                return Some(*tm);
+            } else {
+                eprintln!(
+                    "{}: can't parse '{}' as duration string",
+                    "WARNING".yellow(),
+                    timeout
+                );
+            }
+        }
+        None
+    }
+
     fn get_rag_config(&self) -> Option<rag::Configuration> {
         self.rag.clone()
     }

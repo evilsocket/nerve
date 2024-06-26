@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use colored::Colorize;
@@ -57,6 +57,7 @@ pub struct Agent {
     state: SharedState,
     options: AgentOptions,
     max_history: u16,
+    task_timeout: Option<Duration>,
 }
 
 impl Agent {
@@ -67,6 +68,7 @@ impl Agent {
         options: AgentOptions,
     ) -> Result<Self> {
         let max_history = task.max_history_visibility();
+        let task_timeout = task.get_timeout();
         let state = Arc::new(tokio::sync::Mutex::new(
             State::new(task, embedder, options.max_iterations).await?,
         ));
@@ -76,6 +78,7 @@ impl Agent {
             state,
             options,
             max_history,
+            task_timeout,
         })
     }
 
@@ -179,122 +182,168 @@ impl Agent {
         Ok(())
     }
 
+    async fn on_empty_response(&self) {
+        println!(
+            "{}: agent did not provide valid instructions: empty response",
+            "WARNING".bold().red(),
+        );
+
+        let mut mut_state = self.state.lock().await;
+        mut_state.metrics.errors.empty_responses += 1;
+        mut_state
+            .add_unparsed_response_to_history("", "Do not return an empty responses.".to_string());
+    }
+
+    async fn on_invalid_response(&self, response: &str) {
+        println!(
+            "{}: agent did not provide valid instructions: \n\n{}\n\n",
+            "WARNING".bold().red(),
+            response.dimmed()
+        );
+
+        let mut mut_state = self.state.lock().await;
+        mut_state.metrics.errors.unparsed_responses += 1;
+        mut_state.add_unparsed_response_to_history(
+        response,
+        "I could not parse any valid actions from your response, please correct it according to the instructions.".to_string(),
+    );
+    }
+
+    async fn on_valid_response(&self) {
+        self.state.lock().await.metrics.valid_responses += 1;
+    }
+
+    async fn on_invalid_action(&self, invocation: Invocation, error: Option<String>) {
+        let mut mut_state = self.state.lock().await;
+        mut_state.metrics.errors.unknown_actions += 1;
+        // tell the model that the action name is wrong
+        let name = invocation.action.clone();
+
+        mut_state.add_error_to_history(
+            invocation,
+            error.unwrap_or(format!("'{name}' is not a valid action name")),
+        );
+    }
+
+    async fn on_valid_action(&self) {
+        self.state.lock().await.metrics.valid_actions += 1;
+    }
+
+    async fn on_timed_out_action(&self, invocation: Invocation, start: &std::time::Instant) {
+        println!(
+            "{}: action '{}' timed out after {:?}",
+            "WARNING".bold().yellow(),
+            &invocation.action,
+            start.elapsed()
+        );
+        let mut mut_state = self.state.lock().await;
+        mut_state.metrics.errors.timedout_actions += 1;
+        // tell the model about the timeout
+        mut_state.add_error_to_history(invocation, "action timed out".to_string());
+    }
+
+    async fn on_executed_action(&self, invocation: Invocation, ret: Result<Option<String>>) {
+        let mut mut_state = self.state.lock().await;
+        if let Err(error) = ret {
+            mut_state.metrics.errors.errored_actions += 1;
+            // tell the model about the error
+            mut_state.add_error_to_history(invocation, error.to_string());
+        } else {
+            mut_state.metrics.success_actions += 1;
+            // tell the model about the output
+            mut_state.add_success_to_history(invocation, ret.unwrap());
+        }
+    }
+
+    async fn prepare_step(&mut self) -> Result<Options> {
+        let mut mut_state = self.state.lock().await;
+
+        mut_state.on_step()?;
+
+        if self.options.with_stats {
+            println!("\n{}\n", &mut_state.metrics);
+        }
+
+        let system_prompt = serialization::state_to_system_prompt(&mut_state)?;
+        let prompt = mut_state.to_prompt()?;
+        let history = mut_state.to_chat_history(self.max_history as usize)?;
+        let options = Options::new(system_prompt, prompt, history);
+
+        Ok(options)
+    }
+
     pub async fn step(&mut self) -> Result<()> {
-        let (invocations, options) = {
-            let mut mut_state = self.state.lock().await;
+        let options = self.prepare_step().await?;
 
-            mut_state.on_step()?;
+        self.save_if_needed(&options, false).await?;
 
-            if self.options.with_stats {
-                println!("\n{}\n", &mut_state.metrics);
-            }
+        // run model inference
+        let response = self.generator.chat(&options).await?.trim().to_string();
 
-            let system_prompt = serialization::state_to_system_prompt(&mut_state)?;
-            let prompt = mut_state.to_prompt()?;
-            let history = mut_state.to_chat_history(self.max_history as usize)?;
-            let options = Options::new(system_prompt, prompt, history);
+        // parse the model response into invocations
+        let invocations = serialization::xml::parsing::try_parse(&response)?;
 
-            self.save_if_needed(&options, false).await?;
-
-            // run model inference
-            let response = self.generator.chat(&options).await?.trim().to_string();
-
-            // parse the model response into invocations
-            let invocations = serialization::xml::parsing::try_parse(&response)?;
-
-            // nothing parsed, report the problem to the model
-            if invocations.is_empty() {
-                if response.is_empty() {
-                    println!(
-                        "{}: agent did not provide valid instructions: empty response",
-                        "WARNING".bold().red(),
-                    );
-
-                    mut_state.metrics.errors.empty_responses += 1;
-                    mut_state.add_unparsed_response_to_history(
-                        &response,
-                        "Do not return an empty responses.".to_string(),
-                    );
-                } else {
-                    println!(
-                        "{}: agent did not provide valid instructions: \n\n{}\n\n",
-                        "WARNING".bold().red(),
-                        response.dimmed()
-                    );
-
-                    mut_state.metrics.errors.unparsed_responses += 1;
-                    mut_state.add_unparsed_response_to_history(
-                    &response,
-                    "I could not parse any valid actions from your response, please correct it according to the instructions.".to_string(),
-                );
-                }
+        // nothing parsed, report the problem to the model
+        if invocations.is_empty() {
+            if response.is_empty() {
+                self.on_empty_response().await;
             } else {
-                mut_state.metrics.valid_responses += 1;
+                self.on_invalid_response(&response).await;
             }
-
-            (invocations, options)
-        };
+        } else {
+            self.on_valid_response().await;
+        }
 
         // for each parsed invocation
-        // NOTE: the MutexGuard is purposedly captured in its own scope in order to avoid
-        // deadlocks and make its lifespan clearer.
         for inv in invocations {
             // lookup action
             let action = self.state.lock().await.get_action(&inv.action);
             if action.is_none() {
-                {
-                    let mut mut_state = self.state.lock().await;
-                    mut_state.metrics.errors.unknown_actions += 1;
-                    // tell the model that the action name is wrong
-                    mut_state.add_error_to_history(
-                        inv.clone(),
-                        format!("'{}' is not a valid action name", inv.action),
-                    );
-                }
+                self.on_invalid_action(inv.clone(), None).await;
             } else {
-                let action = action.unwrap();
                 // validate prerequisites
-                let do_exec = {
-                    let mut mut_state = self.state.lock().await;
+                let action = action.unwrap();
+                if let Err(err) = self.validate(&inv, &action) {
+                    self.on_invalid_action(inv.clone(), Some(err.to_string()))
+                        .await;
+                } else {
+                    self.on_valid_action().await;
 
-                    if let Err(err) = self.validate(&inv, &action) {
-                        mut_state.metrics.errors.invalid_actions += 1;
-                        mut_state.add_error_to_history(inv.clone(), err.to_string());
-                        false
+                    // determine if we have a timeout
+                    let timeout = if let Some(action_tm) = action.timeout().as_ref() {
+                        *action_tm
+                    } else if let Some(task_tm) = self.task_timeout.as_ref() {
+                        *task_tm
                     } else {
-                        mut_state.metrics.valid_actions += 1;
-                        true
-                    }
-                };
+                        // one month by default :D
+                        Duration::from_secs(60 * 60 * 24 * 30)
+                    };
 
-                // TODO: timeout logic
+                    // println!("{} timeout={:?}", action.name(), &timeout);
 
-                // execute
-                if do_exec {
-                    let ret = action
-                        .run(
+                    // execute with timeout
+                    let start = std::time::Instant::now();
+                    let ret = tokio::time::timeout(
+                        timeout,
+                        action.run(
                             self.state.clone(),
                             inv.attributes.to_owned(),
                             inv.payload.to_owned(),
-                        )
-                        .await;
+                        ),
+                    )
+                    .await;
 
-                    {
-                        let mut mut_state = self.state.lock().await;
-                        if let Err(error) = ret {
-                            mut_state.metrics.errors.errored_actions += 1;
-                            // tell the model about the error
-                            mut_state.add_error_to_history(inv, error.to_string());
-                        } else {
-                            mut_state.metrics.success_actions += 1;
-                            // tell the model about the output
-                            mut_state.add_success_to_history(inv, ret.unwrap());
-                        }
+                    if ret.is_err() {
+                        self.on_timed_out_action(inv, &start).await;
+                    } else {
+                        self.on_executed_action(inv, ret.unwrap()).await;
                     }
                 }
             }
 
             self.save_if_needed(&options, true).await?;
+
+            // break the loop if we're done
             if self.state.lock().await.is_complete() {
                 break;
             }
