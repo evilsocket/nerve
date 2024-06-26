@@ -62,12 +62,13 @@ pub struct Agent {
 impl Agent {
     pub async fn new(
         generator: Box<dyn Client>,
+        embedder: Box<dyn Client>,
         task: Box<dyn Task>,
         options: AgentOptions,
     ) -> Result<Self> {
         let max_history = task.max_history_visibility();
         let state = Arc::new(tokio::sync::Mutex::new(
-            State::new(task, generator.copy()?, options.max_iterations).await?,
+            State::new(task, embedder, options.max_iterations).await?,
         ));
 
         Ok(Self {

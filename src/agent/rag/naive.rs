@@ -64,7 +64,7 @@ impl VectorStore for NaiveVectorStore {
         // TODO: add chunking
         let data_size = document.data.as_bytes().len();
 
-        println!(
+        print!(
             "[{}] indexing document '{}' ({} bytes) ...",
             "rag".bold(),
             &document.name,
@@ -78,7 +78,7 @@ impl VectorStore for NaiveVectorStore {
         self.documents.insert(doc_name.to_string(), document);
         self.embeddings.insert(doc_name, embeddings);
 
-        println!("[rag] document indexed in {:?}", start.elapsed(),);
+        println!(" done in {:?}", start.elapsed());
 
         Ok(())
     }

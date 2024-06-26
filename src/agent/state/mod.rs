@@ -40,7 +40,7 @@ pub type SharedState = Arc<tokio::sync::Mutex<State>>;
 impl State {
     pub async fn new(
         task: Box<dyn Task>,
-        generator: Box<dyn Client>,
+        embedder: Box<dyn Client>,
         max_iterations: usize,
     ) -> Result<Self> {
         let complete = false;
@@ -85,7 +85,7 @@ impl State {
         // add RAG namespace
         let rag: Option<Box<dyn VectorStore>> = if let Some(config) = task.get_rag_config() {
             let v_store: NaiveVectorStore =
-                NaiveVectorStore::from_indexed_path(generator.copy()?, &config.path).await?;
+                NaiveVectorStore::from_indexed_path(embedder, &config.path).await?;
 
             namespaces.push(namespaces::NAMESPACES.get("rag").unwrap()());
 

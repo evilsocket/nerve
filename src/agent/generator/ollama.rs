@@ -41,14 +41,6 @@ impl Client for OllamaClient {
         })
     }
 
-    fn copy(&self) -> Result<Box<dyn Client>> {
-        Ok(Box::new(Self {
-            model: self.model.clone(),
-            options: self.options.clone(),
-            client: self.client.clone(),
-        }))
-    }
-
     async fn chat(&self, options: &Options) -> anyhow::Result<String> {
         /*
         pub struct GenerationRequest {

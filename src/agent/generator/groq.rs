@@ -32,13 +32,6 @@ impl Client for GroqClient {
         Ok(Self { model, api_key })
     }
 
-    fn copy(&self) -> Result<Box<dyn Client>> {
-        Ok(Box::new(Self {
-            model: self.model.clone(),
-            api_key: self.api_key.clone(),
-        }))
-    }
-
     async fn chat(&self, options: &Options) -> Result<String> {
         let mut chat_history = vec![
             groq_api_rs::completion::message::Message::SystemMessage {

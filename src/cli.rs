@@ -14,15 +14,13 @@ lazy_static! {
 }
 
 #[derive(Default)]
-pub(crate) struct Generator {
+pub(crate) struct GeneratorOptions {
     pub type_name: String,
     pub model_name: String,
     pub context_window: u32,
     pub host: String,
     pub port: u16,
 }
-
-// TODO: add optional -E/--embedder to specify a different model for RAG.
 
 /// Get things done with LLMs.
 #[derive(Parser, Debug)]
@@ -31,6 +29,13 @@ pub(crate) struct Args {
     /// Generator string as <type>://<model name>@<host>:<port>
     #[arg(short = 'G', long, default_value = "ollama://llama3@localhost:11434")]
     pub generator: String,
+    /// Embedder string as <type>://<model name>@<host>:<port>
+    #[arg(
+        short = 'E',
+        long,
+        default_value = "ollama://all-minilm@localhost:11434"
+    )]
+    pub embedder: String,
     /// Tasklet file.
     #[arg(short = 'T', long)]
     pub tasklet: Option<String>,
@@ -70,16 +75,13 @@ impl Args {
         }
     }
 
-    pub fn to_generator_options(&self) -> Result<Generator> {
-        let raw = self
-            .generator
-            .trim()
-            .trim_matches(|c| c == '"' || c == '\'');
+    fn parse_connection_string(&self, raw: &str, what: &str) -> Result<GeneratorOptions> {
+        let raw = raw.trim().trim_matches(|c| c == '"' || c == '\'');
         if raw.is_empty() {
-            return Err(anyhow!("generator string can't be empty".to_string()));
+            return Err(anyhow!("{what} string can't be empty"));
         }
 
-        let mut generator = Generator {
+        let mut generator = GeneratorOptions {
             context_window: self.context_window,
             ..Default::default()
         };
@@ -88,12 +90,12 @@ impl Args {
             let caps = if let Some(caps) = LOCAL_GENERATOR_PARSER.captures_iter(raw).next() {
                 caps
             } else {
-                return Err(anyhow!("can't parse '{raw}' generator string"));
+                return Err(anyhow!("can't parse '{raw}' {what} string"));
             };
 
             if caps.len() != 5 {
                 return Err(anyhow!(
-                    "can't parse {raw} generator string ({} captures instead of 5): {:?}",
+                    "can't parse {raw} {what} string ({} captures instead of 5): {:?}",
                     caps.len(),
                     caps,
                 ));
@@ -117,13 +119,13 @@ impl Args {
                 caps
             } else {
                 return Err(anyhow!(
-                    "can't parse {raw} generator string, invalid expression"
+                    "can't parse {raw} {what} string, invalid expression"
                 ));
             };
 
             if caps.len() != 3 {
                 return Err(anyhow!(
-                    "can't parse {raw} generator string, expected 3 captures, got {}",
+                    "can't parse {raw} {what} string, expected 3 captures, got {}",
                     caps.len()
                 ));
             }
@@ -139,6 +141,14 @@ impl Args {
         }
 
         Ok(generator)
+    }
+
+    pub fn to_generator_options(&self) -> Result<GeneratorOptions> {
+        self.parse_connection_string(&self.generator, "generator")
+    }
+
+    pub fn to_embedder_options(&self) -> Result<GeneratorOptions> {
+        self.parse_connection_string(&self.embedder, "embedder")
     }
 }
 

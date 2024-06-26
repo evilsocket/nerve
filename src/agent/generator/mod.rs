@@ -65,8 +65,6 @@ pub trait Client: Send + Sync {
     where
         Self: Sized;
 
-    fn copy(&self) -> Result<Box<dyn Client>>;
-
     async fn chat(&self, options: &Options) -> Result<String>;
     async fn embeddings(&self, text: &str) -> Result<Embeddings>;
 
