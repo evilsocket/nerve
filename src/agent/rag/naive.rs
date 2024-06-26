@@ -1,5 +1,8 @@
 use std::{collections::HashMap, time::Instant};
 
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use colored::Colorize;
@@ -89,13 +92,25 @@ impl VectorStore for NaiveVectorStore {
         println!("[{}] {} (top {})", "rag".bold(), query, top_k);
 
         let query_vector = self.embedder.embeddings(query).await?;
-        let mut distances = vec![];
         let mut results = vec![];
 
-        // TODO: parallelize?
-        for (doc_name, doc_embedding) in &self.embeddings {
-            distances.push((doc_name, metrics::cosine(&query_vector, doc_embedding)));
-        }
+        #[cfg(feature = "rayon")]
+        let mut distances: Vec<(&String, f64)> = self
+            .embeddings
+            .par_iter()
+            .map(|(doc_name, doc_embedding)| {
+                (doc_name, metrics::cosine(&query_vector, doc_embedding))
+            })
+            .collect();
+
+        #[cfg(not(feature = "rayon"))]
+        let mut distances = {
+            let mut distances = vec![];
+            for (doc_name, doc_embedding) in &self.embeddings {
+                distances.push((doc_name, metrics::cosine(&query_vector, doc_embedding)));
+            }
+            distances
+        };
 
         distances.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
 
