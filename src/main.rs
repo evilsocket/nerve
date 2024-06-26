@@ -105,7 +105,10 @@ async fn main() -> Result<()> {
         }
     }
 
-    // TODO: report final metrics on exit
+    // report final metrics on exit
+    if args.stats {
+        println!("\n{}", agent.get_metrics().await);
+    }
 
     Ok(())
 }

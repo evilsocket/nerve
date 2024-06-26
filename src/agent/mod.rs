@@ -255,6 +255,10 @@ impl Agent {
         }
     }
 
+    pub async fn get_metrics(&self) -> state::metrics::Metrics {
+        self.state.lock().await.metrics.clone()
+    }
+
     async fn prepare_step(&mut self) -> Result<Options> {
         let mut mut_state = self.state.lock().await;
 

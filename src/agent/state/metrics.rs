@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use colored::Colorize;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct ErrorMetrics {
     pub empty_responses: usize,
     pub unparsed_responses: usize,
@@ -22,7 +22,7 @@ impl ErrorMetrics {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Metrics {
     pub max_steps: usize,
     pub current_step: usize,

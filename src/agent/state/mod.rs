@@ -15,7 +15,7 @@ use history::{Execution, History};
 use storage::Storage;
 
 mod history;
-mod metrics;
+pub(crate) mod metrics;
 pub(crate) mod storage;
 
 pub struct State {
