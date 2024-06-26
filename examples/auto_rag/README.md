@@ -18,21 +18,19 @@ Example output:
 nerve v0.0.2 🧠 llama-v3-70b-instruct@fireworks > auto_rag
 task: define a Darmepinter
 
-[rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/lorem-ipsum.txt' (813 bytes) ... done in 1.975200708s
-[rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/made-up-animals.txt' (82 bytes) ... done in 99.349542ms
-[rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/tiger.txt' (405 bytes) ... done in 53.671083ms
-
-[statistics] steps:1 
+[rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/bear.txt' (599 bytes) ... time=562.460542ms embedding_size=384
+[rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/horse.txt' (941 bytes) ... time=61.978125ms embedding_size=384
+[rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/lorem-ipsum.txt' (813 bytes) ... time=141.439417ms embedding_size=384
+[rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/made-up-animals.txt' (82 bytes) ... time=126.579125ms embedding_size=384
+[rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/mouse.txt' (389 bytes) ... time=58.670083ms embedding_size=384
+[rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/tiger.txt' (405 bytes) ... time=98.503583ms embedding_size=384
 
 [rag] What is a Darmepinter? (top 1)
 
-  1 results in 101.144417ms
-       * /Users/evilsocket/lab/nerve/examples/auto_rag/data/made-up-animals.txt (0.16502168746739188)
+  1 results in 15.338708ms
+       * /Users/evilsocket/lab/nerve/examples/auto_rag/data/made-up-animals.txt (0.16502168746739287)
 
-
-[statistics] steps:2 responses:1 actions:1
-
-<memories> darmepinter-definition=A Darmepinter is a made-up animal that looks like a zebra and sounds like a snake.
+<memories> Darmepinter-definition=A Darmepinter is a made-up animal that looks like a zebra and sounds like a snake.
 
 task complete: 'The task of defining a Darmepinter is complete.'
 ```
