@@ -65,12 +65,17 @@ fn preprocess_block(ptr: &str) -> String {
                 // estimate tag closing index and get payload
                 let tag_closing = format!("</{}>", &tag_name);
                 if let Some(tag_closing_idx) = ptr.find(&tag_closing) {
-                    let payload = &ptr[payload_start_idx + 1..tag_closing_idx];
-                    if !payload.is_empty() {
-                        // if escaped payload is different, replace it
-                        let escaped = xml::escape::escape_str_pcdata(payload);
-                        if escaped != payload {
-                            return ptr.replace(payload, &escaped);
+                    let from = payload_start_idx + 1;
+                    let to = tag_closing_idx;
+                    // valid xml?
+                    if to > from {
+                        let payload = &ptr[payload_start_idx + 1..tag_closing_idx];
+                        if !payload.is_empty() {
+                            // if escaped payload is different, replace it
+                            let escaped = xml::escape::escape_str_pcdata(payload);
+                            if escaped != payload {
+                                return ptr.replace(payload, &escaped);
+                            }
                         }
                     }
                 }
@@ -292,5 +297,13 @@ mod tests {
         assert_eq!(invocations[0].payload, Some("ls -la && pwd".to_string()));
         assert_eq!(&invocations[1].action, "other");
         assert_eq!(invocations[1].payload, Some("yes < no".to_string()));
+    }
+
+    #[test]
+    fn test_preprocess_broken_block() {
+        let block = "<search site:bing.com Darmepinter</search>";
+        let preprocessed = preprocess_block(block);
+
+        assert_eq!(block, &preprocessed);
     }
 }
