@@ -43,13 +43,9 @@ impl VectorStore for NaiveVectorStore {
         let expr = format!("{}/**/*.txt", path);
 
         for path in (glob(&expr)?).flatten() {
-            let doc_name = path.display();
-            let doc = Document {
-                name: doc_name.to_string(),
-                data: std::fs::read_to_string(&path)?,
-            };
+            let doc = Document::from_text_file(&path)?;
             if let Err(err) = store.add(doc).await {
-                eprintln!("ERROR storing {}: {}", doc_name, err);
+                eprintln!("ERROR storing {}: {}", path.display(), err);
             }
         }
 
@@ -57,30 +53,29 @@ impl VectorStore for NaiveVectorStore {
     }
 
     async fn add(&mut self, document: Document) -> Result<()> {
-        if self.documents.contains_key(&document.name) {
+        let doc_path = document.get_path().to_string();
+
+        if self.documents.contains_key(&doc_path) {
             return Err(anyhow!(
                 "document with name '{}' already indexed",
-                &document.name
+                &doc_path
             ));
         }
 
         // TODO: add chunking
-        let data_size = document.data.as_bytes().len();
-
         print!(
             "[{}] indexing document '{}' ({} bytes) ...",
             "rag".bold(),
-            &document.name,
-            data_size
+            &doc_path,
+            document.get_byte_size()
         );
 
         let start = Instant::now();
-        let doc_name = document.name.to_string();
-        let embeddings = self.embedder.embeddings(&document.data).await?;
+        let embeddings: Vec<f64> = self.embedder.embeddings(document.get_data()).await?;
         let size = embeddings.len();
 
-        self.documents.insert(doc_name.to_string(), document);
-        self.embeddings.insert(doc_name, embeddings);
+        self.documents.insert(doc_path.to_string(), document);
+        self.embeddings.insert(doc_path, embeddings);
 
         println!(" time={:?} embedding_size={}", start.elapsed(), size);
 

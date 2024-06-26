@@ -39,14 +39,14 @@ impl Action for Search {
         if !docs.is_empty() {
             println!("\n  {} results in {:?}", docs.len(), start.elapsed());
             for (doc, score) in &docs {
-                println!("       * {} ({})", &doc.name, score);
+                println!("       * {} ({})", doc.get_path(), score);
             }
             println!();
 
             Ok(Some(format!(
                 "Here is some supporting information:\n\n{}",
                 docs.iter()
-                    .map(|(doc, _)| doc.data.clone())
+                    .map(|(doc, _)| doc.get_data().to_string())
                     .collect::<Vec<String>>()
                     .join("\n")
             )))

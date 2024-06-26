@@ -4,7 +4,9 @@ use naive::NaiveVectorStore;
 use serde::{Deserialize, Serialize};
 
 use super::generator::Client;
+pub(crate) use document::Document;
 
+pub(crate) mod document;
 mod metrics;
 pub(crate) mod naive;
 
@@ -13,12 +15,6 @@ pub type Embeddings = Vec<f64>;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Configuration {
     pub path: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct Document {
-    pub name: String,
-    pub data: String,
 }
 
 #[async_trait]
