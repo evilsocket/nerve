@@ -1,0 +1,1553 @@
+Signal Temporal Logic Control Synthesis
+among Uncontrollable Dynamic Agents
+with Conformal Prediction
+
+arXiv:2312.04242v1 [eess.SY] 7 Dec 2023
+
+Xinyi Yu, Yiqi Zhao, Xiang Yin, and Lars Lindemann ∗
+
+Abstract
+The control of dynamical systems under temporal logic specifications among uncontrollable
+dynamic agents is challenging due to the agents’ a-priori unknown behavior. Existing works
+have considered the problem where either all agents are controllable, the agent models are
+deterministic and known, or no safety guarantees are provided. We propose a predictive control
+synthesis framework that guarantees, with high probability, the satisfaction of signal temporal
+logic (STL) tasks that are defined over the system and uncontrollable stochastic agents. We
+use trajectory predictors and conformal prediction to construct probabilistic prediction regions
+for each uncontrollable agent that are valid over multiple future time steps. Specifically, we
+reduce conservatism and increase data efficiency compared to existing works by constructing
+a normalized prediction region over all agents and time steps. We then formulate a worstcase mixed integer program (MIP) that accounts for all agent realizations within the prediction
+region to obtain control inputs that provably guarantee task satisfaction with high probability.
+To efficiently solve this MIP, we propose an equivalent MIP program based on KKT conditions
+of the original one. We illustrate our control synthesis framework on two case studies.
+
+1
+
+Introduction
+
+Consider the following scenarios in which autonomous dynamical systems need to operate safely
+among uncontrollable dynamical agents: mobile service robots operating in pedestrian-rich environments, self-driving cars navigating through dense urban traffic, and leader-follower systems such
+as truck platoons reducing air drag to improve fuel economy. All these scenarios have in common
+that the autonomous system needs to satisfy complex safety-critical specifications in the presence
+of uncontrollable agents. Achieving these specifications is challenged by the fact that communication is prohibited, limited and unstable, or only one-directional, while the agents’ intentions may
+not always be known. In this setting, the autonomous system needs to make predictions about
+the behavior of the dynamic agents and select safe actions accordingly. In this work, we propose a predictive control synthesis framework with probabilistic safety for complex temporal logic
+specifications.
+Control of multi-agent systems under temporal logic specifications has attracted much attention,
+see e.g., [1–8]. However, the agent dynamics here are usually known and agents are assumed to be
+∗
+This work was supported by the National Natural Science Foundation of China (62061136004, 62173226,
+61833012). Xinyi Yu, Yiqi Zhao and Lars Lindemann are with Thomas Lord Department of Computer Science, University of Southern California, Los Angeles, CA 90089, USA. e-mail: {xinyi.yu12, yiqizhao,
+llindema}@usc.edu. Xiang Yin is with Department of Automation and Key Laboratory of System Control and
+Information Processing, Shanghai Jiao Tong University, Shanghai 200240, China. e-mail: yinxiang@sjtu.edu.cn.
+
+collaborative. In this paper, we are interested in control synthesis among uncontrollable dynamic
+stochastic agents under temporal logic tasks, and specifically in settings where communication
+is limited and no information about agent intentions and models is available. This problem has
+been studied in the literature, e.g., using sampling-based approaches [9, 10], game theory [11],
+supervisory control theory [12], or optimization-based methods [13–15]. These works, however, only
+consider qualitative temporal logic specifications such as linear temporal logic, while we are here
+interested in quantitative temporal logics that allow to measure the quality of task satisfaction.
+More importantly, these works make simplifying assumptions on the models of the agents such
+as being linear or having Gaussian noise distributions. Recent works in [16–19] make no such
+assumptions and instead use learning-enabled trajectory predictors and conformal prediction to
+obtain probabilistic prediction regions that can be used for downstream control. However, these
+works do not consider complex specifications expressed in temporal logics.
+Contribution.
+We consider the signal temporal logic (STL) control synthesis problem in
+the presence of uncontrollable dynamic agents without making any assumptions on the agents’
+dynamics and distribution. Specifically, we make the following contributions:
+• We use trajectory predictors and conformal prediction to construct probabilistic prediction
+regions that contain the trajectories of uncontrollable agents. Compared to existing works,
+we reduce conservatism and increase data efficiency to promote efficient long horizon control
+with multiple agents.
+• We propose a mixed integer program (MIP) based on a worst case formulation of the STL
+constraints over all uncontrollable agent trajectories within these prediction regions. We
+present an equivalent MIP program based on KKT conditions of the original MIP to efficiently
+compute control inputs that provably guarantee task satisfaction with high probability.
+• We validate and illustrate the efficacy of our algorithms on temperature control and robot
+motion planning problems.
+Organization.
+After discussing related work in Section 1.1, we present preliminaries and
+the problem definition in Section 2. We show how to compute prediction regions for multiple
+uncontrollable agents using conformal prediction in Section 3 and present a predictive STL control
+synthesis framework in Section 4. We present simulations in Section 5 and conclude in Section 6.
+
+1.1
+
+Related Work
+
+Quantitative temporal logics such as signal temporal logic (STL) [20] have increasingly been used
+in control. The reason for their success in control is their ability to reason over the robustness
+of a control system with respect to the specification via the STL quantitative semantics [21, 22].
+The quantitative semantics of STL provide a natural control objective that can be maximized, e.g.,
+via gradient-based optimization [23–26], mixed integer programming [27–30], or control barrier
+functions [31–33].
+While STL control synthesis problems have been well studied for deterministic systems, the
+problem becomes more challenging for stochastic systems. There are various approaches that
+ensure probabilistic task satisfaction, e.g., via mixed integer programming [34–36], sampling-based
+approaches [37–39], and stochastic control barrier functions [40]. Another recent line of work
+considers the minimization of mathematical risk of STL specifications [41–43]. In addition, there
+are also some related approaches for reactive STL control synthesis, see e.g., [44–47].
+Conceptually closest to our work are [16, 17, 19] where the authors apply conformal prediction
+to obtain probabilistic prediction regions of uncontrollable dynamic stochastic agents. Conformal
+
+2
+
+prediction is a lightweight statistical tool for uncertainty quantification, originally introduced in
+[48, 49], that has recently attracted attention within the machine learning community, see e.g.,
+[50, 51] for up-to-date tutorials, and [52, 53] for more recent applications. Compared to [16, 17, 19],
+we consider complex signal temporal logic specifications as objectives. Importantly, this requires
+the data-efficient computation of non-conservative probabilistic prediction regions to promote long
+horizon control with multiple agents.
+
+2
+
+Preliminaries & Problem Definition
+
+We consider an autonomous system, e.g., a robotic system or an autonomous car, that is described
+by the discrete-time dynamics
+xk+1 = f (xk , uk ),
+
+x0 ∈ X
+
+(1)
+
+where the function f : X ×U → X is defined over the state and input domains X and U, respectively.
+Here, x0 is the known initial state and xk ∈ X ⊂ Rnx and uk ∈ U ⊂ Rm are the nx -dimensional state
+and the m-dimensional control input at time k, respectively. To synthesize control sequences later,
+let us also define uk:Tϕ −1 := uk . . . uTϕ −1 and xk+1:Tϕ := xk+1 . . . uTϕ .
+The system in equation (1) operates among N uncontrollable and stochastic dynamic agents,
+e.g., autonomous or remote-controlled robots or humans. We model the state of agent i at time k
+as a random variable Yk,i ∈ Yi ⊂ Rny,i with state domain Yi , and we define the random state of all
+agents as Yk := [Yk,1 , . . . , Yk,N ] ∈ Y ⊂ Rny with ny := ny,1 + . . . + ny,N and Y := Y1 × . . . × YN . We
+do not assume to have any a-priori knowledge of the agent dynamics and intentions, and since the
+agents are uncontrollable, their trajectories are a-priori unknown. However, we assume that their
+trajectories follow an unknown distribution D, i.e.,
+Y := (Y0 , Y1 , . . . ) ∼ D.
+We further assume that we have access to K̄ realizations from D.
+(j)
+(j)
+Assumption 1 We have access to K̄ independent trajectories Y (j) := (Y1 , Y2 , . . . ) from the
+distribution D. We split the trajectories into calibration and training sets Dcal := {Y (1) , . . . , Y (K) }
+and Dtrain := {Y (K+1) , . . . , Y (K̄) }, respectively.
+
+Modeling dynamic agents by a distribution D includes general classes of systems such as stochastic
+hybrid systems and Markov decision processes. We make the restriction that D does not depend
+on the behavior of the autonomous system in (1), i.e., D does not depend on x. Similar modeling
+assumptions have been made in [16] and are justified in many applications, e.g., when conservative
+control actions are taken in autonomous driving that do only alter the behavior of pedestrians
+minimally. By using robust or adaptive versions of conformal prediction, see e.g., [54, 55], we
+can relax this assumption. Lastly, Assumption 1 is not restrictive in most applications, e.g., past
+trajectory data of dynamic agents is available in robotic or transportation systems.
+In this paper, we consider the control of the system in (1) under temporal logic specifications
+that are jointly defined over the system and the uncontrollable agents. Therefore, we define their
+joint state at time k as Sk := [xk , Yk ] ∈ X × Y ⊂ Rn with n := nx + ny and the random trajectory
+S := S0 , S1 , . . ..
+
+3
+
+2.1
+
+Signal Temporal Logic Control Synthesis among Uncontrollable Agents
+
+In this paper, we use signal temporal logic to describe the tasks defined over the system in (1) and
+uncontrollable agents. Signal temporal logic was originally introduced in [20], and we here only
+give a brief introduction. The syntax of STL formulae is as follows
+ϕ ::= ⊤ | π µ | ¬ϕ | ϕ1 ∧ ϕ2 | ϕ1 U[a,b] ϕ2 ,
+
+(2)
+
+where ⊤ is the true symbol (⊥ denotes the false symbol) and π µ : Rn → {⊤, ⊥} is a predicate whose
+truth value is determined by the sign of an underlying predicate function µ : Rn → R, i.e., for the
+state s ∈ Rn we have that π µ (s) := ⊤ if and only if µ(s) ≥ 0. The symbols ¬ and ∧ denote the
+standard Boolean operators “negation” and “conjunction”, respectively, and U[a,b] is the temporal
+operator “until ” with a, b ∈ Z≥0 with Z≥0 being the natural numbers. These operators can be
+used to define “disjunction” by ϕ1 ∨ ϕ2 := ¬(¬ϕ1 ∧ ¬ϕ2 ), “implication” by ϕ1 → ϕ2 := ¬ϕ1 ∨ ϕ2 ,
+“eventually” by F[a,b] ϕ := ⊤U[a,b] ϕ, and “always” by G[a,b] ϕ := ¬F[a,b] ¬ϕ.
+STL Semantics. STL formulae are evaluated over trajectories s := s0 s1 · · · where s could
+be a realization of S. The notation (s, k) |= ϕ denotes that s satisfies the STL formula ϕ at time
+k. Particularly, we have (s, k) |= π µ iff µ(sk ) ≥ 0, (s, k) |= ¬ϕ iff (s, k) ̸|= ϕ, (s, k) |= ϕ1 ∧ ϕ2 iff
+(s, k) |= ϕ1 and (s, k) |= ϕ2 , and (s, k) |= ϕ1 U[a,b] ϕ2 iff ∃k ′ ∈ [k + a, k + b] such that (s, k ′ ) |= ϕ2 and
+∀k ′′ ∈ [k, k ′ ], we have (s, k ′′ ) |= ϕ1 , i.e., ϕ2 will hold some time between [k + a, k + b] in the future
+and until then ϕ1 always holds. We write s |= ϕ instead of (s, 0) |= ϕ for simplicity.
+STL Quantitative Semantics. In addition to these qualitative Boolean semantics, we can
+also define quantitative semantics ρϕ (s, k) ∈ R that describe how well ϕ is satisfied [56]. Formally,
+we have
+ρ⊤ (s, k) := ∞
+µ
+
+ρπ (s, k) := µ(sk )
+ρ¬ϕ (s, k) := −ρϕ (s, k)
+ρϕ1 ∧ϕ2 (s, k) := min(ρϕ1 (s, k), ρϕ2 (s, k))
+ρϕ1 U[a,b] ϕ2 (s, k) :=
+
+max
+
+min(ρϕ2 (s, k ′ ), min ρϕ1 (s, k ′′ )).
+
+k′ ∈[k+a,k+b]
+
+k′′ ∈[k,k′ ]
+
+Problem Formulation. In this paper, we consider bounded STL formulae ϕ where time
+intervals [a, b] in ϕ are bounded. The satisfaction of a bounded STL formula ϕ can be computed
+over bounded trajectories. Specifically, we require trajectories with a minimum length of Tϕ where
+Tϕ is the formula horizon formally defined in [57, 58]. For example, for ϕ := F[3,8] G[1,2] π µ , we have
+Tϕ = 10. We additionally assume that ϕ is in positive normal form, i.e., the formula ϕ contains no
+negations, and is build from convex and differentiable predicate functions µ. The former assumption
+is without loss of generality as every STL formula can be re-written into an equivalent STL formula
+that is in positive normal form [28, 58]. The latter assumption is made for computational reasons
+and can be relaxed. We summarize these assumptions next.
+Assumption 2 We consider bounded STL formulae ϕ in positive normal form. We further assume
+that all predicate functions µ in ϕ are convex and differentiable with respect to Yτ .
+We impose specifications ϕ that satisfy Assumption 2 over the random trajectory S, i.e., over the
+system trajectory xk and the random trajectories of uncontrollable dynamic agents Yk . Formally,
+we consider the following problem in this paper.
+
+4
+
+Problem 1 Given the system in (1), the random trajectory of uncontrollable agents Y := (Y0 , Y1 , . . . ) ∼
+D, a set of trajectories Dcal and Dtrain that satisfy Assumption 1, an STL formula ϕ from (2) that
+satisfies Assumption 2, and the failure probability δ ∈ (0, 1), compute the control inputs uk for all
+k ∈ {0, . . . , Tϕ − 1} such that the STL formula is satisfied with a probability of at least 1 − δ, i.e.,
+Prob(S |= ϕ) ≥ 1 − δ.
+The challenge for solving Problem 1 is the dependency of ϕ on the agents in Y , i.e., the joint
+trajectory S is only partially controllable. Therefore, our approach is to predict uncontrollable
+agents, construct prediction regions that capture uncertainty of these prediction, and synthesize
+the controller using this information.
+
+2.2
+
+Trajectory Predictors & Conformal Prediction
+
+Trajectory Predictors. From the training set Dtrain , we first train a trajectory predictor that
+estimates future states (Yk+1 , . . . , YTϕ ) from past observations (Y0 , . . . Yk ). Specifically, we denote
+the predictions made at time k as (Ŷk+1|k , . . . , ŶTϕ |k ). For instance, we can use recurrent neural
+networks (RNNs) [59], long short term memory (LSTM) networks [60], or transformers [61].
+Conformal Prediction.
+The predictions Ŷτ |k of Yτ for τ > k, which may be obtained
+from learning-enabled components, may not always be accurate. We will use conformal prediction
+to obtain prediction regions for Yτ that are valid with high probability. We leverage conformal
+prediction which is a statistical tool for uncertainty quantification with minimal assumptions [48,49].
+Let R(0) , . . . , R(K) be K + 1 i.i.d. random variables which are referred to as the nonconformity
+(j)
+(j)
+score. For instance, we may define the prediction error R(j) := ||Yτ − Ŷτ |k || at time τ > k for all
+calibration trajectories Y (j) ∈ Dcal . Naturally, a small value of R(j) in this case implies accurate
+predictions. We later present nonconformity scores to obtain prediction regions for uncontrollable
+agents over multiple time steps. Given a failure probability δ ∈ (0, 1), our goal is to compute C
+from R(1) , . . . , R(K) such that the probability of R(0) being bounded by C is not smaller than 1 − δ,
+i.e.,
+Prob(R(0) ≤ C) ≥ 1 − δ.
+By the results in Lemma 1 of [62], we can compute
+C := Quantile1−δ (R(1) , . . . , R(K) , ∞)
+as the (1 − δ)th quantile over the empirical distribution of R(1) , . . . , R(K) and ∞.1 By assuming
+that R(1) , . . . , R(K) are sorted in non-decreasing order and by adding R(K+1) := ∞, we have that
+C = R(p) where p := ⌈(K + 1)(1 − δ)⌉, i.e., C is the pth smallest nonconformity score. To obtain
+meaningful prediction regions, we remark that K ≥ ⌈(K + 1)(1 − δ)⌉ has to hold, otherwise we get
+C = ∞. Lastly, note that the guarantees Prob(R(0) ≤ C) ≥ 1 − δ are marginal over the randomness
+in R(0) , R(1) , . . . , R(K) (with C depending on R(1) , . . . , R(K) ) as opposed to being conditional on
+R(1) , . . . , R(K) .
+
+3
+
+Prediction Regions for Multiple Uncontrollable Agents
+
+To solve Problem 1, we use trajectory predictions and compute probabilistic prediction regions for
+each uncontrollable agent that are valid over multiple time steps. Specifically, we construct two
+1
+
+Formally, we define the quantile function as Quantile1−δ (R(1) , . . . , R(K) , ∞) := inf{z ∈ R|Prob(Z ≤ z) ≥ 1 − δ}
+P
+with the random variable Z := 1/(K + 1)( i δR(i) + δ∞ ) where δR(i) is a dirac distribution centered at R(i) .
+
+5
+
+different prediction regions for open-loop and closed-loop control synthesis. Recall that Yτ,i denotes
+the random state of agent i at time τ , and let Ŷτ |k,i denote the prediction of Yτ,i made at time k.
+For open-loop control, we are interested in constructing prediction regions for all predictions
+τ ∈ {1, . . . , Tϕ } made at time k := 0 and for all agents i ∈ {1, . . . , N }, i.e., such that
+Prob(||Yτ,i − Ŷτ |0,i || ≤ Cτ |0,i , ∀(τ, i) ∈ {1, . . . , Tϕ } × {1, . . . , N }) ≥ 1 − δ
+
+(3)
+
+where Cτ |0,i indicates the τ -step ahead prediction error of agent i for predictions Ŷτ |0,i made at
+time k = 0.
+For closed-loop control, on the other hand, we fix τ := k + 1 and are interested in constructing
+prediction regions for all times k ∈ {0, . . . , Tϕ − 1} and agents i ∈ {1, . . . , N }, i.e., such that
+Prob(||Yk+1,i − Ŷk+1|k,i || ≤ Ck+1|k,i , ∀(k, i) ∈ {0, . . . , Tϕ − 1} × {1, . . . , N }) ≥ 1 − δ,
+
+(4)
+
+where Ck+1|k,i indicates the one-step-ahead prediction error of agent i for predictions Ŷk+1|k,i made
+at time k.
+Data-efficient and accurate prediction regions. Computing τ -step ahead prediction regions via Cτ |0,i (and one-step-ahead prediction regions via Ck+1|k,i ) is in general difficult. Existing works [16, 63] are conservative, data-inefficient, and do not provide prediction regions for
+multiple agents. The reason is that Cτ |0,i (and Ck+1|k,i ) are independently computed for all
+(τ, i) ∈ {1, . . . , Tϕ } × {1, . . . , N } (for all (k, i) ∈ {0, . . . , Tϕ − 1} × {1, . . . , N }). This independent
+computation is followed by a conservative and inefficient union bounding argument (more details
+below).
+Instead, we obtain these prediction regions jointly. For the open-loop case, we define the
+normalized nonconformity score
+(j)
+
+(j)
+
+ROL :=
+
+(j)
+
+||Yτ,i − Ŷτ |0,i ||
+
+max
+
+(5)
+
+στ |0,i
+
+(τ,i)∈{1,...,Tϕ }×{1,...,N }
+
+for calibration trajectories Y (j) ∈ Dcal where στ |0,i > 0 are constants that normalize the prediction
+error to [0, 1] for all times τ and agents i. This nonconformity score is inspired by [64], but different
+in two ways. First, we normalize over predictions τ and agents i (instead of only predictions).
+Second, we do not need to solve nonconvex optimization problems and instead simply normalize over
+the training dataset Dtrain which has practical advantages. Specifically, we use the normalization
+(j)
+(j)
+στ |0,i := maxj ∥Yτ,i − Ŷτ |0,i ∥ for training trajectories Y (j) ∈ Dtrain .
+For the closed-loop case, we follow a similar idea and define the normalized nonconformity score
+(j)
+
+RCL :=
+
+||Yk+1,i − Ŷk+1|k,i ||
+σk+1|k,i
+(k,i)∈{0,...,Tϕ −1}×{1,...,N }
+
+(6)
+
+max
+
+for calibration trajectories Y (j) ∈ Dcal where σk+1|k,i > 0 are again constants that normalize the
+(j)
+
+prediction error to [0, 1] for all times k and agents i. In this case, we let σk+1|k,i := maxj ∥Yk+1,i −
+(j)
+
+Ŷk+1|k,i ∥ for training trajectories Y (j) ∈ Dtrain .
+The intuitions behind the nonconformity scores in (5) and (6) are that normalization via στ |0,i
+(j)
+
+(j)
+
+(and σk+1|k,i ) will prevent the prediction error ||Yτ,i − Ŷτ |0,i || (and ||Yk+1,i − Ŷk+1|k,i ||) for a specific
+agent and time to dominate the max operator. This would result in overly conservative prediction
+regions for other times and agents.
+6
+
+Valid Prediction Regions with Conformal Prediction. We can now apply conformal
+(j)
+prediction, as introduced in Section 2.2, to the open-loop and closed-loop nonconformity scores ROL
+(j)
+and RCL , respectively. By re-normalizing these nonconformity scores, we then obtain prediction
+regions as in equations (3) and (4).
+Theorem 1 Given the random trajectory Y := (Y0 , Y1 , . . . ) ∼ D, a set of trajectories Dcal and
+Dtrain that satisfy Assumption 1, and the failure probability δ ∈ (0, 1), then the prediction regions
+in equations (3) and (4) hold for the choices of
+Cτ |0,i := COL στ |0,i
+
+(7)
+
+Ck+1|k,i := CCL σk+1|k,i
+
+(8)
+
+where στ |0,i and σk+1|k,i are positive constants and
+(1)
+
+(K)
+
+(1)
+
+(K)
+
+COL := Quantile1−δ (ROL , . . . , ROL , ∞)
+CCL := Quantile1−δ (RCL , . . . , RCL , ∞).
+Proof 1 For brevity, we only show that the open-loop prediction region in (3) is valid with the
+choice of Cτ |0,i := COL στ |0,i . The proof for the closed-loop prediction region in (4) follows exactly
+the same steps and is omitted. For a test trajectory Y := (Y0 , Y1 , . . . ) ∼ D, we immediately know
+from conformal prediction that
+
+Prob
+
+
+||Yτ,i − Ŷτ |0,i ||
+≤ COL ≥ 1 − δ
+στ |0,i
+(τ,i)∈{1,...,Tϕ }×{1,...,N }
+max
+
+(9)
+
+by construction of COL . We then see that equation (9) implies that
+ ||Yτ,i − Ŷ
+
+τ |0,i ||
+Prob
+≤ COL , ∀(τ, i) ∈ {1, . . . , Tϕ } × {1, . . . , N } ≥ 1 − δ.
+στ |0,i
+
+(10)
+
+Since στ |0,i > 0, we can multiply the inequality in (10) with στ |0,i . We then see that (3) is valid
+with the choice of Cτ |0,i := COL στ |0,i which completes the proof.
+Comparison with existing work. With slight modification of [16, 63], an alternative approach for obtaining Cτ |0,i would be to compute Cτ |0,i := Quantile1−δ/(Tϕ N ) (R(1) , . . . , R(K) , ∞)
+with the nonconformity score R(j) := ||Yτ,i − Ŷτ |0,i ||. In a similar way, we could find Ck+1|k,i :=
+Quantile1−δ/(Tϕ N ) (R(1) , . . . , R(K) , ∞) with the nonconformity score R(j) := ||Yk+1,i −Ŷk+1|k,i ||. However, it is evident that taking the 1 − δ quantile in Theorem 1 compared to the 1 − δ/(Tϕ N ) quantile
+is much more data inefficient. Specifically, for a fixed δ ∈ (0, 1), we only require K ≥ (1 − δ)/δ
+calibration trajectories as opposed to K ≥ (Tϕ N − δ)/δ calibration trajectories.2 Intuitively, it is
+also evident that our choice of normalization constants στ |0,i and σk+1|k,i provides less conservative
+prediction regions in practice as evaluating the 1 − δ quantile is more favorable compared to the
+1 − δ/(Tϕ N ) for larger task horizons Tϕ and number of agents N . Finally, we remark that one
+could even consider obtaining conditional guarantees using conditional conformal prediction [65].
+Similarly, we can use versions of robust conformal prediction to be robust against distribution
+shifts [54, 62], e.g., caused by interaction between the system in (1) and the distribution D.
+2
+
+Computing the 1−δ and 1−δ/(Tϕ N ) quantiles requires that ⌈(K +1)(1−δ)⌉ ≤ K and ⌈(K +1)(1−δ/(Tϕ N )⌉ ≤ K,
+respectively.
+
+7
+
+For practitioners. We summarize our method to obtain the prediction regions in equations
+(3) and (4) via Theorem 1 in Algorithm 1. We note that, in order to compute COL and CCL ,
+(K+1)
+(K+1):=∞
+we sort the corresponding nonconformity scores (after adding ROL
+:= ∞ and RCL
+) in
+nondecreasing order and set COL and CCL to be the pth smallest nonconformity score where
+p := ⌈(K +1)(1−δ)⌉, as explained in Section 2.2. Specifically, the variable p is set in line 1. We then
+(j)
+compute the predictions Ŷτ |k,i for all calibration data in lines 2-6 and calculate the normalization
+(j)
+
+constants στ |k,i over the training data in line 7. Finally, we compute the nonconformity scores ROL
+(j)
+
+and RCL for all calibration data in lines 8-10 and apply conformal prediction to obtain COL and
+CCL in lines 11-12. According to Theorem 1, we then obtain the open-loop prediction regions Cτ |0,i
+and the closed-loop prediction regions Ck+1|k,i .
+Algorithm 1: Multi-Agent Prediction Regions
+Input: failure probability δ, dataset D, horizon Tϕ
+Output: Constants COL , CCL , and στ |k,i
+1 p ← ⌈(K + 1)(1 − δ)⌉
+2 forall i ∈ {1, . . . , N } do
+3
+forall k ∈ [0, Tϕ − 1] do
+4
+forall τ ∈ [k + 1, Tϕ ] do
+5
+forall j ∈ {1, . . . , K̄} do
+(j)
+(j)
+(j)
+6
+Compute Ŷτ |k,i from (Y0,i , . . . , Yk,i )
+7
+
+(j)
+
+(j)
+
+στ |k,i ← maxj∈{K+1,...,K̄} ||Yτ,i − Ŷτ |k,i ||
+
+8 forall j ∈ {1, . . . , K} do
+(j)
+(j)
+9
+Compute ROL and RCL as in equations (5) and (6)
+(K+1)
+(K+1)
+10 Set ROL
+← ∞ and RCL ← ∞
+(j)
+(j)
+11 Sort ROL and RCL in nondecreasing order
+(p)
+(p)
+12 Set COL ← ROL and CCL ← RCL
+
+4
+
+Predictive STL Control Synthesis
+
+In this section, we use the previously computed prediction regions and design predictive controllers
+that solve Problem 1, i.e., controllers u that ensure that x is such that Prob(S |= ϕ) ≥ 1 − δ.
+Specifically, we use the prediction regions and present an MIP encoding for the STL task ϕ. We
+first present a qualitative and a quantitative encoding using the Boolean and quantitative semantics
+of ϕ in Sections 4.1 and 4.2, respectively. In Section 4.3, we use these encodings and present openloop and closed-loop controllers.
+
+4.1
+
+Qualitative STL Encoding with Multi-Agent Prediction Regions
+
+A standard way of encoding STL tasks for deterministic trajectories s is by using an MIP encoding
+[27, 47]. The idea is to introduce a binary variable z0ϕ and a set of mixed integer constraints over s
+such that z0ϕ = 1 if and only if s |= ϕ. In this paper, however, we deal with stochastic trajectories
+S that consist of the system trajectory x and the stochastic trajectories of dynamic agents Y . We
+8
+
+will instead introduce a binary variable z̄0ϕ and a set of mixed integer constraints over x and the
+prediction regions in (3) and (4) such that z̄0ϕ = 1 implies that S |= ϕ with a probability of at
+least 1 − δ. In this way, z̄0ϕ can be seen as a probabilistic version of z0ϕ . We emphasize that our
+MIP encoding provides sufficient but not necessary conditions. Specifically, we can not guarantee
+necessity due to the use of probabilistic prediction regions.
+In the remainder, we generate the mixed integer constraints that define z̄0ϕ recursively on the
+structure of ϕ. Our main innovation is a probabilistic MIP encoding for predicates, while the
+encoding of Boolean and temporal operators follows [27,47]. We here recall from Assumption 2 that
+the formula ϕ is in positive normal form so that we do not need to consider negations. To provide
+a general encoding that can be used for open-loop and closed-loop control, we let k ≥ 0 denote
+the current time. As we will treat the system state xk separately from the state of uncontrollable
+dynamic agents Yk contained in Sk , we will write µ(xk , Yk ) instead of µ(sk ).
+Predicates µ. Let us denote the set of predicates π µ in ϕ by P. Now, for each predicate
+µ
+π ∈ P and for each time τ ≥ 0, we introduce a binary variable z̄τµ ∈ {0, 1}. If τ ≤ k, then we have
+observed the value of Yτ already, and we set z̄τµ = 1 if and only if µ(xτ , Yτ ) ≥ 0. If τ > k, then
+we would like to constrain z̄τµ such that z̄τµ = 1 implies Prob(µ(xτ , Yτ ) ≥ 0) ≥ 1 − δ. Motivated by
+Theorem 1, we use the Big-M method and define the constraint
+−miny∈Bτ µ(xτ , y) ≤ M (1 − z̄τµ ) − ϵ,
+
+(11)
+
+where M and ϵ are sufficiently large and sufficiently small positive constants, respectively, see [66]
+for details on how to select M and ϵ. The minimization of µ(xτ , y) over the y component within
+the set Bτ will account for all Yτ that are contained within our probabilistic prediction regions.
+Specifically, the set Bτ contains all states contained within a geometric ball that is centered around
+the predictions Ŷτ |k,i with a size of Cτ |k,i and is defined as
+Bτ := {[y1 , . . . , yN ]⊤ ∈ Rny | ∀i ∈ {1, . . . , N }, ||yi − Ŷτ |k,i || ≤ Cτ |k,i }.
+In the case when k = 0, we use the values of Cτ |0,i as in (7) that define the open-loop prediction
+region in (3). This implies that Prob(Yτ ∈ Bτ , τ ∈ {1, . . . , Tϕ }) ≥ 1−δ. For k > 0, we use Cτ |k,i as in
+(8) that define the closed-loop prediction region in (4) for τ = k + 1, and we use Cτ |k,i := CCL στ |k,i
+for τ > k + 1.
+Remark 1 For k > 0, note that we have derived probabilistic guarantees for one-step ahead predictions with Cτ |k,i for τ = k + 1. This implies that Prob(Yk+1 ∈ Bk+1 , k ∈ {0, . . . , Tϕ − 1}) ≥ 1 − δ.
+We, however, do not have (and do not need as we show later) probabilistic guarantees for multi-step
+ahead predictions with Cτ |k,i for τ > k + 1. If such guarantees were required, we could consider a
+nonconformity score similar to (6), but where we maximize the normalized prediction error over
+k ∈ {0, . . . , Tϕ − 1}, τ ∈ {k + 1, . . . , Tϕ }, and i ∈ {1, . . . , N }.
+By Theorem 1 and the construction in equation (11), we have the following straightforward
+result for the case where k = 0.
+Corollary 1 At time k = 0, if z̄τµ = 1 for all times τ ∈ T and for all predicates π µ ∈ P for some
+sets (T, P ) ⊆ {1, . . . , Tϕ } × P, then it holds that Prob(µ(xτ , Yτ ) ≥ 0, ∀(τ, π µ ) ∈ T × P ) ≥ 1 − δ.
+Proof 2 If z̄τµ = 1 for all τ ∈ T and π µ ∈ P , then it follows by equation (11) that xτ is such
+that 0 < ϵ ≤ miny∈Bτ µ(xτ , y) for all τ ∈ T and π µ ∈ P . Now, using Theorem 1, we can directly
+conclude that Prob(µ(xτ , Yτ ) ≥ 0, ∀(τ, π µ ) ∈ T × P ) ≥ 1 − δ.
+9
+
+We emphasize that these results are stated for the case where k = 0. We will discuss the
+extension to k > 0 later when we present a receding horizon control strategy where only the k + 1
+step-ahead predictions become relevant for obtaining probabilistic guarantees.
+Remark 2 We do not need to enforce z̄τµ = 0 since the STL formula ϕ is in positive normal form
+as per Assumption 2. However, by using the constraint maxy∈Bτ µ(xτ , y) ≤ M z̄τµ −ϵ we could enforce
+that z̄τµ = 0 implies Prob(µ(xτ , Yτ ) < 0, ∀(τ, π µ ) ∈ T × P ) ≥ 1 − δ.
+Computational considerations.
+Note that we minimize µ(xτ , y) over the y component
+within the ball Bτ in equation (11). In an outer loop, we will additionally need to optimize over xτ
+to compute control inputs uτ . To obtain computational tractability for this, we will now remove the
+minimum over y and instead write equation (11) in closed-form. Since the function µ is continuously
+differentiable and convex in its parameters by Assumption 2, we can use the KKT conditions of
+the inner problem to do so. Specifically, the constraints in equation (11) can be converted into a
+bilevel optimization problem where the outer problem consists of the constraints
+−µ(xτ , y ∗ ) ≤ M (1 − z̄τµ ) − ϵ,
+
+(12)
+
+and where the inner optimization problem is
+y ∗ := argmin µ(xτ , y),
+y
+
+(13)
+
+s.t. ||yi − Ŷτ |k,i || ≤ Cτ |k,i , ∀i ∈ {1, . . . , N }.
+We can use the KKT conditions of the inner optimization problem in (13) after a minor modification
+in which we change the constraints ||yi − Ŷτ |k,i || ≤ Cτ |k,i into (yi − Ŷτ |k,i )⊤ (yi − Ŷτ |k,i ) ≤ Cτ2|k,i to
+obtain differentiable constraint functions. Formally, we obtain
+∂(yi∗ − Ŷτ |k,i )⊤ (yi∗ − Ŷτ |k,i )
+∂µ(xτ , y ∗ )
++ ΣN
+λ
+=0
+i=1 i
+∂y
+∂yi
+
+(14)
+
+(yi∗ − Ŷτ |k,i )⊤ (yi∗ − Ŷτ |k,i ) ≤ Cτ2|k,i , ∀i ∈ {1, . . . , N }
+
+(15)
+
+λi ≥ 0, ∀i ∈ {1, . . . , N }
+
+(16)
+
+λi ((yi∗ − Ŷτ |k,i )⊤ (yi∗ − Ŷτ |k,i ) − Cτ2|k,i ) = 0, ∀i ∈ {1, . . . , N }
+
+(17)
+
+as the set of KKT conditions for the inner problem in (13).
+Since Slater’s condition holds for the inner optimization problem (13), with the reasoning that
+Cτ |k,i > 0 due to στ |0,i > 0 and σk+1|k,i > 0, we have that a solutions y ∗ to (13) is a feasible solution
+to the KKT conditions in (14), (15), (16), and (17) and vice versa [67]. As a result, we can use
+equations the KKT conditions (14), (15), (16), and (17) instead of the optimization problem (13),
+and thus use equations (12), (14), (15), (16), and (17) instead of (11).
+Boolean and temporal operators. So far, we have encoded predicates π µ . We can encode
+Boolean and temporal operators recursively using the standard MIP encoding [27, 47]. In brief, for
+ϕ
+ϕ
+the conjunction ϕ := ∧m
+i=1 ϕi we introduce the binary variable z̄τ ∈ {0, 1} that is such that z̄τ = 1
+if and only if z̄τϕ1 = . . . = z̄τϕm = 1. Consequently, z̄τϕ = 1 implies that (S, τ ) |= ϕ holds with a
+probability of at least 1 − δ. We achieve this by enforcing the constraints
+z̄τϕ ≤ z̄τϕi , i = 1, . . . , m,
+ϕi
+z̄τϕ ≥ 1 − m + Σm
+i=1 z̄τ ,
+
+10
+
+For the disjunction ϕ := ∨m
+i=1 ϕi , we follow the same idea but instead enforce the constraints
+z̄τϕ ≥ z̄τϕi , i = 1, . . . , m,
+ϕi
+z̄τϕ ≤ Σm
+i=1 z̄τ .
+
+For temporal operators, we follow a similar procedure, but first note that temporal operators
+can be written as Boolean combinations of conjunctions and disjunctions. For ϕ := G[a,b] ϕ1 , we
+V
+ϕ1
+again introduce a binary variable z̄τϕ ∈ {0, 1} and encode z̄τϕ = ττ +b
+using the MIP constraints
+′ =τ +a z̄τ
+W
+ϕ1
+for conjunctions introduced before. Similarly, for ϕ := F[a,b] ϕ1 we use that z̄τϕ = ττ +b
+′ =τ +a z̄τ , while
+V
+W
+ϕ2
+ϕ1
+τ′
+for ϕ = ϕ1 U[a,b] ϕ2 we use that z̄τϕ = ττ +b
+′ =τ +a (z̄τ ′ ∧
+τ ′′ =τ z̄τ ′′ ).
+Soundness of the encoding.
+The procedure described above provides us with a binary
+variable z̄0ϕ and a set of mixed integer constraints over x such that z̄0ϕ = 1 implies that S |= ϕ holds
+with a probability of at least 1 − δ. We summarize this result next.
+Theorem 2 Let the conditions from Problem 1 hold. At time k = 0, if z̄0ϕ = 1 then we have that
+Prob(S |= ϕ) ≥ 1 − δ.
+Proof 3 By enforcing that z̄0ϕ = 1, there is an assignment of 0 and 1 values to the binary variables
+z̄τµ for each τ ∈ {1, . . . , Tϕ } and for each π µ ∈ P. This assignment is non-unique. Specifically, let
+z̄τµ = 1 for all times τ ∈ T and for all predicates π µ ∈ P for some sets (T, P ) ⊆ {1, . . . , Tϕ }×P, and
+let z̄τµ = 0 otherwise. By Corollary 1, it follows that Prob(µ(xτ , Yτ ) ≥ 0, ∀(τ, π µ ) ∈ T × P ) ≥ 1 − δ.
+By the recursive definition of z̄0ϕ using the encoding from [27,47] for Boolean and temporal operators
+and since ϕ is in positive normal form, it follows that Prob(S |= ϕ) ≥ 1 − δ.
+
+4.2
+
+Quantitative STL Encoding with Multi-Agent Prediction Regions
+
+The qualitative MIP encoding ensures that z̄0ϕ = 1 implies that Prob(S |= ϕ) ≥ 1 − δ. However, in
+some cases one may want to optimize over the quantitative semantics ρϕ (S, 0). We next present a
+quantitative MIP encoding for ϕ. Specifically, we will recursively define a continuous variable r̄0ϕ ∈ R
+that will be such that ρϕ (S, 0) ≥ r̄τϕ with a probability of at least 1 − δ. Our main innovation is a
+quantitative MIP encoding for predicates, while the Boolean and temporal operators again follow
+the standard MIP encoding [27, 47].
+Predicates. For each predicate π µ ∈ P and for each time τ ≥ 0, we introduce a continuous
+variable r̄τµ ∈ R. Inspired by [68], we define r̄τµ as
+
+µ(xτ , Yτ )
+if τ ≤ k,
+µ
+r̄τ :=
+(18)
+miny∈Bτ µ(xτ , y) otherwise
+where we again notice that Yτ is known if τ ≤ k, while we compute miny∈Bτ µ(xτ , y) if τ > k to
+consider the worst case of µ(xτ , y) for y within the prediction region Bτ .
+By Theorem 1, which ensures that Yτ ∈ Bτ holds with a probability of at least 1 − δ, and the
+construction in equation (18), we have the following straightforward result for the case where k = 0.
+Corollary 2 At time k = 0, it holds that Prob(ρµ (S, τ ) ≥ r̄τµ , ∀(τ, π µ ) ∈ {1, . . . , Tϕ } × P) ≥ 1 − δ.
+Proof 4 The result follows directly from Theorem 1 and the construction of r̄τµ in equation (18)
+using the prediction region Bτ .
+
+11
+
+Similarly to the qualitative encoding, the term miny∈Bτ µ(xτ , y) in equation (18) can be written
+as in equation (13), and we can use equations (14), (15), (16), and (17) instead of (13).
+Boolean and temporal operators. As for the qualitative encoding, we only provide a brief
+summary for the quantitative encoding of Boolean and temporal operators that follow standard
+ϕ
+encoding rules. For the conjunction ϕ := ∧m
+i=1 ϕi , we introduce the continuous variable r̄τ ∈ R that
+will be such that r̄τϕ = min{r̄τϕ1 , . . . , r̄τϕm }. Particularly, we achieve this by enforcing the constraints
+ϕi
+Σm
+i=1 pτ = 1
+
+r̄τϕ ≤ r̄τϕi , i = 1, . . . , m,
+r̄τϕi − (1 − pϕτ i )M ≤ r̄τϕ ≤ r̄τϕi + M (1 − pϕτ i ), i = 1, . . . , m,
+where pϕτ i ∈ {0, 1} are m new binary variables so that r̄τϕ = rτϕi if and only if pϕτ i = 1. By this
+encoding, r̄τϕ ≥ 0 implies that (S, τ ) |= ϕ holds with a probability of at least 1 − δ. For the
+disjunction ϕ := ∨m
+i=1 ϕi , we follow the same idea but instead enforce the constraints
+ϕi
+Σm
+i=1 pτ = 1
+
+r̄τϕ ≥ r̄τϕi , i = 1, . . . , m,
+r̄τϕi − (1 − pϕτ i )M ≤ r̄τϕ ≤ r̄τϕi + M (1 − pϕτ i ), i = 1, . . . , m.
+For temporal operators, we again note that we can write each operator as Boolean combinations of
+conjunctions and disjunctions and then follow the same procedure as for the qualitative encoding.
+Soundness of the encoding. The procedure described above gives us a continuous variable
+r̄0ϕ and a set of mixed integer constraints over x such that r̄0ϕ is a probabilistic lower bound of
+ρϕ (S, 0). We summarize this result next.
+Theorem 3 Let the conditions from Problem 1 hold. At time k = 0, it holds that Prob(ρϕ (S, 0) ≥
+r̄0ϕ ) ≥ 1 − δ.
+Proof 5 Recall that Prob(ρµ (S, τ ) ≥ r̄τµ , ∀(τ, π µ ) ∈ {1, . . . , Tϕ } × P) ≥ 1 − δ by Corollary 2. Since
+the task ϕ is in positive normal form, which excludes negations, and due to the recursive structure
+of ϕ we can directly conclude that Prob(ρϕ (S, 0) ≥ r̄0ϕ ) ≥ 1 − δ.
+We emphasize that the previous result will allow us to directly optimize over the variable r̄0ϕ to
+achieve r̄0ϕ > 0, which then implies that Prob(S |= ϕ) ≥ 1 − δ.
+We note that the quantitative encoding allows for robustness considerations and provides a
+more fine-grained analysis. The qualitative encoding, on the other hand, is computationally more
+tractable.
+
+4.3
+
+Predictive MIP-Based Control Synthesis
+
+For control synthesis, we can now use the qualitative encoding via the binary variable z̄0ϕ or the
+quantitative encoding via the continuous variable r̄0ϕ to solve Problem 1. Formally, we then solve
+
+12
+
+the following mixed integer optimization problem
+u∗k:Tϕ −1 := argmin
+
+J(xk , uk:Tϕ −1 )
+
+(19a)
+
+uk:Tϕ −1 ∈ U Tϕ −k , xk+1:Tϕ ∈ X Tϕ −k
+
+(19b)
+
+xτ +1 = f (xτ , uτ ), τ = k, . . . , Tϕ − 1,
+
+(19c)
+
+z̄0ϕ = 1 or r̄0ϕ > 0.
+
+(19d)
+
+uk:Tϕ −1
+
+subject to
+
+Note particularly that we enforce either z̄0ϕ = 1 or r̄0ϕ > 0 in equation (19d). This enables us to
+select between the quantitative and the qualitative encoding.
+Open-loop synthesis. We will start with analyzing the case when k = 0 where we get an
+open-loop control sequence u∗0:Tϕ −1 . By Theorems 2 and 3 it is easy to see that we solve Problem
+1 if we can find a feasible solution to the optimization problem in (19). We next summarize the
+result that solves Problem 1.
+Theorem 4 (Open-loop control) Let the conditions from Problem 1 hold. If the optimization
+problem in (19) is feasible at time k = 0, then applying the open-loop control sequence u∗0:Tϕ −1 to
+(1) results in
+Prob(S |= ϕ) ≥ 1 − δ.
+Proof 6 Note that we enforce that either z̄0ϕ = 1 or r̄0ϕ > 0 within the optimization problem in
+(19). By Theorems 2 and 3 this implies that Prob(S |= ϕ) ≥ 1 − δ or Prob(ρϕ (S, 0) ≥ r̄0ϕ ) ≥ 1 − δ,
+respectively. In the later case, we can similarly conclude that Prob(S |= ϕ) ≥ 1 − δ since r̄0ϕ > 0.
+The complexity of the optimization problem in (19) is in general that of a mixed integer program
+which is NP-hard.
+Receding horizon control strategy. Such an open-loop control strategy may be conservative as the prediction regions Cτ |0,i will usually be conservative for large τ as then the predictions
+ŷτ |0 lose accuracy. Furthermore, due to the lack of state feedback, the open-loop controller is not
+robust. Therefore, we propose to solve the optimization problem in (19) in a receding horizon
+fashion. In other words, at each time k we measure the states xk and Yk , update our predictions
+Ŷτ |k , compute the control sequence u∗k:Tϕ −1 by solving the optimization problem in (19), and apply
+the first element u∗k of u∗k:Tϕ −1 to the system in (1) before we repeat the process. Naturally, we do
+so in a shrinking horizon manner where the prediction horizon H decreases by one at each time.
+In this process, we note that the prediction regions Bτ need to be updated at each time k. In
+this regard, we recall Remark 1. Indeed, if k = 0 as in the open-loop case, we were guaranteed that
+the prediction region in equation (3) are valid, i.e., that Prob(Yτ ∈ Bτ , τ ∈ {1, . . . , Tϕ }) ≥ 1 − δ.
+For the receding horizon strategy, however, the prediction region in equation (8) is valid, i.e., that
+instead Prob(Yk+1 ∈ Bk+1 , k ∈ {0, . . . , Tϕ −1}) ≥ 1−δ. This allows us to provide formal guarantees
+for Problem 1.
+Theorem 5 (Closed-loop control) Let the conditions from Problem 1 hold. If the optimization
+problem in (19) is feasible at each time k ∈ {0, . . . , Tϕ − 1}, then applying the first element u∗k of
+u∗k:Tϕ −1 to (1) at each time k results in
+Prob(S |= ϕ) ≥ 1 − δ.
+13
+
+temp.)
+Yr2 (Room 2
+
+x (Room 1 temp.)
+
+temp.)
+Yr3 (Room 3
+
+Figure 1: The floor plan of the hall.
+30
+20
+
+15
+10
+
+10
+
+5
+0
+
+RCL Nonconformity Scores
+CCL
+
+Frequency
+
+Frequency
+
+20
+
+ROL Nonconformity Scores
+COL
+
+0.6
+
+0.8
+
+Score
+
+1.0
+
+0
+
+1.2
+
+(j)
+
+0.7
+
+0.8
+
+0.9
+
+Score
+
+1.0
+
+1.1
+
+(j)
+
+Figure 2: Nonconformity scores ROL (left) and RCL (right) on Dcal in the temperature control
+case.
+Proof 7 By Theorem 1, we know that Yk+1 ∈ Bk+1 for all times k ∈ {0, . . . , Tϕ − 1} with
+a probability of at least 1 − δ. By assumption, the optimization problem in (19) is feasible at
+each time k ∈ {0, . . . , Tϕ − 1}. Similarly to Corollaries 1 and 2, this allows us to conclude that
+Prob(µ(xk , Yk ) ≥ 0, ∀(k, π µ ) ∈ T × P ) ≥ 1 − δ for all times k ∈ T and for all predicates π µ ∈ P for
+sets (T, P ) ⊆ {0, . . . , Tϕ }×P where z̄kµ = 1 (qualitative encoding) and Prob(ρµ (S, k) ≥ r̄kµ , ∀(k, π µ ) ∈
+{1, . . . , Tϕ } × P) ≥ 1 − δ (quantitative encoding). It is then straightforward to show, following the
+same reasoning in Theorems 2 and 3 that Prob(S |= ϕ) ≥ 1 − δ if z̄0ϕ = 1 (qualitative encoding) or
+r̄0ϕ > 0 (quantitative encoding) as enforced in equation (19d).
+
+5
+
+Case studies
+
+In this section, we illustrate our control method on two case studies. All simulations are conducted
+in Python 3 and we use SCIP [69] to solve the optimization problem. Our implementations are
+available at https://github.com/SAIDS-Lab/STL-Synthesis-among-Uncontrollable-Agents,
+where more details can be found.
+
+5.1
+
+Building temperature control
+
+We consider the temperature control of a public space in a hall with floor plan shown in Figure 1.
+Specifically, we can control the temperature of Room 1, which is the public space, while Rooms 2
+and 3 are uncontrollable for us, e.g., these may be meeting rooms where the temperature can only
+be adjusted manually. Formally, the dynamics of the system are given as
+xk+1 = xk + τs (αe (Te − xk ) + αH (Th − xk )uk ),
+where the state xk ∈ X = [0, 45] denotes the temperature of the public space at time k, the control
+input uk ∈ U = [0, 1] is the ratio of the heater valve, τs is the sampling time, Th = 55◦ C is the
+14
+
+150
+125
+100
+75
+50
+25
+0
+
+Empirical Coverage of (4)
+
+Frequency
+
+Frequency
+
+150 Empirical Coverage of (3)
+125
+100
+75
+50
+25
+0 0.6
+0.7
+0.8
+0.9
+1.0
+
+Percentage
+
+0.7
+
+0.8
+
+0.9
+
+Percentage
+
+1.0
+
+(j)
+
+(j)
+
+Figure 3: Empirical validation results about the coverage of ROL ≤ COL (left) and RCL ≤ CCL
+(right) in the temperature control case.
+open-loop results
+
+28
+26
+24
+22
+20
+18
+16
+14
+0
+
+10
+
+20
+
+28
+26
+24
+22
+20
+18
+16
+14
+30
+
+closed-loop results (k=8)
+
+0
+
+10
+
+20
+
+30
+
+28
+26
+24
+22
+20
+18
+16
+14
+
+closed-loop results (k=16) 28 closed-loop results (k=26)
+26
+24
+22
+20
+18
+16
+14
+0
+
+10
+
+20
+
+30
+
+0
+
+10
+
+20
+
+Predicted region of Y1
+Predicted region of Y2
+Known states of x
+Known states of Y1
+Known states of Y2
+predicted states of x
+Predicted states of Y1
+Predicted states of Y2
+
+30
+
+Figure 4: The result of the temperature control of the first case study.
+heater temperature, Te = 5◦ C is the outside temperature, and αe = 0.06 and αH = 0.08 are heat
+exchange coefficients. The initial state is x0 = 5. The model is adopted from [40].
+System Specification: The task is to ensure that the difference between the temperatures in
+the public space and the two meeting rooms is bounded, e.g., such that during transition between
+rooms people feel comfortable. Let Yr2 and Yr3 denote the uncontrollable random variables describing the temperatures of Rooms 2 and 3. In particular, we require that, if the difference between x
+and the temperatures of Yr2 or Yr3 is larger than the threshold 5◦ C, then this difference should go
+back below the threshold of 5◦ C within the next 4 minutes. We set the sampling time to be τs = 2
+minutes, and we describe the task as follows:
+
+
+ϕ := G[1,60] x−Yr2 ≥ 5 ∨ x−Yr2 ≤ −5 ∨ x−Yr3 ≥ 5 ∨ x−Yr3 ≤ −5
+
+=⇒ F[0,2] x−Yr2 ≤ 5 ∧ x−Yr2 ≥ −5 ∧ x−Yr3 ≤ 5 ∧ x−Yr3 ≥ −5 .
+In this case, we set the failure probability to be 15%, i.e.,
+cost function is set to
+P62δ := 0.15. The
+2
+be the sum of squares of temperature differences as J := k=1 (x − Yr2 ) + (x − Yr3 )2 .
+Behavior of uncontrollable rooms: The group of people will adjust the temperature in
+the rooms based on their individual temperature preferences when they enter the meeting room.
+We assume the temperature variation in Yr1 and Yr2 generated by this adjustment is described by
+Newton’s Law of Cooling [70].
+Data Collection: We collected 2000 trajectories of temperature trajectories for Rooms 2 and
+3 – generated as described before. We split them into training (used for the trajectory predictor), calibration (used for conformal prediction), and test (used for validation) datasets with sizes
+|Dtrain | = 500, |Dcal | = 500 and |Dtest | = 1000, respectively. From the training data Dtrain , we
+train the long-short-term memory (LSTM) network to make predictions about the room temperature. We note that we warm-start the LSTM at time k = 0 with data, e.g., the LSTM is fed with
+15
+
+ROL Nonconformity Scores
+COL
+
+20
+
+RCL Nonconformity Scores
+CCL
+
+15
+
+Frequency
+
+Frequency
+
+15
+10
+
+10
+
+5
+00.2 0.4 0.6 0.8 1.0 1.2
+
+0 0.4
+
+Score
+(j)
+
+5
+0.6
+
+0.8
+
+1.0
+
+Score
+
+1.2
+
+1.4
+
+(j)
+
+Figure 5: Nonconformity scores ROL (left) and RCL (right) on Dcal in the robot motion planning
+case.
+past information y−6 , . . . , y−1 .
+Multi-agent prediction regions.
+Fig. 2 shows histograms of the nonconformity scores
+(j)
+(j)
+ROL and RCL evaluated on Dcal . From these histograms of nonconformity scores, we compute
+COL := 0.941 and CCL := 0.968 according to Theorem 1. Next, we empirically validate the
+correctness of the prediction regions by checking whether or not (3) and (4) hold. We perform
+the following two experiments 1000 times each. In the first experiment, we randomly sample 50
+calibration trajectories from Dcal and 50 test trajectories from Dtest . Then, we construct COL
+and CCL from the 50 calibration trajectories and compute the ratio of how many of the 50 test
+(j)
+(j)
+trajectories satisfy ROL ≤ COL and RCL ≤ CCL , respectively. Fig. 3 shows the histogram over these
+ratios, and we can observe that the result achieves the desired coverage 1 − δ = 0.85. In the second
+experiment, we randomly sample 50 calibration trajectories from Dcal and 1 test trajectories from
+Dtest . Then, we construct COL and CCL from the 50 calibration trajectories and check whether or
+(j)
+(j)
+not the sampled test data satisfies ROL ≤ COL and RCL ≤ CCL , respectively. We find a ratio of
+(j)
+(j)
+0.867 for ROL ≤ COL and a ratio of 0.869 for RCL ≤ CCL , respectively, which further empirically
+confirms (3) and (4). For one of these test trajectories, Fig. 4 shows the prediction regions defined
+by Ŷτ |k and Cτ |k for τ > k where k = 0, k = 8, k = 16 and k = 26 from the left to the right
+respectively.
+Predictive control synthesis. Fig. 4 shows the result of the proposed control framework.
+Fig. 4(a) specifically presents the result of the open loop controller where the predict regions are
+large for large τ while Figs. 4(b)(c)(d) present the result of the closed loop controller at times
+k = 8, 16, 26, respectively.
+
+5.2
+
+Robot motion planning
+
+We consider the planar motion of a single robot (denoted by R1 ) with double integrator dynamics,
+where the system model and temporal logic task are similar to those in [71,72]. The system model,
+with a sampling period of 1 second, is described as
+
+
+
+
+1 1 0 0
+0.5 0
+0 1 0 0
+
+0
+ xk +  1
+
+xk+1 = 
+0 0 1 1
+ 0 0.5 uk ,
+0 0 0 1
+0
+1
+where the state xk = [p1x vx1 p1y vy1 ]⊤ denotes the x-position, x-velocity, y-position and y-velocity, and
+where the control input uk = [ux uy ]T denotes the x-acceleration and y-acceleration, respectively.
+16
+
+Empirical Coverage of (3)
+
+200
+
+200
+150
+
+Frequency
+
+Frequency
+
+150
+
+Empirical Coverage of (4)
+
+100
+
+100
+
+50
+0
+
+0.8
+
+0.9
+
+0
+
+1.0
+
+Percentage
+
+50
+0.7
+
+0.8
+
+0.9
+
+1.0
+
+Percentage
+(j)
+
+(j)
+
+Figure 6: Empirical validation results about the coverage of ROL ≤ COL (left) and RCL ≤ CCL
+(right) in the robot motion planning case.
+open-loop results
+
+10
+
+closed-loop results (k=6)
+
+10
+
+10
+
+closed-loop results (k=12)
+
+10
+
+8
+
+8
+
+8
+
+8
+
+6
+
+6
+
+6
+
+6
+
+4
+
+4
+
+4
+
+4
+
+2
+
+2
+
+2
+
+2
+
+0
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10
+
+0
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10
+
+0
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10
+
+0
+
+closed-loop results (k=18)
+Predicted regions of Y
+Known states of x
+Predicted states of x
+Known states of Y
+Predicted states of Y
+0
+
+2
+
+4
+
+6
+
+8
+
+10
+
+Figure 7: The result of the robot motion planning of the second case study.
+The physical constraints are x ∈ X = [0, 10] × [−1.5, 1.5] × [0, 10] × [−1.5, 1.5] and u ∈ U = [−1, 1] ×
+[−1, 1]. The initial state is x0 = [1, 0, 1, 0]⊤ . Furthermore, we have one more uncontrollable
+agent (denoted by R2 ). We denote its state as Yk = [Px2 Py2 ]⊤ and then define the joint state as
+sk = [p1x vx1 p1y vy1 Px2 Py2 ]⊤ . In this case, R1 is controllable and R2 is uncontrollable.
+System Specification: The objective of the two robots is to visit specific regions to perform
+specific tasks, such as collecting packages and transporting them to a final destination. For this
+collaborative task, R2 is the leader and R1 should follow R2 . Specifically, R2 should arrive and stay
+in the left blue region and top blue region, as shown in the Fig. 7, within the time intervals [4, 6]
+and [9, 13], respectively. After that, starting from a certain time instant between the time interval
+[16, 18], R1 and R2 should stay in bottom right red and blue regions respectively for at least 2 time
+instants. During the task execution, the distances between the two agents should be at most D
+meters such that the two robots can communicate or perform collaborative tasks. Furthermore,
+the two robots should always avoid the obstacles (grey shaded areas). In particular, such a task
+can be described by the following formula:
+ϕ := G[4,6] π µ1 ∧ G[9,13] π µ2 ∧ F[16,18] G[0,2] (π µ3 ∧ π µ4 ) ∧ G[0,20] (π µclose ∧ π µobs1 ∧ π µobs2 ),
+where µ1 := min(Px2 , 2 − Px2 , Py2 − 4, 6 − Py2 ), µ2 := min(Px2 − 3.5, 6.5 − Px2 , Py2 − 8, 10 − Py2 ),
+µ3 := min(Px2 − 8.5, 10 − Px2 , Py2 , 2 − Py2 ) and µ4 := min(p1x − 7, 8.5 − p1x , p1y , 2 − Py1 ) represent the
+tasks for R2 in the left blue region, R2 in the top blue region, R2 in the bottom right blue region, and
+R1 in the bottom red region, respectively. Here, µclose := D −min(Px2 −p1x , p1x −Px2 , Py2 −p1y , p1y −Py2 )
+is the predicate regarding the distance requirement between the two robots where we set D = 2.
+The predicates µobs1 := min(max(1.6 − p1x , p1x − 2.6, 2 − p1y , p1y − 3), max(8.3 − p1x , p1x − 9.3, 6.5 −
+p1y , p1y − 7.5), max(5.7 − p1x , p1x − 6.7, 2.7 − p1y , p1y − 3.7)) and µobs2 := min(max(1.6 − Px2 , Px2 − 2.6, 2 −
+Py2 , Py2 − 3), max(8.3 − Px2 , Px2 − 9.3, 6.5 − Py2 , Py2 − 7.5), max(5.7 − Px2 , Px2 − 6.7, 2.7 − Py2 , Py2 − 3.7))
+17
+
+describe the tasks for obstacle avoidance. From an individual robot perspective, we can decompose
+ϕ into two task for each of the two robots as follows
+ϕR1 := F[16,18] G[0,2] π µ4 ∧ G[0,20] (π µclose ∧ π µobs1 ),
+ϕR2 := G[4,6] π µ1 ∧ G[9,13] π µ2 ∧ F[16,18] G[0,2] π µ3 ∧ G[0,20] π µobs2 .
+As R2 will lead the task, its behavior will not be influenced by R1. On the other hand, R1 is
+responsible for the task µclose which means it should always track the behavior of R2 . Regarding
+the execution of the task, we only enforce R1 to achieve ϕR1 instead of ϕ, which makes sense in the
+leader-follower setting of this case study.
+Motion of uncontrollable agent. The motion of the uncontrollable agent R2 is described
+as follows. We set its dynamical system as yk+1 = f (yk , uyk ) + ωk where f (yk , uyk ) describes the same
+double integrator dynamics as for R1 , and ωk ∈ W is the uniformly distributed disturbance from
+the set W = ([−0.15, 0.15] × [0, 0])2 . We compute an closed-loop control sequence for R2 under the
+specification ϕR2 using a standard MIP encoding [27].
+Data collection. We collected 2000 trajectories of the uncontrollable agent. We split the data
+into training, calibration, and test datasets with sizes |Dtrain | = 500, |Dcal | = 500 and |Dtest | =
+1000, respectively. We again trained an LSTM on Dtrain for trajectory prediction.
+(j)
+(j)
+Prediction regions.
+Fig. 5 shows histograms of the nonconformity scores ROL and RCL
+evaluated on Dcal . Based on these nonconformity scores, we have that COL = 0.891 and CCL =
+0.954 by using δ = 0.1. Next, we empirically validate the correctness of the prediction regions by
+checking whether or not (3) and (4) hold on Dtest by the same two experiments as the temperature
+control case. Fig. 6 shows the histogram over the result of the ratios in the first experiment, and
+we can observe that the result achieves the desired coverage 1 − δ = 0.9. In the second experiment,
+(j)
+(j)
+we obtain a ratio of 0.916 for ROL ≤ COL and a ratio of 0.904 for RCL ≤ CCL , respectively, which
+also empirically confirms (3) and (4). For one of these test trajectories, Fig. 7 shows the prediction
+regions defined by Ŷτ |k and Cτ |k for τ > k where k = 0, k = 6, k = 12 and k = 18, respectively.
+Predictive control synthesis. Fig. 7 shows the result of the proposed control framework,
+where we can see that robot R1 will use the prediction regions of R2 to compute a control input that
+results in task satisfaction. Fig. 7(a) specifically presents the result of the open loop controller while
+Figs. 4(b)(c)(d) present the result of the closed loop controller at times k = 6, 12, 18, respectively.
+
+6
+
+Conclusion
+
+In this paper, we presented a control framework for signal temporal logic (STL) control synthesis
+where the STL specification is defined over the dynamical system and uncontrollable dynamic
+agents. We use trajectory predictors and conformal prediction to provide prediction regions for the
+uncontrollable agents that are valid with high probability. Then, we formulated predictive control
+laws that consider the worst case realization of the uncontrollable agents within the prediction
+region. Specifically, we proposed a mixed integer program (MIP) that results in the probabilistic
+satisfaction of the STL specification. Finally, we presented an equivalent MIP program based on
+the KKT conditions of the original MIP program to obtain more efficient solutions. We provided
+two case studies for temperature control and robot motion planning, and we demonstrated the
+correctness and efficiency of our control framework.
+
+18
+
+References
+[1] M. Guo and D. Dimarogonas, “Multi-agent plan reconfiguration under local LTL specifications,” The International Journal of Robotics Research, vol. 34, no. 2, pp. 218–235, 2015.
+[2] M. Kloetzer and C. Belta, “Automatic deployment of distributed teams of robots from temporal logic motion specifications,” IEEE Transactions on Robotics, vol. 26, no. 1, pp. 48–61,
+2009.
+[3] Y. Kantaros and M. Zavlanos, “Stylus*: A temporal logic optimal control synthesis algorithm
+for large-scale multi-robot systems,” The International Journal of Robotics Research, vol. 39,
+no. 7, pp. 812–836, 2020.
+[4] D. Sun, J. Chen, S. Mitra, and C. Fan, “Multi-agent motion planning from signal temporal
+logic specifications,” IEEE Robotics and Automation Letters, vol. 7, no. 2, pp. 3451–3458,
+2022.
+[5] Y. Kantaros, M. Guo, and M. Zavlanos, “Temporal logic task planning and intermittent connectivity control of mobile robot networks,” IEEE Transactions on Automatic Control, vol. 64,
+no. 10, pp. 4105–4120, 2019.
+[6] A. Büyükkoçak, D. Aksaray, and Y. Yazicioglu, “Distributed planning of multi-agent systems
+with coupled temporal logic specifications,” in AIAA Scitech 2021 Forum, p. 1123, 2021.
+[7] L. Lindemann and D. Dimarogonas, “Control barrier functions for multi-agent systems under conflicting local signal temporal logic tasks,” IEEE control systems letters, vol. 3, no. 3,
+pp. 757–762, 2019.
+[8] M. Srinivasan, S. Coogan, and M. Egerstedt, “Control of multi-agent systems with finite time
+control barrier certificates and temporal logic,” in 2018 IEEE Conference on Decision and
+Control (CDC), pp. 1991–1996, IEEE, 2018.
+[9] S. Kalluraya, G. Pappas, and Y. Kantaros, “Multi-robot mission planning in dynamic semantic
+environments,” in 2023 IEEE International Conference on Robotics and Automation (ICRA),
+pp. 1630–1637, IEEE, 2023.
+[10] B. Hoxha and G. Fainekos, “Planning in dynamic environments through temporal logic monitoring.,” in AAAI Workshop: Planning for Hybrid Systems, vol. 16, p. 12, 2016.
+[11] Y. Li, E. Shahrivar, and J. Liu, “Safe linear temporal logic motion planning in dynamic
+environments,” in 2021 IEEE/RSJ International Conference on Intelligent Robots and Systems
+(IROS), pp. 9818–9825, IEEE, 2021.
+[12] M. Kloetzer and C. Mahulea, “LTL planning in dynamic environments,” IFAC Proceedings
+Volumes, vol. 45, no. 29, pp. 294–300, 2012.
+[13] A. Ulusoy and C. Belta, “Receding horizon temporal logic control in dynamic environments,”
+The International Journal of Robotics Research, vol. 33, no. 12, pp. 1593–1607, 2014.
+[14] A. Ayala, S. Andersson, and C. Belta, “Temporal logic control in dynamic environments
+with probabilistic satisfaction guarantees,” in 2011 IEEE/RSJ International Conference on
+Intelligent Robots and Systems, pp. 3108–3113, IEEE, 2011.
+
+19
+
+[15] P. Purohit and I. Saha, “Dt: Temporal logic path planning in a dynamic environment,” in 2021
+IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), pp. 3627–
+3634, IEEE, 2021.
+[16] L. Lindemann, M. Cleaveland, G. Shim, and G. Pappas, “Safe planning in dynamic environments using conformal prediction,” IEEE Robotics and Automation Letters, 2023.
+[17] A. Dixit, L. Lindemann, S. Wei, M. Cleaveland, G. Pappas, and J. Burdick, “Adaptive conformal prediction for motion planning among dynamic agents,” in Learning for Dynamics and
+Control Conference, pp. 300–314, PMLR, 2023.
+[18] S. Tonkens, S. Sun, R. Yu, and S. Herbert, “Scalable safe long-horizon planning in dynamic
+environments leveraging conformal prediction and temporal correlations,”
+[19] A. Muthali, H. Shen, S. Deglurkar, M. Lim, R. Roelofs, A. Faust, and C. Tomlin, “Multi-agent
+reachability calibration with conformal prediction,” arXiv preprint arXiv:2304.00432, 2023.
+[20] O. Maler and D. Nickovic, “Monitoring temporal properties of continuous signals,” in Conference on Formal Techniques, Modelling and Analysis of Timed and Fault Tolerant Systems,
+pp. 152–166, Springer, 2004.
+[21] G. Fainekos and G. Pappas, “Robustness of temporal logic specifications for continuous-time
+signals,” Theoretical Computer Science, vol. 410, no. 42, pp. 4262–4291, 2009.
+[22] A. Donzé and O. Maler, “Robust satisfaction of temporal logic over real-valued signals,” in
+International Conference on Formal Modeling and Analysis of Timed Systems, pp. 92–106,
+Springer, 2010.
+[23] Y. V. Pant, H. A., and R. Mangharam, “Smooth operator: Control using the smooth robustness
+of temporal logic,” in 2017 IEEE Conference on Control Technology and Applications (CCTA),
+pp. 1235–1240, IEEE, 2017.
+[24] Y. Pant, H. Abbas, R. Quaye, and R. Mangharam, “Fly-by-logic: Control of multi-drone
+fleets with temporal logic objectives,” in 2018 ACM/IEEE 9th International Conference on
+Cyber-Physical Systems (ICCPS), pp. 186–197, IEEE, 2018.
+[25] N. Mehdipour, C. Vasile, and C. Belta, “Arithmetic-geometric mean robustness for control
+from signal temporal logic specifications,” in American Control Conference, pp. 1690–1695,
+2019.
+[26] Y. Gilpin, V. Kurtz, and H. Lin, “A smooth robustness measure of signal temporal logic for
+symbolic control,” IEEE Control Systems Letters, vol. 5, no. 1, pp. 241–246, 2020.
+[27] V. Raman, A. Donzé, M. Maasoumy, R. Murray, A. Sangiovanni-Vincentelli, and S. Seshia,
+“Model predictive control with signal temporal logic specifications,” in 53rd IEEE Conference
+on Decision and Control, pp. 81–87, IEEE, 2014.
+[28] S. Sadraddini and C. Belta, “Formal synthesis of control strategies for positive monotone
+systems,” IEEE Transactions on Automatic Control, vol. 64, no. 2, pp. 480–495, 2018.
+[29] V. Kurtz and H. Lin, “Mixed-integer programming for signal temporal logic with fewer binary
+variables,” IEEE Control Systems Letters, vol. 6, pp. 2635–2640, 2022.
+
+20
+
+[30] X. Yu, C. Wang, D. Yuan, S. Li, and X. Yin, “Model predictive control for signal temporal
+logic specifications with time interval decomposition,” arXiv preprint arXiv:2211.08031, 2022.
+[31] L. Lindemann and D. Dimarogonas, “Control barrier functions for signal temporal logic tasks,”
+IEEE control systems letters, vol. 3, no. 1, pp. 96–101, 2018.
+[32] M. Charitidou and D. Dimarogonas, “Receding horizon control with online barrier function
+design under signal temporal logic specifications,” IEEE Transactions on Automatic Control,
+2022.
+[33] W. Xiao, C. Belta, and C. Cassandras, “High order control lyapunov-barrier functions for
+temporal logic specifications,” in 2021 American Control Conference (ACC), pp. 4886–4891,
+IEEE, 2021.
+[34] S. Farahani, R. Majumdar, V. Prabhu, and S. Soudjani, “Shrinking horizon model predictive
+control with chance-constrained signal temporal logic specifications,” in American Control
+Conference, pp. 1740–1746, 2017.
+[35] S. Jha, V. Raman, D. Sadigh, and S. Seshia, “Safe autonomy under perception uncertainty
+using chance-constrained temporal logic,” Journal of Automated Reasoning, vol. 60, pp. 43–62,
+2018.
+[36] D. Sadigh and A. Kapoor, “Safe control under uncertainty with probabilistic signal temporal
+logic,” in Proceedings of Robotics: Science and Systems XII, 2016.
+[37] R. Ilyes, Q. Ho, and M. Lahijanian, “Stochastic robustness interval for motion planning with
+signal temporal logic,” in 2023 IEEE International Conference on Robotics and Automation
+(ICRA), pp. 5716–5722, IEEE, 2023.
+[38] C. Vasile, V. Raman, and S. Karaman, “Sampling-based synthesis of maximally-satisfying
+controllers for temporal logic specifications,” in 2017 IEEE/RSJ International Conference on
+Intelligent Robots and Systems (IROS), pp. 3840–3847, IEEE, 2017.
+[39] G. Scher, S. Sadraddini, A. Yadin, and H. Kress-Gazit, “Ensuring reliable robot task
+performance through probabilistic rare-event verification and synthesis,” arXiv preprint
+arXiv:2304.14886, 2023.
+[40] P. Jagtap, S. Soudjani, and M. Zamani, “Formal synthesis of stochastic systems via control
+barrier certificates,” IEEE Transactions on Automatic Control, vol. 66, no. 7, pp. 3097–3110,
+2020.
+[41] S. Safaoui, L. Lindemann, D. Dimarogonas, I. Shames, and T. Summers, “Control design for
+risk-based signal temporal logic specifications,” IEEE Control Systems Letters, vol. 4, no. 4,
+pp. 1000–1005, 2020.
+[42] P. Akella, A. Dixit, M. Ahmadi, J. Burdick, and A. Ames, “Sample-based bounds for
+coherent risk measures: Applications to policy synthesis and verification,” arXiv preprint
+arXiv:2204.09833, 2022.
+[43] N. Hashemi, X. Qin, J. Deshmukh, G. Fainekos, B. Hoxha, D. Prokhorov, and T. Yamaguchi,
+“Risk-awareness in learning neural controllers for temporal logic objectives,” in 2023 American
+Control Conference (ACC), pp. 4096–4103, IEEE, 2023.
+21
+
+[44] L. Lindemann, G. Pappas, and D. Dimarogonas, “Reactive and risk-aware control for signal
+temporal logic,” IEEE Transactions on Automatic Control, vol. 67, no. 10, pp. 5262–5277,
+2021.
+[45] D. Gundana and H. Kress-Gazit, “Event-based signal temporal logic synthesis for single and
+multi-robot tasks,” IEEE Robotics and Automation Letters, vol. 6, no. 2, pp. 3687–3694, 2021.
+[46] D. Gundana and H. Kress-Gazit, “Event-based signal temporal logic tasks: Execution and
+feedback in complex environments,” IEEE Robotics and Automation Letters, vol. 7, no. 4,
+pp. 10001–10008, 2022.
+[47] V. Raman, A. Donzé, D. Sadigh, R. Murray, and S. Seshia, “Reactive synthesis from signal
+temporal logic specifications,” in Proceedings of the 18th international conference on hybrid
+systems: Computation and control, pp. 239–248, 2015.
+[48] G. Shafer and V. Vovk, “A tutorial on conformal prediction.,” Journal of Machine Learning
+Research, vol. 9, no. 3, 2008.
+[49] V. Vovk, A. Gammerman, and G. Shafer, Algorithmic learning in a random world, vol. 29.
+Springer, 2005.
+[50] A. Angelopoulos and S. Bates, “A gentle introduction to conformal prediction and distributionfree uncertainty quantification,” arXiv preprint arXiv:2107.07511, 2021.
+[51] M. Fontana, G. Zeni, and S. Vantini, “Conformal prediction: a unified review of theory and
+new challenges,” Bernoulli, vol. 29, no. 1, pp. 1–23, 2023.
+[52] S. Yang, G. Pappas, R. Mangharam, and L. Lindemann, “Safe perception-based control under
+stochastic sensor uncertainty using conformal prediction,” arXiv preprint arXiv:2304.00194,
+2023.
+[53] S. Su, S. Han, Y. Li, Z. Zhang, C. Feng, C. Ding, and F. Miao, “Collaborative multi-object
+tracking with conformal uncertainty propagation,” arXiv preprint arXiv:2303.14346, 2023.
+[54] M. Cauchois, S. Gupta, A. Ali, and J. Duchi, “Robust validation: Confident predictions even
+when distributions shift,” arXiv preprint arXiv:2008.04267, 2020.
+[55] I. Gibbs and E. Candes, “Adaptive conformal inference under distribution shift,” Advances in
+Neural Information Processing Systems, vol. 34, pp. 1660–1672, 2021.
+[56] A. Donzé and O. Maler, “Robust satisfaction of temporal logic over real-valued signals,” in
+Formal Modeling and Analysis of Timed Systems, pp. 92–106, 2010.
+[57] A. Dokhanchi, B. Hoxha, and G. Fainekos, “On-line monitoring for temporal logic robustness,”
+in Runtime Verification, pp. 231–246, Springer, 2014.
+[58] S. Sadraddini and C. Belta, “Robust temporal logic model predictive control,” in Annual
+Allerton Conference on Communication, Control, and Computing, pp. 772–779, IEEE, 2015.
+[59] H. Salehinejad, S. Sankar, J. Barfett, E. Colak, and S. Valaee, “Recent advances in recurrent
+neural networks,” arXiv preprint arXiv:1801.01078, 2017.
+[60] Y. Yu, X. Si, C. Hu, and J. Zhang, “A review of recurrent neural networks: Lstm cells and
+network architectures,” Neural computation, vol. 31, no. 7, pp. 1235–1270, 2019.
+22
+
+[61] K. Han, A. Xiao, E. Wu, J. Guo, C. Xu, and Y. Wang, “Transformer in transformer,” Advances
+in Neural Information Processing Systems, vol. 34, pp. 15908–15919, 2021.
+[62] R. Tibshirani, R. Foygel Barber, E. Candes, and A. Ramdas, “Conformal prediction under
+covariate shift,” Advances in neural information processing systems, vol. 32, 2019.
+[63] K. Stankeviciute, A. M Alaa, and M. van der Schaar, “Conformal time-series forecasting,”
+Advances in neural information processing systems, vol. 34, pp. 6216–6228, 2021.
+[64] M. Cleaveland, I. Lee, G. Pappas, and L. Lindemann, “Conformal prediction regions for time
+series using linear complementarity programming,” arXiv preprint arXiv:2304.01075, 2023.
+[65] I. Gibbs, J. Cherian, and E. Candès, “Conformal prediction with conditional guarantees,”
+arXiv preprint arXiv:2305.12616, 2023.
+[66] A. Bemporad and M. Morari, “Control of systems integrating logic, dynamics, and constraints,” Automatica, vol. 35, no. 3, pp. 407–427, 1999.
+[67] S. P. Boyd and L. Vandenberghe, Convex optimization. Cambridge university press, 2004.
+[68] L. Lindemann, X. Qin, J. V. Deshmukh, and G. Pappas, “Conformal prediction for STL runtime verification,” in Proceedings of the ACM/IEEE 14th International Conference on CyberPhysical Systems (with CPS-IoT Week 2023), pp. 142–153, 2023.
+[69] K. Bestuzheva, M. Besançon, W. Chen, A. Chmiela, T. Donkiewicz, J. van Doornmalen,
+L. Eifler, O. Gaul, G. Gamrath, A. Gleixner, et al., “Enabling research through the scip
+optimization suite 8.0,” ACM Transactions on Mathematical Software, vol. 49, no. 2, pp. 1–21,
+2023.
+[70] M. Vollmer, “Newton’s law of cooling revisited,” European Journal of Physics, vol. 30, no. 5,
+p. 1063, 2009.
+[71] L. Lindemann and D. Dimarogonas, “Robust motion planning employing signal temporal
+logic,” in American Control Conference, pp. 2950–2955, IEEE, 2017.
+[72] X. Yu, X. Yin, and L. Lindemann, “Efficient STL control synthesis under asynchronous temporal robustness constraints,” arXiv preprint arXiv:2307.12855, 2023.
+
+23
+
+

@@ -1,0 +1,1066 @@
+A Structural-Clustering Based Active Learning
+for Graph Neural Networks
+Ricky Maulana Fajri1 , Yulong Pei1 , Lu Yin1,2 , and Mykola Pechenizkiy1
+
+arXiv:2312.04307v1 [cs.LG] 7 Dec 2023
+
+1
+
+Eindhoven University of Technology, The Netherlands
+{r.m.fajri,y.pei.1,mykola.pechenizkiy}@tue.nl
+2
+The University of Aberdeen, UK
+lu.yin@abdn.ac.uk
+
+Abstract. In active learning for graph-structured data, Graph Neural Networks (GNNs) have shown effectiveness. However, a common
+challenge in these applications is the underutilization of crucial structural information. To address this problem, we propose the StructuralClustering PageRank method for improved Active learning (SPA) specifically designed for graph-structured data. SPA integrates community detection using the SCAN algorithm with the PageRank scoring method
+for efficient and informative sample selection. SPA prioritizes nodes that
+are not only informative but also central in structure. Through extensive experiments, SPA demonstrates higher accuracy and macro-F1 score
+over existing methods across different annotation budgets and achieves
+significant reductions in query time. In addition, the proposed method
+only adds two hyperparameters, ϵ and µ in the algorithm to finely tune
+the balance between structural learning and node selection. This simplicity is a key advantage in active learning scenarios, where extensive
+hyperparameter tuning is often impractical.
+Keywords: Active Learning · Structural-Clustering · PageRank · Graph
+Neural Network
+
+1
+
+Introduction
+
+Graph Neural Networks (GNNs) [9,16] have emerged as a powerful tool for learning from graph-structured data, effectively capturing complex relationships and
+interdependencies between nodes. This progress has largely impacted areas where
+data inherently take the form of graphs, including social networks, biological networks, and communication systems. Concurrently, active learning [15], a subset
+of machine learning, has gained traction for its ability to efficiently utilize limited
+labeled data. In scenarios where labeling data is expensive or time-consuming,
+active learning strategically selects the most informative samples for labeling.
+This approach aims to maximize model prediction with a minimal amount of
+labeled data. The integration of active learning with GNNs presents a promising
+opportunity to enhance learning efficiency in graph-based learning tasks. Recent
+approaches in active learning, particularly in the context of graph-structured
+data [6,8,16], have focused on various strategies to identify the most informative nodes. These methods often revolve around uncertainty sampling, diversity
+
+2
+
+Fajri et al.
+
+sampling, or a combination of both, aiming to select nodes that are either uncertain under the current model or are representative of the underlying data
+distribution. This integration has shown significant potential in improving the
+efficiency of GNNs, especially in semi-supervised learning settings where labeled
+data are scarce. However, these methods primarily leverage node features or embeddings, often overlooking the rich structural information inherent in graphs.
+Thus, despite the advancements, there remains a notable gap in research concerning the optimal exploitation of graph topology in active learning for GNNs.
+This gap highlights the need for novel active learning strategies that can harness both the feature and structural information in graph-structured data. To
+address this research gap, we propose a novel method that integrates community detection with active learning in GNNs. The proposed method employs the
+SCAN algorithm [17], recognized for effective community detection, alongside
+the PageRank algorithm [12] for node selection. By focusing on the community
+structures identified by SCAN and the node relevance ascertained by PageRank,
+we aim to select nodes that are informative in terms of features and pivotal in the
+graph’s structure. In essence, the synergy of the SCAN algorithm and PageRank enables the selection of samples that are meaningful. Specifically, SCAN
+identifies local structures, whereas PageRank sheds light on the broader, global
+structures of graph data. Through extensive experiments, we demonstrate that
+the proposed method outperforms existing active learning methods for GNNs
+for a wide range of annotation budgets. Furthermore, the experiment on computational complexity indicates that the proposed approach leads to a reduction
+in query time. Thus, we summarize the contributions of the study as follows:
+– We propose a novel active learning method for Graph Neural Networks
+(GNNs) that integrates the SCAN method[17] for community detection with
+the PageRank algorithm [12].
+– Through extensive experiments, we demonstrate that the proposed method
+substantially outperforms existing active learning methods in GNNs across
+various annotation budgets.
+– Additionally, the proposed method shows a notable reduction in computational complexity compared to recent active learning approaches for GNNs
+[10], which is crucial in real active learning implementation where the waiting
+time during the annotation process is one of the important factors.
+
+2
+
+Related Work
+
+Active learning is a field in machine learning that focuses on reducing the cost
+of annotation while keeping the model performance stable and it has been comprehensively studied by [15]. In this section, we focus on active learning for
+graph-structured data. Early works in active learning for graph-structured data
+primarily focused on leveraging graph topology for selecting informative samples
+[1,6,8]. These methods typically relied on measures like node centrality, degree,
+and cluster-based sampling, under the assumption that nodes with higher centrality or those bridging clusters are more informative. For example, AGE [3]
+
+A Structural-Clustering Based Active Learning for Graph Neural Networks
+
+3
+
+evaluates the informativeness of nodes by linearly combining centrality, density,
+and uncertainty. Furthermore, ARNMAB extends this approach by dynamically
+learning the weights with a multi-armed bandit mechanism and maximizing the
+surrogate reward [5]. The other type of approach in active learning for graph
+neural networks is implementing partition or clustering as part of community detection. For example, FeatProp [16] combines node feature propagation with KMedoids clustering for sample selection. The study was supported by a theoretical bound analysis showing an improvement in performance over other methods.
+Recently, Ma et al [10]. introduced the partition-based methods GraphPart and
+GraphPartFar, which align with active learning algorithms in GNNs by focusing
+on selecting nodes for optimal coverage of feature or representation spaces, typically through clustering algorithms. On the other hand, The proposed method
+improves the conventional community detection approach by specifically employing clustering as a community detection algorithm. The proposed method works
+by capturing the local structures of nodes through community detection, while
+the PageRank scoring assesses their global significance.
+
+3
+
+Problem Formulation
+
+3.1
+
+Node Classification on Attributed Graphs
+
+Graph theory offers a robust framework for modeling complex systems through
+structures known as attributed graphs. Specifically, an attributed graph is denoted as G = (V, E, X), where V represents the set of nodes, E ⊆ V × V denotes
+the set of edges, and X is the set of node attributes. Each node v ∈ V is associated with an attribute vector xv ∈ Rd . The adjacency matrix A ∈ {0, 1}n×n ,
+where n = |V |, encodes the connectivity between nodes, with Aij = 1 if there is
+an edge between nodes i and j, and Aij = 0 otherwise.
+Node classification in attributed graphs aims to assign labels to nodes based on
+their attributes and structural positions in the graph. This involves learning a
+function f : V → L, where L is the set of possible labels. The challenge is to
+effectively leverage the information encoded in the graph structure and node
+attributes for accurate classification.
+3.2
+
+Graph Neural Networks (GNNs)
+
+Graph Neural Networks (GNNs) are a class of neural networks designed for processing graph-structured data. They operate by aggregating information from a
+node’s neighbors to update its representation. Formally, a GNN learns a function
+f (G, X) → Y , where Y is the output matrix representing node-level predictions.
+The learning process in a GNN involves updating node representations through
+successive layers. Let H (k) be the matrix of node representations at the k-th
+layer, with H (0) = X. The update rule at each layer is given by:
+H (k+1) = σ(ÃH (k) W (k) )
+
+(1)
+
+4
+
+Fajri et al.
+
+where Ã is the normalized adjacency matrix, W (k) is the weight matrix for layer
+k, and σ is a non-linear activation function.
+The objective in training a GNN for node classification is often to minimize a loss
+function, typically the cross-entropy loss for the classification problem, defined
+as:
+X X
+L=−
+yvl log ŷvl
+(2)
+v∈VL l∈L
+
+where VL ⊆ V is the set of labeled nodes, yvl is the true label of node v for label
+l, and ŷvl is the predicted probability of node v being in class l.
+3.3
+
+Active Learning Task for Graph Neural Networks
+
+In the active learning scenario for GNNs, the objective is to select a subset of
+nodes VS ⊆ V to label that maximizes the performance of the GNN. The selection process is guided by an acquisition function A : V → R, which scores
+each unlabeled node based on its expected utility for improving the model. The
+challenge is to design A to account for both the graph structure and node features. The active learning process iteratively selects nodes, updates the model,
+and re-evaluates the remaining unlabeled nodes. In this study, we incorporate
+community detection into the active learning framework. We define a community
+structure C within the graph, and the acquisition function A is designed to preferentially select nodes that are central or informative within their communities,
+based on the hypothesis that such nodes provide more valuable information for
+the GNN model.
+
+4
+
+Proposed Method
+
+The proposed method in this study consists of two main parts: partitioning the
+graph into communities and selecting representative nodes from these communities based on their PageRank scores.
+4.1
+
+Community Detection using the SCAN Algorithm
+
+The initial phase of community detection in graphs involves partitioning the
+network into distinct communities. This task is accomplished using the SCAN
+algorithm, a method recognized for its capability to identify densely connected
+subgraphs or communities in a network. Unlike modularity-based approaches,
+the SCAN algorithm relies on structural similarity and a shared neighbor approach for community detection.
+Structural Similarity Measure. The core of the SCAN algorithm is the
+structural similarity measure between nodes, defined as follows:
+|N (i) ∩ N (j)|
+S(i, j) = p
+|N (i)| · |N (j)|
+
+(3)
+
+A Structural-Clustering Based Active Learning for Graph Neural Networks
+
+5
+
+In this equation, N (i) and N (j) represent the neighbor sets of nodes i and j,
+respectively. The measure S(i, j) quantifies the similarity based on the shared
+neighbors of the two nodes, normalized by the geometric mean of their degrees.
+Community Detection Criteria. The SCAN algorithm employs two parameters, ϵ and µ, to determine community membership. A node i is in the same
+community as node j if the following conditions are met:
+S(i, j) ≥ ϵ and |N (i) ∩ N (j)| ≥ µ
+
+(4)
+
+where ϵ is a similarity threshold and µ is the minimum number of shared neighbors required for community formation. These parameters allow the SCAN algorithm to classify nodes into clusters, hubs, or outliers, based on their structural
+roles within the network.
+4.2
+
+Node Selection Based on PageRank
+
+Upon successfully partitioning the graph into communities, the next step is to
+select representative nodes from each community. This selection is based on the
+PageRank algorithm, which assigns a numerical weighting to each node in the
+network. The weight of a node is indicative of the probability of arriving at that
+node by randomly walking through the network. The PageRank P R(u) of a node
+u is defined as:
+X P R(v)
+1−d
++d
+(5)
+P R(u) =
+N
+L(v)
+v∈B(u)
+
+where d is the damping factor, N is the total number of nodes, B(u) is the set
+of nodes that link to u, and L(v) is the number of links from node v. In the
+implementation, we use a damping factor of 0.95. For each community detected
+by the SCAN algorithm, the node with the highest PageRank score is selected. If
+the number of communities is less than the labeling budget b, additional nodes
+with the next highest PageRank scores are selected until b nodes are chosen.
+The final output is a set of b nodes, each representing its respective community,
+selected based on their significance within the network as determined by the
+PageRank algorithm.
+4.3
+
+SPA Algorithm
+
+The proposed SPA algorithm combines the strengths of the SCAN and PageRank
+algorithms. Algorithm 1 illustrates the detailed process of the proposed method
+SPA.
+
+5
+
+Experiments
+
+5.1
+
+Experiment Settings
+
+Experiments were conducted using various GNN models, including a 2-layer
+Graph Convolutional Network (GCN) [9] and a 2-layer GraphSAGE [7], both
+
+6
+
+Fajri et al.
+
+Algorithm 1: SPA Algorithm
+Require: Adjacency matrix of the graph A, damping factor α for PageRank,
+labeling budget b, clustering threshold ϵ and minimum neighbors µ
+Ensure: Sample of nodes S to be labeled
+1: Initialize S = ∅
+2: Convert adjacency matrix A to graph representation G {Community detection}
+3: Apply the SCAN algorithm to G to detect communities {C1 , C2 , . . . , Ck }
+4: for each community Ci in {C1 , C2 , . . . , Ck } do
+5:
+Calculate PageRank scores for all nodes in Ci with damping factor α
+6:
+Find node nmax in Ci with the highest PageRank score
+7:
+Add nmax to S
+8: end for
+9: if |S| < b then
+10:
+Calculate PageRank for all nodes in G \ S
+11:
+Sort nodes in G \ S by PageRank in descending order
+12:
+Add nodes from sorted list to S until |S| = b
+13: end if
+14: return S to be labeled
+
+equipped with 16 hidden neurons. These models were trained using the Adam
+optimizer, starting with a learning rate of 1×10−2 and a weight decay of 5×10−4 .
+In this study, we adopted a straightforward batch-active learning framework,
+labeling each sample within a batch, which corresponds to the defined budget
+in each experiment. The budget varies from 10 to 160 for smaller datasets and
+from 80 to 1280 for larger ones. Experiment results are presented as the mean
+of 10 independent runs, each with different random seeds. For transparency and
+reproducibility, the code is available on GitHub3 .
+5.2
+
+Dataset
+
+We conduct experiments on two standard node classification datasets: Citeseer
+and Pubmed [14]. Additionally, we use Corafull [2] and WikiCS [11] to add
+diversity of the experiments. Furthermore, to assess the proposed method’s performance on more heterophilous graphs, we experiment with the HeterophilousGraphDataset, which includes Minesweeper and Tolokers [13]. Table 1 presents
+a summary and the statistics of the datasets used in this research. We use the
+#Partitions parameter to determine the optimal number of communities in a
+graph, following the guidelines set by Ma et al. [10].
+5.3
+
+Evaluation Metrics
+
+We use fundamental metrics such as accuracy and Macro-F1 score for evaluating
+the proposed method. Accuracy is measured as the ratio of correctly predicted
+3
+
+https://github.com/rickymaulanafajri/SPA
+
+A Structural-Clustering Based Active Learning for Graph Neural Networks
+
+7
+
+Table 1: Summary of datasets
+Dataset #Nodes #Edges #Features #Classes #Partitions
+Citeseer
+3,327
+4,552
+3,703
+6
+14
+Pubmed
+19,717 44,324
+500
+3
+8
+Corafull
+19,793 126,842
+8,710
+70
+7
+WikiCS
+19,793 126,842
+8,710
+70
+7
+Minesweeper 10,000 39,402
+10
+2
+8
+Tolokers
+11,758 519,000
+10
+2
+7
+
+class to and is mathematically represented as:
+Accuracy =
+
+TP + TN
+TP + TN + FP + FN
+
+(6)
+
+where T P , T N , F P , and F N correspond to true positives, true negatives, false
+positives, and false negatives, respectively. On the other hand, the Macro-F1
+score is computed by taking the arithmetic mean of the F1 scores for each class
+independently. It is defined as:
+N
+
+Macro-F1 =
+
+1 X 2 · Precisioni · Recalli
+N i=1 Precisioni + Recalli
+
+(7)
+
+where N is the number of classes, and Precisioni and Recalli denote the precision
+and recall for each class i, respectively. The precision and recall for each class
+are defined as follows:
+T Pi
+Precisioni =
+(8)
+T Pi + F Pi
+T Pi
+Recalli =
+(9)
+T Pi + F Ni
+5.4
+
+Baselines methods
+
+We compare the proposed approach with various active learning methods, divided into two types. 1. A general active learning method which works regardless of the graph neural network architecture such as Random, Uncertainty, and
+PageRank. 2. An active learning method that is specifically designed for graphstructured data such as Featprop, Graphpart, and GraphPartFar. The query
+strategy of each method is defined as follows:
+– Random: An active learning query strategy that selects a sample at random.
+– Uncertainty [15]: Select the nodes with the highest uncertainty based on the
+prediction model.
+– PageRank [3]: query the sample from a subset of points with the highest
+PageRank centrality score.
+– FeatProp [16]: First use KMeans to cluster the aggregated node features and
+then query the node closest to the center of the clustering.
+
+8
+
+Fajri et al.
+
+– GraphPart and GraphPartFar [10]: A recent state-of-the-art method on active learning for graph structured data. GraphPart divides the graph into
+several partitions using Clauset-Newman-Moore greedy modularity maximization [4] and selects the most representative sample in each partition to
+query. GraphPartFar increases the diversity of samples by selecting nodes
+that are not too close and similar to each other.
+
+6
+
+Results
+
+6.1
+
+Experiment results of SPA on GCN
+0.8
+
+   
+
+Random
+Uncertainty
+PageRank
+FeatProp
+
+   
+
+   
+   
+  
+
+  
+
+  
+  / D E H O H G  1 R G H V
+
+ * U D S K 3 D U W
+ * U D S K 3 D U W ) D U
+ 6 3 $
+
+  
+
+   
+ 5 D Q G R P
+ 8 Q F H U W D L Q W \
+ 3 D J H 5 D Q N
+ ) H D W 3 U R S
+
+   
+   
+
+   
+
+  
+
+(a) Citeseer
+
+0.4
+
+10
+
+20
+
+40
+80
+#Labeled Nodes
+
+(d) WikiCS
+
+GraphPart
+GraphPartFar
+SPA
+
+160
+
+Accuracy
+
+Accuracy
+
+0.6
+
+Random
+Uncertainty
+PageRank
+FeatProp
+
+  
+  / D E H O H G  1 R G H V
+
+  
+
+0.2
+80
+
+   
+
+0.8
+
+0.6
+
+0.6
+
+0.2
+
+Random
+Uncertainty
+PageRank
+FeatProp
+
+80
+
+160
+
+GraphPart
+GraphPartFar
+SPA
+
+320
+640
+#Labeled Nodes
+
+(e) Minesweeper
+
+160
+
+320
+640
+#Labeled Nodes
+
+1280
+
+(c) Corafull
+
+0.8
+
+0.4
+
+GraphPart
+GraphPartFar
+SPA
+
+0.4
+
+(b) Pubmed
+
+0.8
+
+0.2
+
+  
+
+ * U D S K 3 D U W
+ * U D S K 3 D U W ) D U
+ 6 3 $
+
+1280
+
+Accuracy
+
+ 5 D Q G R P
+ 8 Q F H U W D L Q W \
+ 3 D J H 5 D Q N
+ ) H D W 3 U R S
+
+Accuracy
+
+0.6
+ $ F F X U D F \
+
+ $ F F X U D F \
+
+   
+
+0.4
+0.2 10
+
+Random
+Uncertainty
+PageRank
+FeatProp
+
+20
+
+GraphPart
+GraphPartFar
+SPA
+
+40
+80
+#Labeled Nodes
+
+160
+
+(f) Tolokers
+
+Fig. 1: Comparative Evaluation of SPA and Baseline Methods Across Multiple
+Datasets: Accuracy Versus Number of Labeled Nodes in GCN Architecture.
+
+In this study, we present the active learning outcomes of the Graph Convolutional Network (GCN) across various datasets. First, we analyze the accuracy
+score of the proposed method compared to the baseline. Figure 1 illustrates the
+comparative evaluation of the proposed and baseline methods. It is evident that
+while all methods exhibit a general trend of improved accuracy with an increased
+budget, the proposed approach consistently maintains a higher accuracy rate.
+For example, in Citeseer, Pubmed, and Corafull, the proposed method excels in
+accuracy from the smallest labeling budget to the largest one. Although, in the
+other dataset the accuracy of the proposed method only shows a marginal improvement, it is still higher compared to all the baselines. Next, we examine the
+Macro-F1 efficacy of the proposed method. The results of these experiments are
+summarized in Table 2. Notably, the SPA method demonstrates consistently high
+results across various datasets, including Citeseer, Pubmed, and Corafull. Its superiority is particularly evident in situations with diverse sample sizes. This is
+most clearly observed in the Citeseer dataset, where SPA excels within a 40-label
+
+A Structural-Clustering Based Active Learning for Graph Neural Networks
+
+9
+
+Table 2: Summary of the Macro-F1 score of the proposed approach using GCN
+architecture. The numerical values indicate the mean Macro-F1 score derived
+from 10 separate trials. The best score is in bold marker.
+Citeseer
+Pubmed
+Corafull
+40
+80
+10
+20
+40
+10
+20
+40
+37.6±6.7 48.9±5.8 49.1±11.4 55.7±10.6 69.5±6.2 23.8±2.0
+33.2±1.8 43.2±2.1
+24.2±5.7 42.8±12.5 46.0±11.5 54.7±10.4 64.8±9.2 17.3±1.7
+28.1±2.1 39.1±1.2
+36.3±7.8 49.6±7.5 45.3±8.5 55.7±13.0 66.3±8.6 22.8±1.4
+33.4±1.1 43.7±0.5
+42.9±4.5 53.7±4.5 59.1±5.5 65.4±5.2 75.1±2.8 29.6±1.0
+37.6±0.8 46.7±0.8
+45.4±4.1 59.0±2.0 63.0±0.7 73.2±1.0 74.0±1.3 31.0±1.3 41.2±1.4 48.6±0.5
+55.2±2.4 57.5±2.0 75.7±0.3 67.5±0.5 76.2±0.9 28.0±1.2
+38.4±0.6 44.3±0.7
+57.1±0.1 60.8±2.4 63.1±0.1 75.1±0.4 77.5±3.2 31.3±0.2 40.4±0.2 47.7±0.2
+WikiCS
+Minesweeper
+Tolokers
+Baselines
+20
+40
+80
+160
+320
+640
+20
+40
+80
+Random
+30.2 ± 2.1 51.3 ± 4.5 50.2±1.2 46.7±6.7 44.4±6.5 47.1±4.5 55.2±8.9 52.4±0.66 55.4±0.30
+Uncertainty 26.4±1.2 29.3±0.7 51.8± 2.4 47.1±0.55 46.0±1.41 47.3±0.02 52.4±0.77 52.8±0.93 54.3±0.81
+PageRank
+35.4±4.3 35.7±0.8 50.4±5.4 54.6±0.41 53.9±0.49 47.3±0.07 57.9±0.56 57.1±0.41 54.4±0.99
+FeatProp
+34.2±2.1 40.1±0.41 51.4±0.06 51.3± 0.24 49.0±0.05 51.3±0.02 52.3±0.45 54.3±0.72 53.3±0.45
+GraphPart 34.2±0.45 39.0± 0.21 53.2±0.44 52.2±0.03 51.0±0.93 49.8±0.84 53.2±0.48 53.3±0.32 53.4±0.21
+GraphPartFar 33.4±0.05 38.0±0.1 50.1±0.21 52.3±6.0 51.7±0.16 50.3±0.29 51.7± 0.24 52.2±0.18 53.4±0.07
+SPA
+36.5±0.78 41.5±0.02 51.2±0.45 55.1±0.07 54.3±0.45 52.2±0.45 58.0±0.06 58.0± 0.04 58.0 0.02
+Baselines
+
+20
+Random
+28.4 ±12.6
+Uncertainty 18.8±7.1
+PageRank
+27.2±6.6
+FeatProp
+27.9±5.5
+GraphPart
+45.0±0.7
+GraphPartFar 35.1±0.6
+SPA
+46.3±0.5
+
+budget, highlighting its effectiveness in moderately sized sample environments.
+While GraphPart shows a competitive edge, particularly in the 20-label budget scenario of the Corafull dataset, SPA still maintains a slight but significant
+advantage in the 10-label budget.
+6.2
+
+Experiment Result of SPA on GraphSAGE
+
+In addition, we conducted further experimental analysis using another Graph
+Neural Network (GNN) architecture, specifically GraphSAGE. We use all the
+datasets from the previous experiment. The initial focus was on evaluating the
+accuracy score of the proposed methods within the GraphSAGE architecture.
+Figure 2 illustrates the effectiveness of the proposed method in achieving higher
+accuracy. For instance, in the Citeseer dataset, the proposed method begins with
+an accuracy score of 0.32 at a 10-label budget, and it reaches its peak accuracy
+score with a score of 0.68 at a 1280-label budget. Secondly, we compare the
+Macro-F1 score of each method. Table 3 shows the Macro-F1 score of the baseline
+methods compared with the proposed approach. Table 3 illustrates that the
+proposed method consistently outperformed existing models in terms of MacroF1 score in GraphSAGE architecture. Notably, it demonstrated a significant
+improvement in Macro-F1 scores in WikiCS, Minesweeper, and Tolokers.
+6.3
+
+Complexity Analysis
+
+The computational complexity of PageRank is typically O(n + m) per iteration
+in a graph G with n nodes
+√ and m edges. Additionally, the SCAN algorithm
+has a complexity of O(m m). This complexity is primarily dictated by the
+clustering process involving each edge and its neighboring nodes. While selecting
+the highest PageRank node in each community incurs additional computational
+overhead, this is generally less significant compared to the overall complexities
+
+10
+
+Fajri et al.
+
+   
+   
+
+ 5 D Q G R P
+ 8 Q F H U W D L Q W \
+ 3 D J H 5 D Q N
+ ) H D W 3 U R S
+
+   
+  
+
+  
+
+  
+  / D E H O H G  1 R G H V
+
+ * U D S K 3 D U W
+ * U D S K 3 D U W ) D U
+ 6 3 $
+
+  
+
+Accuracy
+
+   
+
+   
+ 5 D Q G R P
+ 8 Q F H U W D L Q W \
+ 3 D J H 5 D Q N
+ ) H D W 3 U R S
+
+   
+
+   
+
+  
+
+(a) Citeseer
+
+  
+
+  
+  / D E H O H G  1 R G H V
+
+ * U D S K 3 D U W
+ * U D S K 3 D U W ) D U
+ 6 3 5
+
+  
+
+0.2
+10
+
+   
+
+20
+
+40
+80
+#Labeled Nodes
+
+(d) WikiCS
+
+160
+
+0.6
+Random
+Uncertainty
+PageRank
+FeatProp
+
+0.4
+0.2 80
+
+160
+
+GraphPart
+GraphPartFar
+SPA
+
+320
+640
+#Labeled Nodes
+
+(e) Minesweeper
+
+1280
+
+Accuracy
+
+Accuracy
+
+Accuracy
+
+10
+
+GraphPart
+GraphPartFar
+SPA
+
+320
+640
+#Labeled Nodes
+
+1280
+
+0.8
+
+0.6
+
+Random
+Uncertainty
+PageRank
+FeatProp
+
+160
+
+(c) Corafull
+
+0.8
+
+0.4
+
+GraphPart
+GraphPartFar
+SPR
+
+0.4
+
+(b) Pubmed
+
+0.8
+
+0.2
+
+Random
+Uncertainty
+PageRank
+FeatProp
+
+0.6
+
+   
+ $ F F X U D F \
+
+ $ F F X U D F \
+
+0.8
+
+   
+
+0.6
+0.4
+0.2 10
+
+Random
+Uncertainty
+PageRank
+FeatProp
+20
+
+40
+
+#Labeled Nodes
+
+GraphPart
+GraphPartFar
+SPA
+80
+
+160
+
+(f) Tolokers
+
+Fig. 2: Comparative Evaluation of SPA and Baseline Methods Across Multiple
+Datasets: Accuracy vs. Number of Labeled Nodes in GraphSAGE Architecture.
+
+Table 3: Summary of the Macro-F1 score of the proposed approach using GraphSAGE architecture.
+Citeseer
+Pubmed
+Corafull
+10
+20
+40
+20
+40
+80
+160
+320
+640
+Random
+24.1 ± 11.9 32.4 ± 6.6 46.1 ± 5.6 40.6 ± 13.0 52.3 ± 12.2 66.3 ± 7.9 15.4 ± 1.1 23.4 ± 1.4 33.5 ± 1.3
+Uncertainty 17.6 ± 6.3 25.1 ± 6.1 35.7 ± 4.4 35.2 ± 6.6 50.5 ± 10.1 64.1 ± 10.5 15.3 ± 0.8 27.0 ± 1.9 39.7 ± 1.1
+PageRank
+13.0 ± 1.0 29.8 ± 1.3 38.3 ± 2.2 29.7 ± 0.3 41.7 ± 0.6 62.9 ± 0.3 12.4 ± 0.3 19.4 ± 0.8 30.3 ± 0.4
+Featprop
+23.4 ± 4.3 39.9 ± 6.2 53.5 ± 3.3 48.0 ± 5.9 59.1 ± 6.0 73.6 ± 1.7 18.7 ± 0.8 25.8 ± 0.7 35.0 ± 1.6
+GraphPart 34.1 ± 6.4 36.1 ± 6.4 54.0 ± 4.6 52.0 ± 0.8 71.5 ± 0.5 74.6 ± 1.1 19.7 ± 0.9 28.3 ± 0.7 36.1 ± 1.0
+GraphPartFar 30.7 ± 2.3 46.9 ± 5.0 53.1 ± 4.0 49.7 ± 3.1 70.7 ± 1.6 74.2 ± 0.4 17.5 ± 1.0 26.2 ± 1.4 34.1 ± 0.9
+SPA
+32.6 ± 0.2 49.5 ± 1.3 58.2 ± 2.1 54.1 ± 2.1 73.20 ± 2.4 75.0 ± 0.3 19.2 ± 0.2 27.9 ± 2.3 36.7 ± 0.2
+WikiCS
+Minesweeper
+Tolokers
+Baselines
+20
+40
+80
+160
+320
+640
+20
+40
+80
+Random
+23.2 ± 2.3 29.03 ± 0.3 50.3 ± 0.4 65.2 ± 1.2 65.4 ± 0.3 70.2 ± 0.2 55.3 ± 0.6 58.2 ± 0.8 57.4 ± 0.5
+Uncertainty 19.2 ± 0.9 24.4 ± 0.2 36.2 ± 0.8 63.2 ± 0.7 64.6 ± 1.3 71.4 ± 2.4 47.1 ± 8.3 54.2 ± 5.2 56.5 ± 6.5
+PageRank
+30.2 ± 3.2 33.6 ± 2.4 33.8 ± 7.4 68.1 ± 3.3 71.2 ± 2.8 73.0 ± 0.2 53.2 ± 6.4 53.6 ± 5.6 61.0 ± 5.3
+Featprop
+29.2 ± 0.7 31.2 ± 4.5 49.5 ± 3.2 69.6 ± 3.2 72.8 ± 2.1 74.5 ± 3.4 57.2 ± 2.4 56.4 ± 3.2 59.7 ± 6.5
+GraphPart 29.7 ± 4.3 32.4 ± 2.3 50.1 ± 4.8 64.2 ± 3.6 70.4 ± 5.8 72.5 ± 3.5 53.6 ± 7.8 54.2 ± 0.6 54.2 ± 3.4
+GraphPartfar 28.2 ± 0.7 35.4 ± 2.9 52.2 ± 9.8 64.4 ± 1.5 69.4 ± 3.9 72.2 ± 1.5 52.1 ± 3.6 54.0 ± 6.8 52.2 ± 2.6
+SPA
+32.8 ± 2.9 37.2 ± 2.5 52.8 ± 1.6 68.8 ± 1.8 73.2 ± 0.1 75.2 ± 2.1 58.2 ± 1.5 59.6 ± 3.4 61.2 ± 1.5
+Baselines
+
+of PageRank and SCAN. The overhead primarily depends on the number of
+communities and the size of the graph. Therefore, the overall performance of
+this combined approach is influenced by the size and connectivity of the input
+graph, with larger and more connected graphs incurring higher computational
+costs. When compared with recent state-of-the-art models like GraphPart and
+GraphPartFar, the proposed method demonstrates lower computational costs,
+leading to reduced query times. To compare the computational complexity of
+the proposed method, we perform a computational cost experiment against the
+recent model. We measure the cost of each model in terms of query time which
+is the time needed from each model to calculate which sample to be labeled by
+
+A Structural-Clustering Based Active Learning for Graph Neural Networks
+
+11
+
+the active learning process. Table 4 presents the query times for each method.
+The proposed method notably reduces query time, with the most significant
+reduction seen in the Corafull dataset. In the Corafull dataset, SPA reduced the
+execution time down to 25 seconds, compared to 319 seconds for GraphPart and
+397 seconds for GraphPartFar.
+Table 4: Query Time Comparison: Proposed Method vs. State-of-the-Art (Average over 10 Runs, Measured in Seconds
+Graph Architecture=GCN
+GraphPart GraphPartFar SPA
+Citeseer
+10
+20
+0.21
+Pubmed
+13.3
+17
+4
+Corafull
+316
+397
+25
+Wikics
+45
+52
+23
+Minesweeper
+25
+30
+3.2
+Tolokers
+516
+621
+115
+Dataset
+
+7
+
+Discussion and Conclusion
+
+This paper introduced a Structural-Clustering based Active Learning (SPA) approach for Graph Neural Networks (GNNs), which combines community detection with the PageRank scoring method. The SPA method strategically prioritizes nodes based on their information content and centrality within the graph’s
+structure, leading to a more representative sample selection and enhancing the
+robustness of active learning outcomes. This is particularly effective in real-world
+applications like social network analysis and financial networks, which typically
+struggle with large amounts of labeled data requirements. SPA’s efficiency across
+varying annotation budgets is an important advantage in scenarios with limited
+resources for labeling.
+Furthermore, SPA integrates the structural clustering abilities of the SCAN algorithm with the PageRank scoring system. SCAN uses both feature and structural information in graphs to identify community-based local structures, while
+PageRank focuses on the global importance of nodes. The proposed method has
+demonstrated improved execution times and superior Macro-F1 scores across
+various datasets, yet it may face potential challenges in extremely large or complex graph structures.
+In conclusion, the SPA method represents a substantial advancement in the field
+of active learning for GNNs. It not only improves performance but also enhances
+execution efficiency, marking an important step in applying active learning to
+graph-structured data. While showing promising results in various scenarios, we
+acknowledge the need for further research in optimizing the method for largescale or complex graphs. The insights from this research lay the groundwork
+for future developments in comprehensive and efficient active learning models,
+catering to a wide range of active learning applications in graph-structured data.
+
+12
+
+Fajri et al.
+
+References
+1. Bilgic, M., Mihalkova, L., Getoor, L.: Active learning for networked data. In: International Conference on Machine Learning (2010), https://api.semanticscholar.
+org/CorpusID:430887
+2. Bojchevski, A., Günnemann, S.: Deep gaussian embedding of graphs: Unsupervised
+inductive learning via ranking. In: International Conference on Learning Representations (2018), https://openreview.net/forum?id=r1ZdKJ-0W
+3. Cai, H., Zheng, V.W., Chang, K.C.C.: Active learning for graph embedding.
+ArXiv abs/1705.05085 (2017), https://api.semanticscholar.org/CorpusID:
+21849198
+4. Clauset, A., Newman, M.E.J., Moore, C.: Finding community structure in very large networks. Phys. Rev. E 70, 066111 (Dec 2004).
+https://doi.org/10.1103/PhysRevE.70.066111,
+https://link.aps.org/doi/
+10.1103/PhysRevE.70.066111
+5. Gao, L., Yang, H., Zhou, C., Wu, J., Pan, S., Hu, Y.: Active discriminative network
+representation learning. In: International Joint Conference on Artificial Intelligence
+(2018), https://api.semanticscholar.org/CorpusID:51606661
+6. Gu, Q., Han, J.: Towards active learning on graphs: An error bound minimization
+approach. 2012 IEEE 12th International Conference on Data Mining pp. 882–887
+(2012), https://api.semanticscholar.org/CorpusID:5951026
+7. Hamilton, W.L., Ying, Z., Leskovec, J.: Inductive representation learning on
+large graphs. In: Neural Information Processing Systems (2017), https://api.
+semanticscholar.org/CorpusID:4755450
+8. Ji, M., Han, J.: A variance minimization criterion to active learning on graphs. In:
+International Conference on Artificial Intelligence and Statistics (2012), https:
+//api.semanticscholar.org/CorpusID:13967557
+9. Kipf, T., Welling, M.: Semi-supervised classification with graph convolutional networks. International Conference on Learning Reprsentations(ICLR) (2017)
+10. Ma, J., Ma, Z., Chai, J., Mei, Q.: Partition-based active learning for graph neural
+networks. Transactions on Machine Learning Research abs/2201.09391 (2022),
+https://openreview.net/forum?id=e0xaRylNuT
+11. Mernyei, P., Cangea, C.: Wiki-cs: A wikipedia-based benchmark for graph neural
+networks. ArXiv abs/2007.02901 (2020), https://api.semanticscholar.org/
+CorpusID:220364329
+12. Page, L., Brin, S., Motwani, R., Winograd, T.: The pagerank citation ranking
+: Bringing order to the web. In: The Web Conference (1999), https://api.
+semanticscholar.org/CorpusID:1508503
+13. Platonov, O., Kuznedelev, D., Diskin, M., Babenko, A., Prokhorenkova, L.: A
+critical look at the evaluation of gnns under heterophily: are we really making
+progress? (2023)
+14. Sen, P., Namata, G., Bilgic, M., Getoor, L., Gallagher, B., Eliassi-Rad, T.:
+Collective classification in network data. In: The AI Magazine (2008), https:
+//api.semanticscholar.org/CorpusID:62016134
+15. Settles, B., Craven, M.W.: An analysis of active learning strategies for sequence labeling tasks. In: Conference on Empirical Methods in Natural Language Processing
+(2008), https://api.semanticscholar.org/CorpusID:8197231
+16. Wu, Y., Xu, Y., Singh, A., Yang, Y., Dubrawski, A.W.: Active learning for graph
+neural networks via node feature propagation. ArXiv abs/1910.07567 (2019),
+https://api.semanticscholar.org/CorpusID:204743739
+
+A Structural-Clustering Based Active Learning for Graph Neural Networks
+
+13
+
+17. Xu, X., Yuruk, N., Feng, Z., Schweiger, T.A.J.: Scan: A structural clustering algorithm for networks. In: Proceedings of the 13th ACM SIGKDD
+International Conference on Knowledge Discovery and Data Mining. p.
+824–833. KDD ’07, Association for Computing Machinery, New York, NY,
+USA (2007). https://doi.org/10.1145/1281192.1281280, https://doi.org/10.
+1145/1281192.1281280
+
+

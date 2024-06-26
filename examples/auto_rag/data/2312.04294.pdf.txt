@@ -1,0 +1,969 @@
+Energy-Efficient Internet of Things Monitoring with
+Content-Based Wake-Up Radio
+Anay Ajit Deshpande, Federico Chiariotti, Andrea Zanella
+
+arXiv:2312.04294v1 [cs.NI] 7 Dec 2023
+
+Department of Information Engineering, University of Padova
+Via G. Gradenigo 6/B, Padova, Italy
+Email: {anayajit.deshpande,federico.chiariotti,andrea.zanella}@unipd.it
+
+Abstract—The
+use
+of
+Wake-Up Radio (WUR)
+in
+Internet of Things (IoT) networks can significantly improve
+their energy efficiency: battery-powered sensors can remain in
+a low-power (sleep) mode while listening for wake-up messages
+using their WUR and reactivate only when polled. However,
+polling-based WUR may still lead to wasted energy if values
+sensed by the polled sensors provide no new information to the
+receiver, or in general have a low Value of Information (VoI).
+In this paper, we design a content-based WUR that tracks
+the process observed by the sensors and only wakes up the
+sensor if its estimated update’s VoI is higher than a threshold
+communicated through the poll. If the sensor does not reply to
+the polling request, the Gateway (GW) can make a Bayesian
+update, knowing that either the sensor value substantially
+confirms its current estimate or the transmission failed due
+to the wireless channel. We analyze the trade-off between the
+tracking error and the battery lifetime of the sensors, showing
+that content-based WUR can provide fine-grained control of
+this trade-off and significantly increase the battery lifetime of
+the node with a minimal Mean Squared Error (MSE) increase.
+Index Terms—Wake-Up Radio, Scheduling, Remote monitoring, Energy efficiency
+
+I. I NTRODUCTION
+The explosion of the Internet of Things (IoT) has led to
+new developments in remote monitoring applications [1], [2],
+which use distributed sensors to keep track of remote environments and wide areas, as well as manufacturing plants and
+cities. Since the inception of the IoT, however, energy has been
+a major issue for system design [3]: battery-powered nodes
+face significant constraints in terms of computational and
+communication capabilities, and often resort to uncoordinated
+random access schemes like ALOHA to avoid the signaling
+overhead.
+However, the limits of random access schemes are wellknown: unless the traffic is extremely light, these schemes
+suffer from packet collisions and congestion [4], and do not
+allow the Gateway (GW) to request new data from a specific
+sensor [5]. The challenge is then to avoid the significant energy
+consumption incurred by nodes constantly listening for request
+messages, without tying the schedule to a fixed duty cycle.
+One possible solution to this problem is provided by
+Wake-Up Radio (WUR) technology, standardized as part
+This work was supported by the European Union as part of the Italian
+National Recovery and Resilience Plan of NextGenerationEU, under the
+partnership on “Telecommunications of the Future” (PE0000001 - program
+“RESTART”) and the “Young Researchers” grant REDIAL (SoE0000009).
+
+of IEEE802.11ba [6]: the system includes an extremely
+low-power radio only capable of receiving simple signals and making some basic calculations, which is kept
+in listening mode, while the sensor’s main processor and
+Primary Communication Radio (PCR) are only turned on
+when needed. Typically, the WUR is used to reduce the
+downlink response time of a node whose PCR is in sleep mode
+to save energy [7], achieving both a relatively low latency
+and a limited energy consumption. The standard defines the
+physical and Medium Access Control (MAC) parameters for
+communication with the WUR, as well as the wake-up procedure for the PCR when a WUR signal is received from the GW
+along with the power management scheme to be implemented
+and associated Duty Cycle (DC) specifications and synchronization schemes. Crucially, it defines the channelization of
+wake-up frames to be sent to WUR. The standard explains
+the usage of ID-based wake-up messages to be sent to each
+node, waking up their PCRs.
+However, the basic WUR design defined in IEEE802.11ba,
+hereforth referred to as ID-based WUR, does not take into
+account the Value of Information (VoI) from the polled sensors. Hence, the concept of content-based WUR was proposed
+in [8]. In content-based WUR, the polling packet carries not
+only the ID of the target node, but also a condition on the
+VoI of the data to be collected (generally, in the form of
+a range of interesting values). The target node then wakes
+the PCR and replies to the poll on if its data satisfies the
+VoI requirement. Hence, in this work, we design a scheme
+for joint ID- and content-based WUR, defining the optimal
+estimate response and proposing a scheduling policy that can
+take into account the VoI of the update using Kalman filter
+estimates to increase the network lifetime while trading off
+some Mean Squared Error (MSE) performance. The proposed
+solution can improve the former by about 40% in some cases,
+while only increasing the MSE by 10%.
+The rest of this paper is organized as follows: first, in Sec. II,
+we present the basic system model for kalman filter estimation
+and energy consumption. We then present the censored update
+computation and the scheduling policy in Sec. III. Results in a
+realistic setting are provided and discussed in Sec. IV. Sec. V
+concludes the paper and presents some possible avenues of
+future work on the subject.
+
+II. S YSTEM M ODEL
+
+Start
+
+We consider a system with N distributed sensors, monitoring a physical process over a wide area. The sensors are
+equipped with uplink radios with wake-up functionality, and
+can be polled at will by the GW. In the following, we will
+denote vectors using bold letters, e.g., x, and matrices using
+bold capital letters, e.g., A. Individual elements of vectors
+and matrices will be denoted using the same letter, with the
+element index as a subscript, e.g., xn or Am,n .
+
+We model the physical process monitored by the N sensors
+as a linear dynamic process running in discrete time. The state
+of the process at step k is the P × 1 column vector x(k) =
+[x1 , . . . , xP ]T . The dynamic system update is defined by
+(1)
+
+where A ∈ RP ×P is the update matrix for the system and
+v(t) ∼ N (0, Q) is the Gaussian perturbation noise of the
+system, determined by the covariance matrix is Q ∈ RP ×P .
+Each sensor n then measures value yn (k), and we collect the
+measurements at timestep k in the N × 1 column vector y(k):
+y(k) = Hx(k) + w(k),
+
+(2)
+
+where H ∈ RN ×P is the observation matrix and w(t) ∼
+N (0, R) is the measurement noise vector, with covariance
+matrix R ∈ RN ×N . As the GW knows the process statistics,
+it can know or estimate A, H, Q, and R. It also has an initial
+estimate of the process at step 0, x̂(0), and an initial estimation
+covariance matrix P(0), defined as:
+P(0) = E[(x(0) − x̂(0))T (x(0) − x̂(0))].
+
+(3)
+
+In the following, we will use the symbol z(k) to denote the
+estimation error x(k)− x̂(k). We can then use a Kalman filter,
+the Minimum MSE (MMSE) estimator for linear processes, to
+obtain the a priori estimate after each step:
+(
+x̂(k|k − 1) = Ax̂(k − 1);
+(4)
+P(k|k − 1) = AP(k − 1)AT + Q.
+If sensor n is polled, it can then report its measured value. Due
+to the wireless channel conditions, this update might be lost,
+in which case the a priori estimate remains the best possible
+estimate of the state. Conversely, if the update is successfully
+received, the Kalman filter observation is simply yn (k). In
+the following, we will use symbol 1n to denote a one-hot row
+vector of length N , whose values are all 0 except for the n-th,
+which is equal to 1. We also define the innovation covariance
+matrix S(k|n):
+S(k) = HP(k|k − 1)HT + R.
+
+(5)
+
+The Kalman gain is then:
+g(k|n) =
+
+P(k|k − 1)HT 1Tn
+.
+Sn,n (k)
+
+(6)
+
+SLEEP PCR
+
+WAKE UP
+MESSAGE
+
+TX PACKET
+
+ID SCAN
+WAKE PCR
+NO
+
+A. Process Model and Kalman Filter Estimation
+
+x(k) = Ax(k − 1) + v(k),
+
+WUR
+LISTEN
+
+Matches ID?
+
+YES
+
+POLLED
+
+Fig. 1: ID-based WUR sensor operation.
+The a posteriori estimate is then:
+(
+x̂(k|n) = x̂(k|k − 1) + g(k|n) (yn (k) − x̂n (k|k − 1)) ;
+P(k|n) = (IP − g(k|n)1n H) P(k|k − 1),
+
+(7)
+where IP is the P × P identity matrix. We consider a scenario
+in which the process dynamics are significantly slower than
+the time it takes to poll a sensor, i.e., the process is much
+slower than polls. Hence, to avoid draining the battery of all
+the sensors in every single timestep, the GW can choose to poll
+M ≤ N sensors sequentially. The updated estimate from (7)
+after each poll then becomes the a priori estimate to determine
+the next polled sensor.
+B. Communication and Energy Model
+We consider a system in which one GW communicates
+with N wake-up capable receivers. The communication model
+is then a simple Packet-Erasure Channel (PEC) with erasure
+probability εn , which includes three possible failure events:
+1) The wake-up message might be lost due to wireless
+channel conditions or interference from outside the
+sensor network, and the sensor might not wake up and
+transmit its update;
+2) The wake-up message might be misunderstood by another sensor, who then wakes up along with the intended
+node and causes a packet collision by transmitting out
+of turn;
+3) The wireless channel conditions or interference from
+outside the network might not allow the GW to correctly
+decode the packet transmitted by the sensors even if no
+other sensors transmit.
+As sensors are geographically spread out over the environment,
+their failure probabilities will be different. We assume that
+these probabilities are known to the receiver, or can be
+estimated beforehand.
+III. E NERGY-AWARE VO I-BASED P OLLING
+Using the communication and energy model defined, we
+consider the three sensor operations that consume energy:
+the reception of a wake-up message Ew , the measurement
+of a new observation of the physical process monitored by
+the sensor Es , and the transmission of an update Et . WUR
+
+Start
+WUR
+
+SLEEP PCR
+
+LISTEN
+WAKE UP
+
+TX PACKET
+
+ID SCAN
+
+NO
+
+Matches ID?
+
+YES
+
+POLLED
+
+SILENCE
+
+ACTIVE
+First
+
+CHANNEL
+
+Next message?
+
+Threshold
+Second
+
+In Range?
+
+Threshold
+
+WAKE PCR
+
+YES
+
+NO
+
+Fig. 2: Content-based WUR sensor operation.
+systems are designed to reduce the energy necessary for the
+wake-up radio, Ew , as much as possible [9]. The power
+consumption of the WUR can be as low as 2 µW [10],
+much lower than the power required to keep the main sensor
+computing unit and radio in sleep mode, which may be close
+to 1 mW even for low-energy LoRa devices [11]. Moreover,
+Es is usually much lower than Et , which may require up to
+100 mJ in LoRa devices, depending on the packet length and
+spreading factor [11].
+Hence, we can consider the energy expenditure of the
+sensor: in a standard wake-up model, shown in Fig. 1, the
+sensor needs only a limited amount of energy Ew to receive a
+wake-up radio message and check if its ID matches the target
+one, while it consumes a much larger Et to wake up the PCR
+and transmit a message. We can then envision a content-based
+scheme, depicted in Fig. 2, which adds two more messages to
+the wake-up procedure. The two messages correspond to two
+thresholds, a and b which are compared to the measured value.
+If b ≤ a, the sensor will wake up its PCR and transmit any
+value outside the range [b, a], while if b > a, it will transmit
+values only inside the interval [a, b]. If no further message is
+received after the ID message, the sensor falls back to a simple
+ID-based wake-up and transmits the sensed values directly.
+The total cost of the scheme is then 3Ew + Es , rather than
+Ew + Es as in standard WUR.
+The scheme relies on sensors being able to obtain measurements using relatively low energy, and the PCR being the
+most significant factor when measuring energy consumption.
+However, this assumption is realistic and shared by other wellknown content-based WUR schemes [8], [12], [13].
+A. Censored Kalman Update
+As the energy consumption of the WUR is designed to be
+orders of magnitude lower than the PCR’s, we can then use
+the content-based wake-up to improve the battery lifetime of
+
+the sensors by avoiding the transmission of updates with a
+lower VoI. In the following, we consider the simpler case in
+which N = P and H = IP , i.e., the case in which each
+sensor observes a component of the system state, with no
+influence from others, leaving the general case for future work.
+In particular, we consider information that confirms the GW’s
+estimate to be less relevant than surprising updates that may
+significantly change it, i.e., we set the thresholds a = x̂n (k)−θ
+and b = x̂n (k) + θ. If the measured value yn (k) is outside the
+specified silent range, i.e., yn (k) ∈
+/ [x̂n (k) − θ, x̂n (k) + θ],
+the sensor transmits it, and the update occurs as described
+above for a normal Kalman filter. If the GW does not receive
+an update, this can either be due to a channel error or to the
+sensor remaining silent. The probability of sensor n remaining
+silent, an event we denote as ξ, is then:
+
+
+
+
+
+
+−1
+−1
+−1
+pn (ξ) =Φ −θRn,n2 − Φ θRn,n2 = 1 − 2Φ θRn,n2 ,
+(8)
+where Φ(x) is the Cumulative Density Function (CDF) of the
+standard Gaussian distribution. We can then easily compute
+the probability that an update is missing because the sensor
+was silent, and not because the packet was lost, as:
+pn (ξ)
+pn (ξ|χ) =
+,
+(9)
+pn (ξ) + (1 − pn (ξ))εn
+where χ indicates that there was no successful update from
+the sensor. The probability of having no update is then:
+pn (χ) = εn + (1 − εn )pn (ξ).
+
+(10)
+
+Pm,n (k) = E[zn (k)zm (k)|P(k|k − 1)],
+
+(11)
+
+If the sensor is silent, the prior estimate x̂(k|k − 1) is simply
+maintained. On the other hand, we need to consider the
+effect of the new information on the estimate covariance. We
+then consider each element Pm,n (k) in the covariance matrix
+P(k|k − 1):
+and then compute Pm,n (k|ξ), i.e., each individual element
+of the covariance matrix in case the sensor was silent. In
+the following, we omit the timestep index for readability’s
+sake. In order to compute the expected value from (11), we
+need to apply Bayes’ theorem to compute the a posteriori
+Probability Density Function (PDF) of zn :
+ 
+
+
+
+
+−θ−zn
+Φ √θ−zn − Φ √
+φ √zn
+Pn,n
+Rn,n
+Rn,n
+,
+p(zn |ξ) =
+pn (ξ)
+(12)
+where φ(x) is the PDF of the standard Gaussian distribution.
+By the definition of the covariance matrix, the conditional
+expected value of zm is simply:
+Pm,n (k|k − 1)zn
+.
+(13)
+E[zm |zn ] =
+Pn,n (k|k − 1)
+The value of Pm,n (k|ξ) is then:
+Z ∞
+p(zn |ξ)zn E[zm |zn ] dzn ,
+Pm,n (k|ξ) =
+−∞
+Z
+Pm,n ∞
+p(zn |ξ)zn2 dzn .
+=
+Pn,n −∞
+
+(14)
+
+TABLE I: Simulation Parameters
+Parameter
+
+Symbol
+
+Value
+
+Number of episodes
+Timesteps per episode
+Number of nodes
+Number of polls per step
+Value threshold
+Transmission energy
+Sensing energy
+Wake-up energy
+Sleep energy
+Battery size
+
+L
+K
+N
+M
+θ
+Et
+Es
+Ew
+E0
+Emax
+
+100
+1000
+50
+{1,2,5,10,20,50}
+{0.5, 1, 1.5, 2, 2.5, 3} × σ
+50 mJ
+10 mJ
+10 mJ
+1 mJ
+9000 mAh, 5 V (162 kJ)
+
+This integral does not have an analytical solution, as it involves
+the Gaussian CDF, but it can be computed numerically. The
+calculation can then be repeated for each element of the n-th
+column of P(k), so as to obtain P(k|ξ), but the integral only
+needs to be solved once, as the only element that changes is
+Pm,n (k|k − 1). The overall update if no packet is received is:
+(
+x̂(k|χ) = x̂(k|k − 1);
+P(k|χ) = pn (ξ|χ)P(k|ξ) + (1 − pn (ξ|χ))P(k|k − 1).
+(15)
+B. Poll Scheduling
+Using the system model definition, we need to define the
+next polling sensor that would minimize the MSE while
+also maximizing the network lifetime. Hence, the scheduling
+strategy using the previous estimates {x̂(k − 1), P(k − 1)} can
+be defined as
+a(k) = arg max tr(P(k|k − 1)) − pn (χ) tr(P(k|χ)
+n∈{1,...,N }
+
+(16)
+
+− (1 − pn (χ)) tr(P(k|n)).
+This strategy selects the sensor which offers the highest
+expected reduction in the overall MSE, considering the possibility of a failed or censored update. After each sensor is
+polled, the scheduling should be computed again with the new
+estimate covariance matrix, and the value of already polled
+sensors is set to 0.
+This polling strategy is, hence, a one-step optimal heuristic [14], as it greedily computes the next sensor to be polled
+without considering correlations. More advanced scheduling
+schemes that take correlations and longer-term trends into
+account are left for future developments.
+IV. S IMULATION S ETTINGS AND R ESULTS
+In this section, we verify the performance of the scheduling
+scheme by setting up a Monte Carlo simulation. We generate
+a stable synthetic linear process, i.e., a process whose system
+matrix eigenvalues are lower than 1, and apply the scheduling
+approach for a relatively long time.
+A. Simulation Settings
+We consider two different linear systems, which we allow
+to freely evolve over 100 episodes of 1000 timesteps each.
+The Monte carlo simulation is run for both classical IDbased WUR and the content-based scheme proposed in this
+
+paper, considering different values of the censoring threshold
+θ, which is expressed as a function of the
+p estimated a priori
+uncertainty on the sensor reading, i.e., Pn,n (k) for sensor
+n. In all cases, we consider the special case in which N = P
+and H = IP . We consider two systems with N = 50 sensors
+for which elements of the update matrix A are known. In the
+first system, A(1) is:
+
+3
+
+if i = j;
+4,
+(1)
+1
+Ai,j = − 8 , if i 6= j, mod(i − 2j, 4) = 0;
+(17)
+
+
+0,
+otherwise;
+
+where mod(m, n) is the integer modulo function. In the second
+system, A(2) is:
+
+4
+
+if i = j;
+5,
+(2)
+1
+(18)
+Ai,j = − 9 , if i 6= j, mod(⌈i − 2.3j, 4⌉) = 0;
+
+
+0,
+otherwise.
+
+The other parameters remain the same for both systems. The
+measurement noise covariance matrix is set to R = I and the
+perturbation noise covariance matrix Q is defined as:
+ 11+mod(i,5)
+
+, if i = j;
+
+5
+(i,j)
+Q
+= 1,
+if i 6= j, mod(i − j, 6) = 0; (19)
+
+
+0,
+otherwise.
+
+Note that, in both systems, the sensors with higher indices have
+a slightly higher variance. Additionally,
+ the transmission error
+
+and the Kalman filter
+probabilities are set to εn = 0.02 n−1
+25
+is initialized at step 0 with x̂(0) = x(0) = 0 and P(0) = I.
+Overall, we particularly choose these values so as to consider
+two systems with distinct correlated processes: system 1 is
+highly interdependent, i.e., state components affect each other
+strongly, leading to a higher correlation, while system 2 is
+sparser, with a lower correlation between state components.
+The full simulation parameters are listed in Table I.
+As discussed above, the main trade-off in the system is
+between tracking accuracy and energy efficiency. In order to
+measure the former, we use the standard MSE over the state
+estimate and average it over all episodes:
+L
+
+K
+
+1 X X (ℓ)
+(x (k)−x̂(ℓ) (k))T (x(ℓ) (k)−x̂(ℓ) (k)),
+LKN
+ℓ=1 k=0
+(20)
+where x(ℓ) (k) denotes the state of the system in step k of the
+ℓ-th episode. On the other hand, we measure energy efficiency
+through the sensor lifetime, i.e., the average duration of the
+sensor batteries:
+
+N 
+1 X
+Emax
+L=
+,
+N n=1 ftx Et + fw (Es + 3Ew ) + (1 − fw )E0
+(21)
+where ft (n) is the fraction of the total timesteps in which
+sensor n transmitted an update and fw is the fraction of the
+total timesteps in which sensor n was polled (including the
+ones in which the update was not transmitted). If we consider
+MSE =
+
+M =5
+
+M =5
+M =2
+
+MSE
+
+M = 10
+
+M =1
+
+M =2
+
+M = 20
+
+102
+
+0
+
+0.5
+
+1
+1.5
+2
+Lifetime L (years)
+
+2.5
+
+M = 20
+
+102
+
+Content-based WUR
+ID-based WUR
+
+M = 50
+
+M =1
+
+M = 10
+
+MSE
+
+10
+
+103
+
+3
+
+Content-based WUR
+ID-based WUR
+
+M = 50
+
+0
+
+3
+
+0.5
+
+1
+1.5
+2
+Lifetime L (years)
+
+2.5
+
+3
+
+500
+
+600
+
+(b) System 2.
+
+(a) System 1.
+
+Fig. 3: Pareto curves for the lifetime and accuracy of the schemes in the two scenarios.
+0.8
+0.6
+0.4
+0.2
+0
+
+1
+
+ID (L = 0.4 y)
+θ = 0.5σ(L = 0.43 y)
+θ = σ(L = 0.47 y)
+θ = 1.5σ(L = 0.52 y)
+θ = 2σ(L = 0.57 y)
+θ = 2.5σ(L = 0.62 y)
+θ = 3σ(L = 0.67 y)
+
+0
+
+100
+
+200
+
+300
+MSE
+
+Empirical CDF
+
+Empirical CDF
+
+1
+
+400
+
+500
+
+600
+
+(a) System 1.
+
+ID (L = 0.4 y)
+θ = 0.5σ(L = 0.43 y)
+θ = σ(L = 0.47 y)
+θ = 1.5σ(L = 0.52 y)
+θ = 2σ(L = 0.57 y)
+θ = 2.5σ(L = 0.63 y)
+θ = 3σ(L = 0.69 y)
+
+0.8
+0.6
+0.4
+0.2
+0
+
+0
+
+100
+
+200
+
+300
+MSE
+
+400
+
+(b) System 2.
+
+Fig. 4: Tracking MSE CDF with M = 10 for the two systems.
+ID-based WUR, we have ft = fw , but the energy required to
+receive the wake-up signal is Es + Ew instead of Es + 3Ew .
+Finally, we consider a timestep of 1 s for system state
+evaluation, in which the GW chooses to poll a set of M sensors
+chosen by the scheduler over a single step. We assume that M
+is fixed over each episode, and use it as a system parameter
+to control the trade-off between accuracy and battery lifetime.
+B. Results
+The trade-off between tracking accuracy and battery lifetime
+can be visualized using a Pareto curve, which shows the
+boundary of the performance feasibility region. Any point
+on the curve is Pareto efficient, i.e., improving one of the
+performance metrics would require sacrificing the other. Fig. 3
+shows the Pareto curves for the two schemes in the two
+simulation scenarios. Each large step for ID-based WUR
+represents the accuracy and lifetime obtained with M polled
+sensors, and each small step in content-based WUR represents
+the accuracy and lifetime achieved for a different value of θ,
+with M polled sensors. So, in this case, optimal performance
+would be on the lower right of the plot. We can easily notice
+that the content-based scheme is significantly more flexible
+and outperforms the ID-based scheme given a fixed M sensors
+are polled: while the two Pareto curves share some points
+(if we set θ = 0, the content-based scheme is the same as
+the legacy one), the content-based scheme can control the
+trade-off better, achieving intermediate performance points that
+trade some accuracy for a higher network lifetime. This is
+particularly evident in the second scenario, shown in Fig. 3b,
+
+in which increasing θ leads to a significantly smaller accuracy
+degradation. If we consider M = 50, content-based WUR can
+increase the network lifetime by around 100% at the cost of an
+MSE increase of around 50% in both scenarios. This relative
+advantage diminishes for smaller values of M , but the absolute
+change in the MSE due to higher thresholds also decreases,
+while the battery lifetime increase is approximately the same.
+Additionally, the content-based scheme can reach a lifetime
+of over 2.5 years at the lowest accuracy setting, while the
+ID-based scheme would need to reduce the polling frequency
+below 1 poll per second to do so.
+We can analyze the accuracy-lifetime trade-off more in
+depth by considering the empirical CDF of the MSE for
+different values of θ, shown in Fig. 4. In this analysis, we
+set M = 10, considering the intermediate part of the graph.
+Firstly, we can note that the network lifetime increases in
+a predictable fashion, as expected from the settings of the
+scheme: as θ is a function of the predicted sensor reading
+standard deviation σ, the probability of a censored update
+scales in a similar fashion to the Gaussian complementary
+CDF function. However, there are some minor differences between the lifetimes in the two scenarios
+that can be attributed
+p
+p
+to the definition of σ: which is Pn,n (k) instead of Rn,n ,
+which depends on the state of the Kalman filter. The figures
+clearly show that the MSE is relatively stable across episodes
+and steps for all settings, as well as the trend we discussed
+in the two scenarios: the difference between settings is more
+significant in scenario 1, as the average MSE increases by
+
+0
+
+10
+
+20
+30
+Sensor index
+
+40
+
+Silent
+
+50
+
+(a) θ = σ, System 1.
+
+0.6
+0.4
+0.2
+0
+
+Update
+
+0
+
+10
+
+20
+30
+Sensor index
+
+40
+
+Silent
+
+50
+
+(c) θ = σ, System 2.
+
+Polling Frequency
+
+Update
+
+Polling Frequency
+
+Polling Frequency
+Polling Frequency
+
+0.6
+0.4
+0.2
+0
+
+0.6
+0.4
+0.2
+0
+
+Update
+
+0
+
+10
+
+20
+30
+Sensor index
+
+40
+
+Silent
+
+50
+
+(b) θ = 2σ, System 1.
+
+0.6
+0.4
+0.2
+0
+
+Update
+
+0
+
+10
+
+20
+30
+Sensor index
+
+40
+
+Silent
+
+50
+
+(d) θ = 2σ, System 2.
+
+Fig. 5: Polling frequency for each sensor with M = 10.
+10% for each increase in the threshold with respect to the
+R EFERENCES
+ID-based WUR scheme’s. On the other hand, scenario 2 can
+[1] J. Wang, M. K. Lim, C. Wang, and M.-L. Tseng, “The evolution of the
+Internet of Things (IoT) over the past 20 years,” Computers & Industrial
+fare much better: setting θ = 2σ, the MSE only increases
+Eng., vol. 155, p. 107174, 2021.
+by approximately 10%, but the network lifetime increases
+[2] A. Zanella, S. Zubelzu, and M. Bennis, “Sensor networks, data processby more than 40%. This is because of the structure of the
+ing, and inference: The hydrology challenge,” IEEE Access, vol. 11, pp.
+107 823–107 842, 2023.
+two scenarios: correlation between sensors is generally lower,
+[3] K. Georgiou, S. Xavier-de Souza, and K. Eder, “The IoT energy
+leading to a more uniform covariance matrix, while in the
+challenge: A software perspective,” IEEE Embedded Sys. Lett., vol. 10,
+first scenario, some sensors have a much larger impact on
+no. 3, pp. 53–56, 2017.
+[4] J. Yu, P. Zhang, L. Chen, J. Liu, R. Zhang, K. Wang, and J. An,
+the variance, and the consequences of a censored update from
+“Stabilizing frame slotted ALOHA-based IoT systems: A geometric
+them on the MSE become more important.
+ergodicity perspective,” IEEE J. Sel. Areas Comm., vol. 39, no. 3, pp.
+Finally, we can look at the sensor selection, shown in Fig. 5:
+714–725, 2020.
+[5] H. Levy and M. Sidi, “Polling systems: applications, modeling, and
+we can note that the polling frequency confirms that some
+optimization,” IEEE Trans. Comm., vol. 38, no. 10, pp. 1750–1760,
+“central” sensors have a relatively large impact on the overall
+1990.
+estimation process, and therefore deplete their battery faster,
+[6] D.-J. Deng, S.-Y. Lien, C.-C. Lin, M. Gan, and H.-C. Chen, “IEEE
+802.11 ba wake-up radio: Performance evaluation and practical designs,”
+while scenario 2 is much more uniform. As expected, the
+IEEE Access, vol. 8, pp. 141 547–141 557, 2020.
+threshold has a limited effect on which sensors are polled,
+[7] A. Zanella, A. A. Deshpande, and F. Chiariotti, “Low-latency massive
+having a relatively low impact on the estimate itself, but
+access with multicast wake up radio,” in 2023 21st Mediterranean
+Communication and Computer Networking Conference (MedComNet).
+increasing it significantly reduces the transmitted updates.
+V. C ONCLUSION AND F UTURE W ORK
+In this work, we presented a content-based WUR scheme
+that is able to control the trade-off between accuracy and
+network lifetime at a finer scale than standard ID-based WUR.
+To do so, the GW transmits threshold values along with the
+wake-up request and the sensor only communicates when the
+value is outside the range, i.e., when the update’s VoI is
+significant. The implicit communication when the sensor is
+silent reduces the need for explicit updates and increases the
+overall network lifetime, with limited MSE degradation.
+The promising results shown in this paper can be extended
+in several direction: firstly, a dynamic optimization of the
+threshold values to better represent VoI may be considered.
+Another interesting optimization is on the schedule, which may
+be designed with long-term consequences in mind, considering
+individual sensors’ batteries as well as the average lifetime.
+
+IEEE, 2023, pp. 167–175.
+[8] J. Shiraishi, H. Yomo, K. Huang, Č. Stefanović, and P. Popovski,
+“Content-based wake-up for top-k query in wireless sensor networks,”
+IEEE Trans. Green Comm. & Netw., vol. 5, no. 1, pp. 362–377, 2020.
+[9] E. Zaraket, N. M. Murad, S. S. Yazdani, L. Rajaoarisoa, and B. Ravelo,
+“An overview on low energy wake-up radio technology: Active and
+passive circuits associated with MAC and routing protocols,” J. Netw.
+& Computer Appl., vol. 190, p. 103140, 2021.
+[10] N. E. H. Djidi, M. Gautier, A. Courtay, O. Berder, and M. Magno, “How
+can wake-up radio reduce LoRa downlink latency for energy harvesting
+sensor nodes?” MDPI Sensors, vol. 21, no. 3, p. 733, 2021.
+[11] M. Nurgaliyev, A. Saymbetov, Y. Yashchyshyn, N. Kuttybay, and
+D. Tukymbekov, “Prediction of energy consumption for lora based
+wireless sensors network,” Wireless Networks, vol. 26, pp. 3507–3520,
+2020.
+[12] H. Kawakita, H. Yomo, and P. Popovski, “Energy-efficient distributed
+estimation using content-based wake-up in wireless sensor networks,”
+IEICE Trans. Comm., vol. 104, no. 4, pp. 391–400, 2021.
+[13] T. Murakami, J. Shiraishi, and H. Yomo, “Cluster–based wake–up
+control for top–k query in wireless sensor networks,” in 97th Vehic.
+Tech. Conf. (VTC2023-Spring). IEEE, 2023.
+[14] F. Chiariotti, A. E. Kalør, J. Holm, B. Soret, and P. Popovski, “Scheduling of sensor transmissions based on Value of Information for summary
+statistics,” IEEE Netw. Lett., vol. 4, no. 2, pp. 92–96, 2022.
+
+

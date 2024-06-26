@@ -1,0 +1,986 @@
+PsyChat: A Client-Centric Dialogue System for
+Mental Health Support
+Huachuan Qiu1,2 , Anqi Li1,2 , Lizhi Ma2 , Zhenzhong Lan2,†
+1
+
+arXiv:2312.04262v1 [cs.CL] 7 Dec 2023
+
+2
+
+Zhejiang University, Hangzhou, China
+School of Engineering, Westlake University, Hangzhou, China
+{qiuhuachuan, lanzhenzhong}@westlake.edu.cn
+
+Abstract—Dialogue systems are increasingly integrated into
+mental health support to help clients facilitate exploration,
+gain insight, take action, and ultimately heal themselves. For
+a dialogue system to be practical and user-friendly, it should
+be client-centric, focusing on the client’s behaviors. However,
+existing dialogue systems publicly available for mental health
+support often concentrate solely on the counselor’s strategies
+rather than the behaviors expressed by clients. This can lead to
+the implementation of unreasonable or inappropriate counseling
+strategies and corresponding responses from the dialogue system.
+To address this issue, we propose PsyChat, a client-centric dialogue system that provides psychological support through online
+chat. The client-centric dialogue system comprises five modules:
+client behavior recognition, counselor strategy selection, input
+packer, response generator intentionally fine-tuned to produce
+responses, and response selection. Both automatic and human
+evaluations demonstrate the effectiveness and practicality of our
+proposed dialogue system for real-life mental health support. Furthermore, we employ our proposed dialogue system to simulate
+a real-world client-virtual-counselor interaction scenario. The
+system is capable of predicting the client’s behaviors, selecting
+appropriate counselor strategies, and generating accurate and
+suitable responses, as demonstrated in the scenario.
+Index Terms—dialogue system, client-centric, mental health
+support, client behavior recognition, counselor strategy selection
+
+I. I NTRODUCTION
+Mental health [1] is a growing concern in our fast-paced and
+digitally connected world. However, traditional mental health
+support services often face challenges related to accessibility,
+affordability, and stigma. Many individuals are hesitant to seek
+help due to these barriers, leaving their mental well-being at
+risk. With the increasing demand for mental health support,
+there is a pressing need for innovative approaches to effectively
+meet this demand.
+Dialogue systems are increasingly integrated into mental
+health support to assist clients in exploring, gaining insight,
+taking action, and ultimately facilitating self-healing [2]. A
+practical and user-friendly dialogue system should be clientcentric, focusing on the client’s behaviors. However, existing
+dialogue systems [3]–[5] for mental health support often concentrate solely on counselors’ strategies, frequently overlooking the behaviors expressed by clients. This tendency leads
+to the adoption of unreasonable or inappropriate counseling
+strategies and corresponding responses from the dialogue
+† Corresponding Author.
+
+Counselor
+
+( Supporting – Restatement )
+You mentioned struggling with procrastination.
+( Supporting – Affirmation and Reassurance )
+It's impressive that you're aware of this tendency.
+
+( Positive – Confirming )
+I really appreciate your
+understanding, and I do
+realize that my
+procrastination has become
+a serious issue in my life.
+
+( Negative – Sarcastic Answer )
+You always provide me with
+encouragement and support, and it feels
+a bit like you're just going through the
+motions. Any practical advice you can
+offer?
+
+Client
+
+Client
+( Challenging – Invite to
+Explore New Actions )
+Recognizing the issue is
+the first step. What
+strategies are you
+considering to overcome
+procrastination?
+
+( Supporting – Reflection of Feeling )
+Your desire to address this issue is
+evident.
+( Supporting – Inquiring Subjective
+Information )
+What specific guidance are you looking
+for to combat procrastination?
+
+Counselor
+
+Counselor
+
+Fig. 1. An illustration depicting how a counselor tailors strategies in response
+to the behaviors exhibited by the client.
+
+system. To be more specific, a practical and user-friendly
+dialogue system should prioritize the consideration of clients’
+states. Therefore, it should adjust its strategies based on the
+clients’ current behaviors, mimicking human counselors, as
+illustrated in Figure 1.
+In light of this, we introduce P SY C HAT, a client-centric
+dialogue system designed to provide psychological support
+through online chat. The client-centric dialogue system consists of five modules: client behavior recognition, counselor
+strategy selection, input packer, response generator, and response selection. The response generation module is intentionally fine-tuned using synthetic and real-life dialogue datasets.
+The primary contributions of this paper are as follows:
+To the best of our knowledge, we are the first to propose a
+client-centric dialogue system for mental health support,
+with a priority on considering the client’s behaviors.
+• We optimize collaboration among modules by conducting
+extensive experiments to identify the optimal model for
+each. These selected models are then integrated to form
+a cohesive dialogue system dedicated to mental health.
+• Automatic and human evaluations demonstrate the effectiveness and practicality of our developed dialogue
+system. Therefore, we release our code and model1 to
+facilitate research in mental health support.
+•
+
+1 https://github.com/qiuhuachuan/PsyChat
+
+1
+
+Client Behavior Recognition
+
+Dialogue
+History
+
+Client Behaviors
+
+2
+
+3
+
+Input Packer
+
+Counselor Strategies
+Demonstrations
+
+Counselor Strategy Selection
+
+Input
+
+4
+Response
+Generator
+
+Optimal
+
+Candidates
+
+5
+Response
+Response
+Selection
+
+Dialogue History
+
+(a) Front-end Web UI
+
+(b) Back-end Dialogue System
+
+Fig. 2. Architecture of the client-centric dialogue system. It contains two main parts: (a) Front-end web UI and (b) Back-end dialogue system, which is
+implemented with Huggingface and FastAPI packages.
+
+II. R ELATED W ORK
+While the development of integrated dialogue systems for
+mental health support remains unexplored, we provide a
+summary of related work on constructing a dialogue system
+for mental health support, examining it from the perspectives
+of dataset and dialogue model.
+a) Dataset: Due to privacy concerns in mental health,
+the majority of dialogue datasets for mental health support
+are obtained from public social platforms, crowdsourcing, and
+data synthesis. Dialogue datasets collected from public social
+platforms include the PsyQA dataset [3]. The crowdsourcing
+process involves high costs and time, with the ESConv dataset
+[4] being a typical example. Data synthesis is an effective
+approach in the era of large language models, often resulting
+in a large-scale corpus. Some typical datasets include AugESC
+[5], SmileChat [6], and SoulChat [7]. Fortunately, a real-world
+counseling dataset named Xinling [9] is conditionally opensourced and necessitates users interested in utilizing it to sign
+a data usage agreement.
+b) Dialogue Model: Open-source dialogue models for
+mental health support contribute novel additions to the research community, including MeChat [6], SoulChat [7], and
+ChatCounselor [8].
+III. A C LIENT-C ENTRIC D IALOGUE S YSTEM FOR M ENTAL
+H EALTH S UPPORT
+The detailed architecture of the client-centric dialogue
+system for mental health support is illustrated in Figure 2,
+which comprises five modules: client behavior recognition
+(§III-A), counselor strategy selection (§III-B), input packer
+(§III-C), response generator (§III-D) intentionally fine-tuned
+for response generation, and response selection (§III-E).
+R
+T
+T
+R
+Given a dialogue history, {uT1 , uR
+2 , u3 , u4 , ..., ut−1 , ut },
+ending with the last utterance spoken by the client in a dialogue between a client and a dialogue system, the motivation
+behind a client-centric dialogue system is to accurately identify
+the client’s behavior and select the appropriate counseling
+strategy. Here, T and R refer to the client and counselor,
+respectively, derived from the last characters in the words
+“client” and “counselor”. For brevity, this convention will be
+consistently used thereafter and not repeated.
+
+Therefore, to comprehend both clients’ behaviors and counselors’ strategies in text-based counseling conversations, we
+propose utilizing the publicly available counseling conversational dataset, Xinling [9], which is annotated with rich
+labels containing information on clients’ behaviors and counselors’ strategies. For detailed definitions of these labels,
+please refer to the paper [9].
+To enhance the practicality of the response generator for
+mental health support, we advocate a two-stage fine-tuning
+approach, considering the limited availability of actual counseling dialogues. In the initial phase, we propose using
+a large-scale, close-to-real-life multi-turn dialogue dataset,
+SmileChat [6], which is publicly accessible, for warmup parameter-efficient fine-tuning. Subsequently, to better
+align with real-world application scenarios, we employ the
+Xinling dataset, consisting of authentic dialogues, for the
+second-stage downstream parameter-efficient fine-tuning.
+Note that the classifier for client behavior recognition can be
+used to label the client’s behaviors in SmileChat. However,
+an auxiliary task is required to label the counselor’s strategies
+in SmileChat. Therefore, we introduce an auxiliary task:
+counselor strategy recognition, which is illustrated in §III-F.
+A. Client Behavior Recognition
+Considering a dialogue history ending with the last utterance
+spoken by the client between a client and a dialogue system,
+as illustrated in Equation 1, the goal is to accurately identify
+the client’s behaviors.
+
+T
+R
+R
+T
+Dh = uT1 , uR
+2 , u3 , u4 , ..., ut−1 , ut
+
+(1)
+
+Therefore, the dialogue context can be formulated as follows:
+T
+R
+R
+Dc = {uT1 , uR
+(2)
+2 , u3 , u4 , ..., ut−1 }
+To construct training, validation, and test sets, each sample
+is represented as (xi , Yi ) ∈ Dclient , where Yi is the subset in
+the label space of clients’ behaviors introduced in Xinling.
+In reality, there are possibly multiple sentences in the client’s
+utterance, and each sentence accordingly maps to a single
+label. To simplify the classification task, we restructure the
+clients’ lengthy utterances, originally labeled with multiple
+categories, into pairs of sentences and corresponding labels.
+
+Here is a demonstration with a detailed explanation.
+Behaviors of the client's utterance, “You always provide me with
+encouragement and support, and it feels a bit like you're just
+going through the motions. Any practical advice you can offer?”,
+include Sarcastic Question.
+The counselor uses strategies, including Reflection of Feeling
+and Inquiring About Subjective Information, to generate the
+final response.
+Demonstration:
+Counselor: You mentioned struggling with procrastination. It's
+impressive that you're aware of this tendency.
+Client: You always provide me with encouragement and support,
+and it feels a bit like you're just going through the motions. Any
+practical advice you can offer?
+Counselor: Your desire to address this issue is evident. What
+specific guidance are you looking for to combat procrastination?
+
+Model Prediction yi
+
+FFNN + Softmax
+
+1
+
+2
+
+512
+
+Pre-trained Language Model
+1
+
+Tokenized Input [CLS]
+Input
+
+[CLS]
+
+2
+
+512
+
+…
+
+[SEP]
+
+…
+
+[SEP]
+
+Dc
+
+[SEP]
+
+siT
+
+[SEP]
+
+Fig. 3. Mechanism of client behavior recognition.
+
+Specifically, given a i-th sentence in the client’s utterance,
+we can obtain (sTi , yi ), where sTi ∈ uTt and yi is the label
+of clients’ behaviors. Thus, we represent the input for client
+behavior prediction as follows:
+xi = [Dc ; [SEP]; sTi ]
+
+(3)
+
+where [; ] denotes the operation of textual concatenation.
+The mechanism of client behavior recognition is presented
+in Figure 3. To facilitate a dialogue system in understanding
+the client’s states, we train a fully-connected feed-forward
+neural network (FFNN) with a softmax activation function
+to identify clients’ behaviors based on a pre-trained language
+model.
+
+Now you act as a professional counselor and generate a
+response for the following dialogue.
+Behaviors of client's utterance, “You're being a little perfunctory.
+But can you offer any specific guidance or recommendations?”,
+include Sarcastic Answer.
+The counselor uses strategies, including Reflection of Feeling
+and Inquiring Subjective Information, to generate the final
+response.
+Dialogue:
+Counselor: You mentioned that you often avoid your
+responsibilities. It's good that you have this self-awareness.
+Client: You're being a little perfunctory. But can you offer any
+specific guidance or recommendations?
+Counselor: I sense your determination to improve your situation.
+What kind of advice or suggestions are you hoping to receive from
+me?
+
+Client’s
+Utterance 𝑢!"
+Client’s
+Behaviors 𝑈&"
+Counselor’s
+Strategies 𝑈'(
+Demonstration
+𝐷%
+
+Client’s
+utterance 𝑢% !"
+Client’s
+#&"
+Behaviors 𝑈
+Counselor’s
+#'(
+Strategies 𝑈
+Dialogue
+#$
+History 𝐷
+Ground truth 𝑅#
+
+Fig. 4. Template of the input packer. During the fine-tuning process, the
+ground truth Rg is treated as a supervised signal. In the inference process,
+our goal is to generate the response.
+
+In this paper, we utilize the Euclidean distance as the metric,
+which is a widely adopted similarity measure.
+
+B. Counselor Strategy Selection
+A dialogue session with a golden response spoken by the
+counselor can be formulated as follows:
+
+v
+u n
+uX
+ˆ
+d(Dh , Dh ) = t (qi − pi )2
+
+(5)
+
+i=1
+T
+R
+R
+T
+Ds = {uT1 , uR
+2 , u3 , u4 , ..., ut−1 , ut , Rg }
+
+(4)
+
+where Rg represents the ground truth (a.k.a golden response)
+spoken by the counselor.
+To recap, strategies behind a counselor’s response contain
+explicit strategies with specific label descriptions and implicit
+strategies hidden in the dialogue session. If we use a dialogue history to predict the counselor’s strategies, it may
+seem contradictory to the task of recognizing client behavior.
+Motivated by the notion that similar problems often have
+analogous solutions, we employ dense retrieval to address
+these challenges. This approach facilitates the dialogue system
+in determining the most appropriate strategy by identifying
+j semantically similar samples during both the training and
+inference processes. For simplicity, we set j to 1.
+Specifically, to obtain the most similar dialogue session,
+we need to build a dialogue retrieval base Dbase . For each
+dialogue session, Ds ∈ Dbase , we first split it into two parts:
+the dialogue history Dh and the ground truth Rg . We then
+construct mapping pairs {Sh , Rg } between dialogue history
+Dh and ground truth Rg , where the string of a dialogue
+T
+R
+R
+T
+history is denoted as Sh = [uT1 ; uR
+2 ; u3 , u4 ; ...; ut−1 ; ut ].
+ˆ
+Therefore, when considering a brand-new dialogue history Dh ,
+we propose to utilize the embedding model and apply dense
+retrieval to find a sample with the most minimal distance.
+
+where q and p represent mapping points of Dˆh and Dh in
+Euclidean n-space, respectively.
+a) Training Process: During the training process, since
+we have access to the ground truth, we will directly incorporate
+the counselor’s strategies.
+b) Inference Process: However, during the inference
+process, we cannot obtain the ground truth. Therefore, we will
+adopt the counselor’s strategies from the retrieved sample for
+response generation.
+C. Input Packer
+To better harness the inherent inference ability of large
+language models, we redefine the conventional dialogue generation task using the instruction-following paradigm and address it through parameter-efficient fine-tuning. The template
+of the input packer is illustrated in Figure 4, comprising two
+main sections: a demonstration part and a brand-new dialogue
+part, separated by a dashed blue line. Each section consists of
+instructions and placeholders.
+1) Instructions: The instructions serve to provide the model
+with a well-defined role and precise task details for dialogue
+generation. For the dialogue generation task, the text that is
+non-bold and black is our instructions, as shown in Figure 4.
+
+2) Placeholders: Based on the provided dialogue history
+D̂h , which includes the client’s utterance ûTt and its context
+D̂c in the brand-new dialogue segment, our first step is to
+predict the client’s current behaviors ÛBT using the method
+outlined in §III-A.
+Furthermore, we will obtain the closest dialogue sample
+using the method described in §III-B. Hence, we select the
+closest sample as the demonstration Ds . Accordingly, we
+obtain the client’s utterance uTt , the client’s behaviors UBT ,
+and the counselor’s strategies USR for the demonstration part.
+During the interference process, specifically in the brand-new
+dialogue part, the counselor’s strategies ÛSR remain the same
+as USR .
+Packer Function: To summarize, the client input undergoes
+processing through the packer function, as illustrated in Figure
+4, before reaching the response generator. The process is
+defined as follows:
+It = P(uTt , UBT , USR , Ds , ûTt , ÛBT , ÛSR , D̂h )
+
+(6)
+
+where P(.) is the packer function used to format all input
+elements into a string.
+
+Task
+
+# Train
+
+# Validation
+
+# Test
+
+Client Behavior Prediction
+Counselor Strategy Prediction
+
+18824
+21082
+
+3683
+4272
+
+3627
+4045
+
+4) Response Generation: Moving forward, we input the
+client’s input It into the response generator, which has been
+trained through a two-stage fine-tuning process, to generate 10
+response candidates.
+E. Response Selection
+Due to the uncertainty and diversity inherent in model generation, we propose adopting the sample-and-rank paradigm
+to select the optimal response. To achieve this objective,
+we suggest employing the widely used response selection
+architecture: the Cross-encoder. This architecture facilitates
+rich interactions between the dialogue history Dh and response
+candidate Ri . We consider the first output of the pre-trained
+language model as the history-candidate embedding:
+yDh ,Ri = h1 = f irst(T r(Dh , Ri ))
+
+D. Response Generator
+1) Model: ChatGLM2-6B2 [10] is an open-source bilingual
+(Chinese-English) chat model, which is trained with a context
+length of 8192 during dialogue alignment, enabling more turns
+in conversation. Therefore, we choose it as the foundational
+model for our response generator.
+2) Dataset Labeling: To adapt to the real-world downstream task, we fine-tune classifiers using the dialogue dataset,
+Xingling, to annotate both the client’s and counselor’s
+utterances, obtaining pseudo-labels for the dialogue dataset,
+SmileChat. The mechanism of fine-tuning the classifier to
+identify the behaviors of clients’ utterances and strategies
+of counselors’ utterances is illustrated in §III-A and §III-F,
+respectively.
+3) Dialogue Generation: Considering our collected and
+processed dataset Ddial = {D1 , D2 , ..., Di , ..., Dn }, where
+each Di represents a single multi-turn dialogue, we split each
+dialogue into multiple training sessions to train a response
+generator. Specifically, for a sampled t-turn dialogue with
+T
+R
+T
+the ground truth, d = {uT1 , uR
+2 , u3 , u4 , ..., ut , Rg } ∼ Ddial ,
+we build a dialogue model that can predict the counselor’s
+utterance Rg given the dialogue history Dh . We adopt the
+input packer in §III-C to construct the training data {It , Rg }.
+For both stages, the demonstration is retrieved from the
+validation set in the dataset, Xinling. Our objective is to
+maximize the likelihood probability as follows:
+
+Ed∼Ddial
+
+TABLE I
+DATA STATISTICS OF BOTH CLIENT BEHAVIOR AND COUNSELOR
+STRATEGY PREDICTION .
+
+L
+Y
+
+P(Rg |It )
+
+l=1
+
+where L is the sequence length of the ground truth Rg .
+2 https://huggingface.co/THUDM/chatglm2-6b
+
+(7)
+
+(8)
+
+where f irst is the function that takes the first vector of the
+sequence of vectors produced by the pre-trained language
+model T r.
+To score a candidate, a linear layer, denoted as W , is
+applied to the embedding yDh ,Ri to transform it from a vector
+to a scalar: s(Dh , Ri ) = yDh ,Ri W . The neural network is
+trained to minimize cross-entropy loss, where the logits are
+s(Dh , R1 ), ..., s(Dh , R10 ). Here, R1 represents the ground
+truth, and the rest are negative samples randomly selected from
+the training set.
+F. Auxiliary Task: Counselor Strategy Recognition
+A dialogue session with a response from the counselor can
+be formulated as Ds = {Dh , Rg }. Referring to the §III-A,
+we represent the input for counselor strategy prediction as
+R
+xi = [Dh ; [SEP]; sR
+i ], where si is the i-th sentence in the
+ground truth Rg .
+IV. E XPERIMENTS
+All experiments are performed using NVIDIA A100 8×80G
+GPUs. For the tasks of client behavior recognition, counselor
+strategy recognition, and response selection, we prepend a
+speaker token, [client] or [counselor], to each utterance to identify the speaker.
+A. Client Behavior Recognition
+1) Data Statistics: After processing the data, we present
+the statistics for client behavior prediction in Table I.
+2) Hyperparameters: We employ a pre-trained Chinese
+RoBERTa-large [11] model3 , commonly used for text classification. The hyperparameters used for fine-tuning the model
+in client behavior recognition are provided in Table II.
+3 https://huggingface.co/hfl/chinese-roberta-wwm-ext-large
+
+TABLE II
+H YPERPARAMETERS FOR FINE - TUNING THE MODEL USED FOR BOTH
+CLIENT BEHAVIOR AND COUNSELOR STRATEGY RECOGNITION .
+Hyperparameters
+
+Values
+
+Hyperparameters
+
+Values
+
+epochs
+
+10
+
+seed number
+
+[42, 43, 44, 45]
+
+batch size
+
+16
+
+warmup ratio
+
+0.1
+
+learning rate (lr)
+
+2e-5
+
+momentum values [β1 , β2 ]
+
+[0.9, 0.999]
+
+weight decay (λ)
+
+0.01
+
+dropout rate
+
+0.1
+
+TABLE III
+R ESULTS OF CLIENT BEHAVIOR AND COUNSELOR STRATEGY PREDICTION
+IN THE TEST SET, AS WELL AS RESPONSE SELECTION .
+Task
+
+42
+
+43
+
+44
+
+45
+
+Client Behavior Prediction
+Counselor Strategy Prediction
+Response Selection (R@1/10)
+
+85.97
+80.15
+81.84
+
+85.47
+80.77
+82.10
+
+84.97
+80.25
+81.77
+
+85.31
+80.67
+81.54
+
+TABLE V
+PARAMETERS OF PARAMETER - EFFICIENT FINE - TUNING .
+Epoch
+
+Learning
+Rate
+
+Batch
+Size
+
+LoRA
+Rank
+
+LoRA
+Dropout
+
+LoRA
+α
+
+Seed
+
+2
+
+1e-4
+
+1
+
+16
+
+0.1
+
+64
+
+1234
+
+TABLE VI
+R ESULTS OF AUTOMATIC EVALUATION IN THE TEST SET.
+PPL (⇓)
+
+METEOR (⇑)
+
+BLEU-1 (⇑)
+
+Baseline
+
+3.39
+
+16.8
+
+9.1
+
+BLEU-2 (⇑)
+4.1
+
+Fine-tuning
+
+1.26
+
+22.9
+
+24.1
+
+11.6
+
+BLEU-3 (⇑)
+
+Rouge-L (⇑)
+
+D-1 (⇑)
+
+D-2 (⇑)
+
+Baseline
+
+1.5
+
+12.4
+
+62.1
+
+87.8
+
+Fine-tuning
+
+5.3
+
+27.6
+
+86.6
+
+97.2
+
+E. Response Selection
+TABLE IV
+DATA STATISTICS . T HE DATASETS REPRESENTED BY ♢ AND ♣ ARE
+UTILIZED FOR RESPONSE GENERATOR AND RESPONSE SELECTION ,
+RESPECTIVELY.
+Data Type
+
+# Train
+
+# Validation
+
+# Test
+
+SmileChat♢
+Xingling♢
+Xingling♣
+
+310087
+15850
+15850
+
+3150 (only used for retrieval)
+3150
+
+3072
+3072
+
+3) Results: We retain the best checkpoint with the highest
+accuracy in the validation set for each seed. The results of
+accuracy among the four seeds in the test set are reported in
+Table III, demonstrating comparable accuracy to the original
+paper. Therefore, we select the checkpoint trained with the
+seed of 42 for client behavior recognition.
+B. Counselor Strategy Selection
+We utilize the publicly available embedding model
+BAAI/bge-large-zh-v1.54 , accessible on Hugging
+Face. The demonstrations used to construct the training and
+test sets for response generation are retrieved from the validation set in Xinling, as illustrated in the second row of Table
+IV. Furthermore, during the inference process, the counselor’s
+strategy is also retrieved from the validation set in Xinling.
+C. Input Packer
+We provide data statistics for fine-tuning the response
+generator in Table IV.
+D. Response Generator
+1) Parameter-efficient Fine-tuning: We apply the LowRank Adaption (LoRA [12]) to all linear layers in the
+ChatGLM2-6B model for efficient fine-tuning. We present
+the hyperparameters for fine-tuning the response generator in
+Table V.
+2) Dialogue Generation: During the generation process, we
+set the maximum sequence length to 8192, the temperature to
+0.8, and top_p to 0.8. Finally, we obtain 10 responses and
+select the optimal one using our trained response selector.
+4 https://huggingface.co/BAAI/bge-large-zh-v1.5
+
+For the evaluation metric, we measure Recall@k, where
+each test example has N possible response candidates to select
+from, abbreviated as R@k/N . Since our objective is to select
+the optimal response from these candidates, we set k to 1 and
+N to 10.
+1) Data Statistics: We present the data statistics for response selection in Table IV.
+2) Hyperparameters: We utilize the hyperparameters for
+response selection in Table II. One notable difference is that
+we set the batch size to 1, considering that each batch consists
+of one ground truth and 9 negatives.
+3) Results: The results of response selection among the
+four seeds in the test set are presented in Table III. Consequently, we choose the checkpoint trained with seed 43 for
+response selection.
+F. Auxiliary Task: Counselor Strategy Recognition
+1) Data Statistics: We provide the data statistics for counselor strategy prediction in Table I.
+2) Hyperparameters: We present the hyperparameters used
+for fine-tuning the model in counselor strategy recognition in
+Table II.
+3) Results: We present the accuracy results for the four
+seeds in the test set, as depicted in Table III. Consequently, we
+select the checkpoint trained with seed 43 for data annotation.
+V. R ESULTS
+A. Automatic Evaluation
+1) Metrics: To conduct automatic evaluation, we utilize
+the following evaluation metrics: Perplexity (PPL) [13], METEOR [14], BLEU-1/2/3 [15], Rouge-L [16], and Distinct-1/2
+(D-1/2) [17].
+2) Results: We present the results of the automatic evaluation in Table VI. All the utilized automatic evaluation metrics
+indicate enhanced performance, highlighting the effectiveness
+and practicality of the proposed client-centric dialogue system.
+
+TABLE VII
+R ESULTS OF HUMAN EVALUATION OF 100 SAMPLES . T HE NUMBER OF
+TIMES THAT EACH ANNOTATOR CHOOSES A MODEL RESPONSE AMONG
+THREE MODELS : BASELINE , FINE - TUNED , AND GROUND TRUTH .
+Annotator
+
+Baseline
+
+Fine-tuning
+
+Ground Truth
+
+Annotator A
+Annotator B
+Annotator C
+Average
+
+3
+10
+12
+8
+
+45
+44
+36
+42
+
+52
+46
+52
+50
+
+( Giving Information )
+I've been feeling really down lately.
+( Minimal Encouragement )
+Hmm, you can tell me more. I'm here.
+( Giving Information )
+I'm finding it harder and harder to study, and I don't know what to do.
+( Interpretation )
+Yeah, so what I'm trying to say is, you might be feeling kinda lost right now, you know?
+( Giving Information )
+I can't stand myself right now, and I have no idea how to keep going with my studies.
+( Affirmation and Reassurance )
+Yeah, I think you're awesome. It's cool that you can recognize your own issues and
+reach out for help.
+( Reasonable Requesting )
+Don't just comfort me like that, do you have any practical suggestions?
+( Invite to Explore New Actions )
+Right now, all you gotta do is tweak your mindset a bit. Get yourself outta this jam.
+
+Fig. 5. An illustration of a case study of our client-centric dialogue system.
+
+B. Human Evaluation
+For human evaluation, we recruit three professional counselors, each with more than two years of counseling experience. Therefore, we sample 100 examples, each comprising
+a dialogue history with three responses: the ground truth,
+the response generated by the baseline model (without finetuning), and the response generated by our trained dialogue
+system. The last two responses are selected from 10 candidates
+by our response selector, respectively. Three counselors are
+tasked with selecting the optimal response from three shuffled
+options. They consider which one is more suitable for the
+dialogue history from a holistic perspective.
+We present the results of the human evaluation in Table
+VII. The average selection times are 50, 42, and 8 for
+ground truth, fine-tuning, and baseline, respectively. Three
+professional counselors generally agree that the quality of
+responses from our trained dialogue system is comparable
+to that of the ground truth. Each annotator chooses a model
+response. The chosen model scores 1 point, and the other two
+models score 0 points. Thus, we can obtain three arrays of
+300-dimensional scores and calculate the significant difference
+between each pair of models separately. The results show that
+only the p-value between the fine-tuned model and the ground
+truth is 0.04, while the others are 0.00 (∗∗ p = 0.01). Therefore,
+we conclude that the quality of responses generated by our
+proposed dialogue system is comparable to the ground truth,
+demonstrating the practicality and effectiveness of our clientcentric dialogue system.
+C. Case Study
+We present an illustration of a case study of our clientcentric dialogue system in Figure 5, demonstrating that our
+dialogue system can better consider the client’s behavior.
+With the ability to select an appropriate counseling strategy
+
+and the assistance of response selection, our system can
+provide a better response in real-world client-virtual-counselor
+interaction scenarios.
+VI. C ONCLUSION
+In conclusion, the client-centric dialogue system for mental
+health support represents a promising avenue for enhancing client well-being, addressing issues of accessibility, affordability, and stigma. Through both automatic and human
+evaluations, our system has demonstrated its effectiveness
+and practicality in real-life mental health support scenarios.
+Notably, in a simulated client-virtual-counselor interaction,
+the system successfully predicted client behaviors, selected
+appropriate counselor strategies, and generated accurate and
+suitable responses with the assistance of response selection.
+R EFERENCES
+[1] M. Prince, V. Patel, S. Saxena, M. Maj, J. Maselko, M. R. Phillips,
+and A. Rahman. “No health without mental health.” The lancet 370, no.
+9590 (2007): 859-877.
+[2] C. E. Hill. “Helping skills: Facilitating, exploration, insight, and action.”
+American Psychological Association, 2009.
+[3] H. Sun, Z. Lin, C. Zheng, S. Liu and M. Huang. “Psyqa: A chinese
+dataset for generating long counseling text for mental health support.”
+arXiv preprint arXiv:2106.01702 (2021).
+[4] S. Liu, C. Zheng, O. Demasi, S. Sabour, Y. Li, Z. Yu, Y. Jiang and
+M. Huang. “Towards emotional support dialog systems.” arXiv preprint
+arXiv:2106.01144 (2021).
+[5] C. Zheng, S. Sabour, J. Wen, Z. Zhang and M. Huang. “Augesc: Largescale data augmentation for emotional support conversation with pretrained language models.” arXiv preprint arXiv:2202.13047 (2022).
+[6] H. Qiu, H. He, S. Zhang, A. Li, and Z. Lan. “SMILE: Single-turn
+to Multi-turn Inclusive Language Expansion via ChatGPT for Mental
+Health Support.” arXiv preprint arXiv:2305.00450 (2023).
+[7] Y. Chen, X. Xing, J. Lin, H. Zheng, Z. Wang, Q. Liu and X. Xu.
+“SoulChat: Improving LLMs’ Empathy, Listening, and Comfort Abilities
+through Fine-tuning with Multi-turn Empathy Conversations.” arXiv
+preprint arXiv:2311.00273 (2023).
+[8] J. M. Liu, D. Li, H. Cao, T. Ren, Z. Liao and J. Wu. “Chatcounselor:
+A large language models for mental health support.” arXiv preprint
+arXiv:2309.15461 (2023).
+[9] A. Li, L. Ma, Y. Mei, H. He, S. Zhang, H. Qiu, and Z. Lan, 2023.
+“Understanding Client Reactions in Online Mental Health Counseling.”
+In Proceedings of ACL, pages 10358–10376, Toronto, Canada.
+[10] A. Zeng, X. Liu, Z. Du, Z.Wang, H. Lai, M. Ding, Z. Yang, Y. Xu, W.
+Zheng, X. Xia and W.L. Tam. “Glm-130b: An open bilingual pre-trained
+model.” arXiv preprint arXiv:2210.02414 (2022).
+[11] Y. Cui, W.g Che, T. Liu, B. Qin, S. Wang, and G. Hu. 2020. “Revisiting
+Pre-Trained Models for Chinese Natural Language Processing.” In Findings of the Association for Computational Linguistics: EMNLP 2020,
+pages 657–668, Online. Association for Computational Linguistics.
+[12] E. J. Hu, Y. Shen, P. Wallis, Z. Allen-Zhu, Y. Li, S. Wang, L. Wang,
+and W. Chen. “Lora: Low-rank adaptation of large language models.”
+in arXiv, preprint arXiv:2106.09685.
+[13] F. Jelinek, R. L. Mercer, L. R. Bahl, and J. K. Baker. “Perplexity—a
+measure of the difficulty of speech recognition tasks.” The Journal of
+the Acoustical Society of America 62, no. S1 (1977): S63-S63.
+[14] S. Banerjee and A. Lavie. “METEOR: An automatic metric for MT
+evaluation with improved correlation with human judgments.” In Proceedings of the ACL workshop, pp. 65-72. 2005.
+[15] K. Papineni, S. Roukos, T. Ward, and W. Zhu. “Bleu: a method for
+automatic evaluation of machine translation.” In Proceedings of the 40th
+annual meeting of the Association for Computational Linguistics, pp.
+311-318. 2002.
+[16] C. Lin. “Rouge: A package for automatic evaluation of summaries.” In
+Text summarization branches out, pp. 74-81. 2004.
+[17] J. Li, M. Galley, C. Brockett, J. Gao, and B. Dolan. “A diversitypromoting objective function for neural conversation models.” arXiv
+preprint arXiv:1510.03055 (2015).
+
+

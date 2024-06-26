@@ -1,0 +1,897 @@
+arXiv:2312.04249v1 [cs.AI] 7 Dec 2023
+
+Extending Answer Set Programming with
+Rational Numbers
+Francesco Pacenza0000−0001−6632−3492 and
+Jessica Zangari0000−0002−6418−7711
+Department of Mathematics and Computer Science,
+University of Calabria, Rende, Italy
+Abstract
+Answer Set Programming (ASP) is a widely used declarative programming paradigm that has shown great potential in solving complex computational problems. However, the inability to natively support non-integer
+arithmetic has been highlighted as a major drawback in real world applications. This feature is crucial to accurately model and manage real world
+data and information as emerged in various contexts, such as the smooth
+movement of video game characters, the 3D movement of mechanical arms
+and data streamed by sensors. Nevertheless, extending ASP in this direction, without affecting its declarative nature and its well-defined semantics, poses non-trivial challenges; thus, no ASP system is able to natively
+reason with non-integer domains. Indeed, the widespread floating-point
+arithmetic is not applicable to the ASP case, as reproducibility of results
+cannot be guaranteed and the semantics of an ASP program would not
+to be uniquely and declaratively determined, regardless of the employed
+machine or solver. To overcome such limitations and in the realm of
+pure ASP, this paper proposes an extension of ASP in which non-integers
+are approximated to rational numbers, fully granting reproducibility and
+declarativity. We provide a well-defined semantics for the ASP-Core-2
+standard extended with rational numbers and an implementation thereof.
+We hope this work could serve as a stepping stone towards a more expressive and versatile ASP language that can handle a broader range of real
+world problems.
+
+1
+
+Introduction
+
+In recent years, artificial intelligence (AI) has become an integral part of our
+daily lives, influencing various aspects of society, from personal interactions to
+business operations. As AI technologies continue to advance, there are ongoing
+efforts towards explainability. One of the key challenges in achieving transparency is the inherent complexity of AI algorithms. Many AI systems operate
+
+1
+
+as “black boxes”, making it challenging for users and even developers to comprehend the decision-making processes.
+In this light, Answer Set Programming (ASP) [10, 18, 25, 32] is a declarative
+symbolic language, promoted as a good candidate to address the explainability
+issue [17]. ASP is a rule-based programming paradigm, in which logic rules are
+used to explicitly describe problems. Rules drive the inference process, making explainable the resulting solutions, thus facilitating a clear understanding
+of the decision-making process. The roots of ASP are grounded in the area
+of knowledge representation and reasoning and in particular, in logic programming and non-monotonic reasoning. Applications of ASP can be found in many
+real world contexts, such as industry [22, 41], robotics [3, 20], planning [7],
+scheduling [44], IoT [15], stream reasoning [5], surgery [35], diagnosis [43], psychology [26], video-games [4] and more [19].
+In the realm of explainability, novel applications are emerging from the increasing effort of the scientific community towards the integration of symbolic
+and statistical AI approaches [34, 27]. However, diverse attempts [9, 19, 22, 35]
+have been emphasizing the absence in ASP of an essential requirement, i.e., the
+support for non-integer numbers. Non-integer arithmetic is already supported
+by other logic programming languages, e.g., Constraint Logic Programming [28],
+Prolog [42], Datalog [37]. Moreover, also hybrid approaches, merging the advances in distinct research areas such as Constraint Processing and Satisfiability
+Modulo Theories [11, 31, 36], provide some support for non-integers. However,
+ASP-Core-2, the standard language [12] for ASP, adopted in the official competition series, does not feature non-integer arithmetic, and no ASP-based system
+is currently able to natively handle numbers beyond integers. ASP developers
+are thus required to design ad-hoc solutions tailored to each specific application,
+when possible, or resort to approximations.
+In fact, extending ASP in this direction, without affecting its declarative
+nature and its well-defined semantics, poses non-trivial challenges from both the
+theoretical and practical perspectives. A natural solution could be to rely on the
+floating-point arithmetic for which technical standards are available, making it
+widely adopted not only in imperative programming but also in popular logicbased languages, such as Prolog1. However, the absence of some fundamental
+mathematical properties, like the associativity of addition and multiplication,
+represents a critical issue in the ASP case, because it can lead to imprecise or
+incorrect results. Moreover, reproducibility cannot be guaranteed regardless of
+the employed machine or implementation while, in contrast, the semantics of
+an ASP program should be uniquely and declaratively determined.
+In this regard, this work provide the following contributions. i) We define a
+new version of the ASP-Core-2 language including rational numbers, formalizing
+its syntax and semantics. Adopting rational numbers is valuable under several
+aspects. They possess the same properties of integers, while additionally providing closure with respect to all four fundamental mathematical operations.
+From a mathematical perspective rationals provide exact calculations. In turn,
+1 https://www.swi-prolog.org/FAQ/floats.html
+
+2
+
+from a computational point of view, like integers, if unlimited memory is available, rational numbers do not overflow and provide exact calculations in all
+circumstances. Lastly, they significantly broaden the range of application domains compared to the solely integers of ASP-Core-2. ii) We illustrate relevant
+aspects to take into account in order to implement the proposed language and
+to re-adapt an existing ASP system to support rational terms. iii) In order
+to assess the practicality and viability of the introduced language, we provide
+a new version of the grounder I-DLV [14] supporting it. I-DLV is compatible with state-of-the-art ASP solvers and with any other solver adopting the
+de-facto standard lparse [40] intermediate numeric format. Therefore, through
+the combination of I-DLV with various solvers, the AI community gains access
+to multiple ASP systems able to handle numbers beyond integers. I-DLV is
+available at https://demacs-unical.github.io/I-DLV.
+The remainder of the paper is structured as follows. Section 2 recalls ASP
+and presents the conceived ASP-Core-2 version with rational terms. Section 3
+discusses typically adopted solutions to bypass the lack of non-integer numbers
+in ASP. Section 4 presents the proposed implementation. Section 5 concludes
+the work.
+
+2
+
+ASP-Core-2 with Rational Terms
+
+Answer Set Programming is a purely declarative logic formalism rooted in logic
+programming and non-monotonic reasoning, falling in the area of Knowledge
+Representation and Reasoning. The basic construct of ASP is a rule, that has
+the form Head ← Body where the Body is a logic conjunction in which negation
+may appear, and Head can be either an atomic formula or a logic disjunction. A
+rule is interpreted according to common sense principles: roughly, its intuitive
+semantics corresponds to an implication. More precisely, the semantics of ASP
+is called answer set semantics. In ASP a problem is modeled via a logic program
+composed by a collection of rules. An ASP system is in charge of determining
+its solutions by computing its answer sets, which correspond one-to-one to a
+solution of the modeled problem. In order to determine the answer sets of
+a given program, the majority of ASP systems relies on an instantiation (or
+grounding) phase followed by a solving phase. In the former step, a grounder
+module produces a propositional program semantically equivalent to the input
+program; in the latter step, a solver module applies search techniques on this
+propositional program to determine the answer sets [39]. Other approaches are
+based on lazy grounding [8], translation to propositional clauses [29] or reduction
+to epistemic programs [6].
+Throughout the years a significant effort has been spent in order to extend
+the “basic” language and ease knowledge representation tasks with ASP. The
+standard input language for ASP systems has been defined under the name of
+ASP-Core-2, the official language of the ASP Competition series [24]. It is worth
+to mention that ASP-Core-2 as well as mainstream ASP systems, supports only
+integers as numeric type and results of arithmetic operations are rounded as
+
+3
+
+integers towards zero.
+The remainder of this section presents the syntax and the semantics of proposed language extension, conceived on the basis of ASP-Core-2. Then, we
+focus on technical aspects relevant for implementations.
+
+2.1
+
+Syntax
+
+Let I be a set of identifiers. An identifier is a non-empty string starting with
+some lowercase letter and containing only alphanumeric symbols and the symbol
+“ ”.
+A term is either a constant, a variable, an arithmetic term or a functional
+term. In particular, constants and variables can be considered as “basic terms”,
+while arithmetic and functional terms are inductively defined as combinations of
+terms. A constant is either a rational, a symbolic constant if it is an identifier,
+a string constant if it is a quoted string. A rational can be written in three
+forms: (1) p/q where p, q 6= 0 are integers representing the numerator and the
+denominator, respectively; (2) i where i is an integer; (3) i.d1 ...dm where i is
+an integer, m > 0, each dj (1 ≤ j ≤ m, 0 ≤ dj ≤ 9) is called decimal digit.
+Forms (2) and (3) are just short-hands for form (1); indeed, in form (2) the
+numerator is i and the denominator is 1; similarly, form (3) corresponds to form
+(1) with (i.d1 ...dm ∗ 10m ) as numerator and 10m as denominator. A variable
+is a non-empty string starting with some uppercase letter and containing only
+alphanumeric symbols and the symbol “ ”. Furthermore, an anonymous variable
+is a special form of variable, denoted by the symbol “ ” and is intended to
+indicate a fresh variable that does not appear elsewhere in the context in which
+it is located. An arithmetic term has the form −(t1 ) or (t1 ⋄ t2 ) for terms t1
+and t2 , and ⋄ ∈ {“+”,“−”,“∗”,“/”}. Parentheses can optionally be omitted
+and standard operator precedences are applied. A functional term has the form
+f (t1 , . . . , tn ), where f is an identifier, called functor, t1 , . . . , tn are terms and
+n > 0. A term is ground (i.e., variable-free) if it does not contain any variable.
+Given an identifier p and an integer n with n ≥ 0, the expression p/n represents a predicate. p is said predicate symbol and n represents the associated
+arity. A predicate atom has the form p(t1 , . . . , tn ) where n ≥ 0, p/n is a predicate and t1 , . . . , tn are terms; if n = 0, parenthesis are omitted and the notation
+p is used. A classical atom is either −a or a where a is a predicate atom and
+− denotes the strong negation symbol. A built-in atom has the form t1 ⊲ t2
+where t1 , t2 are terms and ⊲ ∈ {“<”, “≤”,“=”,“6=”,“>”,“≥”}. A naf-literal can
+either be a built-in atom or have form a or not a where a is a classical atom,
+and not is the negation as failure symbol. An aggregate element is composed
+as: t1 , . . . , tm : l1 , . . . , ln , where t1 , . . . , tm are terms l1 , . . . , ln are naf-literals for
+n ≥ 0, m ≥ 0. An aggregate atom has the form:
+#aggr{e1 ; . . . ; en } ⊲ t
+where:
+• #aggr ∈ { “#count”,“#sum”,“#max”,“#min”};
+4
+
+• e1 ; . . . ; en are aggregate elements for n ≥ 0;
+• ⊲ ∈ {“<”, “≤”,“=”,“6=”,“>”,“≥”};
+• t is a term.
+An aggregate literal is either a or not a where a is an aggregate atom. In
+the following we will refer to classical, built-in and aggregate atoms simply as
+atoms. Similarly, we will indicate naf and aggregate literals as literals. An atom
+is ground if it does not contain any variable. A literal is ground if its atom is
+ground. A literal is negative if the not symbol is present, otherwise it is positive.
+A rule r has the following form:
+a1 | . . . | an :− b1 , . . . , bm .
+where:
+• a1 , . . . , an are classical atoms;
+• b1 , . . . , bm are literals;
+• n ≥ 0, m ≥ 0.
+The disjunction a1 | . . . | an is the head of r, while the conjunction b1 , . . . , bm
+is the body of r. We denote by H(r) the set {a1 , . . . , an } of head atoms, and by
+B(r) the set {b1 , . . . , bm } of body literals. B + (r) (respectively, B − (r)) denotes
+the set of atoms occurring in positive (respectively, negative) literals in B(r).
+A fact is a rule r with B(r) = ∅, |H(r)| = 1 and H(r) = {a} with a ground. A
+strong constraint is a rule r with |H(r)| = ∅. A weak constraint has the form:
+:∼ b1 , . . . , bm . [w@l, t1 , . . . , tn ] where:
+• n ≥ 0, m ≥ 0;
+• b1 , . . . , bm are literals;
+• w, l, t1 , . . . , tn are terms; w and l are referred to as weight and level, respectively; if l = 0, the expression @0 can be omitted.
+For a weak constraint c we will indicate as weak specification, denoted W (c),
+the part within the square brackets. A rule or weak constraint is ground if no
+variable appears in it. A program is a finite set of rules and weak constraints2 .
+A program is ground if all its rules and weak constraints are ground.
+2 We omit the concept of query whose semantics remains exactly as in ASP-Core-2; indeed,
+
+the presence of a query is transparent to the presence of rational terms.
+
+5
+
+2.2
+
+Semantics
+
+The semantics of an ASP program is given by the set of its answer sets, as
+reported in this subsection.
+Let P be an ASP program.
+Herbrand universe. The Herbrand universe of P , UP , is the set of all rational
+numbers in their standard form and ground terms constructible from constants
+and functors appearing in P . We recall that a rational number is in the standard
+form if the numerator and denominator have no factors in common (except 1)
+and the denominator is positive. In other words, for an integer i its standard
+form is 1i , whereas for a rational number pq with p integer, its standard form
+′
+
+is pq′ , where: p′ = p/gcd(p, q) and q ′ = q/gcd(p, q) if q is a non-zero positive
+integer; p′ = −p/gcd(p, q) and q ′ = −q/gcd(p, q) if q is a non-zero negative
+integer. Note that gcd stands for greatest common divisor.
+Herbrand base. The Herbrand base of P , BP , is the set of all ground classical
+atoms obtainable by combining predicate names appearing in P with terms from
+UP as arguments.
+Global and local variables. For a literal l, let var(l) be the set of variables
+appearing in l; if l is ground var(l) = ∅. For a conjunction of literals C,
+var(C) denotes the set of variables occurring in the literals in C; similarly, for a
+disjunction of atoms D, var(D) denotes the set of variables in the atoms in D.
+Inductively, for a rule r, var(r) = var(H(r)) ∪ var(B(r)); for a weak constraint
+c, var(c) = var(B(c)) ∪ var(W (c)). Given a rule or a constraint r, a variable is
+global if it appears outside of an aggregate element in r and we denote as varg (r)
+the set of global variables in r. Given an aggregate element e in a rule or a weak
+constraint r, varl (e) = var(e) \ var(r) denotes the set of local variables of e, i.e.,
+the set of variables appearing only in e; intuitively, the set of global variables of
+e contains variables appearing in both r and e, i.e., varg (e) = var(r) ∩ var(e).
+Substitution. Given a Herbrand universe UP of a program P and a set of
+variables V , a substitution is a total function σ : V 7→ UP that maps each
+variable in V to an element in UP . For some object o occurring in P (term,
+atom, literal, rule, etc.), we denote by oσ the object obtained by replacing each
+occurrence of a variable v ∈ var(o) by σ(v) in o.
+Global and local substitutions. Given a rule or weak constraint r in P a
+substitution is global if it involves variables in varg (r); for an aggregate element
+e in r, a substitution is local if it involves variables in varl (e). We remark that
+for terms, classical atoms and naf-literals, a substitution is implicitly global, due
+to the absence of aggregate elements.
+Well-formed global and local substitutions. A global substitution σg for
+a rule or weak constraint r is well-formed if the arithmetic evaluation of any
+arithmetic subterm −(t) or (t ⋄ u) appearing outside of aggregate elements in
+rσg is well-defined. Similarly, a local substitution for an aggregate element e,
+
+6
+
+σl is well-formed if the arithmetic evaluation of any arithmetic subterm −(t) or
+(t ⋄ u) appearing in eσl is well-defined. In both cases, the arithmetic evaluation
+is performed in the standard way and results are reduced to the standard form.
+More in detail, if t and u are rationals of form pt /qt and pu /qu , respectively, the
+result is a rational term v of form pv /qv where:
+• in the −(t) case:
+– pv = −1 ∗ pt
+– qv = qt
+• if ⋄ = {“+”}:
+– pv = p′ /gcd(p′ , q ′ )
+– qv = q ′ /gcd(p′ , q ′ )
+with p′ = (lcm(qt , qu ) / qt ∗ pt + lcm(qt , qu ) / qu ∗ pu ) and q ′ = lcm(qt , qu )
+• if ⋄ = {“−”}:
+– pv = p′ /gcd(p′ , q ′ )
+– qv = q ′ /gcd(p′ , q ′ )
+with p′ = (lcm(qt , qu ) / qt ∗ pt − lcm(qt , qu ) / qu ∗ pu ) and q ′ = lcm(qt , qu )
+• if ⋄ = {“∗”}:
+– pv = (pt ∗ pu )/gcd(pt ∗ pu , qt ∗ qu )
+– qv = (qt ∗ qu )/gcd(pt ∗ pu , qt ∗ qu )
+• if ⋄ = {“/”}:
+– pv = (pt ∗ qu )/gcd(pt ∗ qu , qt ∗ pu )
+– qv = (qt ∗ pu )/gcd(pt ∗ qu , qt ∗ pu )
+in which lcm stands for least common multiple.
+Instantiation of aggregate elements. The instantiation of a collection of
+aggregate elements E is obtained by considering well-formed local substitutions
+for each aggregate element in E:
+[
+inst(E) =
+{eσ|σ is a well-formed local substitution for e}
+e∈E
+
+Standardization of rationals. Given the set Q of rational terms appearing
+in P , a standardization is a total function φ : Q 7→ UP mapping each rational
+term t ∈ Q to the element in UP corresponding to its standard form. Given an
+object o occurring in P (term, atom, literal, rule, etc.), we denote by oφ the
+object obtained by replacing each rational term t appearing in o by φ(t) in o.
+7
+
+Ground instance. A ground instance of a rule or weak constraint r ∈ P is
+obtained in three steps: (1), a standardization φ is applied to r obtaining rφ;
+(2), a well-formed global substitution σg for rφ is applied to rφ obtaining rφσg ;
+(3), for every aggregate atom #aggrE ⊲ t in rφσg , E is replaced by inst(E).
+Arithmetic evaluation. The arithmetic evaluation of a ground instance g of
+a rule or a weak constraint is obtained by replacing any maximal arithmetic
+sub-term appearing in g by its rational value in its standard form, which is
+calculated as shown in the paragraph related to well-formed global and local
+substitutions.
+Instantiation of a program. The ground instantiation of a program P ,
+denoted by grnd(P ), is the set of arithmetically evaluated ground instances of
+rules and weak constraints in P .
+Interpretation. Once that a ground program is obtained, the truth values of
+atoms, literals, rules, constraints etc., are properly defined according to interpretations. An (Herbrand) interpretation I for P is a subset of BP .
+Total order. Literals can be either true or false w.r.t. an interpretation. To
+illustrate how their truth values are determined, as a preliminary step, we need
+to define a proper total order  on terms in UP . In line with ASP-Core-2,
+we adopt the one reported next. Let t and u be two arithmetically evaluated
+ground terms, then:
+• t  u for rationals t of form pt /qt and u of form pu /qu if pt ∗ qu ≤ pu ∗ qt ,
+• t  u if t is a rational and u is a symbolic constant,
+• t  u for symbolic constants t and u with t lexicographically smaller or
+equal to u,
+• t  u if t is a symbolic constant and u is a string constant,
+• t  u for string constants t and u with t lexicographically smaller or equal
+to u,
+• t  u if t is a string constant and u is a functional term,
+• t  u for functional terms t = f (t1 , . . . , tn ) and u = g(u1 , . . . , un ) if either:
+– m < n or,
+– m = n and g  f (f is lexicographically smaller than g) or,
+– m = n, f  g and, for any 1 ≤ j ≤ m s.t. tj  uj , there is some
+1 ≤ i < j s.t. ti  ui (i.e., the tuple of terms of t is smaller than or
+equal to the arguments of u).
+At this point, we are ready to properly define satisfaction of literals.
+Satisfaction of naf-literals. Let I ⊆ BP be an interpretation for P . The
+satisfaction of a built-in atom can be defined according to the total order , in
+the intuitive way, as they represent comparisons among terms; more in detail:
+8
+
+• t ≤ u is true w.r.t. I if t  u, false otherwise;
+• t ≥ u is true w.r.t. I if u  t, false otherwise;
+• t < u is true w.r.t. I if t  u and u  t, false otherwise;
+• t > u is true w.r.t. I if u  t and t  u, false otherwise;
+• t = u is true w.r.t. I if t  u and u  t, false otherwise;
+• t 6= u is true w.r.t. I if t  u or u  y, false otherwise.
+A classical atom a ∈ BP is true w.r.t. I if a ∈ I; false w.r.t. I otherwise. A
+positive naf-literal a is true w.r.t. I if a is a classical or built-in atom that is
+true w.r.t. I; otherwise, a is false w.r.t. I. A negative naf-literal not a is true
+(or false) w.r.t. I if a is false (or true) w.r.t. I.
+Satisfaction of aggregate literals. An aggregate function stands for a mapping from sets of tuples of terms to terms, +∞ or −∞. Each aggregate function
+maps a set T of tuples of terms to a term, +∞ or −∞ as follows. Let T be a
+finite set of tuples of terms, then:
+• #count(T ) = |T |;
+
+P
+• #sum(T ) = x′ and x =
+(t1 ,...,tm )∈T,t1 is a rational t1 if {(t1 , . . . , tm ) ∈
+T |t1 is a non-zero rational} is finite and x′ is x reduced to the standard
+form;
+• #max(T ) = max{t1 |(t1 , . . . , tm ) ∈ T } if T 6= ∅; #max(T ) = −∞ if
+T = ∅;
+• #min(T ) = min{t1 |(t1 , . . . , tm ) ∈ T } if T 6= ∅; #min(T ) = +∞ if T = ∅;
+When T is infinite, instead we have:
+• #count(T ) = +∞;
+• #sum(T ) = 0 if {(t1 , . . . , tm ) ∈ T |t1 is a non-zero rational} is infinite;
+• #max(T ) = +∞;
+• #min(T ) = −∞.
+We adopt the same convention of ASP-Core-2: −∞  u and u  +∞ for
+every term u ∈ UP . Essentially, #count depends on the cardinality of the set
+of tuples of terms T , #sum is evaluated as the sum of rational terms in T
+reduced in its standard form, while #max and #min functions strictly rely
+on the total order  on terms in UP . Given an expression #aggr(T ) ⊲ u
+s.t. #aggr ∈ {“#count”, “#sum”, “#max”, “#min”} and u is a term, it is
+true (or false) according to the definition given for the satisfaction of built-in
+atoms, extended to the values +∞ and −∞ for #aggr(T ). We can now define
+the satisfaction of aggregate literals. Fixed an interpretation, some aggregate
+9
+
+elements may not contribute to the semantics of an aggregate atom. Intuitively,
+an interpretation can filter out some aggregate elements according to their truth
+values w.r.t. the interpretation itself. More formally, the interpretation I maps
+a collection E of aggregate elements to the following set of tuples of terms:
+eval(E, I) ={(t1 , . . . , tn )|{t1 , . . . , tn : l1 , . . . , lm } occurs in E and
+{l1 , . . . , lm } are true w.r.t. I}
+Let a = #aggrE ⊲ t be an aggregate atom, a is true (or false) w.r.t. I if
+#aggr{eval(E, I)} ⊲ t is true (or false) w.r.t. I. A positive aggregate literal a
+is true (or false) w.r.t. I if a is true (or false) w.r.t. I. A negative aggregate
+literal not a is true (or false) w.r.t. I if a is false (or true) w.r.t. I.
+Satisfaction of rules. Let r be a rule in grnd(P ). The head of r is true w.r.t.
+I if H(r) ∩ I 6= ∅. The body of r is true w.r.t. I if all body literals of r are true
+w.r.t. I (i.e., B + (r) ⊆ I and B − (r) ∩ I = ∅) and is false w.r.t. I otherwise.
+The rule r is satisfied (or true) w.r.t. I if its head is true w.r.t. I or its body is
+false w.r.t. I.
+Model. A model for P is an interpretation M for P such that every rule
+r ∈ grnd(P ) is true w.r.t. M . A model M for P is minimal if no model N for
+P exists such that N is a proper subset of M . The set of all minimal models
+for P is denoted by MM(P ).
+Reduct. Given the ground program grnd(P ) and an interpretation I, the
+reduct of grnd(P ) w.r.t. I is the subset P I of grnd(P ), which is obtained from
+grnd(P ) by deleting rules in which a body literal is false w.r.t. I. Note that the
+above definition of reduct [21] is equivalent to the Gelfond-Lifschitz transform
+for the definition of answer sets [25].
+Answer set. Let I be an interpretation for P . I is an answer set for P if
+I ∈ MM(P I ). The set of all answer sets for P is denoted by AS(P ).
+Optimal answer sets. In case of weak constraints in P , answer sets need
+to be further examined, and classified as optimal or not. Intuitively, strong
+constraints represent conditions that must be satisfied in every answer set, while
+weak constraints indicate conditions that should be satisfied; their semantics
+involves minimizing the number of violations, thus allowing to easily encode
+optimization problems.
+Optimal answer sets of P are selected among AS(P ), according to the following schema. Let I be an interpretation, then:
+weak(P, I) ={(w@l, t1 , . . . , tm )|
+:∼ b1 , . . . , bn [w@l, t1 , . . . , tm ] occurs in grnd(P )
+and b1 , . . . , bn are true w.r.t. I}
+For any rational l, we define PlI as:
+
+X
+
+(w@l,t1 ,...,tm )∈weak(P,I), w is a rational
+
+10
+
+w
+
+if {(w@l, t1 , . . . , tm ) ∈ weak(P, I) | w is a non-zero rational} is finite; 0 if
+{(w@l, t1 , . . . , tm ) ∈ weak(P, I) | w is a non-zero rational} is infinite. In other
+words, for each weak constraint in grnd(P ) satisfied by I, we sum the weights
+per level: these numbers represent a kind of penalty paid by I: the lower they
+are, the higher is the possibility for I, if it represents an answer set, to be
+optimal.
+More formally, we define the notion of domination among answer sets as
+follows. Given an answer set A ∈ AS(P ), it is said dominated by another
+′
+′
+answer set A′ if there is some rational l such that PlA < PlA and PlA′ = PlA′
+for all rationals l′ > l. An answer set A ∈ AS(P ) is optimal if there is no
+A′ ∈ AS(P ) such that A is dominated by A′ .
+
+2.3
+
+Properties
+
+With respect to ASP-Core-2, the proposed extensions enjoys the properties
+given in the following propositions.
+Proposition 1. The proposed semantics, exactly like ASP-Core-2, is based on
+a countably infinite set of numerals.
+Proof. Every rational number in the standard form can be uniquely associated
+with an integer, meaning there is a bijective relationship between the set of
+integers and the set of rationals in the standard form. Consequently, from the
+Cantor-Schroeder-Bernstein theorem, it follows that the set of rationals in the
+standard form is countably infinite, exactly like the set of integers. Therefore,
+our proposal, in line with standard ASP with integers only as numeric type,
+relies on a countably infinite set of numerals.
+Proposition 2. If a program contains only rational numbers with denominator
+1, i.e., integers, and only integer division is allowed, the proposed semantics
+coincides with the ASP-Core-2 semantics.
+Proof. The set of integer numbers is closed under addition, subtraction and
+multiplication, but not under division. Thus, the only way to obtain a rational
+number with a denominator different that 1 is in the division case of the definition of well-formed global and local substitutions. In line with ASP-Core-2,
+we can set the numerator as the result of the integer division between pv and
+qv and the denominator to 1.
+
+2.4
+
+Technical Aspects
+
+We discuss below some aspects to take into account for the actual implementation of the proposed ASP-Core-2 extension.
+Safety. In ASP, the concept of safety has been introduced in order to limit
+possible substitutions of variables. We inherit the safety restriction from ASPCore-2 [12], as the herein proposed extension acts on only ground term types,
+extending the set of numerals from integers to rationals.
+
+11
+
+Range and Modulus Operators. The range “..” and modulus “\” operators
+over rationals would produce infinite results, making them unusable in practice. We thus limit these operators to integers and inherit their definitions from
+previous work [33]. To exemplify such infinity issues, consider the rule:
+a(X) :− X = 1..3.
+in which a range operator is used to make X vary between 1 and 3. Intuitively, if
+X is grounded as an integer it could take as values 1, 2 and 3, thus the grounding
+is finite; if instead X were required to range over rationals, the grounding would
+be infinite. Similarly, the same issue happens with the modulus operator.
+Undefined arithmetics. In line with ASP-Core-2, we require that programs
+should be invariant under undefined arithmetics, that is, their semantics is invariant regardless the handling of not well-formed substitutions. For instance,
+let us consider the program P1 :
+a(0).
+a(1/2).
+c(Z) :− a(X), a(Y), Z = X / Y.
+Intuitively, every substitution in which Y 7→ 0 is not well-formed as it implies
+a division by 0 and P1 results not invariant under undefined arithmetics. By
+modifying the rule in P1 as:
+c(Z) :− a(X), a(Y), Z = X / Y, Y != 0.
+P1 would result invariant under undefined arithmetics as not well-formed substitutions are not applicable.
+Number of decimal digits. As defined in Section 2.1, a rational term of form
+(3), i.d1 ...dm , is transformed as a fraction with (i.d1 ...dm ∗10m) as numerator and
+10m as denominator. Clearly, in practical implementations, a fixed maximum
+number of digits, say f , can be kept in memory, and in order to guarantee
+reproducibility, systems should use the same f and agree about how to round
+numbers when f < m. While this implies that the semantics of the program
+might vary based on the value of f , this form is of great relevance in real world
+scenarios where data can come from external sources, e.g., from sensors. It is
+worth to note that, if in the input program no rational of form (3) appears, the
+semantics of such a program is always the same, no matter which is the value
+of f , the adopted reasoner or the underlying machine. Moreover, for a fixed
+value of f and an established rounding policy, the semantics of every program
+is independent from the adopted machine or reasoner. In our implementation
+the default value of f is fixed to 6 and numbers with more than f digits are
+rounded to f decimal places, i.e., the f -th digit is rounded to the nearest. In
+addition, the system allows to specify a different value for f via a command line
+option.
+Intermediate numeric format. The introduction of rational terms is transparent for the solving phase and compatibility with already available ASP
+solvers is guaranteed upon few updates in the common lparse [40] intermediate
+12
+
+numeric format used by grounders to pass the computed grounding to solvers.
+These updates are needed because the numeric format has been conceived to
+work on integers only and concern the so-called weight rules that encode #sum
+aggregates, and minimize rules used for weak constraints (see [40] for details).
+Let us recall the syntax of weight rules via an example. Consider the following rule r1 :
+less eq :− 2 ≤ #sum{1:a(1); 3:a(3)}.
+In the numeric format, each atom is associated to a positive integer identifier.
+Suppose that a(1) is mapped to 1, a(3) to 2 and less eq to 3. According to the
+numeric format, r1 would be converted as:
+l1 : 1 3 1 0 4
+l2 : 5 4 2 2 0 1 2 1 3
+Line l1 is a basic rule in the numeric format jargon, stating that the atom with
+id 3 is true iff the atom with id 4 is true as well. The atom with id 4 is defined
+via the weight rule in line l2 . Weight rules start with a 5 and have the following
+form:
+5 agg bound # lits # n e g a t i v e n e g a t i v e p o s i t i v e w e i g h t s
+Each literal within the aggregate has associated a weight: 1 is the weight of
+a(1) and 3 is the weight of a(3). Intuitively, the atom less eq (id 3) is true iff
+the bound, i.e., 2 is less or equal than the sum of the weights of true literals.
+In the proposed extension the bound and all weights are rationals, thus a
+factor equal to the lcm of all their denominators is multiplied to each of them.
+In this way, we get only rationals with denominator equal to 1, representable as
+integers, maintaining proportionality. For instance, consider the rule r2 :
+less eq :− 2 ≤ #sum{3/4:a(3/4); 3:a(3)}.
+Assuming that a(3/4) is mapped to the id 1, a(3) to 2 and less eq to 3, r2 would
+be converted in the numeric format as:
+1 3 1 0 4
+5 4 8 2 0 1 2 3 12
+Similarly, in minimize rules used to represent weak constraints weights are
+rationals. For each level l, a factor equal to the lcm of all the denominators of
+weights at level l has to be multiplied to each of these weights.
+
+3
+
+Handling Non-Integer Domains with ASP
+
+Typically, the inability of ASP to handle non-integer arithmetic is dammed
+using workarounds that delegate the manipulation of non-integers to the user
+while remaining invisible to ASP systems. This means that the presence of
+non-integers is managed by the user themselves. For instance, hybrid reasoning
+is utilized in some ASP-based robotics applications [19, 20].
+To illustrate more commonly adopted workarounds, let us consider as exam-
+
+13
+
+ple, a real world scenario taken from CityBench [1], a Smart City benchmark; it
+consists of 13 continuous queries that require to reason on dynamic data streams,
+coming from sensors scattered throughout the city of Aarhus in Denmark. We
+consider next the third query, Q3 : given a planned journey, it requires to compute the average congestion level and the estimated travel time to a destination.
+Focusing on the computation of the average congestion level, let us assume that
+input facts over the predicates journey and roadLength define the roads involved
+in the journey and the lengths of each road, respectively. The following is an
+ASP modelling for Q3 :
+r1 : congestionLevel(Road, CL) :− journey(Road),
+vehicleCount(Road, C), roadLength(Road, L), CL = C / L.
+r2 : totCongestionLevel(T) :−
+#sum{CL, Road: congestionLevel(Road, CL)} = T.
+r3 : roadsCount(N) :− #count{Road: journey(Road)} = N.
+r4 : avgCongestionLevel(Avg) :− totCongestionLevel(S), numRoads(X),
+Avg = S / X.
+Rule r1 is used to compute the congestion level for each road of the planned
+journey: fixed a road, it is the ratio between the number of vehicles and the
+length of the road (in meters), i.e., the number of vehicles per each meter. Rule
+r2 sums up the so computed congestion levels determining the congestion level
+of the whole journey. Rule r3 counts the number of roads of the journey. Rule r4
+determines the average congestion level of the journey as the ratio between the
+total congestion level and the number of roads. Clearly, congestion levels should
+be computed as non-integer numbers, as their values influence the computation
+of the overall congestion level and the loss of accuracy is accumulated up to
+the query answer. When no support is available for non-integer numbers, a
+possible workaround could be to rely on integer constants and, whenever a
+division occurs, in order to keep track of decimal digits that would be truncated,
+one can multiply the dividend by a power of 10, say 10p . This trick allows to
+maintain the most significant p decimal positions produced by the ratio. A
+final post-processing is then needed to convert back the result and compute
+the average congestion level as non-integer numeric value. In the case of the
+program above, if we want, for instance, to keep 2 decimal digits, r1 and r4
+could be rewritten as follows:
+r1′ : congestionLevel(R, CL) :− journey(R), vehicleCount(R, C),
+roadLength(R, L), C INT = C ∗ 100, CL = C INT / L.
+′
+r4 : avgCongestionLevel(Avg) :− totCongestionLevel(S),
+numRoads(X), Avg INT = S ∗ 100, Avg = Avg INT / X.
+Consider now a journey passing through three roads x, y and z whose lengths
+are 1000, 1500 and 3000 meters and the vehicle counts are 30, 55 and 80, respectively. The congestion level of road x is 3000/1000 = 3; for the road y, 5500/1500
+and for road z, 8000/3000 that mainstream ASP systems would compute as integer divisions as 3 and 2, respectively. The total congestion level is 8. The
+
+14
+
+average is computed as 266 (i.e., 800/3). At this point, given that two multiplications by 100 occurred, the outcome has to be divided two times by 100 during
+a post-processing phase, obtaining that the final average is 0.0266 and only the
+two most significant digits are actually reliable, thus the average is estimated as
+7
+0.02. The proposed semantics would instead yield an exact result of 225
+= 0.031,
+which matches the actual average. This happens when in the input program
+rational terms are in the format (1) or (2), as no approximations are necessary,
+and all computed results are precise thanks to the closure property of rational
+numbers under all four fundamental mathematical operations. In addition to
+its lack of precision, it is worth to note that the workaround is considerably less
+declarative. In general, each multiplication must be considered to ensure that
+the output is appropriately adjusted. Additionally, when input facts contain
+non-integer numbers, a pre-processing step is necessary, in which these numbers
+are converted to integers by multiplying them by 10p and potentially rounding
+them. In domains that demand high reactivity, such pre/post processing may
+become a bottleneck.
+A different workaround consists instead in using string terms in place of
+non-integer numbers. This requires to i) quote all such numbers and ii) in
+this light, properly manage arithmetic operations and comparisons given that,
+when applied on strings, their default behaviour may not be as expected (e.g.,
+“10.1”<“2.1”). A solution is to rely on hybrid approaches, based on linguistic
+constructs not part of ASP-Core-2, allowing to change such default behaviour
+defining a custom one. In this respect, there are still no standards and each
+system provides its own functionalities. Some ASP systems offer the possibility
+of specifying within rules external arbitrary functions evaluated at grounding
+time and defined via programming languages. For instance, clingo [23] provides an integration with the Lua and Python scripting languages; the language
+of DLV2 [2] includes external literals, whose semantics can be externally defined via Python. Nonetheless, the usage of such features can result in a less
+declarative and more intricate modelling; e.g., in the case of DLV2 , Q3 could
+be modelled as follows.
+r1′′ : congestionLevel(R,CL) :− journey(R), vehicleCount(R, C),
+roadLength(R, L), &div(C, L; CL).
+aux1 : precedes(R1, R2) :− journey(R1), journey(R2), R1 < R2.
+aux2 : successor(X, Y) :− precedes(X, Y), not inBetween(X, Y).
+aux3 : inBetween(X, Y) :− precedes(X, Z), precedes(Z, Y).
+aux4 : first(X) :− journey(X), not hasPredecessor(X).
+aux5 : last(X) :− journey(X), not hasSuccessor(X).
+aux6 : hasPredecessor(X) :− successor(Y, X).
+aux7 : hasSuccessor(Y) :− successor(Y, X).
+aux8 : partialSum(R, CL) :− first(R), congestionLevel(R, CL).
+aux9 : partialSum(R2, S) :− successor(R1, R2), partialSum(R1, PS),
+congestionLevel(R2, CL), &sum(PS, CL; S).
+′′
+r2 : totCongestionLevel(T) :− last(R), partialSum(R, T).
+15
+
+r3 : roadsCount(N) :− #count{R: journey(R)}=N.
+r4′′ : avgCongestionLevel(Avg) :− numRoads(X),
+totCongestionLevel(S), &div(S, X; Avg).
+Rule r1 is replaced by r1′′ demanding to the external atom & div(C,L;CL) the
+division CL = C / L. To obtain a more accurate result, the semantics could
+be defined via the following Python function that converts back strings into
+floating-point numbers according to the Python representation (IEEE 754),
+computes the division and returns the result as string:
+def div (A , B ) :
+return str ( float ( A ) / float ( B ) )
+Rule r2 is re-adapted as well and, in order to compute each partial sum as a
+floating-point number, auxiliary rules aux1 . . . aux9 are needed; &sum(PS,CL;S)
+in rule aux9 corresponds to S = P S + CL and it is implemented as:
+def sum (A , B ) :
+return str ( float ( A ) + float ( B ) ) .
+Rule r4 is also updated, becoming r4′′ , to compute floating-point divisions again
+via &div. This workaround permits to achieve a higher accuracy. However,
+the encoding could be less intuitive, pre/post processing steps are needed and
+the frequency of external calls may degrade time performance. Moreover, the
+declarative purpose of ASP is “compromised” by the need for imperative code
+defining parts of the semantics. More importantly, this workaround may lead
+to “faulty” results as in the case of the following program P1 :
+a(”1.0”). a(”0.0000000000000001”).
+result(W) :− a(X), a(Y), a(Z), &sum(X, Y, Z; W).
+where the semantics of the external atom &sum(X,Y,Z;W) is defined according
+to the following Python code:
+def sum (A ,B , C ) :
+return str ( float ( A ) + float ( B ) + float ( C ) )
+The rule consists in a Cartesian product of all possible ground atoms over the
+predicate a/1. Because the addition of floating point numbers is not associative,
+the sum of the same three values can be different. In particular, the result of
+the sum is:
+• 1.0000000000000002 if:
+{X 7→ ”0.0000000000000001”, Y 7→ ”0.0000000000000001”, Z 7→ ”1.0”}
+• 1.0 if:
+{X 7→ ”1.0”, Y 7→ ”0.0000000000000001”, Z 7→ ”0.0000000000000001”}.
+Preventing such issues is in charge of the user: the Python code must ensure the
+reproducibility of the sum by utilizing appropriate methods [16] or relying on
+rationals rather than on floating-point representations. It is evident that these
+
+16
+
+workarounds may deter less experienced users, since a deep understanding about
+how the system evaluates the input program is required.
+A similar solution can be based on clingo Python3 or C API4 , which provides
+a rich set of functions to manage, ground and solve logic programs. For instance,
+the program P1 can be modelled via clingo Python API as illustrated below.
+# script ( python )
+import clingo
+class C o n t e x t:
+def sum ( context ,x ,y , z ) :
+w = float ( x . string ) + float ( y . string )
++ float ( z . string )
+return clingo . String ( str ( w ) )
+def main ( prg ) :
+prg . ground ([( " base " , []) ] , c o n t e x t= C o n t e x t () )
+prg . solve ()
+# end .
+a(”1.0”). a(”0.0000000000000001”).
+result(@sum(X,Y,Z)) :− a(X), a(Y), a(Z).
+It is important to note that, compared to external atoms, this solution is even
+more powerful and efficient as it allows the ASP developer to even control the
+grounding and solving process [30]. However, the same concerns about potentially counter-intuitive results over floating-points, the need for advanced
+knowledge, and the resort to imperative programming apply in this case as
+well.
+
+4
+
+Implementation
+
+Along with the extended ASP language, we provide in I-DLV an implementation thereof. I-DLV is an ASP instantiator (or grounder), is available at
+https://demacs-unical.github.io/I-DLV. I-DLV is compatible with stateof-the-art ASP solvers [14] as it implements the aforementioned intermediate
+numeric output format (see Section 2.4).
+For rational terms of form (3), in I-DLV the maximum number of decimal digits f that is kept, is by default set to 6. Moreover, I-DLV provides a
+command-line option allowing the user to specify a desired f value up to 6.
+Furthermore, an other option permits to specify how rational terms appearing
+in the answer sets have to be printed. In particular, a rational not reducible
+to an integer can be printed as fraction (i.e., form (1)) or be outputted as the
+value obtained approximating the division it represents (i.e., form (3)). In this
+latter case, I-DLV adopts the same rounding policy used for input rationals of
+form (3), as described in Section 2.4.
+3 https://potassco.org/clingo/python-api/5.6
+4 https://potassco.org/clingo/c-api/5.6
+
+17
+
+Table 1: The set of functions for rational terms.
+Function
+Semantics
+truncate(X;Z)
+round(X;Z)
+ceil(X;Z)
+floor(X;Z)
+pow(X,E;Z)
+abs(X;Z)
+
+Assigns to Z the value of X truncated as integer
+Assigns to Z the value of X rounded to the
+nearest integer
+Assigns to Z the smallest integer value that is
+not less than X
+Assigns to Z the value of X rounded downward
+as integer
+Assigns to Z the value of X to the power of E,
+i.e., X E
+Assigns to Z the absolute value of X
+
+The implementation has been endowed with a set of well-defined mathematical functions, commonly of use when dealing with rational numbers. The
+syntax of such functions is inspired by dlvhex [38, 13]5 ; they correspond to
+possibly negated literals of form &f un(i1, . . . , in ; o1 , . . . , om ), where f un is an
+identifier recalling the corresponding function, i1 , . . . , in and o1 , . . . , om are input and output terms, respectively. The set of supported functions is reported
+in Table 1. For instance, {a(3/4), pow(9/16)} is the only answer set of the
+program: a(3/4). pow(X,Y):− a(X), &pow(X,2;Y).
+
+5
+
+Conclusions
+
+This work puts forth a proposal for broadening the scope of ASP in the AI
+field, by incorporating rational terms and enabling the use of numbers beyond
+integers in a purely declarative manner. This proposal enhances the practical
+applicability of ASP in various contexts and bridges the gap with other logical
+formalisms, which are already adept at handling non-integer domains. Additionally, we provide a concrete contribution by presenting an implementation
+that adheres to the “ground&solve” approach. To the best of our knowledge,
+the extension of ASP in this direction has never been explored, as evinced by
+the fact that no ASP system allows for non-integer numeric types.
+
+References
+[1] Muhammad Intizar Ali, Feng Gao, and Alessandra Mileo. Citybench: A
+configurable benchmark to evaluate RSP engines using smart city datasets.
+5 https://github.com/DeMaCS-UNICAL/I-DLV/wiki/External-Computations,-Interoperability-and-Linguistic-Extension
+
+18
+
+In ISWC (2), volume 9367 of LNCS, pages 374–389. Springer, 2015.
+[2] Mario Alviano, Francesco Calimeri, Carmine Dodaro, Davide Fuscà, Nicola
+Leone, Simona Perri, Francesco Ricca, Pierfrancesco Veltri, and Jessica
+Zangari. The ASP system DLV2. In LPNMR, volume 10377 of Lecture
+Notes in Computer Science, pages 215–221. Springer, 2017.
+[3] Denise Angilica, Mario Avolio, Giovanni Beraldi, Giovambattista Ianni,
+and Francesco Pacenza. From vision to execution: Enabling knowledge
+representation and reasoning in hybrid intelligent robots playing mobile
+games. In KR, pages 44–54, 2023.
+[4] Denise Angilica, Giovambattista Ianni, Francesco Pacenza, and Jessica
+Zangari. Integrating asp-based incremental reasoning in the videogame
+development workflow (application paper). In PADL, volume 13880 of Lecture Notes in Computer Science, pages 96–106. Springer, 2023.
+[5] Harald Beck, Minh Dao-Tran, and Thomas Eiter. LARS: A logic-based
+framework for analytic reasoning over streams. Artif. Intell., 261:16–70,
+2018.
+[6] Viktor Besin, Markus Hecher, and Stefan Woltran. On the structural complexity of grounding - tackling the ASP grounding bottleneck via epistemic
+programs and treewidth. In ECAI, volume 372 of Frontiers in Artificial
+Intelligence and Applications, pages 247–254. IOS Press, 2023.
+[7] Aysu Bogatarkan and Esra Erdem. Explanation generation for multi-modal
+multi-agent path finding with optimal resource utilization using answer set
+programming. Theory Pract. Log. Program., 20(6):974–989, 2020.
+[8] Jori Bomanson, Tomi Janhunen, and Antonius Weinzierl. Enhancing lazy
+grounding with lazy normalization in answer-set programming. In AAAI,
+pages 2694–2702. AAAI Press, 2019.
+[9] Lucas Bourneuf. An answer set programming environment for high-level
+specification and visualization of FCA. In FCA4AI@IJCAI, volume 2149
+of CEUR Workshop Proceedings, pages 9–20. CEUR-WS.org, 2018.
+[10] Gerhard Brewka, Thomas Eiter, and Miroslaw Truszczynski. Answer set
+programming at a glance. Commun. ACM, 54(12):92–103, 2011.
+[11] Pedro Cabalar, Jorge Fandinno, Torsten Schaub, and Philipp Wanko. On
+the semantics of hybrid asp systems based on clingo. Algorithms, 16(4),
+2023.
+[12] Francesco Calimeri, Wolfgang Faber, Martin Gebser, Giovambattista Ianni,
+Roland Kaminski, Thomas Krennwallner, Nicola Leone, Marco Maratea,
+Francesco Ricca, and Torsten Schaub. Asp-core-2 input language format.
+Theory Pract. Log. Program., 20(2):294–309, 2020.
+
+19
+
+[13] Francesco Calimeri, Davide Fuscà, Simona Perri, and Jessica Zangari. External computations and interoperability in the new DLV grounder. In
+AI*IA, volume 10640 of Lecture Notes in Computer Science, pages 172–
+185. Springer, 2017.
+[14] Francesco Calimeri, Davide Fuscà, Simona Perri, and Jessica Zangari. IDLV: the new intelligent grounder of DLV. Intelligenza Artificiale, 11(1):5–
+20, 2017.
+[15] Stefania Costantini, Giovanni De Gasperis, and Lorenzo De Lauretis. An
+application of declarative languages in distributed architectures: ASP and
+DALI microservices. Int. J. Interact. Multim. Artif. Intell., 6(5):66–78,
+2021.
+[16] James Demmel and Hong Diep Nguyen. Fast reproducible floating-point
+summation. In IEEE Symposium on Computer Arithmetic, pages 163–172.
+IEEE Computer Society, 2013.
+[17] Thomas Eiter and Tobias Geibinger. Explaining answer-set programs with
+abstract constraint atoms. In IJCAI, pages 3193–3202. ijcai.org, 2023.
+[18] Thomas Eiter, Giovambattista Ianni, and Thomas Krennwallner. Answer
+set programming: A primer. In Reasoning Web, volume 5689 of Lecture
+Notes in Computer Science, pages 40–110. Springer, 2009.
+[19] Esra Erdem, Michael Gelfond, and Nicola Leone. Applications of answer
+set programming. AI Magazine, 37(3):53–68, 2016.
+[20] Esra Erdem and Volkan Patoglu. Applications of ASP in robotics.
+Künstliche Intell., 32(2-3):143–149, 2018.
+[21] Wolfgang Faber, Gerald Pfeifer, and Nicola Leone. Semantics and complexity of recursive aggregates in answer set programming. Artif. Intell.,
+175(1):278–298, 2011.
+[22] Andreas A. Falkner, Gerhard Friedrich, Konstantin Schekotihin, Richard
+Taupe, and Erich Christian Teppan. Industrial applications of answer set
+programming. Künstliche Intell., 32(2-3):165–176, 2018.
+[23] Martin Gebser, Roland Kaminski, Benjamin Kaufmann, and Torsten
+Schaub. Multi-shot ASP solving with clingo. Theory Pract. Log. Program.,
+19(1):27–82, 2019.
+[24] Martin Gebser, Marco Maratea, and Francesco Ricca. The sixth answer
+set programming competition. J. Artif. Intell. Res., 60:41–95, 2017.
+[25] Michael Gelfond and Vladimir Lifschitz. Classical negation in logic programs and disjunctive databases. New Generation Computing, 9(3/4):365–
+386, 1991.
+
+20
+
+[26] Daniela Inclezan. An application of answer set programming to the field
+of second language acquisition. Theory Pract. Log. Program., 15(1):1–17,
+2015.
+[27] Adam Ishay, Zhun Yang, and Joohyung Lee. Leveraging large language
+models to generate answer set programs. In KR, pages 374–383, 2023.
+[28] Joxan Jaffar and Michael J. Maher. Constraint logic programming: A
+survey. J. Log. Program., 19/20:503–581, 1994.
+[29] Tomi Janhunen and Ilkka Niemelä. Compact translations of non-disjunctive
+answer set programs to propositional clauses. In Logic Programming,
+Knowledge Representation, and Nonmonotonic Reasoning, volume 6565 of
+Lecture Notes in Computer Science, pages 111–130. Springer, 2011.
+[30] Roland Kaminski, Javier Romero, Torsten Schaub, and Philipp Wanko.
+How to build your own asp-based system?! Theory Pract. Log. Program.,
+23(1):299–361, 2023.
+[31] Yuliya Lierler. Constraint answer set programming: Integrational and
+translational (or smt-based) approaches. Theory and Practice of Logic Programming, 23(1):195–225, 2023.
+[32] Vladimir Lifschitz. Answer Set Programming. Springer, 2019.
+[33] Vladimir Lifschitz, Patrick Lühne, and Torsten Schaub. Towards verifying
+logic programs in the input language of clingo. In Fields of Logic and Computation III, volume 12180 of Lecture Notes in Computer Science, pages
+190–209. Springer, 2020.
+[34] Yoshihiro Maruyama. Symbolic and statistical theories of cognition: Towards integrated artificial intelligence. In SEFM, volume 12524 of Lecture
+Notes in Computer Science, pages 129–146. Springer, 2020.
+[35] Daniele Meli, Mohan Sridharan, and Paolo Fiorini. Inductive learning of
+answer set programs for autonomous surgical task planning. Mach. Learn.,
+110(7):1739–1763, 2021.
+[36] Veena S. Mellarkod, Michael Gelfond, and Yuanlin Zhang. Integrating
+answer set programming and constraint logic programming. Ann. Math.
+Artif. Intell., 53(1-4):251–287, 2008.
+[37] André Pacak and Sebastian Erdweg. Functional programming with datalog. In ECOOP, volume 222 of LIPIcs, pages 7:1–7:28. Schloss Dagstuhl Leibniz-Zentrum für Informatik, 2022.
+[38] Christoph Redl. The dlvhex system for knowledge representation: recent
+advances (system description). Theory Pract. Log. Program., 16(5-6):866–
+883, 2016.
+
+21
+
+[39] Bryan Silverthorn, Yuliya Lierler, and Marius Schneider. Surviving solver
+sensitivity: An ASP practitioner’s guide. In ICLP (Technical Communications), volume 17 of LIPIcs, pages 164–175. Schloss Dagstuhl - LeibnizZentrum für Informatik, 2012.
+[40] Tommi Syrjänen and Ilkka Niemelä. The smodels system. In LPNMR, volume 2173 of Lecture Notes in Computer Science, pages 434–438. Springer,
+2001.
+[41] Raito Takeuchi, Mutsunori Banbara, Naoyuki Tamura, and Torsten
+Schaub. Solving vehicle equipment specification problems with answer set
+programming. In PADL, volume 13880 of Lecture Notes in Computer Science, pages 232–249. Springer, 2023.
+[42] Jan Wielemaker, Tom Schrijvers, Markus Triska, and Torbjörn Lager. Swiprolog. Theory Pract. Log. Program., 12(1-2):67–96, 2012.
+[43] Franz Wotawa and David Kaufmann. Model-based reasoning using answer
+set programming. Appl. Intell., 52(15):16993–17011, 2022.
+[44] Anssi Yli-Jyrä, Masood Feyzbakhsh Rankooh, and Tomi Janhunen. Pruning redundancy in answer set optimization applied to preventive maintenance scheduling. In PADL, volume 13880 of Lecture Notes in Computer
+Science, pages 279–294. Springer, 2023.
+
+22
+
+

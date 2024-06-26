@@ -1,0 +1,2247 @@
+A NOVEL TIME-DOMAIN DIRECT SAMPLING APPROACH FOR
+INVERSE SCATTERING PROBLEMS IN ACOUSTICS
+
+arXiv:2312.04241v1 [math.NA] 7 Dec 2023
+
+YUKUN GUO, HONGJIE LI, AND XIANCHAO WANG
+
+Abstract. This work is concerned with an inverse scattering problem of determining
+unknown scatterers from time-dependent acoustic measurements. A novel time-domain
+direct sampling method is developed to efficiently determine both the locations and
+shapes of inhomogeneous media. In particular, our approach is very easy to implement since only cheap space-time integrations are involved in the evaluation of the
+imaging functionals. Based on the Fourier-Laplace transform, we establish an inherent
+connection between the time-domain and frequency-domain direct sampling method.
+Moreover, rigorous theoretical justifications and numerical experiments are provided to
+verify the validity and feasibility of the proposed method.
+Keywords: time-domain direct sampling method, Fourier-Laplace transform, inverse
+scattering problem, acoustic wave.
+
+1. Introduction
+In this paper, we consider an inverse acoustic scattering problem of reconstructing
+unknown objects by the associated time-dependent near-field measurements. This type
+of inverse problem arises in a variety of practical applications and it attracts significant
+attentions in many fields of science and technology, such as sonar detection, medical
+imaging [23], non-destructive testing [2] and so on.
+To begin with, we present the mathematical formulation of the time-dependent acoustic
+scattering problem in the inhomogeneous medium. Let c0 ∈ R+ denote the background
+sound speed and c(x) ∈ L∞ (Rd ), d = 2, 3, be the sound speed in the inhomogeneous
+medium with c(x) > 0. Suppose that c(x) − c0 is compactly supported in Ω ∈ Rd and
+Rd \Ω is connected, where Ω is occupied by the inhomogeneous medium. We further
+assume that the incident wave pi (x, t) is a causal signal (that is, pi (x, t) ≡ 0 for t ≤ 0)
+emitted from a point x ∈ Rd \Ω. Given the incident wave pi and the medium scatterer
+Ω, the forward scattering problem is to find the scattered field ps (x, t) that satisfies the
+following wave equation
+
+−2
+i
+c−2 (x)∂tt ps (x, t) − ∆ps (x, t) = c−2
+(x, t) ∈ Rd × R+ ,
+0 − c (x) ∂tt p (x, t),
+(1.1)
+ps (x, 0) = ∂t ps (x, 0) = 0,
+x ∈ Rd .
+The well-posedness of the forward scattering problem (1.1) can be conveniently found
+in [4, 16]. Throughout, let Γ ⊂ Rd \Ω be a closed or an open measurement surface such
+that the receivers are away from the target objects. Define the measured scattered field
+by
+Λ := {ps (x, t) : (x, t) ∈ Γ × R+ }.
+The inverse problem that we are concerned with is to determine the locations and shapes
+of the medium scatterers Ω by the knowledge of the near-field measurements Λ. Figure
+1 provides a schematic illustration of the time-domain scattering problem in R2 . It is
+noted that the unknown objects can be uniquely determined by boundary measurements
+1
+
+2
+
+YUKUN GUO, HONGJIE LI, AND XIANCHAO WANG
+
+Figure 1. The schematic illustration of the time-domain scattering
+model. The red point denotes the location of an acoustic source that
+emits causal temporal pulse wave. The union of domains labeled by Ω
+signifies medium scatterer. The receivers are distributed on the curve Γ
+to receive the scattered field ps . The dashed square denotes the sampling
+domain D.
+Λ with a single incident wave when the sound speed c(x) is non-trapping and close to a
+constant [25].
+In recent decades, many numerical methods have been developed to deal with the
+above inverse scattering problem. Among various reconstruction approaches, we are
+particularly interested in the so-called sampling-type methods. This class of approaches
+resort to establishing imaging functionals to distinguish whether a sampling point is
+inside or outside the scatterer’s domain and hence can qualitatively identify the location
+and shape of the unknown scatterer [11]. Significantly, sampling-type methods possess
+several advantages in contrast to conventional iterative approaches. On the one hand,
+these sampling-type approaches are independent on the a priori information of scatterer’s
+physical properties or boundary conditions. On the other hand, these imaging functionals
+can be computed in a very efficient way and they are also robust to the noise.
+Depending on whether directly using the measured time-dependent data, the samplingtype methods can be classified into two categories: time-domain ones and frequencydomain ones. The time-domain sampling methods primarily utilize the measured timedependent scattered field to determine the unknown objects. We refer the reader to
+the time reversal method [2, 12], the synthetic aperture radar technique [10], the total
+focusing method [18] and so on [19, 28]. However, if the measured data changes rapidly
+over a short period of time, it is difficult to use the time-domain methods [31]. In such
+cases, one usually transforms the time-dependent data into frequency domain and utilizes
+the frequency-domain methods to recover unknown scatterers. For the frequency-domain
+sampling methods, interested readers could refer the linear sampling method [5, 21], the
+factorization method [3, 14], the probe method [26], the direct sampling method [13, 22]
+and so on [8, 24].
+In comparison to time-domain sampling methods, the frequency-domain ones can offer
+better stability and computational efficiency, whereas they require a large amount of
+multi-static data on a large spatial aperture. In order to decrease the number of sources
+and receivers, the linear sampling method and factorization method were extended to
+the time domain, see e.g. [6,9,16,17]. Actually, the time-domain linear sampling method
+
+TIME-DOMAIN DIRECT SAMPLING METHOD
+
+3
+
+and factorization method were hindered by the theoretical difficulty associated with the
+interior transmission eigenvalue problems for a long time. Until recently, the solvability
+of the time-domain linear sampling method were rigorous justified in [7,27]. Nevertheless,
+the classical direct sampling method [13] does not suffer the that interior transmission
+eigenvalue problems. Moreover, to our best knowledge, the time-domain direct sampling
+method has not yet been established in the literature although there are some attempts
+[15,32]. The major challenge of the time-domain direct sampling method lies in the design
+of the imaging functionals. Hence, it has important theoretical and practical significance
+to propose an efficient time-domain direct sampling method.
+The goal of this article is to develop a novel time-domain direct sampling method for
+reconstructing the locations and shapes of unknown targets. We first directly present the
+imaging/indicator functionals for the inverse acoustic scattering problems in both two
+and three dimensions as follows:
+Z +∞ Z
+2
+−1
+s
+(d)
+(d)
+p (x, t + c0 |x − z|) φσ (x, t, z) ds(x) dt, d = 2, 3,
+(1.2)
+I (z) =
+−∞
+
+Γ
+
+where z ∈ D denotes the sampling point, ps is the time-dependent scattered field and
+(d)
+φσ is the so-called test function, i.e.,
+
+−1
+e−σ(t+c0 |x−z|)
+
+
+
+q
+, d = 2,
+
+
+ 8πc−1 |x − z|
+0
+φ(d)
+(1.3)
+σ (x, t, z) =
+
+−1
+
+
+
+e−σ(t+c0 |x−z|)
+
+
+, d = 3.
+4π|x − z|
+Here σ ≥ 0 is a constant and it depends on the the waveform of the incident wave.
+In this work, we first designed a novel imaging function (1.2) for the time-domain
+direct sampling method. Then we establish the inherent connection between the timedomain and classical frequency-domain direct sampling method [13] based on the FourierLaplace transform. Furthermore, we present rigorous mathematical analysis to justify the
+indicator behaviour of the proposed imaging functionals (1.2) in the scenario involving the
+point-like scatterers. The promising features of our time-domain direct sampling method
+can be summarized in three aspects. Firstly, the method involves formulating imaging
+functions by directly convoluting time-dependent scattered data with a test function.
+Moreover, the imaging functions do not rely on any matrix inversion or forward solution
+process. Thus, our approach is easy to implement with high computational efficiency.
+Secondly, in comparison to the total focusing method [18], the proposed method not only
+utilizes the travel time information of the recorded acoustic data but also makes use of
+the echo amplitude of the scattered field. Thus, our approach theoretically has better
+imaging performance in recovering unknown objects. Thirdly, the proposed method has
+nearly no restrictions on the waveform of the incident wave. Regardless of whether the
+input signal is an impulse function, a periodic function or a tempered function, the
+imaging functions can demonstrate excellent performance when a suitable parameter σ
+is selected. Hence, our approach can be generalized to more practical scenarios since it
+could handle a wide range of input signals.
+The rest of the paper is organized as follows. Section 2 introduces the Sobolev spaces
+and the Fourier-Laplace transform. Moreover, we present some mathematical preliminaries for the acoustic wave equation in both time- and frequency-domain. In section 3,
+we first establish the connection between the time-domain and frequency-domain direct
+sampling method. Further, we show the behaviour of the indicator functions. Numerical
+experiments are conducted in section 4 to verify the promising features of our method.
+
+4
+
+YUKUN GUO, HONGJIE LI, AND XIANCHAO WANG
+
+2. Fourier-Laplace transform and forward scattering problem
+In this section, we provide some mathematical preliminaries for the time-domain acoustic wave equation.
+We begin with the introduction of some space-time Sobolev spaces and the FourierLaplace transform. Let X be a Hilbert space, we define the space D(R, X) as the Xvalued C0∞ functions on the real line with support in (−∞, ∞) and the space D′ (R, X)
+as the associated X-valued distributions. Moreover, we define the space S(R, X) as the
+Schwartz space of infinitely differentiable X-valued functions on the real line and the
+space S ′ (R, X) as the corresponding tempered distributions. In order to describe the
+Fourier-Laplace transform, we define the following Sobolev spaces
+L′σ (R, X) := {f ∈ D′ (R, X) : e−σt f ∈ S ′ (R, X)},
+
+σ ∈ R.
+
+It is clear that the Fourier transform of e−σt f can be represented by
+Z +∞
+−σt
+F[e f ](ξ) =
+eiξt e−σt f (t) dt, ξ ∈ R.
+−∞
+
+Let ω = ξ + iσ for ξ, σ ∈ R, we define a half-plane by
+Cσ0 = {ω ∈ C : Im(ω) ≥ σ0 > 0}
+Thus, the Fourier transform can be rewritten as the following Fourier-Laplace transform
+Z +∞
+b
+f (ω) =
+eiωt f (t) dt, ω ∈ Cσ0 .
+(2.1)
+−∞
+
+Indeed, the inverse Laplace transform is given by
+Z +∞+iσ
+1
+e−iωt fb(ω) dω.
+f (t) =
+2π −∞+iσ
+
+(2.2)
+
+To characterize the time-dependent wave field, we also define the Hilbert space
+
+
+Z +∞+iσ
+m
+′
+2m b
+2
+Hσ (R, X) := f ∈ Lσ (R, X) :
+|w| ∥f (ω)∥X dω < +∞
+−∞+iσ
+
+for m ∈ R and σ ∈ R. For more details, please refer to the reference [30]. In additon, it is
+worthy to mention that the Fourier-Laplace transform transfers to the standard Fourier
+transform when ℑω = 0.
+Next, we introduce the acoustic wave propagation and scattering in the inhomogeneous
+medium. Throughout, we assume that the incident field is generated by a single monopole
+source with a causal temporal signal χ(t) ∈ C 2 (R), that is χ(t) ≡ 0 for t ≤ 0. Then the
+incident wave pi ∈ Hσm (R, L2 (Rd )) emitted at the source location y ∈ Rd satisfies the
+homogeneous wave equations
+i
+i
+c−2
+0 ∂tt p (x, t) − ∆p (x, t) = χ(t) δ(x − y),
+
+(x, t) ∈ Rd × R,
+
+pi (x, 0) = ∂t pi (x, 0) = 0,
+
+x ∈ Rd ,
+
+(2.3)
+
+where δ is the Dirac delta function. It is known that the fundamental solution to the
+wave equation is given by
+
+H(t − c−1
+
+0 |x − y|)
+
+q
+,
+d = 2,
+
+
+
+2
+2π t2 − c−2
+|x
+−
+y|
+0
+Φ(x, t; y) :=
+x ̸= y,
+
+−1
+
+δ(t
+−
+c
+|x
+−
+y|)
+
+0
+
+
+,
+d = 3,
+4π|x − y|
+
+TIME-DOMAIN DIRECT SAMPLING METHOD
+
+5
+
+where H(t) denotes the Heaviside function. In three dimensions, it is easy to verify that
+the solution to (2.3) is
+
+χ t − c−1
+0 |x − y|
+i
+p (x, t; y) =
+, (x, t) ∈ R3 \{y} × R.
+(2.4)
+4π|x − y|
+Combining (1.1) and (2.3), one can find that the scattered field ps ∈ Hσm (R, H 1 (Rd ))
+admits the following equation
+
+−2
+s
+s
+−2
+(2.5)
+c−2
+(x, t) ∈ Rd \{y} × R,
+0 (x)∂tt p (x, t) − ∆p (x, t) = c0 − c (x) ∂tt p(x, t),
+where p := pi + ps ∈ Hσm (R, H 1 (Rd )) denotes the total field. Noting that c(x) − c0 is
+compactly supported in Ω ∈ Rd , using the time-domain Green’s formula, the scattered
+field can be represented by
+Z Z
+
+s
+−2
+p (x, t) =
+c−2
+(2.6)
+0 − c (y) ∂tt p(y, τ ) Φ(x, t − τ ; y) dy dτ.
+R
+
+Ω
+
+To facilitate the theoretical analysis, we first convert the time domain to the frequency
+domain. By applying the Fourier-Laplace transform to the scattered field and total field,
+i.e.,
+Z +∞
+Z +∞
+iωt s
+s
+b
+eiωt p(x, t) dt, ω ∈ Cσ0 ,
+e p (x, t) dt, pb(x, ω) :=
+p (x, ω) :=
+−∞
+
+−∞
+
+equation (2.5) can be rewritten as
+
+ω2 s
+−2
+b(x, ω),
+pb (x, ω) + ∆pbs (x, ω) = ω 2 c−2
+0 − c (x) p
+2
+c0
+
+(x, ω) ∈ Rd \{y} × Cσ0 .
+
+Recalling the Lippmann-Schwinger equation [11, p.310], one can find that the solution
+to the last equation is given by
+Z
+
+−2
+pbs (x, ω) = − ω 2 c−2
+b(y, ω) Φω (x, y) dy,
+(2.7)
+0 − c (y) p
+Ω
+
+where Φω (x, y) denotes the fundamental solution to the Helmholtz equation with frequency ω ∈ Cσ0 [20]
+
+i (1)
+−1
+
+
+ 4 H0 (ωc0 |x − y|), d = 2,
+−1
+Φω (x, y) =
+x ̸= y.
+(2.8)
+
+eiωc0 |x−y|
+
+
+,
+d = 3,
+4π|x − y|
+(1)
+
+Here H0 denotes the Hankel function of the first kind with order zero. Thus, pbs is a
+frequecy-domain formula to the time-domain scattered field ps defined in (2.6).
+3. Theoretical analysis of the time-domain direct sampling method
+In this section, we aim to establish the rigorous theoretical analysis to determine the
+locations of the multiple small scatterers based on the behavior of indicator functions
+(1.2). The key technique is to transform the time-domain imaging functions into the
+Laplace domain and discuss the properties of imaging functions in the frequency domain.
+We first present the Laplace-domain representation of the indicator functions in the
+following theorem.
+
+6
+
+YUKUN GUO, HONGJIE LI, AND XIANCHAO WANG
+
+Theorem 3.1. Let the indicator/imaging functions of time-domain direct sampling methods be defined in (1.2). By using the Laplace transform, imaging functions can be represented by
+Z +∞+iσ Z
+
+1
+(z) =
+2π
+
+Z +∞+iσ Z
+
+I
+
+(3)
+
+−∞+iσ
+
+−∞+iσ
+
+2
+
+−1
+
+e−iℜ(ω)c0 |x−z|
+ds(x)
+pbs (x, ω) q
+Γ
+8πc−1
+|x
+−
+z|
+0
+
+1
+I (2) (z) =
+2π
+
+−1
+
+e−iℜ(ω)c0 |x−z|
+pbs (x, ω)
+ds(x)
+4π|x − z|
+Γ
+
+dω,
+
+(3.1a)
+
+dω,
+
+(3.1b)
+
+2
+
+for two and three dimensions, respectively. Here z ∈ D denotes the sampling point and
+ω ∈ Cσ0 is the frequency.
+Proof. We first consider the three-dimensional case. In three dimensions, the indicator
+function (1.2) is given by
+2
+−1
+Z +∞ Z
+e−σ(t+c0 |x−z|)
+−1
+(3)
+s
+I (z) =
+ds(x) dt.
+p (x, t + c0 |x − z|)
+4π|x − z|
+−∞
+Γ
+Due to exp(−iωt) = exp(iωt) exp(−2σt) for ω = ξ + iσ ∈ Cσ0 , using the inverse Laplace
+transform (2.2), one can derive that
+)
+!
+Z +∞ Z ( Z +∞+iσ
+−σc−1
+0 |x−z|
+−1
+1
+e
+pbs (x, ω)e−iω(t+c0 |x−z|) dω
+ds(x)
+I (3) (z) =
+2π −∞+iσ
+4π|x − z|
+Γ
+−∞
+!
+Z
+−σc−1
+0 |x−z|
+e
+× e−2σt ps (x, t + c−1
+ds(x) dt
+0 |x − z|)
+4π|x − z|
+Γ
+!
+Z +∞+iσ Z
+−iξc−1
+0 |x−z|
+1
+e
+=
+pbs (x, ω)
+ds(x)
+2π −∞+iσ
+4π|x − z|
+Γ
+!
+ −σc−1 |x−z|
+Z Z +∞
+e 0
+−1
+−iωt −2σt
+s
+e
+dt
+p (x, t + c0 |x − z|)e
+×
+ds(x) dω.
+4π|x − z|
+Γ
+−∞
+(3.2)
+Here and in what follows the overbar stands for the complex conjugate. Furthermore,
+using the fact that exp(iωt) = exp(−iωt) and the Fourier-Laplace transform (2.1), we
+can deduce that
+ −σc−1 |x−z|
+Z Z +∞
+e 0
+−1
+−iωt −2σt
+s
+p (x, t + c0 |x − z|) e
+e
+dt
+ds(x)
+4π|x − z|
+Γ
+−∞
+ −σc−1 |x−z|
+Z Z +∞
+e 0
+−1
+s
+iωt
+=
+p (x, t + c0 |x − z|) e dt
+ds(x)
+4π|x − z|
+−∞
+Γ
+Z
+−1
+e−σc0 |x−z|
+−1
+−iωc
+|x−z|
+s
+0
+pb (x, ω) e
+ds(x)
+=
+4π|x − z|
+Γ
+Z
+−1
+e−iℜ(ω)c0 |x−z|
+s
+b
+=
+p (x, ω)
+ds(x).
+4π|x − z|
+Γ
+Substituting the last equation into (3.2), it follows that
+2
+−1
+Z +∞+iσ Z
+1
+e−iℜ(ω)c0 |x−z|
+(3)
+s
+I (z) =
+pb (x, ω)
+ds(x) dω.
+2π −∞+iσ
+4π|x − z|
+Γ
+
+TIME-DOMAIN DIRECT SAMPLING METHOD
+
+7
+
+Next, we prove the two-dimensional case. In the 2D case, the indicator function is
+given by
+I (2) (z) =
+
+2
+
+−1
+
+e−σ(t+c0 |x−z|)
+ps (x, t + c−1
+ds(x) dt.
+0 |x − z|) q
+Γ
+8πc−1
+|x
+−
+z|
+0
+
+Z +∞ Z
+−∞
+
+Similarly, by a straightforward calculation, we have
+)
+!
+Z +∞ Z ( Z +∞+iσ
+−σc−1
+0 |x−z|
+−1
+e
+1
+I (2) (z) =
+pbs (x, ω)e−iω(t+c0 |x−z|) dω q
+ds(x)
+2π −∞+iσ
+−∞
+Γ
+8πc−1
+|x
+−
+z|
+0
+!
+−1
+Z
+|x−z|
+−σc
+e 0
+× e−2σt ps (x, t + c−1
+ds(x) dt
+0 |x − z|) q
+Γ
+8πc−1
+|x
+−
+z|
+0
+!
+−1
+Z +∞+iσ Z
+−iℜ(ω)c0 |x−z|
+1
+e
+=
+ds(x)
+pbs (x, ω) q
+2π −∞+iσ
+Γ
+8πc−1
+|x
+−
+z|
+0
+!
+
+Z Z +∞
+−σc−1
+0 |x−z|
+e
+−iωt dt q
+ds(x) dω
+ps (x, t + c−1
+×
+0 |x − z|)e
+Γ
+−∞
+|x
+−
+z|
+8πc−1
+0
+1
+=
+2π
+
+2
+
+−1
+
+e−iℜ(ω)c0 |x−z|
+ds(x)
+pbs (x, ω) q
+Γ
+|x
+−
+z|
+8πc−1
+0
+
+Z +∞+iσ Z
+−∞+iσ
+
+dω.
+
+This completes the proof.
+
+□
+
+Noting that the asymptotic behavior of the Hankel functions is given by
+r
+
+ 
+1
+2 i(r− π )
+(1)
+4
+1+O
+H0 (r) =
+e
+, r → ∞,
+πr
+r
+
+(3.3)
+
+thus, the fundamental solution in 2D can be approximated by
+−1
+
+π
+
+eiξc0 |x−y| ei 4
+i (1)
+Φξ (x, y) = H0 (ξc−1
+,
+0 |x − y|) ≈ q
+4
+8πξc−1 |x − y|
+
+r → ∞.
+
+0
+
+Substituting the previous equation into (3.1a), we obtain
+Z +∞+iσ Z
+2
+1
+(2)
+i π4
+s
+b
+I (z) ≈
+ξ
+p (x, ω)Φξ (x, z) e ds(x) dω
+2π −∞+iσ
+Γ
+Z +∞+iσ Z
+2
+1
+pbs (x, ω)Φξ (x, z) ds(x) dω, r → ∞,
+=
+ξ
+2π −∞+iσ
+Γ
+where ξ = ℜ(ω). Correspondingly, the formula (3.1b) can be rewritten as
+Z +∞+iσ Z
+2
+1
+(3)
+pbs (x, ω)Φξ (x, z) ds(x) dω.
+I (z) =
+2π −∞+iσ
+Γ
+
+(3.4)
+
+(3.5)
+
+Remark 3.1. It is noted that the frequency-domain indicator functions [13] are given by
+Z
+(d)
+J (z) =
+pbs (x, ξ)Φξ (x, z) ds(x), ξ ∈ R\{0}, d = 2, 3,
+Γ
+
+8
+
+YUKUN GUO, HONGJIE LI, AND XIANCHAO WANG
+
+together with formulas (3.4) and (3.5), one can find that
+Z +∞
+2
+1
+ξ 3−d J (d) (z) dξ,
+I (d) (z) =
+2π −∞
+
+d = 2, 3,
+
+when ℑ(ω) = 0. Thus, our proposed time-domain direct sampling method can be viewed
+as the multi-frequency frequency-domain direct sampling method when σ = 0. Actually,
+our proposed method is essentially a generalized version of the multi-frequency frequencydomain direct sampling method since the parameter σ can also be selected as σ > 0.
+To fully characterize the time-domain direct sampling method, as stated in Theorem
+3.1, we just need to analyze the properties of the indicator functions defined in (3.1). To
+accomplish this, we first present a crucial lemma. For simplification, we define
+ Z
+−1
+
+e−iℜ(ω)c0 |x−z|
+
+
+ds(x), d = 2,
+Φω (x, y) q
+
+
+
+−1
+Γ
+8πc
+|x
+−
+z|
+0
+G(d) (z; y) :=
+(3.6)
+−1
+Z
+
+
+|x−z|
+−iℜ(ω)c
+0
+
+e
+
+
+Φω (x, y)
+ds(x),
+d = 3,
+
+4πc−1
+Γ
+0 |x − z|
+where z ∈ Rd denotes the sampling point and Φω (x, y) is the fundamental solution defined
+in (2.8) with frequency ω ∈ Cσ0 .
+Lemma 3.1. Suppose that c0 > 0 is the background sound speed and σ > 0 is a positive
+constant. Assume that Γ := {x ∈ Rd \Ω : |x| = r} is a circle (d = 2) or a sphere (d = 3)
+with radius r. Let G(d) be defined in (3.6), for any z ∈ Rd , it holds that
+
+ 
+−1
+1
+e−σc0 r
+|y|)
+1
++
+O
+G(2) (z; y) ≤ √ −1 I0 (σc−1
+,
+0
+r
+8 ωc0
+r → ∞,
+
+ 
+−1
+1
+e−σc0 r
+−1
+(3)
+i0 (σc0 |y|) 1 + O
+,
+G (z; y) ≤
+r
+4πc−2
+0
+where I0 and i0 are respectively the modified Bessel function and modified spherical Bessel
+functions of the first kind with order zero. In paricular, the equalities hold if and only if
+z = y.
+Moreover, the integrals defined in (3.6) have the following asymptotic behaviours
+!
+ 
+−1
+e−σc0 r
+1
+1
+(2)
+G (z; y) = √ −1 O p
+1+O
+,
+r
+8π ωc0
+ℜ(ω)|z − y|
+
+
+ 
+−1
+1
+1
+e−σc0 r
+(3)
+G (z; y) =
+1+O
+,
+−2 O ℜ(ω)|z − y|
+2
+r
+16π c0
+as r → ∞ and ℜ(ω)|z − y| → ∞.
+Proof. We first consider the two-dimensional case. According to (3.3), the fundamental
+solution has the following asymptotic behaviour
+
+ 
+π
+−1
+i (1)
+eiωc0 |x−y| ei 4
+1
+q
+Φω (x, y) = H0 (ωc−1
+1
++
+O
+.
+|x
+−
+y|)
+=
+0
+4
+|x|
+−1
+8πωc0 |x − y|
+Using the asymptotic formula
+
+|x − y| = |x| − x̂ · y + O
+
+1
+|x|
+
+
+,
+
+TIME-DOMAIN DIRECT SAMPLING METHOD
+
+9
+
+we have
+−1
+
+e−iℜ(ω)c0 |x−z|
+Φω (x, y) q
+ds(x)
+−1
+Γ
+8πc0 |x − z|
+
+ 
+π
+−1
+−1
+Z
+eiωc0 |x−y| e−iℜ(ω)c0 |x−z|
+ei 4
+1
+p
+p
+ds(x)
+= √ −1
+1+O
+|x|
+8π ωc0 Γ
+|x − y|
+|x − z|
+ 
+π
+Z −σc−1 (|x|−x̂·y) iℜ(ω)c−1 x̂·(z−y) 
+0
+ei 4
+e 0
+e
+1
+p
+p
+= √ −1
+1+O
+ds(x)
+|x|
+8π ωc0 Γ
+|x|
+|x|
+
+ 
+π
+−1 Z
+ei 4 e−σc0 r
+1
+iℜ(ω)c−1
+x̂·(z−y) σc−1
+x̂·y
+0
+0
+.
+=
+e
+e
+ds(x̂)
+1
++
+O
+√ −1
+r
+1
+8π ωc0
+S
+
+G(2) (z; y) =
+
+Z
+
+(3.7)
+
+Here and in what follows, Sd−1 := {x ∈ Rd : |x| = 1} denotes a unit circle/sphere in Rd ,
+d = 2, 3. In two dimensions, the generating function is given by
+σc−1
+0 x̂·y
+
+e
+
+= I0 (σc−1
+0 |y|) + 2
+
+∞
+X
+
+In (σc−1
+0 |y|) cos(nθ),
+
+n=1
+
+where In is the modified Bessel function of the first kind with order n and θ denotes the
+angle between x̂ and y. From the last equation, one can derive that
+Z
+−1
+−1
+eiℜ(ω)c0 x̂·(z−y) eσc0 x̂·y ds(x̂)
+S1
+Z
+−1
+−1
+≤
+eiℜ(ω)c0 x̂·(z−y) · eσc0 x̂·y ds(x̂)
+S1
+!
+Z π
+∞
+X
+−1
+−1
+In (σc0 |y|) cos(nθ) dθ
+=
+I0 (σc0 |y|) + 2
+0
+
+n=1
+
+= πI0 (σc−1
+0 |y|),
+where the equality holds if and only if z = y. Thus, for any z ∈ R2 , we have
+G
+
+(2)
+
+
+ 
+−1
+−1
+1
+e−σc0 r
+e−iℜ(ω)c0 |x−z|
+−1
+q
+p
+Φω (x, y)
+ds(x) ≤
+I0 (σc0 |y|) 1 + O
+,
+−1
+r
+8 |ω|c0
+Γ
+8πc−1
+|x
+−
+z|
+0
+
+Z
+(z; y) =
+
+where the equality holds if and only if z = y.
+Next, we consider the three-dimensional case. By a straightforward calculation, we
+have
+−1
+Z
+e−iℜ(ω)c0 |x−z|
+(3)
+G (z; y) =
+Φω (x, y)
+ds(x)
+4πc−1
+Γ
+0 |x − z|
+Z iωc−1 |x−y| −iℜ(ω)c−1 |x−z|
+0
+e 0
+e
+1
+(3.8)
+=
+ds(x)
+2
+|x
+−
+y|
+|x
+−
+z|
+(4πc−1
+)
+Γ
+0
+
+ 
+−1
+Z
+−σc
+−1
+e 0 r
+1
+iℜ(ω)c−1
+0 x̂·(z−y) eσc0 x̂·y ds(x̂)
+=
+e
+1
++
+O
+.
+2
+r
+2
+(4πc−1
+)
+S
+0
+In three dimensions, the generating function is given by
+e
+
+σc−1
+0 x̂·y
+
+= 4π
+
+∞ X
+n
+X
+n=0 m=−n
+
+m
+in (σc−1
+0 |y|)Yn
+
+
+
+y
+|y|
+
+
+Ynm (x̂),
+
+10
+
+YUKUN GUO, HONGJIE LI, AND XIANCHAO WANG
+
+√
+where Ynm denote the spherical harmonics. Due to Y00 (x̂) = 1/ 4π, one has
+( √
+Z
+√ Z
+4π, n = 0,
+0
+m
+m
+Yn (x̂) ds(x̂) = 4π
+Y0 (x̂)Yn (x̂) ds(x̂) =
+0,
+n ≥ 1.
+S2
+S2
+From the previous two equations, one has
+Z
+−1
+−1
+eiℜ(ω)c0 x̂·(z−y) eσc0 x̂·y ds(x̂)
+S2
+Z
+−1
+−1
+≤
+eiℜ(ω)c0 x̂·(z−y) · eσc0 x̂·y ds(x̂)
+S2
+
+Z
+=
+
+4π
+
+∞ X
+n
+X
+
+S2
+
+m
+in (σc−1
+0 |y|)Yn
+
+n=0 m=−n
+−1
+= 4πi0 (σc0 |y|),
+
+
+
+y
+|y|
+
+!
+
+
+Ynm (x̂)
+
+ds(x̂)
+
+where in are the modified spherical Bessel functions of the first kind with order n. Moreover, the equality holds if and only if z = y. Therefore, for any z ∈ R3 , we obtain
+
+ 
+−1
+−1
+Z
+e−iℜ(ω)c0 |x−z|
+1
+e−σc0 r
+−1
+(3)
+G (z; y) =
+Φω (x, y)
+ds(x) ≤
+,
+−1
+−2 i0 (σc0 |y|) 1 + O r
+4πc0 |x − z|
+4πc0
+Γ
+where the equality holds if and only if z = y.
+Finally, we show the asymptotic behaviour of the integrals G(d) (z; y). Recalling the
+asymptotic behaviour of oscillatory integrals of the first kind in [29, proposition 6, p.344],
+for any fixed point y, one can find that
+Z
+
+
+−1
+−1
+d−1
+eiℜ(ω)c0 x̂·(z−y) eσc0 x̂·y ds(x̂) = O (ℜ(ω)|z − y|)− 2 , ℜ(ω)|z − y| → ∞,
+Sd−1
+
+where d = 2, 3 denotes two- or three-dimensional case. Hence, substituting the previous
+equation into (3.7) and (3.8) respectively, one can obtain
+!
+ 
+−σc−1
+0 r
+1
+e
+1
+(2)
+G (z; y) = √ −1 O p
+,
+1+O
+r
+8π ωc0
+ℜ(ω)|z − y|
+
+
+ 
+−1
+e−σc0 r
+1
+1
+(3)
+G (z; y) =
+1+O
+,
+−2 O ℜ(ω)|z − y|
+2
+r
+16π c0
+as r → ∞ and ℜ(ω)|z − y| → ∞.
+The proof is completed.
+
+□
+
+Lemma 3.1 shows that the integrals |G(d) (z; y)| attain maximum values if and only if
+z = y. Moreover, the integrals |G(d) (z; y)| rapidly decay and go to zero when z is away
+from y. In what follows, we present a special case to show the properties of the integrals
+G(3) (z; y). Using the Jacobi-Anger expansion
+iz cos θ
+
+e
+
+=
+
+∞
+X
+
+in (2n + 1)jn (z)Pn (cos θ),
+
+n=0
+
+and the properties of the Legendre polynomials
+(
+Z π
+Pn (cos θ) sin θ dθ =
+0
+
+2,
+
+n = 0,
+
+0,
+
+n ≥ 1,
+
+TIME-DOMAIN DIRECT SAMPLING METHOD
+
+11
+
+if (z − y) = ky, k ≥ 0, then one has
+Z
+−1
+−1
+eiℜ(ω)c0 x̂·(z−y) eσc0 x̂·y ds(x̂)
+S2
+Z 2π Z π
+−1
+−1
+=
+ei(ℜ(ω)c0 |z−y|−iσc0 |y|) cos θ sin θ dθdφ
+0
+
+=
+
+0
+
+Z 2π Z π X
+∞
+0
+
+0
+
+−1
+in (2n + 1)jn (ℜ(ω)c−1
+0 |z − y| − iσc0 |y|)Pn (cos θ) sin θ dθdφ
+
+n=0
+−1
+= 4πj0 (ℜ(ω)c−1
+0 |z − y| − iσc0 |y|).
+
+Therefore, we have
+G
+
+(3)
+
+
+ 
+−1
+e−σc0 r
+1
+−1
+−1
+(z; y) =
+, r → ∞.
+−2 j0 (ℜ(ω)c0 |z − y| − iσc0 |y|) 1 + O r
+4πc0
+
+(3.9)
+
+On the one hand, if z = y, in terms of in (x) = i−n jn (ix) and in (−x) = (−1)n in (x) [1],
+one can find that
+
+ 
+−1
+1
+e−σc0 r
+−1
+(3)
+G (y; y) =
+−2 j0 (−iσc0 |y|) 1 + O r
+4πc0
+
+ 
+−1
+1
+e−σc0 r
+−1
+=
+, r → ∞.
+−2 i0 (σc0 |y|) 1 + O r
+4πc0
+On the other hand, due to j0 (z) = sin z/z, together with (3.9), one can verify that
+
+
+ 
+−1
+1
+1
+e−σc0 r
+(3)
+1+O
+, ℜ(ω)|z − y| → ∞.
+G (z; y) =
+−2 O ℜ(ω)|z − y|
+r
+4πc0
+We are now ready to present the behavior of the imaging functions (1.2), which plays
+an important role in determining the locations of the point-like scatterers. Before the
+discussion, we give two assumptions that play important roles in the sequel. Firstly, we
+assume that the medium domain Ω consists of a finite number of well-separated small
+domains, i.e.,
+N
+[
+Ω :=
+Ωj , N ∈ N.
+(3.10)
+j=1
+
+Secondly, let ℜ(ω0 ) := inf ω∈Cσ0 ℜ(ω) be the lowest frequency of the incident signal χ(t)
+such that
+2c0
+,
+(3.11)
+ℜ(ω0 ) ≫
+min
+dist(Ωj , Ωj ′ )
+′
+1≤j,j ≤N
+j̸=j ′
+
+where c0 is the background sound speed. In the following, we denote by B(y0 , R) the
+circle/ball centered at y0 with R, namely, B(y0 , R) = {y ∈ Rd : |y − y0 | < R}.
+Theorem 3.2. Let Γ := {x ∈ Rd \Ω : |x| = r} denote a circle (d = 2) or a sphere (d = 3)
+with radius r, c0 > 0 denotes the background sound speed and σ > 0 be a positive constant.
+Suppose that the assumptions (3.10) and (3.11) hold, then the indicator functions I (d) (z)
+described in (1.2) have the following asymptotic behaviour
+
+
+
+
+
+−1
+d−1
+I (d) (z) ≤ e−2σc0 r Mj + O r−1 + O (ℜ(ω0 )L)− 2 + O(ϵ) , z ∈ B(yj , L/2), (3.12)
+
+
+1
+(d)
+−2σc−1
+r
+0
+I (z) = e
+, z ∈ Ω\ ∪N
+(3.13)
+O
+j=1 B(yj , L/2),
+(ℜ(ω0 )L)d−1
+
+12
+
+YUKUN GUO, HONGJIE LI, AND XIANCHAO WANG
+
+where O(ϵ) denotes the discretization error and L :=
+
+min dist(Ωj , Ωj′ ) and Mj is a
+
+1≤j,j ′ ≤N
+j̸=j ′
+
+positive constant, i.e.,
+
+Z +∞+iσ
+2
+3
+c20 2 2 −1
+
+
+
+ω 2 pb(yj , ω) dω,
+ 128π hj I0 (σc0 yj )
+−∞+iσ
+Mj :=
+Z
++∞+iσ
+4
+
+c0 2 2 −1
+2
+
+
+h
+i
+(σc
+y
+)
+ω 2 pb(yj , ω) dω,
+
+j
+j 0
+0
+3
+32π
+−∞+iσ
+
+d = 2,
+d = 3.
+
+Here the point yj is in the j-th element Ωj and hj := (c−2 (yj ) − c−2
+0 )|Ωj | denotes the
+weight with |Ωj | being the measure of the element Ωj . In particular, the equality in (3.12)
+holds if and only if z = yj , j = 1, 2, ..., N .
+Proof. Without loss of generality, we just consider the three dimensional case. By using
+the retangular quadrature rule and formula (2.7), one can deduce that
+Z
+Γ
+
+−1
+
+pbs (x, ω)
+
+e−iℜ(ω)c0 |x−z|
+ds(x)
+4π|x − z|
+
+!
+−1
+e−iℜ(ω)c0 |x−z|
+Φω (x, y)
+ds(x) dy
+=−
+4π|x − z|
+Γ
+Ω
+!
+−1
+Z
+N
+n
+o
+X
+e−iℜ(ω)c0 |x−z|
+2
+=
+hj ω pb(yj , ω) Φω (x, yj )
+1 + O(ϵ) ,
+ds(x)
+4π|x − z|
+Γ
+Z
+
+
+−2
+b(y, ω)
+ω 2 c−2
+0 − c (y) p
+
+Z
+
+(3.14)
+
+j=1
+
+where hj := (c−2 (yj ) − c−2
+0 )|Ωj | denotes the weight and O(ϵ) denotes the discretization
+error.
+If z ∈ B(yj , L/2), using the equation (3.14) and lemma 3.1, one can derive that
+I
+
+(3)
+
+−1
+
+2
+
+e−iℜ(ω)c0 |x−z|
+ds(x) dω
+4π|x − z|
+−∞+iσ
+Γ
+−1
+Z +∞+iσ
+Z
+1
+e−iℜ(ω)c0 |x−z|
+2
+=
+hj ω pb(yj , ω) Φω (x, yj )
+ds(x)
+2π −∞+iσ
+4π|x − z|
+Γ
+! 2
+−1
+Z
+N
+n
+o
+X
+e−iℜ(ω)c0 |x−z|
+2
++
+hj ′ ω pb(yj ′ , ω) Φω (x, yj ′ )
+ds(x)
+dω · 1 + O(ϵ)
+4π|x − z|
+Γ
+′
+
+1
+(z) =
+2π
+
+Z +∞+iσ Z
+
+pbs (x, ω)
+
+j =1
+j ′ ̸=j
+
+
+ 
+−1
+e−σc0 r
+1
+−1
+hj ω pb(yj , ω)
+−2 i0 (σc0 yj ) 1 + O r
+4πc0
+−∞+iσ
+
+
+ ! 2
+−1
+N
+n
+o
+X
+e−σc0 r
+1
+1
+2
++
+hj ′ ω pb(yj ′ , ω)
+O
+1
++
+O
+dω
+·
+1
++
+O(ϵ)
+.
+2 c−2
+ℜ(ω)|z − y|
+r
+16π
+′
+0
+j =1
+
+1
+≤
+2π
+
+Z +∞+iσ
+
+2
+
+j ′ ̸=j
+
+Let
+1
+Mj :=
+2π
+
+Z +∞+iσ
+−∞+iσ
+
+2
+
+1
+hj ω pb(yj , ω)
+i0 (σc−1
+0 yj ) dω,
+4πc−2
+0
+2
+
+TIME-DOMAIN DIRECT SAMPLING METHOD
+
+13
+
+due to p(x, t) ∈ Hσm (R, H 1 (Rd )) and yj is a fixed point, one can find that Mj is a positive
+constant and it is given by
+Z +∞+iσ
+c40 2 2 −1
+2
+Mj =
+h i (σc yj )
+ω 2 pb(yj , ω) dω.
+32π 3 j 0 0
+−∞+iσ
+Furthermore, by a straightforward calculation, we obtain
+
+ 
+
+
+
+1
+1
+r
+(3)
+−2σc−1
+0
+Mj + O
++O
++ O(ϵ) ,
+I (z) ≤ e
+r
+ℜ(ω0 )L
+
+z ∈ B(yj , L/2).
+
+By lemma 3.1, it is clear to see that the above equality holds if and only if z = yj .
+Correspondingly, if z ∈ Ω\ ∪N
+j=1 B(yj , L/2), from (3.14) and lemma 3.1, and using a
+similar calculation, one can get
+
+
+1
+r
+(3)
+−2σc−1
+0
+.
+O
+I (z) = e
+(ℜ(ω0 )L)2
+This completes the proof.
+□
+Remark 3.2. Theorem 3.2 asserts that the imaging functional (1.2) attains its local maximum at the location of the targets and it decays rapidly when the sampling point is
+away from the scatterers. Thus, one can identify the point-like scatterers based on the
+behaviour of the imaging functionals. Furthermore, to improve the resolution of the
+imaging, one should choose a higher lowest frequency ℜ(ω0 ), a larger observation radius
+r and finer sampling grid.
+Remark 3.3. It is worthy to emphasize that the parameter σ plays a significant role in the
+imaging functionals. On the one hand, if the L2 norm of the incident wave is unbounded,
+a sufficiently large value of σ must be chosen to ensure that the imaging functional (1.2)
+remains bounded for any sampling points located away from the measured surface. In
+particular, we can set σ = 0 when the incident wave is a Gaussian-modulated pulse wave.
+On the other hand, there usually exists some measured noise in the measurement data.
+Therefore, we must select a small enough value σ to ensure that the maximum value of
+the imaging functional is not annihilated by the measured noise. Hence, it is important to
+select an appropriate σ for the inversion and imaging. For a specific model, the optimal
+choice of such σ is still open.
+4. Numerical experiments
+In this section, several two dimensional numerical examples are presented to illustrate
+the feasibility and the effectiveness of the proposed time-domain direct sampling methods.
+To generate synthetic scattered field data, we use the finite element method to solve
+the forward problem of (1.1) and (2.4) in the time domain. Here, the quadratic finite
+element discretization in space and Crank-Nicolson scheme in time are employed, and the
+unbounded exterior domain is truncated by an absorbing boundary condition. The mesh
+of the forward solver is gradually refined until the relative error of the measured data is
+below 0.1%. To test the stability of the proposed method, random noise was added to
+the synthetic scattered data ps (x, t). The noisy data are given by the following formula
+psδ := ps (1 + δR),
+where R are point-wise uniform random numbers, ranging from −1 to 1, and δ > 0 represents the noise level. Unless otherwise specified, 10% noise was added to the synthetic
+data for the inversion.
+
+14
+
+YUKUN GUO, HONGJIE LI, AND XIANCHAO WANG
+
+Noting that the amplitude of the signal gradually decreases according to the proposed
+imaging functions(1.2), therefore, in practical computations, we only need to utilize measurement data within a finite time. Thus, the imaging functionals (1.2) in 2D can be
+truncated by
+Z T Z
+2
+(2)
+−1
+s
+(2)
+pδ (x, t + c0 |x − z|) φσ (x, t, z) ds(x) dt, z ∈ D,
+Iδ (z) =
+0
+
+Γ
+
+where T > 0 is the terminal time. In what follows, we use this truncated imaging
+functional to identify the unknown targets. Next, we specify discretization details of the
+above imaging functionals. Suppose that Nm receivers are equidistantly distributed on
+the boundary Γ, i.e., xm ∈ Γ, m = 1, 2, ..., Nm . Meanwhile, the observation period is
+divided into Nt equidistant recording time instants, that is, tn ∈ (0, T ], n = 1, 2, ..., Nt .
+For simplification, the distance between two adjacent receivers and the time step are set
+to be ∆Γ and ∆T , respectively. Furthermore, we assume that the sampling domain D
+is enclosed by the measurement surface Γ such that Ω ⊂ D. In what follows, we use a
+uniformly distributed Nh × Nh and Nh × Nh × Nh sampling mesh Th over the sampling
+domain D for two and three dimensions, respectively. Hence, for each sampling point
+zℓ ∈ Th , ℓ = 1, 2, ..., Nhd , we compute the discretized imaging functions with a single
+source (1.2) by
+!2
+Nm
+Nt
+X
+X
+(2)
+(2)
+,
+psδ (xm , tn + c−1
+Iδ (zℓ ) = ∆T
+∆Γ
+0 |xm − zℓ |) φσ (xm , tn , zℓ )
+n=1
+
+m=1
+
+(d)
+
+where the test function φσ (xm , tn , zℓ ) is the discretized form of (1.3). For the sake of
+comparison, the imaging functions are scaled to the range [0, 1] as follows
+(2)
+Ieδ (zℓ ) =
+
+I (2) (zℓ )
+.
+max I (2) (zℓ )
+
+(4.1)
+
+zℓ ∈Th
+
+In what follows, time step is chosen as ∆T = 0.02s and the background speed is set to
+be c0 = 4m/s. In addition, a 60 × 60 sampling grid is used in the following numerical
+experiments.
+4.1. Reconstruction of point-like scatterers with a single source. In this part,
+we aim to reconstruct multiple point-like scatterers by a single monopole source with
+different incident signals. In what follows, we consider three kinds of causal temporal
+signals as the incident source, that is, Gaussian-modulated sinusoidal pulse wave, smooth
+sawtooth wave and tempered sinusoidal wave.
+We assume that the single source is located at (−3, 0) and 48 receivers are distributed
+on the observation circle with radius r = 4.2. Moreover, the sampling domain is chosen
+as D = [−2.5, 2.5] × [−2.5, 2.5]. Figure 2(a) presents the two-dimensional geometrical
+setting of the time-domain acoustic scattering problem, where the location of single
+incident source is marked by the red point, the locations of receivers are marked by the
+black points, the point-like scatterers are plotted as the blue curves and the sampling
+domain is marked by the dotted square.
+Firstly, we consider the Gaussian-modulated sinusoidal pulse wave as the incident
+signal, which is given by
+(
+
+sin(ω0 t) exp −3(t − 2)2 , t ≥ 0,
+χ1 (t) :=
+0,
+t < 0,
+
+TIME-DOMAIN DIRECT SAMPLING METHOD
+
+(a) geometry setting
+
+(b) Gaussian pulse wave
+
+15
+
+(c) Fourier spectrum
+
+Figure 2. Schematic illustration of the time-domain acoustic scattering problem in two dimensions. (a) Geometry setting of the problem; (b)
+plotting of Gaussian-modulated sinusoidal pulse wave with ω0 = 20, (c)
+plotting of the spectrum of the corresponding Gaussian-modulated sinusoidal pulse wave via the Fourier transform.
+
+(a) ω0 = 5
+
+
+(d) θ ∈
+
+π 7π
+,
+4 4
+
+(b) ω0 = 10
+
+
+
+
+(e) θ ∈
+
+π 3π
+,
+2 2
+
+(c) ω0 = 20
+
+
+
+
+(f) θ ∈
+
+3π 5π
+,
+4 4
+
+
+
+Figure 3. Contour plots of the imaging functional Ie(2) (zℓ ) defined in
+(4.1) by using the Gaussian-modulated sinusoidal pulse wave χ1 as the incident signal. Top row: Reconstructions with different center frequencies
+ω0 ; bottom row: reconstructions with different observation aperture θ.
+where ω0 ∈ R+ denotes the center frequency. Figure 2 (b) and (c) respectively show
+the waveform and wavenumeber spectrum of the above Gaussian-modulated sinusoidal
+pulse wave with ω0 = 20. Here the terminal time is given by T = 6s and 450 recording
+time steps are utilized. Assume that the true scatterers consists of a disk with radius
+0.1 located at (−1, −1.5), a square with sidelength 0.1 located at (1, 0), and an elliptic
+with center (−1, 1.5), semi-major axis 0.12 and semi-minor axis 0.08. The sound speed
+
+16
+
+YUKUN GUO, HONGJIE LI, AND XIANCHAO WANG
+
+(a) geometry setting
+
+(b) smooth sawtooth wave
+
+(c) T = 1
+
+(d) T = 2
+
+(e) T = 4
+
+(f) T = 6
+
+Figure 4. Contour plots of the imaging functional Ie(2) (zℓ ) defined in
+(4.1) by using the smooth sawtooth wave χ2 as the incident signal. (a):
+Geometry setting of the problem; (b) plotting of the smooth sawtooth
+wave; (c)-(f): reconstructions with different terminal times T .
+c(x) inside the disk, square and elliptic are 15, 30 and 10, respectively. Noting that the
+incident wave is a Gaussian-modulated sinusoidal pulse wave, as discussed in remark 3.3,
+we can set σ = 0 in this example.
+(2)
+Figure 3 presents the contour plots of the imaging functional Ieδ (z) by using the
+Gaussian pulse as the incident wave with different center frequencies. It can be seen that
+the the imaging functional attains a significant local maximum near the exact locations
+of the point-like scatterers. In comparison of the imaging results among figure 3(a)-(c),
+one can observe that the resolution of the reconstruction is significant improved as ω0
+increases. Furthermore, from figure 3(c)-(f), we can find that the point-like scatterers is
+less precisely captured as the aperture decreases.
+Secondly, we consider a smooth sawtooth wave as the incident wave, which is parameterized as
+Z +∞r
+
+
+
+
+
+3000 20τ + π
+20τ + π
+1
+
+
+−
+−
+exp −3000(t − τ )2 dτ, t ≥ 0,
+π
+2π
+2π
+2
+χ2 (t) :=
+−∞
+
+
+0,
+t < 0,
+where ⌊X⌋ denotes the greatest integer less than or equal to X. Here the terminal time
+is given by T = 3s and 500 recording time steps are received. Suppose that the unknown
+scatterer consists of three same disk with radius 0.2 and they are located at (−1.5, −1.5),
+(0, 0) and (1.5, 1.5). The sound speed c(x) inside the disks are 10, 20 and 40, respectively.
+Figure 4(b) plots the truncated waveform of the smooth sawtooth wave. In this numerical example, the parameter σ is chosen as 0.2. As shown in figure 4(c)-(f), it is clear
+to see that the small scatterers are determined one by one as the terminal time increases.
+
+TIME-DOMAIN DIRECT SAMPLING METHOD
+
+17
+
+(a) geometry setting
+
+(b)
+
+(c) σ = 0
+
+(d) σ = 3
+
+(e) σ = 6
+
+(f) σ = 9
+
+Figure 5. Contour plots of the imaging functional Ie(2) (zℓ ) defined in
+(4.1) by using the tempered sinusoidal wave χ3 as the incident signal. (a):
+Geometry setting of the problem; (b) plotting of the tempered sinusoidal
+wave; (c)-(f): reconstructions with different parameters σ.
+
+The main reason is that we first receive the scattered field generated by the point-like
+scatterer that is closest to the location of the incident source.
+Finally, we consider a more challenging case. The incident wave is represented by a
+tempered sinusoidal wave function, that is,
+
+χ3 (t) :=
+
+(2
+t sin(20 t),
+0,
+
+t ≥ 0,
+t < 0.
+
+Artificial scattered fields were collected with T = 10s and 500 recording time steps. The
+true scatterers consists of a disk with radius 0.2 located at (−0.3, −0.3) and a square
+with length 0.4 located at (0.3, 0.3). The sound speed c(x) inside these two domains is
+given by 20 and 25, respectively. In Figure 5, we compare the reconstructed results using
+different parameters σ. It illustrates that the resolution is dependent on the parameter
+σ, which is in agreement with the theoretical analysis.
+
+4.2. Reconstruction of an extended scatterer with multiple sources. In this
+part, we aim to reconstruct an extended scatterer by the proposed time-domain direct
+sampling method. The multi-source imaging functionals are given by
+I
+
+(2)
+
+Z TZ
+
+Z
+
+(z) =
+0
+
+Γs
+
+Γ
+
+2
+(2)
+ps (x, xs , t + c−1
+0 |x − z|) φσ (x, t, z) ds(x) ds(xs )dt,
+
+z ∈ D,
+
+18
+
+YUKUN GUO, HONGJIE LI, AND XIANCHAO WANG
+
+(a)
+
+(b)
+
+Figure 6. (a): geometry setting; (b): reconstruction of the kite-shaped
+scatterer with one incident source by using the smooth sawtooth wave χ2 .
+where Γs denotes a measurement surface such that the sources are away from the target
+(d)
+objects and φσ is given by
+
+−1
+e−σ(t+c0 |x−z|)
+
+
+
+q
+, d = 2,
+
+
+ 8πc−1 |x − z|
+0
+φ(d)
+σ (x, t, z) =
+
+−1
+
+
+
+e−σ(t+c0 |x−z|)
+
+
+, d = 3.
+4π|x − z|
+In the following examples, we consider a kite-shaped scatterer (see figure 6 (a)), which is
+parameterized as
+x(θ) = (cos θ + 0.65 cos 2θ − 0.65, 1.5 sin θ),
+
+θ ∈ [0, 2π],
+
+and a pear-shaped scatterer (see figure 8 (a)), which is parameterized as
+x(θ) = (1.6 + 0.24 cos 3θ)(cos θ, sin θ),
+
+θ ∈ [0, 2π],
+
+We assume that there are 24 receivers placed on the boundary of a square with sidelength
+10. The sampling domain is chosen as D = [−4, 4] × [−4, 4]. Figure 6(a) presents the
+geometrical setting of the problem. Here the locations of the incident source are marked
+by a red circle, the locations of receivers are marked by black points and the boundary
+of the scatterer is plotted by the blue curve.
+To begin with, we consider the reconstruction of a kite-shaped scatterer by using the
+smooth sawtooth wave, which is generated by single incident wave source. Here the
+parameter σ is set to be 0.1, the terminal time is T = 8s and 400 recording time is
+obtained. Unfortunately, it is hardly to determine the shape of the extended target, see
+figure 6(b). To overcome this difficulty, we employ multiple incident sources to capture
+more geometrical details of the target. In figure 7, we show the reconstructed results
+with different number of incident sources. As expected, reconstructions become more
+accurate when more transmitter locations are used.
+Finally, we consider the reconstruction of a pear-shaped scatterer by using the tempered sinusoidal wave. The terminal time is T = 6s and 300 recording time is obtained.
+From figure 8, we can find that our method performs well for the extended scatterer when
+a suitable parameter σ is selected. The optimal choice of σ is still unclear and this will
+be further investigated in our future work.
+
+TIME-DOMAIN DIRECT SAMPLING METHOD
+
+(a)
+
+(b)
+
+(c)
+
+(d)
+
+19
+
+Figure 7. Reconstructions of the kite-shaped scatterer with different
+number of incident sources by using the smooth sawtooth wave χ2 , where
+the black points denotes the locations of receivers and the red small circles
+denotes the locations of the incident sources.
+Acknowledgement
+The work of Xianchao Wang was supported by the NSFC grant under No. 12001140.
+The work of Yukun Guo was supported by NSFC grants under No. 11971133.
+References
+[1] M. Abramowitz and I. A. Stegun, Handbook of Mathematical Functions with Formulas, Graphs, and
+Mathematical Tables, Dover, New York, 1965.
+[2] H. Ammari, E. Bretin, J. Garnier and A. Wahab, Time-reversal algorithms in viscoelastic media,
+Eur. J. Appl. Math., 24(4) (2013), 565–600.
+[3] H Ammari, R Griesmaier and M Hanke, Identification of small inhomogeneities: asymptotic factorization, Math. Comput., 76 (2007), no. 259, 1425–1448.
+[4] F. Cakoni and J. Rezac, Direct imaging of small scatterers using reduced time dependent data, J.
+Comput. Phys., 338 (2017), 371–387.
+[5] F. Cakoni, D. Colton and P. Monk, The Linear Sampling Method in Inverse Electromagnetic Scattering, Society for Industrial and Applied Mathematics, 2011.
+[6] F. Cakoni, H. Haddar and A. Lechleiter, On the factorization method for a far field inverse scattering
+problem in the time domain, SIAM J. Math. Anal., 51 (2019), no. 2, 854–872.
+[7] F. Cakoni, P. Monk and V. Selgas, Analysis of the linear sampling method for imaging penetrable
+obstacles in the time domain, Analysis & PDE, 14 (2021), no. 3, 667–688.
+
+20
+
+YUKUN GUO, HONGJIE LI, AND XIANCHAO WANG
+
+(a) geometry setting
+
+(b) σ = 0
+
+(c) σ = 1
+
+(d) σ = 2
+
+Figure 8. Exact and reconstructed pear-shaped scatterer with different
+parameters σ by using the tempered sinusoidal wave χ3 .
+
+[8] J. Chen, Z. Chen and G. Huang, Reverse time migration for extended obstacles: acoustic waves,
+Inverse Problems, 29 (2013), 085005.
+[9] Q. Chen, H. Haddar, A. Lechleiter and P. Monk, A sampling method for inverse scattering in the
+time domain, Inverse Problems, 26(2010), 085001.
+[10] M. Cheney, A mathematical tutorial on synthetic aperture radar, SIAM Review, 43 (2001), no. 2,
+301–312.
+[11] D. Colton and R. Kress, Inverse Acoustic and Electromagnetic Scattering Theory, Springer, 4th
+edition, Switzerland, 2019.
+[12] M. Fink, Time reversed acoustics, Phys. Today, 50 (1997), 34.
+[13] K. Ito, B. Jin and J. Zou, A direct sampling method to an inverse medium scattering problem, Inverse
+Problems, 28 (2012), 025003.
+[14] A. Kirsch and N. Grinberg, The Factorization Method for Inverse Problems. Vol. 36. OUP Oxford,
+2007.
+[15] Y. Guo, D. Hömberg, G. Hu, J. Li, H. Liu, A time domain sampling method for inverse acoustic
+scattering problems, J. Comput. Phys., 214 (2016), 647-660.
+[16] Y. Guo, P. Monk and D. Colton, Toward a time domain approach to the linear sampling method,
+Inverse Problems, 29 (2013), 095016.
+[17] Y. Guo, P. Monk and D. Colton, The linear sampling method for sparse small aperture data, Appl.
+Anal., 95 (2015), 1599–1615.
+[18] C. Holmes, B.W. Drinkwater, P.D. Wilcox, Post-processing of the full matrix of ultrasonic transmitreceive array data for non-destructive evaluation, Nondestruct. Test. Eval. Int., 38 (2005), 701–711.
+[19] M. V. Klibanov, J. Li and W. Zhang, A globally convergent numerical method for a 3D coefficient
+inverse problem for a wave-like equation, SIAM J. Sci. Comput., 44 (2022), no. 5, A3341–A3365.
+
+TIME-DOMAIN DIRECT SAMPLING METHOD
+
+21
+
+[20] H. Li and H. Liu, On anomalous localized resonance and plasmonic cloaking beyond the quasistatic
+limit, Proceedings of the Royal Society A, 474 (2018), no. 2218, 20180165.
+[21] J. Li, H. Liu and J. Zou, Strengthened linear sampling method with a reference ball, SIAM J. Sci.
+Comput., 31, 4013–4040.
+[22] J. Li and J. Zou, A direct sampling method for inverse scattering using far-field data, Inverse Probl.
+Imaging, 7(3) (2013), 757–775.
+[23] H. Liu and G. Uhlmann, Determining both sound speed and internal source in thermo- and photoacoustic tomography, Inverse Problems, 31 (2015), 105005.
+[24] X. Liu, A novel sampling method for multiple multiscale targets from scattering amplitudes at a fixed
+frequency, Inverse Problems 33 (2017), 085011.
+[25] S. Ma, L. P. Machado and M. Salo, Fixed angle inverse scattering for sound speeds close to constant,
+SIAM J. Math. Anal., 55 (2023), no. 4, 3420–3456.
+[26] R. Potthast, A survey on sampling and probe methods for inverse problems, Inverse Problems, 22
+(2006), no. 2, R1.
+[27] A. C. Prunty and R. K. Snieder, Theory of the linear sampling method for time-dependent fields,
+Inverse Problems, 35 (2019), 055003.
+[28] M. Sini and H. Wang, The inverse source problem for the wave equation revisited: a new approach,
+SIAM J. Math. Anal., 54(5) (2022), 5160–5181.
+[29] E. Stein, Harmonic Analysis: Real-variable Methods, Orthogonality and Oscillatory Integrals.
+Princeton University Press, 1993.
+[30] F. J. Sayas, Retarded Potentials and Time Domain Boundary Integral Equations. Vol. 50, Springer,
+2016.
+[31] L. Stankovic, M. Daković and T. Thayaparan, Time-frequency Signal Analysis with Applications,
+Artech house, 2014.
+[32] X. Wang, Y. Guo, J. Li and H. Liu, Mathematical design of a novel input/instruction device using
+a moving acoustic emitter, Inverse Problems, 33 (2017), no. 10, 105009.
+School of Mathematics, Harbin Institute of Technology, Harbin, P. R. China.
+Email address: ykguo@hit.edu.cn
+Yau Mathematical Sciences Center, Tsinghua University, Beijing, China; Yanqi Lake
+Beijing Institute of Mathematical Sciences and Applications, Beijing, China
+Email address: hongjieli@tsinghua.edu.cn
+School of Mathematics, Harbin Institute of Technology, Harbin, P. R. China.
+Email address: xcwang90@gmail.com; xcwang@hit.edu.cn
+
+

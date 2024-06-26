@@ -1,0 +1,2574 @@
+1
+
+DiaPer: End-to-End Neural Diarization with
+Perceiver-Based Attractors
+
+arXiv:2312.04324v1 [eess.AS] 7 Dec 2023
+
+Federico Landini, Mireia Diez, Themos Stafylakis, Lukáš Burget
+
+Abstract—Until recently, the field of speaker diarization was
+dominated by cascaded systems. Due to their limitations, mainly
+regarding overlapped speech and cumbersome pipelines, endto-end models have gained great popularity lately. One of the
+most successful models is end-to-end neural diarization with
+encoder-decoder based attractors (EEND-EDA). In this work,
+we replace the EDA module with a Perceiver-based one and
+show its advantages over EEND-EDA; namely obtaining better
+performance on the largely studied Callhome dataset, finding
+the quantity of speakers in a conversation more accurately, and
+running inference on almost half of the time on long recordings.
+Furthermore, when exhaustively compared with other methods,
+our model, DiaPer, reaches remarkable performance with a very
+lightweight design. Besides, we perform comparisons with other
+works and a cascaded baseline across more than ten public wideband datasets. Together with this publication, we release the code
+of DiaPer as well as models trained on public and free data.
+Index Terms—Speaker Diarization, End-to-End Neural Diarization, Perceiver, Attractor, DiaPer
+
+I. I NTRODUCTION
+N the last years, there has been a big change of paradigm
+in the world of speaker diarization. Competitive systems
+until a few years ago were cascaded or modular [1]–[3],
+consisting of different sub-modules to handle voice/speech
+activity detection (VAD/SAD), embedding extraction (usually x-vector) over uniform segmentation, clustering, optional
+resegmentation and overlapped speech detection (OSD) and
+handling. The main disadvantages of this framework are that
+each sub-module is trained independently and optimized for
+different objectives and that the full pipeline is complex since
+a few steps need to be applied sequentially, propagating errors
+from one step to the next one. Furthermore, OSD performance
+is usually not satisfactory, resulting in high overlap-related
+errors in cascaded systems.
+Since the appearance of end-to-end models, the ecosystem
+has changed substantially with new approaches constantly
+appearing [4]. Neural-based diarization models can be separated into different categories: single-stage systems, which
+comprise only one model, and two-stage systems, which have
+two steps where one is a variant of end-to-end model and
+the other is either based on clustering or on another model.
+Single-stage systems, such as end-to-end neural diarization
+(EEND) [5], where diarization is modeled as per-speaker perframe binary classification, are trained directly for the task.
+While the training can be done in different steps, the inference
+is performed in a single stage. These methods face difficulties
+
+I
+
+Federico Landini, Mireia Diez, and Lukáš Burget are with Brno University
+of Technology and Themos Stafylakis is with Omilia and Athens University
+of Economics and Business.
+
+in recordings with several speakers [6]. Two-stage systems
+can be separated into different classes. Models such as target
+speaker voice activity detection [7] are trained in an endto-end manner but make use of an initialization provided
+by an existing (usually cascaded) model which has to be
+run priorly at inference time. Other two-stage systems run
+EEND on short segments (where few speakers are expected)
+and then perform clustering to join the decisions on short
+segments. They are known as EEND vector clustering (EENDVC) and different variants have been proposed [8]–[10]. These
+approaches present advantages in dealing with several speakers
+(potentially an unlimited number of them) while having an
+edge over clustering-based methods on dealing with overlapped speech segments as EEND models usually do. This
+categorization is, however, not strict. Some systems do not
+exactly qualify as “single” or “two” stage as they have a single
+stage but include some iterative procedure [11], [12].
+The simplicity of single-stage EEND systems (where diarization is modeled as per-speaker per-frame binary classification) has brought more attention to them and several variations
+have been proposed based on this framework. The two main
+extensions are self-attention EEND (SA-EEND) [13] (where
+BiLSTM layers are replaced by SA ones) and EEND with
+encoder-decoder attractors (EEND-EDA) [14] (which enables
+handling variable numbers of speakers), but several others
+have been proposed: some of them have been designed for
+the online scenario [15], [16] or making use of multiple
+microphones [17], [18]. The Conformer architecture [19] was
+used to replace the self-attention layers of SA-EEND in [20]
+and of EEND-EDA in [21].
+The Perceiver [22] is a Transformer [23] variant that employs cross-attention to project the variable-size input onto a
+fixed-size set of latent representations. These latents are transformed by iterative self-attention and cross-attention blocks.
+By encoding the variable-size input into the fixed-size latent
+space, the Perceiver reduces the quadratic complexity of the
+Transformer to linear. In this work, we utilize the Perceiver
+framework to encode speaker information into the latent space
+and then derive attractors from them. Using Perceivers allows
+us to handle a variable number of speakers per conversation
+while addressing some of the limitations of EDA with a fully
+non-autoregressive (and iteration-free) scheme. Moreover, we
+evaluate our model, DiaPer, on a wide variety of scenarios.
+The contributions of our work are:
+• Replacement of encoder-decoder structure in EEND-EDA
+by a Perceiver-based decoder.
+• Analysis of DiaPer’s performance under different architectural choices.
+
+2
+
+Attractors
+Latents
+
+a1 a2 . . . aA
+e1
+
+x1
+
+x2
+x3
+...
+...
+
+II. R ELATED W ORKS
+Among the EEND variants that are capable of dealing
+with multiple speakers the most standard one is still EENDEDA [14]. This approach employs long short-term memory
+(LSTM) layers for encoding frame embeddings and decoding
+attractors that represent the speakers in the conversation.
+However, one of the limitations of this approach is the
+LSTM-based encoder-decoder mechanism itself. In practice,
+the frame-by-frame embeddings fed to the LSTM encoder are
+shuffled, clearly removing the time information, and hindering
+the capabilities of this approach. This is done due to the
+difficulties LSTMs have to “remember” speakers appearing at
+the beginning of the conversation, especially when processing
+long sequences. In [24], an alternative is proposed where the
+input of the LSTM encoder is not shuffled and the LSTM
+decoder incorporates an attention mechanism. Instead of using
+zero vectors as input for the decoder, the input is obtained as
+a weighted sum of the encoder outputs, providing the decoder
+with better cues. A similar idea is explored in [25] where
+the decoder is fed with summary representations calculated
+together with embeddings produced by the frame encoder.
+Some works have explored non-autoregressive approaches
+for obtaining attractors with attention-based schemes. The first
+of these works replaces the LSTM-based encoder-decoder with
+two layers of cross-attention decoder [26]. In this configuration, the attractors are transformed using the frame embeddings
+as keys and values and the input attractors, used as queries
+in the decoder, are obtained as the weighted average of the
+frame embeddings using their predicted posterior activities as
+weights. However, a set of initial attractors has to be fed into
+the decoder before an initial set of predictions is produced. The
+initial attractors are given by running k-means clustering on
+the frame embeddings and clustering to the number of speakers
+in the recording. It is shown that this method can improve by
+running a few refinement iterations.
+In [27], the LSTM-based encoder-decoder is also replaced
+by a cross-attention decoder; however, the set of initial queries
+that are transformed into attractors is not defined by the output
+of the model but they are learnable parameters. The methods
+in [26], [27] have only shown their capabilities in the twospeaker scenario where the number of speakers is known and
+where the architecture can be crafted to handle that specific
+quantity. The extension to more speakers is definitely possible
+but follow-up works have not yet been published.
+A combination of the aforementioned works is utilized
+in [12], [28]. In [28], in the context of SA-EEND for two
+speakers, the initial diarization outputs are used to estimate
+
+Attractor
+existence
+probabilities
+
+Perceiver-based decoder
+
+...
+...
+
+xT
+
+Log-Mel
+fbanks
+
+Frame encoder
+
+Thorough comparison with EEND-EDA to show DiaPer’s
+improvements.
+• Proposed architecture that is more lightweight and efficient
+at inference time, yet performs better than EEND-EDA.
+• Exhaustive comparison with other works on several corpora.
+• Clustering-based baseline (including VAD and OSD + overlap handling) results on a variety of datasets and built with
+public tools.
+• Release of models trained on free publicly available data.
+• Public code: https://github.com/BUTSpeechFIT/DiaPer.
+•
+
+e2
+e3
+
+...
+...
+...
+
+...
+...
+...
+...
+...
+...
+
+...
+
+...
+
+eT
+
+...
+
+Linear
+
+{
+
+Frame embeddings
+
+σ
+
+p1 p2 . . . pA
+y1,1 y1,2 . . . y1,A
+y2,1 y2,2 . . . y2,A
+
+y3,1 y3,2 . . . y3,A
+
+σ
+
+...
+
+... . . . ...
+
+...
+
+... . . . ...
+
+...
+
+... . . . ...
+
+...
+
+... . . . ...
+
+yT,1 yT,2 . . . yT,A
+
+Per-frame
+per-speaker activities
+
+Fig. 1. DiaPer diagram.
+
+initial attractors and they are refined iteratively with crossattention decoders with a fixed set of queries (one for each
+of the speakers) attending to frame embeddings. In [12], the
+LSTM-based encoder-decoder is also replaced by layers of
+cross-attention decoder and three of the initial queries are fixed
+(but learned during training) and represent “silence”, “single
+speaker” and “overlap” while the other S queries represent
+each of the speakers in the recording. In the first pass, only
+the fixed queries are used and then the initial speaker queries
+are estimated from the frame embeddings, using the average of
+carefully selected frames given the predicted posterior activities. The set of S + 3 attractors is refined through a few crossattention layers in order to produce the final attractors used to
+obtain the speech activity posteriors. It should be noted that
+the inference procedure with this method is more complicated
+than in the original EEND-EDA due to the iterative procedure
+to estimate first silence, single speaker and overlap attractors
+and then each of the speakers iteratively.
+In [12], and more recently in [29] (which is concurrent to
+this work), results are presented with a flexible quantity of
+speakers but the model relies on an autoregressive scheme
+since the speakers are iteratively decoded in a second step.
+All these approaches present similarities with a more
+generic architecture: the Perceiver [22] which iteratively refines a set of latents (queries in cross-attention) informed by
+an input sequence (keys and values in cross-attention) but in
+a complete non-autoregressive framework.
+The model we propose in this work generalizes some of
+the ideas described above and directly tackles the problem of
+handling several speakers using Perceivers to obtain attractors
+in an EEND-based framework. We name this approach DiaPer:
+end-to-end neural diarization with Perceiver-based attractors.
+III. T HE M ODEL
+DiaPer shares many facets with other EEND models, such
+as defining diarization as a per-speaker-per-time-frame binary
+classification problem. Given a sequence of observations (features) X ∈ RT ×F where T denotes the sequence length and F
+the feature dimensionality, the model produces Ŷ ∈ (0, 1)T ×S
+
+3
+
+which represent the speech activity probabilities of the S
+speakers for each time-frame. Just like with EEND-EDA, the
+model is trained so that Ŷ matches to the reference labels
+Y ∈ {0, 1}T ×S where yt,s = 1 if speaker s is active at time
+t and silent otherwise. The main difference between EENDEDA and DiaPer is in how the attractors are obtained given
+the frame embeddings. As shown in Figure 1, DiaPer makes
+use of Perceivers to obtain the attractors instead of the LSTMbased encoder-decoder.
+The main two modules in DiaPer are the frame encoder
+and the attractor decoder. As shown in Figure 2 and proposed
+in [13], the frame encoder receives the sequence of frame
+features X and transforms them with a few chained selfattention layers E = F rameEncoder(X) to obtain the frame
+embeddings E ∈ RT ×D . The attractor decoder receives the
+frame embeddings and produces attractors A = P ercDec(E)
+with A ∈ RA×D 1 which are in turn compared with the frame
+embeddings to determine which speaker is active at each timeframe: Ŷ = σ(EP ercDec(E)⊤ ).
+In other words, the frame encoder is in charge of transforming the initial input features into deeper and more contextualized representations from which (a) the attractors will be
+estimated, and (b) the frame-wise activation of each speaker
+will be determined. Several encoder layers are used to extract
+such representations and, in a similar way as presented in [27],
+each layer also includes frame-speaker activities conditioning.
+As shown in Figure 2, intermediate attractors are calculated
+given the frame embeddings of each frame encoder layer.
+The intermediate attractors are then weighted by intermediate
+frame activities and transformed into the frame embedding
+space to produce the conditioning.
+More formally, the F rameEncoder consists of
+(0)
+
+weights and biases of the position-wise feed-forward layer,
+1 ∈ RT is an all-one vector, ReLU (·) is the rectified linear
+(l)
+(l)
+(l)
+unit activation function, Qh ∈ RD×d , Kh ∈ RD×d , Vh ∈
+(l)
+D×d
+D×D
+R
+, Oh ∈ R
+are the query, key, value and output
+D
+is
+projection matrices for the hth head and lth layer, and d = H
+the dimension of each head. LN stands for layer normalization,
+MHSA stands for multi-head self-attention and, FF stands for
+feed-forward layer.
+The conditioning is defined as follows
+Condition(E(l−1) ) = Ŷ
+Ŷ
+
+(l−1)
+
+(l−1)
+
+P ercDec(E(l−1) )Wc
+
+(10)
+
+= σ(E(l−1) P ercDec(E(l−1) )⊤ ),
+
+(11)
+
+where P ercDec is the Perceiver-based attractor decoder,
+Wc ∈ RD×D is a learnable parameter that weights the effect
+of the intermediate attractors on the frame embeddings.
+The decoder makes use of a chain of a few Perceiver blocks
+as depicted in Figure 3. The set of learnable latents is transformed by each block utilizing the frame embeddings as keys
+and values. One could have an equal amount of latents and
+attractors, in which case the latents are an initial representation
+transformed by the blocks to obtain the attractors. In practice,
+we observed that this leads to instability in the training and that
+obtaining the attractors as the linear combination of a larger
+set of (transformed) latents performed better. More formally,
+L(0) = M HA(0) (L, E(L) , E(L) )
+
+(12)
+
+L(b) = P ercBlockb (L(b−1) , E(L) )
+ L(b−1) Q(b) (E(L) K(b) )⊤ 
+(b)
+(b)
+h
+h
+√
+Ch = Sof tmax
+(E(L) Vh )
+d
+(b)
+(b)
+CA(b) = M HA(b) (L(b−1) , E(L) , E(L) ) = [C1 . . . CH ]O(b)
+
+(13)
+(14)
+
+(15)
+(b−1)
+
+P ercBlockb (L
+
+,E
+
+(L)
+
+) = M HSA
+
+(b)1
+
+(M HSA
+
+(b)2
+
+(CA
+
+(b)
+
+))
+(16)
+
+(1)
+
+P ercDec(E(L) ) = WP ercBlockb (L(B) , E(L) ),
+
+E(0) = [e1 , . . . , eT ]
+
+(2)
+
+E(l) = F rEncLayerl (E(l−1) + Condition(E(l−1) ))
+
+(3)
+
+where L ∈ RL×D is the set of latents, B is the number
+of Perceiver blocks in the decoder (with 1 ≤ b ≤ B), H
+(b)
+is the number of heads (with 1 ≤ h ≤ H), Qh ∈ RD×d ,
+(b)
+(b)
+(b)
+Kh ∈ RD×d , Vh ∈ RD×d , Oh ∈ RD×D are the query,
+key, value and output projection matrices for the hth head and
+D
+bth layer, and d = H
+is the dimension of each head. M HA
+stands for multi-head cross-attention and W ∈ RA×L is the
+matrix that linearly combines latents to obtain attractors.
+DiaPer decodes always the same fixed number of attractors,
+denoted by A. As mentioned above, the attractors are obtained
+as a linear combination of the latents. Therefore, the original
+latents are encouraged to represent information about the
+speakers in a general manner so that these representations
+can be transformed (through cross- and self-attention) given a
+particular input sequence in order to capture the characteristics
+of the speakers in the utterance. Furthermore, in order to
+encourage the model to utilize all latents, an extra “entropy
+term” Le is added to the loss so that the weights that define the
+linear combination of latents do not become extreme values
+(i.e. no latent has a very high weight, therefore making all
+others very small), where
+
+et
+
+= Win xt + bin
+(0)
+
+(0)
+
+where 1 ≤ l ≤ L, and L is the number of self-attention
+layers (F rEncLayerl denoting the lth self-attention layer)
+and Win ∈ RD×F and bin ∈ RD are the weights and biases
+of the input transformation on the frames.
+(l−1)
+
+= LN (E(l−1) )
+
+(l−1)
+
+(l−1)
+
+Ē
+
+= LN (Ē
+
+Ê
+
+(l−1)
+
+F F (Ê
+
+(4)
+(l−1)
+
++ M HSA(l) (Ē
+(l−1)
+
+) = ReLU (Ê
+
+))
+
+(5)
+
+(l)
+(l)⊤
+(l)
+(l)⊤
+W1 + 1b1 )W2 + 1b2
+
+(6)
+(l−1)
+
+(l)
+
+Ch = Sof tmax
+
+ Ē
+
+(l−1) (l) ⊤ 
+(l)
+Qh (Ē
+Kh )
+
+√
+
+d
+
+(l−1)
+
+(Ē
+
+(l)
+
+Vh )
+(7)
+
+(l)
+
+(l−1)
+
+M HSA (Ē
+
+(l)
+(l)
+) = [C1 . . . CH ]O(l)
+(l−1)
+(l−1)
+
+F rEncLayer(E
+
+) = Ê
+
+(8)
+(l−1)
+
++ F F (Ê
+
+)
+
+(9)
+
+where H is the number of heads (with 1 ≤ h ≤ H), W1 ∈
+RD×Df f , W2 ∈ RDf f ×D , b1 ∈ RDf f , b2 ∈ RD are the
+1 In practice, S = A.
+
+Le =
+
+A
+X
+a=1
+
+(17)
+
+mean(Sof tmax(wa ) ∗ log Sof tmax(wa )) (18)
+
+4
+
+E(l)
+
+E(l)
+
+E
+
+LayerNorm
+Position-wise feed-forward
+
+Wc
+
+Weighted
+Attractors
+
+E(3)
+
+LayerNorm
+
+Frame-speaker Y
+activities
+
+σ
+
+Self-attention layer
+E(2)
+
+MHS A(Ē(l−1))
+
+(l−1)
+
+Attractors
+
+Self-attention layer
+
+Multi-head self-attention
+Ē
+
+Con dit ion(E(l−1))
+
+Self-attention layer
+
+(l−1)
+
+Ê
+
+Transformation W
+
+Self-attention layer
+
+E(4)
+
+E(1)
+
+(l−1)
+
+E(0)
+
+LayerNorm
+
+Detached
+
+E(l−1)
+
+Self-attention layer
+
+Self-attention layer
+Latents
+
+Linear Layer
+
+E(l−1)
+
+Perceiver-based decoder
+
+X
+
+Fig. 2. Scheme of frame encoder (middle), detail of self-attention layer (left) and conditioning scheme (right).
+
+Frame
+embeddings
+
+Latents
+
+K, V
+
+MH Cross
+Attention
+
+Q
+
+Q
+K, V MH Cross
+Attention
+MH Self
+Attention
+
+Q
+K, V
+
+Perceiver
+block
+
+MH Self
+Attention
+
+Q
+K, V
+
+Perceiver
+block
+
+K, V
+
+Perceiver
+block
+
+losses. The main idea is that using the frame embeddings
+produced by the frame encoder, we calculate losses using
+the intermediate attractors given by the latents after each
+Perceiver block. Analogously, using the attractors produced
+by the Perceiver-based decoder, we calculate losses using the
+intermediate frame embeddings given after each layer in the
+frame encoder. The averages of the intermediate losses over
+frame encoder layers and over Perceiver blocks are summed to
+the losses L̂d (Y, Ŷ) and L̂a (r, p) which use “final” attractors
+and “final” frame embeddings. Then, Ld and La are obtained
+as
+
+Q
+Weighted
+average
+
+Ld = L̂d (Y, Ŷ) +
+
+Attractors
+
+Fig. 3. Scheme of Perceiver decoder.
+
+La = L̂a (r, p) +
+
+and wa ∈ RL is the row of W corresponding to attractor a.
+In standard scaled dot-product attention [23], the softmax
+is applied on the time-axis to normalize the attention weights
+along the sequence length before multiplying with the values.
+In Perceiver, cross- and self-attention on the latents are intertwined. We observed slightly better performance if, when
+doing cross-attention, the softmax was applied to normalize
+across latents rather than along the sequence length, i.e. each
+frame embedding is “probabilistically” assigned to each latent
+using weights that sum up to one. This and other decisions
+are compared in the experimental section.
+As usual for EEND-based models, the diarization loss Ld
+is calculated as
+T
+
+L̂d (Y, Ŷ) =
+
+X
+1
+min
+BCE(ytϕ , ŷt ),
+T S ϕ∈perm(S) t
+
+(19)
+
+where considering all reference labels permutations denote
+permutation invariant training (PIT) loss.
+Like in EEND-EDA, to determine which attractors are valid,
+an attractor existence loss L̂a is calculated as L̂a (r, p) =
+BCE(r, p) using the same permutation given by L̂d .
+L̂d and L̂a are enough to train the model, but inspired by
+other works [27], [30], [31], we decided to introduce auxiliary
+
+L−1
+
+B−1
+
+L−1
+
+B−1
+
+l
+b
+1 X
+1 X
+L̂d (Y, Ŷ ) +
+L̂d (Y, Ŷ )
+L−1
+B−1
+l=1
+b=1
+(20)
+
+1 X
+1 X
+L̂a (r, pl ) +
+L̂a (r, pb ),
+L−1
+B−1
+l=1
+b=1
+(21)
+
+where p = [p1 , . . . , pA ] are the attractor posterior existence
+probabilities and r = [r1 , . . . , rA ] are the reference presence
+labels ri ∈ {0, 1} for 1 ≤ i ≤ A. pl are the posteriors using
+the frame embeddings of the lth frame encoder layer and pb
+are the posteriors using the bth Perceiver block.
+The final loss to be optimized is L = Ld + La + Le .
+One of the major disadvantages when using a nonautoregressive decoder is that the number of elements to
+decode (attractors in this case) has to be set in advance and
+this imposes a limit on the architecture. However, unlike the
+original versions of EEND, we do not focus on a scenario
+with a specific quantity of speakers but rather set the model
+to have a maximum number of attractors A large enough
+to handle several scenarios. This is done in one way or
+another in all methods that handle “flexible” amounts of
+speakers, i.e. when running inference with EEND-EDA, it is
+necessary to decode a specific maximum number of attractors.
+DiaPer decodes always the same number of attractors and, like
+in EEND-EDA [14], a linear layer plus sigmoid determine
+which attractors are valid, i.e. correspond to a speaker in the
+conversation.
+
+5
+
+IV. E XPERIMENTAL S ETUP
+A. Data
+1) Training data: One of the key aspects of training
+end-to-end diarization models is the training data. Neural
+models require large amounts of training data annotated for
+diarization which, in practice, are scarce. The compromise
+solution consists in generating training data artificially by
+combining segments of speech from different recordings.
+Simulated mixtures [5] have been shown to enable the training
+of EEND models but they have some disadvantages, mainly
+related to their lack of naturalness. Some works [32]–[34] have
+explored alternatives that allow these models to obtain better
+performance. In this work, we opt for simulated conversations
+(SC) for which public recipes are available2 and for which the
+advantages over mixtures have been shown for real conversations with two and more speakers [33], [34].
+Following this approach, different sets of SC were generated. To train 8 kHz models, 10 sets were created, each with a
+different number of speakers per SC (ranging from 1 to 10) and
+each containing 2500 h of audio. Utterances from the following
+sets were used: Switchboard-2 (phases I, II, III) [35]–[37],
+Switchboard Cellular (parts 1 and 2) [38], [39], and NIST
+Speaker Recognition Evaluation datasets (from years 2004,
+2005, 2006, 2008) [40]–[47]. All the recordings are sampled
+at 8 kHz and, out of 6381 speakers, 90% are used for creating
+training data. The Kaldi ASpIRE VAD3 is used to obtain
+time annotations (in turn used to produce reference diarization
+labels). To augment the training data, we use 37 noises from
+MUSAN [48] labeled as “background”. They are added to the
+signal scaled with a signal-to-noise ratio selected randomly
+from {5, 10, 15, 20} dB.
+In order to train 16 kHz models, a similar strategy was followed to also generate SC with different amounts of speakers
+ranging from 1 to 10 per conversation, all comprised of 2500 h
+of audio. Instead of telephone conversations, utterances were
+taken from LibriSpeech [49] which consists of 1000 hours of
+read English speech from almost 2500 speakers. The same
+VAD as described above was used to produce annotations and
+equivalent background noises were used, but in 16 kHz.
+2) Evaluation data: Different corpora were used to evaluate
+the models. For telephone speech, we utilized the speaker segmentation data from 2000 NIST Speaker Recognition Evaluation [50] dataset, usually referred to as “Callhome” [51] which
+has become the de facto telephone conversations evaluation set
+for diarization containing recordings with different numbers
+of speakers as shown in Table I. We report results using the
+standard Callhome partition4 , denoting the partitions as CH1
+and CH2. We also report results on the subset of 2-speaker
+conversations to which we refer as CH1-2spk and CH2-2spk.
+Results on Callhome consider all speech (including overlap
+segments) for evaluation with a forgiveness collar of 0.25 s.
+We also report results on the conversational telephone speech
+(CTS) domain from the Third DIHARD Challenge [52], which
+consists of previously unpublished telephone conversations
+
+TABLE I
+I NFORMATION PER LIST FOR C ALLHOME PARTS 1 AND 2.
+No. speakers
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+# Hours (2-spk)
+
+CH1
+CH2
+
+155
+148
+
+61
+74
+
+23
+20
+
+5
+5
+
+3
+3
+
+2
+0
+
+8.70 (3.19)
+8.55 (2.97)
+
+from the Fisher collection. The development and evaluation
+sets in the “full” set consist of 61 2-speaker 10-minute recordings each. Originally 8 kHz signals, they were upsampled to
+16 kHz for the challenge and downsampled to 8 kHz to be used
+in this work. As usual on DIHARD, all speech is evaluated
+with a collar of 0 s.
+Besides telephone conversations, we compared the models
+on a variety of wide-band datasets. As the models we evaluate
+are trained on single-channel data, when the datasets contain
+microphone array data, we mix all channels in the microphone
+array (far-field) or headsets (near-field). Training sets (or
+development, if train sets are not available) are utilized for
+fine-tuning. The databases considered are:
+• AISHELL-4 [53], using the train/evaluation split provided.
+• AliMeeting [54], using the train/eval/test split provided.
+Unlike in the M2MET Challenge, oracle VAD is not used.
+• AMI [55], [56], using the full-corpus-ASR partition into
+train/dev/test and the diarization annotations of the “only
+words” setup described in [57]5 .
+• CHiME6 [58], using the official partition and annotations
+from CHiME7 challenge [59] into train/dev/eval.
+• DIHARD2 [60], using the official partition.
+• DIHARD3 [52], using the official “full” partition in order
+to have a more distinct corpus wrt DIHARD 2.
+• DipCo [61], using the official partition and annotations from
+CHiME7 challenge [59] into dev/eval.
+• Mixer6 [62], using the official partition and annotations
+from CHiME7 challenge [59] into train/dev/eval but, given
+that the train part has only one speaker per recording, we
+only consider the dev and eval parts.
+• MSDWild
+[63], using the official partition into
+few.train/many.val/few.val as train/dev/test following
+other published results.
+• RAMC [64], using the official partition.
+• VoxConverse [65], using the official partition into dev/test
+and latest annotations6 .
+More information about each dataset can be found in Table II.
+The choice of forgiveness collar for calculating DER corresponds to the least forgiving choice (i.e. collar of 0 s) except
+in cases where a challenge or the authors proposed differently.
+In no case is used any kind of oracle information (such as
+VAD) in order to have full pipeline comparisons.
+B. Models
+As the main baseline for this work, we utilize end-toend neural diarization with encoder-decoder attractors (EENDEDA) [14] which is the most popular EEND approach that can
+handle multiple speakers. The architecture used was exactly
+
+2 https://github.com/BUTSpeechFIT/EEND dataprep
+3 http://kaldi-asr.org/models/m4
+
+5 https://github.com/BUTSpeechFIT/AMI-diarization-setup
+
+4 Sets listed in https://github.com/BUTSpeechFIT/CALLHOME sublists
+
+6 Version 0.3 in https://github.com/joonson/voxconverse/tree/master
+
+6
+
+TABLE II
+I NFORMATION ABOUT THE NUMBER OF FILES , THE MINIMUM AND MAXIMUM NUMBER OF SPEAKERS PER RECORDING AND THE NUMBER OF HOURS PER
+PARTITION AS WELL AS EVALUATION COLLAR , TYPES OF MICROPHONE AND CHARACTERISTICS OF EACH EVALUATION DATASET.
+Dataset
+
+train
+#files #spk
+
+AISHELL-4
+191
+AliMeeting
+209
+AMI
+136
+14
+CHiME6
+DIHARD2
+–
+DIHARD3 full
+–
+–
+DipCo
+Mixer6
+243
+MSDWild
+2476
+RAMC
+289
+VoxConverse
+–
+
+3-7
+2-4
+3-5
+4
+–
+–
+–
+1
+2-7
+2
+–
+
+#h
+107.53
+111.36
+80.67
+35.68
+–
+–
+–
+183.09
+66.1
+149.65
+–
+
+development
+#files #spk # h
+
+test
+#files #spk
+
+#h
+
+–
+8
+18
+2
+192
+254
+5
+59
+177
+19
+216
+
+20
+60
+16
+4
+194
+259
+5
+23
+490
+43
+232
+
+12.72
+10.78
+9.06
+10.05
+22.49
+33.01
+2.6
+6.02
+9.85
+20.64
+43.53
+
+–
+–
+2-4
+4.2
+4
+9.67
+4
+4.46
+1-10 23.81
+1-10 34.15
+4
+2.73
+2 44.02
+3-10 4.1
+2
+9.89
+1-20 20.3
+
+5-7
+2-4
+3-4
+4
+1-9
+1-9
+4
+2
+2-4
+2
+1-21
+
+the same as that described in [14] and we used our PyTorch
+implementation7 . 15 consecutive frames of 23-dimensional
+log Mel-filterbanks (computed over 25 ms every 10 ms) are
+stacked to produce 345-dimensional features every 100ms.
+These are transformed by the frame encoder, comprised of 4
+self-attention encoder blocks (with 4 attention heads each) into
+a sequence of 256-dimensional embeddings. These are then
+shuffled in time and fed into the LSTM-based encoder-decoder
+module that decodes attractors, which are deemed as valid if
+their existence probability is above a certain threshold. A linear
+layer followed by the sigmoid function is used to obtain speech
+activity probabilities for each speaker (represented by a valid
+attractor) at each time step (represented by an embedding).
+Part of the setup for DiaPer is shared with the baseline,
+namely the input features, the frame encoder configuration (except in experiments where the number of layers was changed),
+and the mechanism for determining attractor existence.
+Following standard practice with EEND models, the training
+scheme consists in training the model first on synthetic training
+data and then performing fine-tuning (FT) using a small
+development set of real data of the same domain as the
+test set. In the experiments with more than two speakers, a
+model initially trained on synthetic data with two speakers per
+recording is adapted to a synthetic set with a variable number
+of speakers and finally fine-tuned to a development set.
+As clustering-based baseline, we utilize a VBx-based [57]
+system in two flavors: 8 kHz and 16 kHz. Two VADs were
+used: Kaldi ASpIRE8 and pyannote’s. The best one of the
+two was chosen for each dataset based on performance
+on the development set. To handle overlap, the OSD from
+pyannote [66] is run and the second speakers are assigned
+heuristically [67] (closest in time speaker). For results on
+AMI, Callhome and DIHARD 2, the hyperparameters of VBx
+were the same as those used in [57]. For the other sets,
+discriminative VBx (DVBx) [68] was used to find optimal
+hyperparameters automatically.
+C. Training
+Most trainings were run on a single GPU. The batch size
+was set to 32 with 200000 minibatch updates of warm-up
+7 https://github.com/BUTSpeechFIT/EEND
+8 http://kaldi-asr.org/models/m4
+
+DER
+Microphone
+collar (s)
+0
+0
+0
+0.25
+0
+0
+0.25
+0.25
+0.25
+0
+0.25
+
+array
+array & headset
+array & headset
+array
+varied
+varied
+array
+varied
+varied
+mobile phone
+varied
+
+Characteristics
+Discussions in Mandarin in different rooms
+Meetings in Mandarin in different rooms
+Meetings in English in different rooms
+Dinner parties in home environments
+Wide variety of domains
+Wide variety of domains
+Dinner party sessions in the same room
+Interviews and calls in English
+Videos of daily casual conversations
+Phone calls in Mandarin
+Wide variety of videos (different languages)
+
+respectively. Following [14], the Adam optimizer [69] was
+used and scheduled with noam [23]. For a few trainings with
+a variable number of speakers where 4 GPUs were used, the
+batchsize and warm-up steps were adapted accordingly. Other
+hyperparameters (i.e. dropout, learning rate) can be seen in the
+training configuration files shared in the repository.
+For FT on a development set, the Adam optimizer was used.
+Both EEND-EDA and DiaPer were fine-tuned with learning
+rate 10−5 for Callhome 2 speakers due to the low amount
+of development data and with 10−4 for whole Callhome and
+DIHARD 3 CTS. For all the other datasets, DiaPer was finetuned on the train set using learning rate 10−6 until the
+performance on the development set stopped improving (or,
+in case there was no official training set available, FT on the
+development set til not further improvement on the test set).
+During training (with 2-speaker SC), adaptation (with a
+variable number of speakers SC), and FT (with in-domain
+data), batches were formed by sequences of 600 Mel-filterbank
+outputs, corresponding to 1 minute, unless specified otherwise
+(i.e. the analysis in Section V-E). These sequences are randomly selected from the generated SC9 . During inference, the
+full recordings are fed to the network one at a time. In all
+cases, when evaluating a given epoch, the checkpoints of the
+previous 10 epochs are averaged to run the inference.
+To compare EEND-EDA and DiaPer on equal ground, we
+train both models for the same number of epochs, evaluate
+them after regular intervals and choose the best performing on
+the development set. For comparisons on 2-speaker scenarios
+of Callhome, each model is trained for 100 epochs on telephony SC. Every 10 epochs, the parameters of the 10 previous
+checkpoints are averaged and performance is evaluated on
+CH1-2spk set to determine the best one. The performance of
+such model is reported on CH2-2spk set and DIHARD3 CTS
+full eval before and after FT.
+When doing adaptation to more speakers for comparison on
+Callhome, the best performing 2-speaker model as described
+above is selected as initialization. The adaptation to a SC set
+with different amounts of speakers per recording is run for
+75 epochs. The parameters of 10 models are averaged every
+5 epochs and performance is evaluated on CH1 to determine
+9 The acute reader will notice that it might not be possible to see as many
+as 10 speakers in 1 minute, this is addressed in the experimental section.
+
+7
+
+the best one. The performance of such model is reported on
+CH2. This model is also used as initialization when doing FT
+to a development set. To avoid selecting results on the test set,
+all fine-tunings are run for 20 epochs and the parameters of
+the last 10 epochs are averaged to produce the final model.
+For comparisons on the variety of wide-band sets, three
+variants of DiaPer are trained. An 8 kHz model following a
+similar approach as described above: trained for 100 epochs
+on SC of 2 speakers created with telephony speech and then
+adapted to the SC with 1-10 speakers set for 100 epochs. The
+16 kHz is trained in the same manner but using SC generated
+from LibriSpeech. Two flavors of this “wide-band DiaPer” are
+used, one with 10 attractors and another with 20 attractors to
+analyze the impact on datasets with several speakers. For the
+comparisons on wide-band sets, results are also shown without
+and with FT.
+D. Metrics
+Diarization performance is evaluated in terms of diarization
+error rate (DER) as defined by NIST [70] and using dscore10 .
+During inference time, the model outputs are thresholded at
+0.5 to determine speech activities. For evaluation sets where
+a forgiveness collar is used when calculating DER, a median
+filter with window 11 is applied as post-processing over the
+speech activities. If the forgiveness collar is 0 s, no filtering
+is applied and, instead of running the inference with 10
+frames subsampling in the frame encoder, 5 frames only
+are subsampled as this provides a better resolution in the
+output. However, due to the high memory consumption when
+processing very long files, for CHiME6 a subsampling of 15
+frames had to be used. To analyze the models’ quality in terms
+of finding the correct number of speakers, confusion matrices
+for correct/predicted numbers of speakers are presented for SC
+with 10 recordings for each quantity of speakers from 1 to 10.
+V. E XPERIMENTS
+A. Selection of parameters
+In order to shed some light on the influence of different
+aspects of the architecture in DiaPer, we present first a comparison of the performance when varying some key elements. We
+start from the best configuration we found, namely: 3 Perceiver
+blocks in the attractor decoder, 128 latents, 4 self-attention
+layers in the frame-encoder and 128-dimensional latents, frame
+embeddings and attractors. This configuration is marked with
+a gray background in the comparisons. The models are trained
+on 2-speaker SC and no FT is applied.
+Table III shows the impact of the number of Perceiver
+blocks in the attractor decoder. Out of the configurations
+explored, having 3 blocks presents the best performance.
+Table IV shows how the number of latents can affect the
+performance. Differences are small for all amounts equal to or
+below 256, even with as few as 8. Nevertheless, given that the
+number of parameters is very similar for any configuration,
+we keep 128 latents as having more could ease the task when
+more speakers appear in a recording.
+10 https://github.com/nryant/dscore
+
+TABLE III
+C OMPARISON ON CH1-2 SPK WHEN VARYING THE NUMBER OF P ERCEIVER
+BLOCKS IN THE ATTRACTOR DECODER .
+# Blocks
+
+1
+
+2
+
+3
+
+4
+
+5
+
+DER (%)
+8.27 8.41 7.96 8.44 8.09
+# Parameters (M) 3.1
+3.7
+4.3
+4.9
+5.5
+
+TABLE IV
+C OMPARISON ON CH1-2 SPK WHEN VARYING THE NUMBER OF LATENTS .
+# Latents
+
+128
+
+256
+
+512
+
+DER (%)
+8.15 8.14 8.29 8.10 7.96
+# Parameters (M) 4.29 4.29 4.29 4.30 4.31
+
+8
+
+16
+
+32
+
+64
+
+8.10
+4.32
+
+8.54
+4.36
+
+TABLE V
+C OMPARISON ON CH1-2 SPK WHEN VARYING THE NUMBER OF LAYERS IN
+FRAME ENCODER .
+# Layers
+
+3
+
+4
+
+5
+
+6
+
+DER (%)
+8.18 7.96 8.33 8.31
+4.3
+4.9
+5.5
+# Parameters (M) 3.7
+
+Table V presents a comparison when varying the number of
+layers in the frame encoder. Standard SA-EEND and EENDEDA use 4 and some works have used 6 layers. In the case of
+DiaPer, we do not observe large differences in the performance
+and obtain the best performance with 4.
+Finally, Table VI shows the impact of the model dimensions on the performance. Increasing the dimensionality of
+latents, frame embeddings and attractors further than 128 does
+not show improvements in terms of DER but increases the
+number of model parameters significantly. Figure 4 shows
+performance throughout the epochs for the development set. It
+is clear how more dimensions allow for a faster convergence;
+however, more than 128 do not provide more gains in terms
+of final performance. In addition, more dimensions make
+the training less stable: using 512 would always lead to
+instability. Configurations with less than 128 dimensions (64
+and 32) can improve further and after 200 epochs reduce
+the DER by about 1 point but still with worse final results
+than other configurations. These findings show that reasonable
+performances can be achieved even with more lightweight
+versions of DiaPer.
+
+Fig. 4. Performance on CH1-2spk for different model dimensions (latents,
+frame embeddings and attractors).
+
+8
+
+TABLE VI
+C OMPARISON ON CH1-2 SPK WHEN VARYING THE MODEL DIMENSION
+( LATENTS , FRAME EMBEDDINGS AND ATTRACTORS ).
+Dimensions
+
+32
+
+DER (%)
+12.90
+# Parameters (M)
+0.7
+
+64
+
+128
+
+256
+
+384
+
+9.30
+1.6
+
+7.96
+8.16
+8.52
+4.3
+12.9
+26.6
+
+TABLE VII
+DER (%) ON CH1-2 SPK WITH DIFFERENT ABLATION COMPARISONS .
+DiaPer
+
+7.96
+
+Without normalization of loss per #speakers
+11.10
+Without frame encoder conditioning
+8.55
+Without intermediate loss in frame encoder
+8.53
+Without intermediate loss in Perceiver blocks
+8.43
+Perceiver cross-attention across time (instead of latents)
+8.07
+
+B. Ablation analysis
+Different decisions were made when developing DiaPer and
+some have a big impact on the performance. Table VII presents
+a comparison of DiaPer in the best configuration shown above
+and when removing some of the operations performed during
+training. The first one refers to the normalization of the loss
+by the reference quantity of speakers, as shown in Eq. 19.
+DiaPer always outputs A attractors and the loss is calculated
+for all of them, even if only training with 2-speakers SC. If the
+loss is not normalized by the amount of speakers, the model
+tends to find less speech, increasing the missed speech rate
+considerably.
+Another ablation is with respect to the frame encoder
+conditioning described in Figure 2. Similarly to [27], where the
+scheme was introduced, removing it worsens the performance
+by around 0.5 DER. Comparable degradation is observed by
+removing the loss reinforcements in both frame encoder and
+Perceiver blocks.
+Finally, the attention normalization in the cross-attention
+calculations inside the Perceiver blocks is performed across
+latents in DiaPer. If done across time, as it is usually done,
+slightly worsens the performance. We have also explored using
+across-time normalization in half of the heads and acrosslatents in the other half but the performance was not better
+than using across-latents in all heads.
+While publications always focus on the positive aspects of
+the models, we believe there is substantial value in sharing
+those options that were explored and did not provide gains.
+Among them were:
+• use absolute positional encoding when feeding the frame
+embeddings into the attractor decoder (no improvement).
+• use specaugment for data augmentation (no improvement).
+• following [26], [71], add a speaker recognition loss to
+reinforce speaker discriminative attractors (slightly worse
+results).
+• following [72], include an LSTM-based mechanism to
+model output speaker activities through time (worse performance).
+• model silence with a specific attractor (worse performance).
+• length normalize frame embeddings and attractors before
+performing dot-product to effectively compute cosine sim-
+
+(a) CH Part 2 (2 speakers)
+
+(b) DH3 CTS full eval
+
+Fig. 5. DER (%) for telephone recordings of Callhome and DIHARD 3
+conversational telephone speech (CTS) with 2 speakers.
+
+ilarity (worse performance).
+use cross-attention to compare frame embeddings and attractors instead of dot-product (worse performance).
+• as analyzed in [72]–[74], use power set encoding to model
+the diarization problem instead of per-frame per-speakers
+activities (worse performance). In particular, we believe that
+the reason for this approach not to work with DiaPer is
+that, when handling many speakers, the number of classes
+in the power set is too high and most of them are not
+well represented. This approach has much more potential
+in limited quantity of speakers scenarios as shown in [74].
+Implementations of most of these variants can be found in our
+public implementation in https://github.com/BUTSpeechFIT/
+DiaPer to enable others to easily revisit them.
+•
+
+C. Two-speaker telephone conversations
+Even though DiaPer is specifically designed for the scenario
+with multiple speakers, as it is common practice, in this section
+we first present results for the 2-speaker telephone scenario.
+It should be noted that both EEND-EDA and DiaPer, when
+trained only with 2-speaker SC learn to only output activities
+for 2 speakers, even if they are prepared to handle a variable
+number of them. Figure 5 compares the performance on two
+sets before and after FT to the in-domain development set.
+Both EEND-EDA and DiaPer were trained on the same data
+with 5 different seeds to produce the error bars. Results show
+that DiaPer can reach significantly better performance on both
+datasets, both with and without FT.
+Figure 6 presents a comparison between EEND-EDA and
+DiaPer inference times. Although DiaPer is slower for very
+short recordings, it can run considerably faster when processing several-minute recordings. This speed-up is given only by
+the Perceiver-based attractor decoder (instead of the LSTMbased of EEND-EDA) since the rest of the model is the same.
+Even more, these results correspond to an input downsampling
+factor of 10 but if more precision was used, the length of
+the frame-embedding sequences increases which would show
+further advantage for DiaPer for the same recording lengths.
+Notably, EEND-EDA has 6.4 million parameters while DiaPer
+has only 4.6 million showing that the model not only runs
+faster when processing long sequences but also makes more
+efficient use of the parameters.
+Table VIII presents an exhaustive comparison with all
+competitive systems at the time of publication under the same
+conditions: all speech is evaluated and no oracle information
+
+9
+
+Fig. 7. DER (%) for CH Part 2 with varying number of speakers.
+TABLE IX
+DER (%) COMPARISON ON CH2. F OR EACH METHOD (EEND-EDA AND
+D IA P ER ), SELECTING THE BEST MODEL ON CH1 OUT OF THE 5 RUNS .
+Fig. 6. Inference time for EEND-EDA and DiaPer for recordings from 1
+minute to 1 hour running 5 times each inference with a downsampling factor
+of 10. In black is the percentage of time taken by DiaPer wrt EEND-EDA.
+Ran on Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz.
+
+TABLE VIII
+DER (%) COMPARISON ON CH2-2 SPK WITH OTHER METHODS . F OR OUR
+RESULTS , WE SELECTED THE MODEL WITH THE BEST PERFORMANCE ON
+CH1 OUT OF THE 5 RUNS . T YPE CAN BE CLUSTERING (C), 1- STAGE (1-S),
+OR 2- STAGE (2-S) SYSTEM . (I) STANDS FOR ITERATIVE , MEANING THERE
+IS AN ITERATIVE PROCESS AT INFERENCE TIME .
+#Param. Data
+(Million) (kHour)
+
+No
+FT
+
+With
+FT
+
+9
+
+N/A
+
+9.92
+
+6.4
+4
+4.2
+??
+12.8
+16.1
+≈6.7
+5.7
+10.9
+8.5
+8.5
+11.6
+11.6
+
+2.4
+2.5
+4.7
+2
+2.4
+16
+15.5
+2.5
+2.5
+2.5
+2.5
+2.4
+24.7
+
+–
+9.65
+–
+–
+–
+–
+–
+8.81
+8.52
+13.8
+–
+–
+–
+
+8.07
+7.18
+6.82
+6.7
+7.37
+7.04
+6.91
+7.77
+7.12
+7.58
+7.36
+6.79
+5.69
+
+4.2
+8
+2.4
+5.5
+19.4
+
+–
+–
+–
+–
+–
+
+7.18
+6.46
+7.83
+7.1
+5.73
+
+2.5
+2.5
+
+8.77
+8.05
+
+7.96
+7.5111
+
+System
+
+Type Code
+
+VAD + VBx + OSD
+
+C
+
+✓
+
+17.9
+
+1-S (I)
+1-S (I)
+1-S
+1-S (I)
+1-S
+1-S (I)
+1-S
+1-S
+1-S
+1-S (I)
+1-S (I)
+1-S (I)
+1-S (I)
+
+✓
+
+EEND-EDA [14]
+EEND-EDA Confor. [32]
+CB-EEND [20]
+DIVE [11]
+RX-EEND [30]
+EDA-TS-VAD [75]
+EEND-OLA [72]
+EEND-NA [27]
+EEND-NA-deep [27]
+EEND-IAAE [28] (it=2)
+EEND-IAAE [28] (it=5)
+AED-EEND [12]
+AED-EEND-EE [29]
+
+✓
+✓
+
+EEND-VC [76]
+2-S
+WavLM + EEND-VC [77] 2-S
+EEND-NAA [26]
+2-S (I)
+Graph-PIT-EEND-VC [78] 2-S
+EEND-OLA + SOAP [72] 2-S
+
+✓
+
+≈8
+≈840
+8
+≈5.5
+15.6
+
+EEND-EDA
+DiaPer
+
+✓
+✓
+
+6.4
+4.6
+
+1-S (I)
+1-S
+
+✓
+
+is used. Data refers to the number of hours of data for
+supervision. For end-to-end models, it can be real or synthetic
+data and for the clustering-based baseline, it consists of all
+data used to train the x-vector extractor, VAD and OSD.
+Methods are divided into groups depending on if they are
+single or two-stage. Even though DiaPer does not present the
+best performance among all approaches, it reaches competitive
+results with fewer parameters and even without FT.
+
+11 It is worth mentioning that out of the 5 runs, the best DER on Part 2 was
+7.38 but that did not correspond to the lowest DER on Part 1. Analogously,
+for EEND-EDA it was 7.78.
+
+System
+
+All
+
+2-spk
+
+3-spk
+
+4-spk
+
+5-spk
+
+6-spk
+
+EEND-EDA
++ FT CH1
+
+16.70
+15.29
+
+8.99
+7.54
+
+13.84
+14.01
+
+24.57
+20.84
+
+33.10
+33.34
+
+46.25
+41.36
+
+DiaPer
++ FT CH1
+
+14.86
+13.60
+
+9.10
+7.39
+
+12.70
+12.08
+
+19.18
+19.62
+
+29.52
+30.25
+
+41.81
+28.84
+
+D. Multiple-speakers telephone conversations
+Figure 7 presents the comparison for recordings with multiple amounts of speakers where EEND-EDA and DiaPer
+are trained on the same data. Once again, DiaPer presents
+significant advantages over EEND-EDA both before and after
+fine-tuning to the development set. Table IX shows the DER
+for different numbers of speakers per conversation where gains
+are observed in almost all cases. The largest differences are
+for recordings with more speakers, suggesting the superiority
+of DiaPer in handling such situations.
+Finally, Table X shows the comparison of DER components.
+It can be observed that without fine-tuning DiaPer does not
+improve the confusion error of EEND-EDA but rather missed
+and false alarm (FA) speech. A closer look at the inherent VAD
+and OSD performances of the two models allows us to see
+that DiaPer improves considerably the OSD recall with similar
+OSD precision. Therefore, most of the improvement is related
+to more accurate overlapped speech detection. Nevertheless,
+it should be pointed out that precision and recall slightly
+above 50% are still very low. There is clearly large room for
+improving the performance in this aspect.
+EEND-EDA has been shown to have problems handling
+several speakers (i.e. not being able to find more than the
+quantity seen in training and significantly miscalculating the
+number of speakers when more than 3 are present in a
+conversation) [6], [79]. To compare DiaPer’s performance
+in this sense we trained 5 of both such models with the
+same procedure and evaluated them on a set of 100 SC with
+10 recordings for each number of speakers from 1 to 10.
+Confusion matrices between the number of real (reference)
+speakers and the number found by the system were calculated
+for each model. The averages of such confusion matrices
+for the 5 DiaPer and 5 EEND-EDA models are presented in
+Figure 8. Although both EEND-EDA and DiaPer are trained
+on the same data with only up to 7 speakers per SC (matrices
+above), EEND-EDA is able to find more speakers. Yet, DiaPer
+is considerably more accurate for SC with up to 6 speakers.
+When both EEND-EDA and DiaPer are trained with up to 10
+
+10
+
+TABLE X
+C OMPARISON ON CH2. F OR EACH METHOD , SELECTING THE BEST MODEL
+ON CH1 OUT OF THE 5 RUNS . DER AND ITS THREE COMPONENTS AND
+PRECISION AND RECALL FOR VAD AND OSD PERFORMANCE .
+System
+
+DER
+(%)
+
+Miss
+(%)
+
+FA
+(%)
+
+Conf.
+VAD
+OSD
+(%) P (%) R (%) P (%) R (%)
+
+EEND-EDA 16.70 7.08 4.88
++ FT CH1 15.29 8.24 2.61
+
+4.73
+4.44
+
+93.3
+95.8
+
+97.6
+94.5
+
+50.0
+63.8
+
+41.9
+38.3
+
+DiaPer
+14.86 6.16 3.90
++ FT CH1 13.60 7.80 2.06
+
+4.80
+3.74
+
+93.1
+95.4
+
+98.1
+95.3
+
+51.5
+64.1
+
+52.1
+44.8
+
+(a) EEND-EDA
+
+(b) DiaPer
+
+(a) 1 minute, 50 epochs
+
+(b) 1 minute, 100 epochs
+
+(c) 4 minutes, 50 epochs
+
+(d) 4 minutes, 100 epochs
+
+Fig. 9. Confusion matrices for DiaPer adapted to telephony SC with 1 to 10
+speakers per recording using different sequence lengths to create the batches:
+1 minute (top) and 4 minutes (bottom).
+
+(c) EEND-EDA
+
+(d) DiaPer
+
+Fig. 8. Confusion matrix average of five models evaluated on SC when
+adapted for 50 epochs with 2-7 speakers (above) and 1-10 speakers (below).
+
+speakers per SC (matrices below), we can see that DiaPer is
+still considerably more accurate. However, its performance is
+limited when the number of speakers is 8 or more.
+One element to consider is that all the models above
+were trained and adapted using batches of 1-minute-long
+sequences. It is less likely for 10 speakers in a simulated
+conversation to be heard in only one minute. For this reason,
+we also performed adaptation of one model using 4-minutelong sequences. While sequences of 1 minute have on average
+3.6 speakers, sequences of 4 minutes have 5.2, allowing the
+model to see higher quantities of speakers per training sample
+during training. A comparison is presented in Figure 9 after
+50 and 100 epochs training with 1 and 4 minutes sequences.
+A slight advantage is observed when using 4 minutes after 50
+epochs but such advantage increases after 100 epochs.
+Finally, Table XI presents comparisons with other publications on Callhome Part 2 using all recordings. Again,
+all speech is evaluated and no oracle information is used.
+For these comparisons, we utilize one of the models trained
+seeing SC up to 7 speakers (since Callhome does not contain
+recordings with more speakers). Results show that even if DiaPer has a competitive performance, many methods can reach
+considerably better results. The main advantage of DiaPer is its
+lightweight nature, having the least number of parameters in
+
+comparison with all other methods. Exploring larger versions
+of DiaPer (i.e. increasing the model dimension) which could
+lead to better performance in multi-speaker scenarios is left
+for future research.
+Many previous works present comparisons with clusteringbased methods. Although such methods do not deal with
+overlap intrinsically, it is possible to run an overlapped speech
+detector and assign second speakers heuristically in order to
+present a more fair comparison. Interestingly, when utilizing a
+few years old VAD, VBx and OSD systems, and therefore not
+highly overtuned, the results are still on par with many end-toend models showing the relevance of these types of systems
+even at current time.
+E. Wide-band scenarios
+Most works on end-to-end models focus on the telephone
+scenario and use Callhome (which is a paid dataset) as
+benchmark. We believe that this is partly because synthetic
+data (needed for training such models) match this condition
+quite well. However, there are many wide-band scenarios of
+interest when performing diarization and only few works have
+analyzed their systems on a wide variety of them [10], [74].
+Following this direction, and pursuing a more democratic field,
+in this section we use DiaPer on a wide variety of corpora
+(most of which are of public and free access) and show the
+performance for the same model (before and after FT) across
+domains.
+Since most of the scenarios present many speakers per
+conversation, all DiaPer models were adapted to the set of 110 speakers per recording using sequences of 4 minutes. The
+12 It is worth mentioning that out of the 5 runs, the best DER on Part 2 was
+13.16 but that did not correspond to the lowest DER on Part 1.
+13 It is worth mentioning that out of the 5 runs, the best DER on Part 2 was
+23.81 but that did not correspond to the lowest DER on Part 1.
+
+11
+
+TABLE XI
+DER COMPARISON ON CH2 WITH OTHER METHODS . F OR OUR RESULTS ,
+WE SELECTED THE MODEL WITH THE BEST PERFORMANCE ON CH1 OUT
+OF THE 5 RUNS . T YPE CAN BE CLUSTERING (C), 1- STAGE (1-S) OR
+2- STAGE (2-S) SYSTEM . (I) STANDS FOR ITERATIVE , MEANING THERE IS
+AN ITERATIVE PROCESS AT INFERENCE TIME .
+#Param. Data
+(Million) (kHour)
+
+No
+FT
+
+With
+FT
+
+System
+
+Type Code
+
+VAD + VBx + OSD
+
+C
+
+✓
+
+17.9
+
+9
+
+N/A 13.63
+
+EEND-EDA [14]
+EDA-TS-VAD [75]
+EEND-OLA [72]
+AED-EEND [12]
+AED-EEND-EE [29]
+
+1-S (I)
+1-S (I)
+1-S
+1-S (I)
+1-S (I)
+
+✓
+✓
+
+6.4
+16.1
+6.7
+11.6
+11.6
+
+15.5
+16
+15.5
+15.5
+24.7
+
+–
+–
+–
+–
+–
+
+15.29
+11.18
+12.57
+14.22
+10.08
+
+EEND-VC [76]
+EEND-GLA [79]
+WavLM + EEND-VC [77]
+Graph-PIT-EEND-VC [78]
+EEND-OLA + SOAP [72]
+EEND-VC MS-VBx [9]
+
+2-S
+2-S
+2-S
+2-S
+2-S
+2-S
+
+✓
+
+≈8
+10.7
+≈840
+≈5.5
+15.6
+≈840
+
+4.2
+15.5
+8
+5.5
+19.4
+5.5
+
+–
+–
+–
+–
+–
+–
+
+12.49
+11.84
+10.35
+13.5
+10.14
+10.4
+
+EEND-EDA
+DiaPer
+
+1-S (I)
+1-S
+
+6.4
+4.6
+
+15
+15
+
+16.70 15.29
+14.86 13.6012
+
+✓
+✓
+✓
+
+Scoring with collar 0 s
+VAD + VBx + OSD
+
+C
+
+✓
+
+17.9
+
+9
+
+N/A 26.18
+
+pyannote 2.1 [10]
+
+2-S
+
+✓
+
+23.6
+
+2.9
+
+32.4 29.3
+
+EEND-EDA
+DiaPer
+
+1-S (I)
+1-S
+
+✓
+✓
+
+6.4
+4.6
+
+2.5
+2.5
+
+28.73 25.77
+27.84 24.1613
+
+8 kHz model was trained on telephony SC and two 16 kHz
+models were used. Both wide-band models were trained on
+LibriSpeech-based SC where one model had 10 attractors (like
+the 8 kHz model) and another had 20 attractors to allow for
+more speakers. All models are evaluated without and with
+FT. For corpora where a multi-speaker train set is available,
+the train set is used for FT until no more improvements are
+observed on the development set. If no train set is available,
+the dev set is used for FT until the performance on the test
+set does not improve further. Therefore, results on these latter
+corpora should be taken with a grain of salt.
+Looking at the results, in some cases, there was overfitting
+when performing FT on the development set (since those sets
+did not have a train set). In DipCo, this is most likely due to
+the limited amount of data. In VoxConverse, the distribution of
+the number of speakers per recording is skewed towards more
+speakers in the test set and FT on the dev set makes the model
+find fewer speakers than without FT. Even more, recordings
+with more speakers are longer, making the overall error higher
+after FT on the test set. As for AliMeeting near mix, DiaPer
+(20att) has slightly worse performance on the test set but the
+decision to stop the FT was made observing the performance
+on the dev set, for which there were improvements.
+In comparison with the best results published at the time
+of writing, DiaPer performs considerably worse in most of
+the scenarios. However, it should be noted that in many cases
+the best results correspond to systems submitted to challenges
+which usually consist of the fusion of a few carefully tuned
+models. DiaPer, like any end-to-end system, is very sensitive to
+the type of training data. This is highly noticeable in the high
+errors before fine-tuning for all far-field scenarios: AISHELL-
+
+4, AliMeeting far mix, AMI mix array, CHiME6 and DipCo;
+and relatively lower errors for exclusively close-talk scenarios:
+AliMeeting near mix, AMI mix headset, Mixer6 and in the
+comparison between DIHARD 2 and DIHARD 3 full where
+the latter contains a large portion of telephone conversations.
+All SC (used to train the models) are generated with speech
+captured from short distances (telephone for the 8 kHz system
+and LibriSpeech for the 16 kHz ones). Using reverberation
+could improve the situation, but it has not been explored so far
+in this context. Not having enough amount of data matching
+the testing scenario is a strong drawback for the fine-tuning of
+end-to-end models as observed with DipCo and VoxConverse.
+Conversely, Mixer6 and RAMC with large amounts of FT data
+and relatively simple setups are among the scenarios with the
+largest relative improvement given by the FT. Even if in most
+cases the performance is not on par with other approaches,
+DiaPer’s final performance is very competitive for MSDWild
+and RAMC.
+The main goal of this comparison was to present a unified
+framework evaluated across different corpora. More tailored
+models could be trained if we used SC with specific numbers
+of speakers per recording (matching the evaluation data).
+Likewise, the output post-processing (subsampling and median
+filter) could be adapted for each dataset. This should definitely
+result in better performance and is left for future work.
+We can also see that even a standard cascaded system
+can reach competitive results on a few datasets. This shows
+the importance and relevance of these systems as baselines
+nowadays even when end-to-end solutions are the most studied
+in the community.
+Regarding the comparison between 8 kHz and 16 kHz DiaPers, in most cases, the latter reaches better performance
+both without and with FT. Even though the 8 kHz model was
+trained with more conversational data, this does not provide
+advantages over the 16 kHz model trained on LibriSpeechbased SC. However, the effect of FT is in most cases considerably large, reducing the differences between 8 kHz and
+16 kHz models. Creating synthetic training data that resembles
+real ones remains an open challenge for most scenarios.
+With respect to the number of attractors in the model, we
+can observe that overall having more of them is beneficial.
+This is actually not a drawback for DiaPer since the quantity
+of attractors does not impact severely on the number of
+parameters or computations. It is left for future work to explore
+the effect of larger numbers of attractors (i.e. using 40 or 80).
+VI. C ONCLUSIONS
+In this work, we have presented DiaPer, a new variant of
+EEND models that makes use of Perceivers for modeling
+speaker attractors. A detailed analysis of the architectural
+decisions was presented, including ablations. In a thorough
+comparison on telephone conversations, we showed performance gains wrt EEND-EDA, the most widespread end-to-end
+model that handles multiple speakers.
+We also presented results on several wide-band datasets
+comparing the performance with a standard cascaded system
+and with the best-published results at the time of writing.
+
+12
+
+DipCo mix
+
+Mixer6 mix
+
+MSDWild
+
+RAMC
+
+VoxConverse
+
+22.23
+41.31
+36.41
+
+84.01
+78.51
+68.54
+
+27.86
+49.92
+34.10
+
+20.49
+38.24
+24.08
+
+56.19
+64.33
+45.09
+
+38.09
+19.11
+14.69
+
+18.81
+34.62
+17.99
+
+18.33
+32.61
+20.90
+
+6.69
+32.37
+31.63
+
+VAD+VBx+OSD 16 15.84
+DiaPer
+16 48.21
+DiaPer+FT
+16 41.43
+DiaPer (20att)
+16 47.86
+DiaPer (20att)+FT 16 31.30
+
+28.84
+38.67
+32.60
+34.35
+26.27
+
+22.61 34.61
+28.19 57.07
+27.82 49.75
+23.90 52.29
+24.44 50.97
+
+22.42
+36.36
+32.94
+35.08
+30.49
+
+70.42
+78.25
+70.77
+77.51
+69.94
+
+26.67
+43.75
+32.97
+44.51
+31.23
+
+20.28
+34.21
+24.12
+34.82
+22.77
+
+49.22
+48.26
+Overfit
+43.37
+Overfit
+
+35.60
+21.03
+13.41
+18.51
+10.99
+
+16.86
+35.69
+15.46
+25.07
+14.59
+
+18.19
+38.05
+21.11
+32.08
+18.69
+
+6.12
+23.20
+Overfit
+22.10
+Overfit
+
+Best
+published
+results
+
+16.76[80] 23.8[10] —
+14.0[10] 23.3[74] —
+13.2[74] 23.5[90] —
+
+DIHARD 3
+full
+
+23.49 34.14
+33.70 54.69
+28.93 50.49
+
+DIHARD 2
+
+AliMeeting
+near mix
+
+29.60
+45.40
+31.60
+
+CHiME6
+mix
+
+AliMeeting
+far mix
+
+8 14.46
+8 49.29
+8 42.66
+
+AMI mix
+headset
+
+AISHELL-4
+
+VAD+VBx+OSD
+DiaPer
+DiaPer+FT
+
+AMI mix
+array
+
+System
+
+SR (kHz)
+
+TABLE XII
+DER (%) COMPARISON ON A VARIETY OF TEST SETS . OVERLAPS ARE EVALUATED AND ORACLE VAD IS NOT USED . SR STANDS FOR SAMPLING RATE .
+U NDERLINED RESULTS DENOTE SINGLE SYSTEMS AND OVERLINED RESULTS CORRESPOND TO FUSIONS OR MORE COMPLEX MODELS .
+
+22.2[10] 18.0[74] 32.46[81] 26.4[9]
+17.32[82] 22.36[83] 7.27[83] 21.96[63] 19.90[64] 4.0[84]
+22.0[74] 16.95[82] 27.25[83] 26.88[85] 16.94[86] 22.04[87] 6.14[87] 33.6[88] 14.37[25] 4.39[89]
+19.53[82] 13.00[29] 25.11[87] 24.64[29] 16.76[82] 16.36[87] 5.65[81] 16.0[74] —
+4.35[91]
+
+Even though DiaPer attains competitive performance in some
+domains, it is considerably worse in others.
+Several aspects are left to study in the future such as changes
+in the frame encoder, where it seems that the self-attention
+layers have reached a limit and which present the major
+hardware bottleneck when handling very long recordings.
+Furthermore, the frame-encoder and Perceiver blocks could be
+coupled more tightly to improve the quality of representations
+(frame embeddings and attractors) simultaneously.
+While DiaPer presents a relatively lightweight end-to-end
+solution, one avenue for yet more compact models could be
+parameter sharing: some of the blocks in the architecture could
+have tied parameters in order to obtain similar results with
+fewer parameters.
+Finally, even if some works have appeared in this direction,
+how to define proper training sets for end-to-end models is
+still a very under-explored topic and we believe that further
+analyses are necessary to bridge the gap in performance
+between narrow-band and wide-band corpora.
+With the aim of facilitating reproducible research, we release the code that implements DiaPer as well as models
+trained on public and free data.
+ACKNOWLEDGMENTS
+We thank the members of the diarization sub-group in
+BUT for valuable suggestions, especially Anna Silnova for
+feedback on the manuscript, and Dominik Klement for advice
+to run DVBx. We also thank Marc Delcroix, Zhengyang Chen,
+Shota Horiguchi, Zhihao Du, and Chin-Yi Cheng for sharing
+details about the number of parameters/hours of training data
+in some models (and all other authors for having shared that
+information in their work already).
+The work was supported by the Czech Ministry of Interior
+project No. VJ01010108 ”ROZKAZ”, Czech National Science
+Foundation (GACR) project NEUREM3 No. 19-26934X, and
+Horizon 2020 Marie Sklodowska-Curie grant ESPERANTO,
+No. 101007666. Computing on IT4I supercomputer was supported by the Czech Ministry of Education, Youth and Sports
+through the e-INFRA CZ (IDs 90140 and 90254).
+
+R EFERENCES
+[1] G. Sell et al., “Diarization is Hard: Some Experiences and Lessons
+Learned for the JHU Team in the Inaugural DIHARD Challenge.” in
+Interspeech, 2018, pp. 2808–2812.
+[2] F. Landini et al., “BUT System for the Second DIHARD Speech
+Diarization Challenge,” in ICASSP. IEEE, 2020.
+[3] T. J. Park et al., “Auto-tuning spectral clustering for speaker diarization
+using normalized maximum eigengap,” IEEE Signal Processing Letters,
+vol. 27, pp. 381–385, 2019.
+[4] ——, “A review of speaker diarization: Recent advances with deep
+learning,” Computer Speech & Language, vol. 72, p. 101317, 2022.
+[5] Y. Fujita et al., “End-to-End Neural Speaker Diarization with
+Permutation-Free Objectives,” in Proc. Interspeech, 2019.
+[6] S. Horiguchi et al., “Encoder-decoder based attractors for end-to-end
+neural diarization,” IEEE/ACM Transactions on Audio, Speech, and
+Language Processing, vol. 30, 2022.
+[7] I. Medennikov et al., “Target-Speaker Voice Activity Detection:
+A Novel Approach for Multi-Speaker Diarization in a Dinner Party
+Scenario,” in Proc. Interspeech, 2020, pp. 274–278. [Online]. Available:
+http://dx.doi.org/10.21437/Interspeech.2020-1602
+[8] K. Kinoshita et al., “Integrating end-to-end neural and clustering-based
+diarization: Getting the best of both worlds,” in ICASSP. IEEE, 2021.
+[9] M. Delcroix et al., “Multi-Stream Extension of Variational Bayesian
+HMM Clustering (MS-VBx) for Combined End-to-End and Vector
+Clustering-based Diarization,” in Proc. INTERSPEECH, 2023.
+[10] H. Bredin, “pyannote.audio 2.1 speaker diarization pipeline: principle,
+benchmark, and recipe,” in Proc. INTERSPEECH, 2023.
+[11] N. Zeghidour et al., “DIVE: End-to-end speech diarization via iterative
+speaker embedding,” in ASRU. IEEE, 2021.
+[12] Z. Chen et al., “Attention-based Encoder-Decoder Network for End-toEnd Neural Speaker Diarization with Target Speaker Attractor,” in Proc.
+INTERSPEECH, 2023, pp. 3552–3556.
+[13] Y. Fujita et al., “End-to-end neural speaker diarization with selfattention,” in ASRU. IEEE, 2019, pp. 296–303.
+[14] S. Horiguchi et al., “End-to-End Speaker Diarization for an Unknown
+Number of Speakers with Encoder-Decoder Based Attractors,” Interspeech, 2020.
+[15] E. Han et al., “BW-EDA-EEND: Streaming end-to-end neural speaker
+diarization for a variable number of speakers,” in ICASSP. IEEE, 2021.
+[16] Y. Xue et al., “Online end-to-end neural diarization with speaker-tracing
+buffer,” in SLT. IEEE, 2021.
+[17] S. Horiguchi et al., “Multi-channel end-to-end neural diarization with
+distributed microphones,” in ICASSP. IEEE, 2022.
+[18] ——, “Mutual Learning of Single-and Multi-Channel End-to-End Neural Diarization,” in SLT. IEEE, 2023.
+[19] A. Gulati et al., “Conformer: Convolution-augmented Transformer for
+Speech Recognition,” in Proc. Interspeech, 2020.
+[20] Y. C. Liu et al., “End-to-End Neural Diarization: From Transformer to
+Conformer,” in Proc. Interspeech, 2021.
+[21] T.-Y. Leung et al., “Robust End-to-End Speaker Diarization with Conformer and Additive Margin Penalty,” in Proc. Interspeech, 2021.
+
+13
+
+[22] A. Jaegle et al., “Perceiver: General perception with iterative attention,”
+in International conference on machine learning. PMLR, 2021.
+[23] A. Vaswani et al., “Attention is all you need,” Advances in neural
+information processing systems, vol. 30, 2017.
+[24] Z. Pan et al., “Towards End-to-end Speaker Diarization in the Wild,”
+arXiv preprint arXiv:2211.01299, 2022.
+[25] S. J. Broughton et al., “Improving End-to-End Neural Diarization Using
+Conversational Summary Representations,” in Interspeech, 2023.
+[26] M. Rybicka et al., “End-to-end neural speaker diarization with an
+iterative refinement of non-autoregressive attention-based attractors,” in
+Proc. Interspeech, vol. 2022, 2022, pp. 5090–5094.
+[27] Y. Fujita et al., “Neural Diarization with Non-Autoregressive Intermediate Attractors,” in ICASSP. IEEE, 2023.
+[28] F. Hao et al., “End-to-end neural speaker diarization with an iterative
+adaptive attractor estimation,” Neural Networks, vol. 166, pp. 566–
+578, 2023. [Online]. Available: https://www.sciencedirect.com/science/
+article/pii/S089360802300401X
+[29] Z. Chen et al., “Attention-based Encoder-Decoder End-to-End
+Neural Diarization with Embedding Enhancer,” arXiv preprint
+arXiv:2309.06672, 2023.
+[30] Y. Yu et al., “Auxiliary loss of transformer with residual connection for
+end-to-end speaker diarization,” in ICASSP. IEEE, 2022.
+[31] Y.-R. Jeoung et al., “Improving Transformer-Based End-to-End Speaker
+Diarization by Assigning Auxiliary Losses to Attention Heads,” in
+ICASSP. IEEE, 2023.
+[32] N. Yamashita et al., “Improving the Naturalness of Simulated Conversations for End-to-End Neural Diarization,” in Proc. The Speaker and
+Language Recognition Workshop (Odyssey), 2022.
+[33] F. Landini et al., “From Simulated Mixtures to Simulated Conversations
+as Training Data for End-to-End Neural Diarization,” in Interspeech,
+2022.
+[34] ——, “Multi-Speaker and Wide-Band Simulated Conversations as Training Data for End-to-End Neural Diarization,” in ICASSP. IEEE, 2023.
+[35] D. Graff et al., “Switchboard-2 phase I, LDC98S75,” 1998.
+[36] ——, “Switchboard-2 phase II, LDC99S79,” Web Download. Philadelphia: LDC, 1999.
+[37] ——, “Switchboard-2 phase III, LDC2002S06,” Web Download.
+Philadelphia: LDC, 2002.
+[38] ——, “Switchboard Cellular Part 1 audio LDC2001S13,” Web Download. Philadelphia: LDC, 2001.
+[39] ——, “Switchboard Cellular Part 2 audio LDC2004S07,” Web Download. Philadelphia: LDC, 2004.
+[40] N. M. I. Group, “2004 NIST SRE LDC2006S44,” 2006.
+[41] ——, “2005 NIST SRE Training Data LDC2011S01,” 2006.
+[42] ——, “2005 NIST SRE Test Data LDC2011S04,” 2011.
+[43] ——, “2006 NIST SRE Evaluation Test Set Part 1 LDC2011S10,” 2011.
+[44] ——, “2006 NIST SRE training Set LDC2011S09,” 2011.
+[45] ——, “2006 NIST SRE Evaluation Test Set Part 2 LDC2012S01,” 2012.
+[46] ——, “2008 NIST SRE Training Set Part 1 LDC2011S05,” 2011.
+[47] ——, “2008 NIST SRE Test Set LDC2011S08,” 2011.
+[48] D. Snyder et al., “Musan: A music, speech, and noise corpus,” arXiv
+preprint arXiv:1510.08484, 2015.
+[49] V. Panayotov et al., “Librispeech: an asr corpus based on public domain
+audio books,” in ICASSP. IEEE, 2015.
+[50] M. Przybocki et al., “NIST SRE LDC2001S97,” Philadelphia, New
+Jersey: Linguistic Data Consortium, 2001.
+[51] “NIST SRE 2000 Evaluation Plan,” https://www.nist.gov/sites/default/
+files/documents/2017/09/26/spk-2000-plan-v1.0.htm .pdf.
+[52] N. Ryant et al., “The Third DIHARD Diarization Challenge,” in Proc.
+Interspeech, 2021, pp. 3570–3574.
+[53] Y. Fu et al., “AISHELL-4: An Open Source Dataset for Speech Enhancement, Separation, Recognition and Speaker Diarization in Conference
+Scenario,” in Proc. Interspeech, 2021.
+[54] F. Yu et al., “M2MeT: The ICASSP 2022 multi-channel multi-party
+meeting transcription challenge,” in ICASSP. IEEE, 2022.
+[55] J. Carletta et al., “The AMI meeting corpus: A pre-announcement,” in
+International workshop on machine learning for multimodal interaction.
+Springer, 2006, pp. 28–39.
+[56] W. Kraaij et al., “The AMI meeting corpus,” in Proc. International
+Conference on Methods and Techniques in Behavioral Research, 2005.
+[57] F. Landini et al., “Bayesian HMM Clustering of x-vector Sequences
+(VBx) in Speaker Diarization: Theory, Implementation and Analysis on
+Standard Tasks,” Computer Speech & Language, vol. 71, 2022.
+[58] S. Watanabe et al., “CHiME-6 Challenge: Tackling Multispeaker Speech
+Recognition for Unsegmented Recordings,” in Proc. 6th International
+Workshop on Speech Processing in Everyday Environments, 2020.
+
+[59] S. Cornell et al., “The CHiME-7 DASR Challenge: Distant Meeting Transcription with Multiple Devices in Diverse Scenarios,” arXiv
+preprint arXiv:2306.13734, 2023.
+[60] N. Ryant et al., “Second DIHARD challenge evaluation plan,” Linguistic
+Data Consortium, Tech. Rep, 2019.
+[61] M. Van Segbroeck et al., “DiPCo–Dinner Party Corpus,” arXiv preprint
+arXiv:1909.13447, 2019.
+[62] L. Brandschain et al., “The Mixer 6 corpus: Resources for cross-channel
+and text independent speaker recognition,” in Proc. of LREC, 2010.
+[63] T. Liu et al., “MSDWild: Multi-modal Speaker Diarization Dataset in
+the Wild,” in Proc. Interspeech, 2022.
+[64] Z. Yang et al., “Open Source MagicData-RAMC: A Rich Annotated Mandarin Conversational(RAMC) Speech Dataset,” in Interspeech,
+2022.
+[65] J. S. Chung et al., “Spot the Conversation: Speaker Diarisation in the
+Wild,” in Proc. Interspeech, 2020, pp. 299–303.
+[66] H. Bredin et al., “pyannote.audio: neural building blocks for speaker
+diarization,” in IEEE ICASSP, 2020.
+[67] S. Otterson et al., “Efficient use of overlap information in speaker
+diarization,” in ASRU. IEEE, 2007, pp. 683–686.
+[68] D. Klement et al., “Discriminative Training of VBx Diarization,” arXiv
+preprint arXiv:2310.02732, 2023.
+[69] D. P. Kingma et al., “Adam: A method for stochastic optimization,”
+arXiv preprint arXiv:1412.6980, 2014.
+[70] “NIST Rich Transcription Evaluations,” https://www.nist.gov/itl/iad/mig/
+rich-transcription-evaluation, version: md-eval-v22.pl.
+[71] S. Maiti et al., “End-to-end diarization for variable number of speakers
+with local-global networks and discriminative speaker embeddings,” in
+ICASSP. IEEE, 2021, pp. 7183–7187.
+[72] J. Wang et al., “TOLD: a Novel Two-Stage Overlap-Aware Framework
+for Speaker Diarization,” in ICASSP. IEEE, 2023.
+[73] Z. Du et al., “Speaker Embedding-aware Neural Diarization for Flexible Number of Speakers with Textual Information,” arXiv preprint
+arXiv:2111.13694, 2021.
+[74] A. Plaquet et al., “Powerset multi-class cross entropy loss for neural
+speaker diarization,” in Proc. INTERSPEECH, 2023.
+[75] D. Wang et al., “Target speaker voice activity detection with transformers
+and its integration with end-to-end neural diarization,” in ICASSP.
+IEEE, 2023.
+[76] K. Kinoshita et al., “Advances in Integration of End-to-End Neural and
+Clustering-Based Diarization for Real Conversational Speech,” in Proc.
+Interspeech, 2021, pp. 3565–3569.
+[77] S. Chen et al., “Wavlm: Large-scale self-supervised pre-training for full
+stack speech processing,” IEEE Journal of Selected Topics in Signal
+Processing, vol. 16, no. 6, pp. 1505–1518, 2022.
+[78] K. Kinoshita et al., “Utterance-by-utterance overlap-aware neural diarization with Graph-PIT,” in Proc. Interspeech, 2022.
+[79] S. Horiguchi et al., “Towards neural diarization for unlimited numbers
+of speakers using global and local attractors,” in ASRU. IEEE, 2021.
+[80] Y. Chen et al., “Interrelate Training and Searching: A Unified Online
+Clustering Framework for Speaker Diarization,” in Interspeech, 2022.
+[81] N. Kamo et al., “NTT Multi-Speaker ASR System for the DASR Task
+of CHiME-7 Challenge,” CHiME-7 Challenge, 2023.
+[82] M.-K. He et al., “ANSD-MA-MSE: Adaptive Neural Speaker Diarization Using Memory-Aware Multi-speaker Embedding,” IEEE/ACM
+Transactions on Audio, Speech, and Language Processing, 2023.
+[83] L. Ye et al., “The IACAS-Thinkit System for CHiME-7 Challenge,”
+CHiME-7 Challenge, 2023.
+[84] S. Baroudi et al., “pyannote. audio speaker diarization pipeline at
+VoxSRC 2023,” The VoxCeleb Speaker Recognition Challenge, 2023.
+[85] S. Horiguchi et al., “End-to-end speaker diarization as post-processing,”
+in ICASSP. IEEE, 2021, pp. 7188–7192.
+[86] ——, “The Hitachi-JHU DIHARD III system: Competitive end-to-end
+neural diarization and x-vector clustering systems combined by DOVERLap,” arXiv preprint arXiv:2102.01363, 2021.
+[87] R. Wang et al., “The USTC-NERCSLIP Systems for the CHiME-7
+DASR Challenge,” arXiv preprint arXiv:2308.14638, 2023.
+[88] T. Liu et al., “BER: Balanced Error Rate For Speaker Diarization,” arXiv
+preprint arXiv:2211.04304, 2022.
+[89] D. Karamyan et al., “The Krisp Diarization system for the VoxCeleb
+Speaker Recognition Challenge 2023,” The VoxCeleb Speaker Recognition Challenge 2023 (VoxSRC-23), 2023.
+[90] D. Raj et al., “GPU-accelerated Guided Source Separation for Meeting
+Transcription,” in Proc. INTERSPEECH, 2023.
+[91] D. Wang et al., “Profile-Error-Tolerant Target-Speaker Voice Activity
+Detection,” arXiv preprint arXiv:2309.12521, 2023.
+
+

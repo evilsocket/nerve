@@ -1,0 +1,1327 @@
+GPT4SGG: Synthesizing Scene Graphs from
+Holistic and Region-specific Narratives
+Zuyao Chen1,2 , Jinlin Wu2,3 , Zhen Lei2,3 , Zhaoxiang Zhang2,3 , and Changwen
+Chen1
+The Hong Kong Polytechnic University
+Centre for Artificial Intelligence and Robotics, HKISI, CAS
+3
+NLPR, Institute of Automation, Chinese Academy of Sciences, Beijing, China
+zuyao.chen@connect.polyu.hk
+{jinlin.wu, zlei}@nlpr.ia.ac.cn, zhaoxiang.zhang@ia.ac.cn
+changwen.chen@polyu.edu.hk
+
+Inaccurate Scene Parser
+a small car is parked in
+Caption
+front of a scooter.
+
+SG Parser[18] null
+
+GPT-4 [21]
+
+(car, parked in front
+of, scooter)
+
+near
+person.2
+
+we
+a
+
+rin
+
+book.5 person.6
+
+g
+
+near
+
+near
+
+on
+
+Ambiguity in Grounding Unlocalised Objects
+on
+book.4
+book.3
+Triplet
+(person, wearing, tie)
+r
+nea
+
+arXiv:2312.04314v1 [cs.CV] 7 Dec 2023
+
+1
+
+2
+
+tie.1
+
+Viusal-Language
+Alignment
+
+Who is the “person” ?
+“person.2” or “person.6” ?
+
+Sparse Caption data with Bias
+woman
+women
+person.6
+person.2
+
+a couple is standing together posing next to a table .
+
+man
+
+a woman
+
+bride
+
+a man and a women who are standing next to each other.
+
+in a white dress and a man
+
+in a suit .
+
+groom
+man
+couple
+
+couple in dress outfit standing in front of the white table
+the bride and groom
+
+with
+
+stand beside a cake shaped like a stack of
+
+books
+
+on it.
+
+books .
+
+Fig. 1. Challenges in learning scene graphs from natural language description.
+
+Abstract. Learning scene graphs from natural language descriptions
+has proven to be a cheap and promising scheme for Scene Graph Generation (SGG). However, such unstructured caption data and its processing
+are troubling the learning an acurrate and complete scene graph. This
+dilema can be summarized as three points. First, traditional language
+
+2
+
+Z. Chen et al.
+parsers often fail to extract meaningful relationship triplets from caption
+data. Second, grounding unlocalized objects in parsed triplets will meet
+ambiguity in visual-language alignment. Last, caption data typically are
+sparse and exhibit bias to partial observations of image content. These
+three issues make it hard for the model to generate comprehensive and
+accurate scene graphs. To fill this gap, we propose a simple yet effective framework, GPT4SGG, to synthesize scene graphs from holistic and
+region-specific narratives. The framework discards traditional language
+parser, and localize objects before obtaining relationship triplets. To obtain relationship triplets, holistic and dense region-specific narratives are
+generated from the image. With such textual representation of image
+data and a task-specific prompt, an LLM, particularly GPT-4, directly
+synthesizes a scene graph as “pseudo labels”. Experimental results showcase GPT4SGG significantly improves the performance of SGG models
+trained on image-caption data. We believe this pioneering work can motivate further research into mining the visual reasoning capabilities of
+LLMs.
+
+1
+
+Introduction
+
+Scene Graph Generation (SGG) offers a visual symbolic representation, where
+nodes encode object categories and spatial information, and edges define the
+spatial relationships and interactions between objects. Conventional SGG models
+[28,30,24,23,6,13] rely on datasets annotated manually, encompassing objects
+and their inter-relations. For an image with N objects, there are N ∗ (N − 1)
+potential pairs for annotation, making the creation of large-scale datasets both
+time-consuming and costly. Recent studies [32,14,31,4] leverage image-caption
+data to learn scene graphs from natural language description directly. To extract
+relationship triplets (i.e., < subject, predicate, object >) from this unstructured
+textual data, a traditional NLP tool, language parser for SGG [18], is employed.
+The parsed triplets with grounded objects serve as the pseudo label for training
+SGG models.
+Nevertheless, several inherent challenges hinder the effective learning of scene
+graphs from natural language descriptions, as shown in Fig. 1. 1) The language
+parser [18] struggles to extract complete scene graphs from caption data, failing
+to derive relationship triplets even from simple sentences like a small car is
+parked in front of a scooter. By contrast, GPT-4 [21] works well for this task.
+However, directly replacing the language parser with GPT-4 does not address the
+following issues. 2) Ambiguity arises in grounding unlocalized objects of parsed
+triplets through visual-language alignment, particularly when multiple instances
+of the same category appear in an image, making it challenging to match visual
+regions with language queries accurately. 3) Caption data, even with manual
+annotations, exhibit sparsity and bias, often emphasizing specific observations
+while overlooking crucial visual cues for generating comprehensive scene graphs.
+These challenges are intertwined and significantly hamper learning scene graphs
+from natural language, requiring more effective solutions.
+
+GPT4SGG
+
+3
+
+To address these challenges, we introduce a simple yet effective framework ,
+GPT4SGG, which leverages large language models (LLMs) to learn scene graphs
+from holistic and region-specific narratives, as shown in Fig. 2. GPT4SGG discards the language parser [18] and directly synthesizes scene graphs from object information and a set of descriptions. To prevent the ambiguity of visuallanguage alignment, we reverse the pipeline of previous methods for learning
+scene graphs from natural language. Previous methods [32,14,31,4] follows the
+pipeline: parsing relationship triplets from caption data → grounding unlocalized objects in parsed triplets → learning scene graphs with parsed triplets and
+grounded objects. Conversely, GPT4SGG first localises candidate nodes (objects)
+of scene graphs, which can be from annotation or an object detector. With a
+set of localized objects, the next step is identifying latent relationships from
+holistic and region-specific narratives. Instead of relying on sparse, global imagecaption data, we generate a holistic description for the entire image and create
+dense descriptions for multiple Region-of-Interest (RoI) areas. We employ Blip2 [10] to produce descriptions for holistic and region-specific regions, randomly
+selecting multiple RoIs from the aggregate of object pairs. These holistic and
+region-specific captions are designed to provide detailed descriptions of an image’s content, supplying vital visual clues for LLMs to conduct visual reasoning.
+Additionally, we feed objects’ category and location information (either from
+annotation or identified by an object detector) into the LLM, enabling it to associate objects with their alias or synonyms and deduce relationships between
+two objects. With this information, the LLM, such as GPT-4 [21], can synthesize
+a more complete and accurate scene graph. The generated scene graph can be
+used as a psuedo label for SGG models.
+To verify the effectiveness of the proposed framework, we build an SGG-aware
+instruction-following dataset and conduct extensive experiments with state-ofthe-art SGG models. The instruction-following dataset is built on COCO detection dataset [15] with split “train2017”. From the original COCO train set,
+which consists of ∼118k images, we create a subset of ∼93k images, referred to
+as COCO-SG@GPT. We only included images where the number of objects is
+two or more. This selection is crucial to ensure the dataset is sufficiently complex
+and representative for boosting LLMs to synthesize scene graphs in instructionfollowing scenarios. By focusing on images with multiple objects and captions,
+we aim to create a challenging and diverse dataset that would rigorously test the
+capability of LLMs to synthesize and interpret scene graphs in complex visual
+contexts.
+Considering the privacy and limitations of OpenAI, we fine tune a private
+LLM, Llama 2 [26]. Llama 2 [26], an open-source LLM comparable to GPT-3,
+along with Alpaca [25], Vicuna [5], use machine-generated instructions to enhance alignment capabilities, showing remarkable performance. The instruction
+tuning process follows Alpaca [25] with the instruction-following data generated
+by GPT-4 [21].
+In short, our contributions are as follows
+
+4
+
+Z. Chen et al.
+
+• We introduce GPT4SGG, a novel framework that leverages the capabilities
+of LLMs, particularly GPT-4, for Scene Graph Generation. To the best of
+our knowledge, this is a pioneer work in this field.
+• We develop the COCO-SG@GPT dataset, a specialized instruction-following
+dataset derived from the COCO detection dataset, aiming for evaluating and
+enhancing the SGG abilities of LLMs in complex visual contexts.
+• We fine tuning a private and SGG-aware LLM, Llama 2, using instructionfollowing data generated by GPT-4.
+• Extensive experiments with state-of-the-arts SGG models validate the effectiveness of GPT4SGG, highlighting its capability in generating more accurate and comprehensive scene graphs.
+
+2
+
+Related Work
+
+Scene Graph Generation (SGG) aims to create a structured representation of objects and their relationships within an image. Johnson et al. [8] first
+introduced the concept of scene graphs, presenting them as a method to improve image retrieval and scene understanding. The evolution of SGG has been
+marked by an increasing focus on extracting more detailed and contextually rich
+information from visual content. This field has expanded significantly with contributions from both vision-based and language-based methodologies, providing
+a comprehensive understanding of scene composition and dynamics. Earlier approaches to SGG predominantly leveraged deep learning models to identify and
+classify objects and their interrelations within images. These methods, such as
+IMP [28], MOTIFS [30], primarily depended on convolutional neural networks
+(CNNs) or recurrent neural networks (RNNs) to extract visual features. However, the reliance on manually annotated data limits the scope of relationship
+recognition.
+Recent works [32,31,4] integrate natural language processing into SGG, providing a cheap yet valuable scheme for capturing complex relationships. These
+models could learn rich relationship concepts without manual annotations by
+employing image-caption pairs. This approach, while effective in certain contexts, faced limitations in scalability and the diversity of relationship types it
+could capture. Previous methods of learning scene graphs from image-caption
+data are mainly limited by the three challenges discussed in Sec. 1. This work
+presents a simple yet effective framework to address these challenges.
+Large Language Model (LLM) has gained increasing attention on many
+complex reasoning tasks, including multi-hop question answering [9], multi-turn
+conversation [27], program synthesis [20], etc. Among a series of LLMs, GPT-4
+[21], developed by OpenAI, presents a remarkable capability to solve complex
+reasoning tasks. As reported in [1], GPT-4 can solve many novel and challenging tasks such as mathematics, medicine, finance, law, etc. These applications
+showcase the great potentiality of GPT-4 with task-specific prompts. Beyond
+textual data, the recently released GPT-4V [22] can access image input and perform various visual reasoning tasks. Nevertheless, the vision model of GPT-4V
+
+GPT4SGG
+
+5
+
+tie.1: [269, 189, 293, 234], person.2:[224, 60, 480, 483],
+book.3:[257, 416, 368, 492], book.4:[246, 455, 375, 534],
+book.5:[228, 485, 391, 583], person.6:[57, 143, 254, 638]
+
+a man and woman
+standing next to a cake
+
+on
+
+book.3
+nea
+
+near
+
+a cake made of books
+
+SGG
+model
+
+near
+
+book.5 person.6
+
+g
+
+LLM
+
+we
+ar
+in
+
+a man and a woman
+standing in front of a
+cake
+
+r
+
+r
+
+nea
+
+on
+
+book.4
+
+person.2
+
+tie.1
+
+Supervision
+
+Fig. 2. An overview of our approach GPT4SGG. GPT4SGG leverages a LLM to synthesize scene graphs based on objects information and a set of holistic and regionspecific descriptions.
+
+remains like a black box, with its API currently limited in speed and usage (as
+of December 2023).
+In addition to GPT-4, the open-sourced LLM, Llama2 [26], and its variants have emerged for various applications, especially for vision tasks. For instance, Mini GPT-4 [33] utilizes Vicuna [5] and a frozen vision encoder to learn
+a multi-modality alignment, enabling the generation of detailed image descriptions, website creation from sketches, and other complex reasoning tasks; LLaVA
+[16] leverages visual instruction tuning with language-only GPT-4 and a frozen
+vision encoder, enabling advanced multi-modal understanding and interaction
+capabilities. Despite these attempts, the SGG capability of LLMs still needs
+to be explored. In this work, we will explore how to generate an accurate and
+comprehensive scene graph with the help of LLMs.
+
+3
+
+Method
+
+This section will describe the framework, GPT4SGG, how to synthesize scene
+graphs from holistic and region-specific narratives. Given an input image I, a
+SGG model will output a scene graph G = (V, E), where node vi ∈ V is equipped
+with the i-th object’s category and location information, and edge eij ∈ E reflects
+the relationship between node vi and node vj . An overview of GPT4SGG is
+illustrated in Fig. 2.
+3.1
+
+Holistic & Region-specific Narratives Generation
+
+To provide a comprehensive description of the content for an image, we employ
+a captioning model Blip-2 [10] to construct a holistic description and multiple
+
+6
+
+Z. Chen et al.
+
+Algorithm 1 Generating Holistic and Region-specific Narratives
+1: Input: Original Image, N (maximum number of RoIs)
+2: Output: Global Description, Localised Descriptions
+3: procedure GenerateNarratives(Image)
+4:
+GlobalDescription ← Blip-2(Image)
+5:
+Objects ← Detector(Image) or Annotation(Image)
+6:
+RoIList ← SelectRoIs(Objects, N)
+7:
+LocalisedDescriptions ← [ ]
+8:
+for each RoI in RoIList do
+9:
+CroppedRegion ← Crop Region with RoI
+10:
+Description ← Blip-2(CroppedRegion)
+11:
+Add Description to LocalisedDescriptions
+12:
+end for
+13:
+return GlobalDescription, LocalisedDescriptions
+14: end procedure
+15: function SelectRoIs(Objects, N)
+16:
+ValidPairs ← [ ]
+17:
+ObjectPairs ← pairwise-combinations(Objects)
+18:
+for pair in ObjectPairs do
+19:
+if IoU(pair) > 0 then
+20:
+Add pair to ValidPairs
+21:
+end if
+22:
+end for
+23:
+Shuffle(ValidPairs)
+24:
+ValidPairs ← ValidPairs[:N]
+25:
+RoIList ← Union of all pairs in ValidPairs
+26:
+return RoIList
+27: end function
+
+region-specific descriptions. The construction process is shown in Algorithm 1.
+Specifically, the holistic narrative is generated by feeding the whole image to
+the captioning model, providing a holistic description of the image content ; the
+region-specific narratives are produced by captioning a set of Region-of-Interest
+(RoI) areas, focusing on the content of local regions. To select meaningful and
+representative RoIs for an input image, we utilize an object detector (for images without detection ground-truths) or annotation data for localising objects.
+Localized objects are pairwise combined and filtered with an Intersection-overUnion (IoU) greater than zero. This selection criterion for RoI pairs is grounded
+in the premise that objects with a non-zero IoU are more likely to have a meaningful relationship as indicated in [30,32], which also reduces the computation
+burden for captioning and complexity for LLM’s inference. By leveraging object
+categories, spatial locations, holistic narratives, and region-specific descriptions,
+LLMs can “see” images and interpret images without direct visual data input,
+facilitating complex visual reasoning tasks like SGG.
+3.2
+
+Synthesizing Scene Graphs with GPT-4
+
+Since we use a text-only LLM, GPT-4, the image data are transformed as mentioned in 3.1. The primary task for GPT-4 involves synthesizing scene graphs
+based on this transformed image data. To facilitate this, we construct a prompt
+template shown in Tab. 1, which requires the model to use information about
+objects (such as their categories and bounding boxes) and both holistic and
+region-specific descriptions to establish relationships between objects. To alleviate ambiguity of visual-language alignment, we encode the object information as
+
+GPT4SGG
+
+7
+
+messages = [{ "role": "system", "content": "You are a helpful AI visual assistant. Now, you are
+seeing image data. Each image provides a set of objects, and a set of captions for global and localized descriptions." },
+{ "role": "user", "content": f"""Extract relationship triplets from image data, each characterized by a unique “image id”, image dimensions, a set of objects consisting of categories (formatted as “[category].[number]”) and bounding boxes (in “xyxy” format). Each image data includes a global description for the entire image and localized descriptions for specific regions (notated as “Union(name1:box1, name2:box2)”, keys with “;” in captions like “Union(name1:box1,
+name2:box2); Union(name3:box3, name4:box4)” refer to multiple union regions share the same
+caption).
+Here are the requirements for the task: 1. Process each image individually: Focus on one image
+at a time and give a comprehensive output for that specific image before moving to the next. 2.
+Infer interactions and spatial relationships: Utilize objects’ information and both global and localized descriptions to determine relationships between objects(e.g., “next to”, “holding”, “held
+by”, etc.). 3. Maintain logical consistency: Avoid impossible or nonsensical relationships (e.g., a
+person cannot be riding two different objects simultaneously, a tie cannot be worn by two persons, etc.). 4. Eliminate duplicate entries: Each triplet in the output must be unique and nonrepetitive. 5. Output should be formatted as a list of dicts in JSON format, containing “image id” and “relationships” for each image.
+Example output: ‘ [ “image id”: “123456”, “relationships”: [ “source”: “person.1”, “target”:
+“skateboard.2”, “relation”: “riding”, “source”: “person.4”, “target”: “shirt.3”, “relation”: “wearing”, “source”: “person.2”, “target”: “bottle.5”, “relation”: “holding”, “source”: “person.4”, “target”: “bus.1”, “relation”: “near”, ] , “image id”: “23455”, “relationships”: [ “source”: “man.1”,
+“target”: “car.1”, “relation”: “driving” ] ] ’
+Ensure that each image’s data is processed and outputted separately to maintain clarity and accuracy in the relationship analysis.
+### Input: “ {Input} ” ### Output: } """ ]
+example input = {“image id”: “227884”, “width”: 444, “height”: 640, “objects”: [“tie.1:[217, 409,
+233, 436]”, “tie.2:[212, 409, 233, 507]”, “person.3:[119, 289, 300, 523]”], “captions”: {“global”: “a
+man wearing a suit”, “Union(tie.1:[217, 409, 233, 436], tie.2:[212, 409, 233, 507])”: “a purple and
+black cat sitting on a window ledge”, “Union(tie.2:[212, 409, 233, 507], person.3:[119, 289, 300,
+523]) ; Union(tie.1:[217, 409, 233, 436], person.3:[119, 289, 300, 523])”: “a man in a suit and tie
+sitting at a table with a laptop”} }
+
+Table 1. Prompt for synthesizing scene graphs.
+
+“[cateogry].[number ]: [box ]” in the prompt. This unique representation enables
+the LLM to correctly match visual regions with relationship triplet, especially
+when multiple instances with the same category appear in an image.
+The LLM is also required to maintain logical consistency to circumvent impossible or nonsensical relationships. With this carefully designed prompt, GPT4 can synthesize scene graphs based on the provided image information. An
+example of this process is shown in Tab. 2. The example shows that GPT-4
+generates a comprehensive and accurate scene graph, and provides a reasonable explanation for inferring latent relationships not explicitly mentioned in
+the captions. Following this approach, we collect ∼93k SGG-aware instructionfollowing data. This dataset plays a pivotal role in evaluating and enhancing the
+SGG capabilities of LLMs in complex visual contexts.
+3.3
+
+Training SGG Models
+
+After obtaining the generated scene graphs by an LLM, any standard SGG
+models can be trained with localized objects and relationships. In this work, we
+compare three types of SGG models: Closed-set SGG models such as MOTIFS
+
+8
+
+Z. Chen et al.
+Example Input : {“image id”: “395890”, “width”: 480, “height”: 640, “objects”:
+[“tie.1:[269, 189, 293, 234]”, “person.2:[224, 60, 480, 483]”, “book.3:[257, 416, 368,
+492]”, “book.4:[246, 455, 375, 534]”, “book.5:[228, 485, 391, 583]”, “person.6:[57,
+143, 254, 638]”], “captions”: { “Union(person.2:[224, 60, 480, 483], book.3:[257, 416,
+368, 492])”: “a man and a woman standing next to a cake”, “Union(book.3:[257, 416,
+368, 492], book.4:[246, 455, 375, 534])”: “a cake made of books”, “Union(book.3:[257,
+416, 368, 492], book.5:[228, 485, 391, 583])”: “a man standing next to a cake that is
+made of books”, “Union(book.4:[246, 455, 375, 534], book.5:[228, 485, 391, 583])”:
+“a cake made out of books”, “Union(book.5:[228, 485, 391, 583], person.6:[57,
+143, 254, 638])”: “a man and a woman”, “Union(book.4:[246, 455, 375, 534], person.6:[57, 143, 254, 638])”: “a man and a woman standing in front of a cake”, “global
+; Union(person.2:[224, 60, 480, 483], person.6:[57, 143, 254, 638]) ; Union(tie.1:[269,
+189, 293, 234], person.2:[224, 60, 480, 483]) ; Union(person.2:[224, 60, 480, 483],
+book.4:[246, 455, 375, 534])”: “a man and woman standing next to a cake”}}
+
+GPT-4 Response : { “image id”: “395890”, “relationships”: [ {“source”: “person.2”, “target”:
+“book.3”, “relation”: “near”}, {“source”: “person.2”, “target”: “person.6”, “relation”: “near”},
+{“source”: “person.2”, “target”: “tie.1”, “relation”: “wearing”}, {“source”: “person.6”, “target”:
+“book.4”, “relation”: “near”}, {“source”: “person.6”, “target”: “book.5”, “relation”: “near”},
+{“source”: “book.3”, “target”: “book.4”, “relation”: “on”}, {“source”: “book.4”, “target”:
+“book.5”, “relation”: “on”} ] }
+User: How would you infer that “person.2” rather than “person.6” is “wearing” the “tie.1” ?
+GPT-4: To infer that “person.2” rather than “person.6” is wearing “tie.1”, the following observations from the image data can be considered:
+Spatial Proximity: The bounding box of “tie.1” ([269, 189, 293, 234]) is entirely within the
+bounding box of “person.2” ([224, 60, 480, 483]). This indicates that the tie is located on or very
+near to person.2. In contrast, the bounding box of “person.6” ([57, 143, 254, 638]) does not overlap with that of the tie, suggesting that person.6 is not wearing it. Global and Localized Descriptions: The global description mentions a “man and woman standing next to a cake,” but does
+not specify who is wearing the tie. However, the union of “tie.1” and “person.2” in the captions
+suggests a relationship between them. Since ties are typically worn as part of clothing, the logical inference is that person.2 is wearing the tie. Logical Consistency: In typical scenarios, a tie
+is worn by one person at a time. Given that the tie’s location coincides with the location of person.2 and not with person.6, it is logical to conclude that person.2 is the one wearing the tie. In
+conclusion, the spatial arrangement of the objects and the given descriptions lead to the inference that “person.2” is wearing “tie.1”.
+
+Table 2. Example of synthesising scene graphs with GPT-4.
+
+[30], Open-vocabulary Object-based SGG model such as VS3 [31], and fully
+Open-vocabulary SGG models such as OvSGTR [4]. All training follows the
+public code or approaches illustrated in these works.
+3.4
+
+Instruction Tuning Private LLMs
+
+We use Low-Rank Adaptation (LoRA) [7] to fine-tune a private and local LLM,
+Llama 2 [26], with the instruction-following data generated by GPT-4. This
+process involves adapting Llama 2 to better align with specific instruction sets,
+enhancing its ability to synthesize scene graphs from textual image data.
+As a benchmark, we also evaluate the performance of standard SGG models
+when trained with Llama 2’s responses. This comparison aims to highlight the
+effectiveness of instruction tuning in enhancing the SGG awareness of LLMs,
+reducing the dependencies on GPT-4.
+
+GPT4SGG
+VG-train
+
+9
+
+COCO-SG@GPT
+
+g
+in
+
+4,
+17
+46 8
+2, 7
+27
+5
+
+ab
+ov
+e
+
+6,
+4
+5, 75
+10
+8 27
+,0
+
+62
+
+8750
+,5
+
+ho
+ld
+
+be
+hi
+
+w
+it
+
+h
+
+nd
+
+67
+8
+87
+3
+8,
+
+10
+
+73
+8,
+1
+
+ar
+ne
+
+8 32
+
+7
+9
+11
+,5
+3, 75
+67
+5
+
+,5
+2245
+,2
+8
+
+in
+
+of
+
+ng
+
+5
+
+4,
+
+72
+
+14
+
+,8
+
+0,
+8
+
+30
+01
+
+99
+54 8
+2
+
+1,
+
+w
+ea
+ri
+
+ha
+s
+
+on
+
+83
+23
+,
+18 651
+,9
+67
+
+22
+
+24
+,
+30959
+,3
+02
+46
+,3
+
+35
+
+,8
+0
+
+9
+
+75
+,8
+
+08
+
+Instances
+
+1.
+3
+
+6
+
+·1
+
+05
+
+COCO@Scene Parser[18]
+
+Fig. 3. Frequency of head-10 predicates from VG-train, compared across COCO@Scene
+Parser[18] and COCO-SG@GPT datasets.
+
+4
+
+Experiments
+
+4.1
+
+Datasets
+
+VG-train
+
+COCO-SG@GPT
+
+fly
+in
+
+g
+
+in
+
+3
+0
+4
+
+25
+26
+0
+
+89
+
+sa
+ys
+
+g
+
+0
+
+0
+4
+
+ay
+in
+pl
+
+m
+
+ad
+
+e
+
+of
+
+on
+d
+nt
+e
+
+pa
+i
+
+47
+
+72
+0
+1
+
+0
+0
+
+0
+
+on
+g
+
+om
+
+ow
+in
+
+fr
+
+5
+11
+
+12
+
+12
+
+5
+
+8
+
+13
+4
+
+ro
+ac
+
+ag
+
+ai
+ns
+
+t
+
+ss
+
+0
+
+1
+
+gr
+
+m
+
+ou
+nt
+e
+
+d
+
+on
+
+0
+6
+
+15
+
+16
+
+2
+
+9
+
+41
+
+7
+
+60
+
+1
+
+Instances
+
+1,
+
+05
+
+4
+
+COCO@Scene Parser[18]
+
+Fig. 4. Frequency of tail-10 predicates from VG-train, compared across COCO@Scene
+Parser[18] and COCO-SG@GPT datasets.
+
+VG150 is the widely used dataset for evaluating SGG models, which is made
+up of 108, 777 images with 150 object categories and 50 predicate categories. For
+standard split, VG150 utilizes 70% of its images for training, 5, 000 for validation,
+and the remainder for testing. VG150 contains ∼257k instances of relationship
+triplets, covering spatial relationships and interactions.
+COCO Captions [2] consists of ∼117k images, in which each image is equipped
+with five manual captions. Previous works [31,32] utilize a language parser [18]
+to extract relation triplets from the caption data, yielding ∼181k instances of
+
+10
+
+Z. Chen et al.
+
+relationship triplets with ∼44k phrases and ∼2.5k relations. For closed-set SGG
+models [32] or open-vocabulary object-based SGG models [31], these phrases
+and relations are filtered by WordNet [19] synsets matching to be suitable for
+training on COCO and testing on VG150 dataset. For fully open-vocabulary
+SGG models like OvSGTR [4], all parsed phrases and relations are used for
+training. For clarity, we refer to this data as “COCO@Scene Parser [18]”.
+COCO-SG@GPT is derived from COCO with annotated bounding boxes containing ∼93k images. The model card for generating COCO-SG@GPT is GPT-4
+Turbo. The COCO-SG@GPT includes ∼388k instances of relationship triplets
+with 80 object categories and ∼4.7k predicate categories. Compared to COCO
+Captions with scene parser, COCO-SG@GPT has more accurate and dense scene
+graphs.
+Fig. 3 and Fig. 4 show the distribution of head-10 / tail-10 categories of the
+VG150 dataset, and corresponding COCO@Scene Parser and COCO-SG@GPT
+data. It can be found that COCO@Scene Parser is biased to conjunction words
+such as “with”, “in”, “from”, while less focus on interactions like “holding”,
+“wearing”, etc. This defect makes it hard for the SGG model to learn complex
+relationships. Conversely, COCO-SG@GPT provides rich instances for learning
+such complex relationships.
+4.2
+
+Experimental Setup
+
+Model settings. we compare three types of SGG models with GPT4SGG:
+• Closed-set SGG models: MOTIFS [30] design a stacked Motif Network with
+CNN and LSTMs for capturing higher-order motifs in scene graphs.
+• Open-vocabulary Object-based SGG models: VS3 [31] extends the object
+detector of the SGG model from closed-set to open-vocabulary.
+• Fully Open-vocabulary SGG models: OvSGTR [4] advances the SGG from
+closed-set to both object and relation-aware open-vocabulary setting.
+For a fair comparison, we follow the official implementations to conduct experiments.
+Metric. Following standard SGG models [30,23,12,28,31,4], we use SGDET [28]
+as the metric to measure the capability of SGG models. The SGDET protocol
+requires the model to detect objects and predicate relationships. A relationship
+triplet is regarded as correct if and only if the labels of the triplet are correct
+and the union of bounding boxes has an IoU score more than 0.5 over the union
+of ground truth boxes.
+4.3
+
+Experimental Results
+
+Quantative results. Fig. 3 reports a comparison with state-of-the-art models
+on VG150 test set. From the result, it is evident that GPT4SGG significantly
+improves the performance of SGG models. This improvement is attributed to our
+
+GPT4SGG
+SGG model
+
+Training Data
+
+Grounding
+
+LSWS [29]
+COCO
+MOTIFS[30]
+COCO
+Li et al.[14]
+Uniter [3]
+COCO
+SGNLS [32]
+Uniter [3]
+COCO
+Li et al.[14]
+3
+VS [31] (Swin-T)
+COCO
+GLIP-L [11]
+3
+VS [31] (Swin-L)
+COCO
+GLIP-L [11]
+OvSGTR [4] (Swin-T)
+COCO
+Grounding DINO-B[17]
+OvSGTR [4] (Swin-B)
+COCO
+Grounding DINO-B[17]
+OvSGTR [4] (Swin-B)
+COCO-SG@GPT
++ GPT4SGG
+
+11
+
+R@20 ↑ R@50 ↑ R@100 ↑ mR@20 ↑ mR@50 ↑ mR@100 ↑
+5.02
+5.42
+5.59
+6.04
+6.61
+6.88
+
+3.28
+6.40
+5.80
+6.74
+7.30
+8.15
+8.92
+9.30
+
+3.69
+7.33
+6.70
+7.62
+8.62
+9.90
+10.90
+11.48
+
+1.09
+1.28
+
+1.53
+1.79
+
+1.95
+2.18
+
+7.43
+
+9.86
+
+11.73
+
+2.84
+
+3.90
+
+4.63
+
+Table 3. Comparison with state-of-the-art methods on VG150 test set.
+
+novel approach of utilizing GPT-4 to generate more accurate and contextually
+rich scene graphs, demonstrating the effectiveness of our framework in mining
+scene graphs from both holistic and region-specific narratives.
+Qualitive results. We provide samples generated by GPT4SGG and corresponding results generated by Scene Parser [18] and GPT-4 [18], as shown in
+Fig. 5. From these samples, GPT4SGG can generate more accurate and complete
+scene graphs.
+
+5
+
+Conclusion
+
+In this work, we propose a simple yet effective framework, GPT4SGG, to illustrate how to synthesize scene graphs from holistic and region-specific narratives
+with an LLM. To perform such visual reasoning tasks with language-only LLMs,
+the content of image data is transformed into a textual representation. This representation for an image consists of objects’ category and location information,
+a holistic caption for the whole image, and a set of region-specific captions for
+describing the union region of two objects. With such textual representation
+and task-specific prompts, the LLM can generate more accurate and comprehensive scene graphs for weak supervision of SGG models. Experimental results
+demonstrate the efficacy of the proposed framework.
+
+Z. Chen et al.
+
+person.2
+
+cake.3
+
+with
+
+with
+
+12
+
+sitting on
+
+chair.4
+
+sitting in
+
+sitting in
+baby
+
+chair
+
+chair
+
+baby
+
+giraffes
+
+herd of
+giraffes
+
+dinning
+table.1
+
+a baby sitting
+in a high chair
+giraffe.5
+
+giraffe.6
+next to
+
+giraffe.3
+st
+a
+to
+ne ndi
+e
+ar ng
+n
+a herd of giraffes
+in a field
+
+giraffe.1
+
+herd
+
+field
+
+giraffe.4
+
+umbrella.6 person.5
+under
+
+dog
+g
+
+dog
+ne
+
+ne
+
+ar
+
+l
+ho
+
+ar
+
+g
+
+in
+
+co
+ve
+ri
+
+ld
+
+ng
+
+ho
+
+n
+di
+
+ho
+l
+person.4 woman din
+
+dinning
+table.8
+
+pool
+woman
+
+g
+
+on
+
+a woman holding a baby
+and a dog near a pool
+
+in
+
+of
+
+xt
+
+ho pool
+ld
+in
+g
+
+baby
+
+hand bag.7
+
+baby
+
+person.4standingperson.5
+next to
+
+woman holding
+
+holding
+
+holding
+
+ing tennis
+racket
+
+holding
+woman
+
+ld
+ho
+
+tennis rackets
+man
+
+tennis racket.2 tennis racket.1
+a man and a woman
+holding tennis rackets
+
+Image
+
+g
+in
+sw
+
+ball
+
+baseball player
+
+ball
+
+people
+
+skis
+
+people
+
+using
+person.3
+
+skis.4
+
+carrying
+
+carrying
+
+group
+of
+
+person.2
+backpack.6
+backpack.7 person.1 skis.12
+wearing
+using
+a group of people on
+skis going up a hill
+
+gi
+n
+
+ng
+gi
+in
+
+bat
+
+g
+
+baseball glove.4
+
+in
+
+person.2
+
+by
+
+tt
+
+a baseball player is
+swinging a bat at a ball
+
+at
+
+person.5
+wo
+rn
+
+h
+wit
+
+bat
+
+baseball player
+
+hi
+
+baseball bat.3
+holding
+
+sw
+
+person.1
+
+wearing
+
+using
+
+on
+
+skis
+
+on
+p
+gu
+n
+oi
+
+g
+
+hill
+
+backpack.8 person.10 skis.11
+
+GPT4SGG
+
+Scene Parser [18]
+
+GPT-4 [21]
+
+Fig. 5. Samples from GPT4SGG, and corresponding triplets parsed by Scene Parser
+[18] and GPT-4 [21] (best view in color and zoom in). Red colors refer to incorrect
+edges or confusing nodes (with ambiguity), e.g., “tennis rackets” in the third row. For
+clarity, we only list the holistic narrative for each image, which is the input of Scene
+Parser [18] (3-rd column) and GPT-4 [21] (4-th column).
+
+GPT4SGG
+
+13
+
+References
+1. Bubeck, S., Chandrasekaran, V., Eldan, R., Gehrke, J., Horvitz, E., Kamar, E.,
+Lee, P., Lee, Y.T., Li, Y., Lundberg, S.M., Nori, H., Palangi, H., Ribeiro, M.T.,
+Zhang, Y.: Sparks of artificial general intelligence: Early experiments with GPT-4.
+CoRR abs/2303.12712 (2023) 4
+2. Chen, X., Fang, H., Lin, T., Vedantam, R., Gupta, S., Dollár, P., Zitnick,
+C.L.: Microsoft COCO captions: Data collection and evaluation server. CoRR
+abs/1504.00325 (2015) 9
+3. Chen, Y., Li, L., Yu, L., Kholy, A.E., Ahmed, F., Gan, Z., Cheng, Y., Liu, J.:
+UNITER: universal image-text representation learning. In: ECCV. pp. 104–120
+(2020) 11
+4. Chen, Z., Wu, J., Lei, Z., Zhang, Z., Chen, C.: Expanding scene graph boundaries:
+Fully open-vocabulary scene graph generation via visual-concept alignment and
+retention. arXiv preprint arXiv:2311.10988 (2023) 2, 3, 4, 8, 10, 11
+5. Chiang, W.L., Li, Z., Lin, Z., Sheng, Y., Wu, Z., Zhang, H., Zheng, L., Zhuang,
+S., Zhuang, Y., Gonzalez, J.E., et al.: Vicuna: An open-source chatbot impressing
+gpt-4 with 90%* chatgpt quality. See https://vicuna. lmsys. org (accessed 14 April
+2023) (2023) 3, 5
+6. Chiou, M., Ding, H., Yan, H., Wang, C., Zimmermann, R., Feng, J.: Recovering the
+unbiased scene graphs from the biased ones. In: ACMMM. pp. 1581–1590 (2021)
+2
+7. Hu, E.J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S., Wang, L., Chen,
+W.: Lora: Low-rank adaptation of large language models. In: ICLR (2022) 8
+8. Johnson, J., Krishna, R., Stark, M., Li, L., Shamma, D.A., Bernstein, M.S., Fei-Fei,
+L.: Image retrieval using scene graphs. In: CVPR. pp. 3668–3678 (2015) 4
+9. Lan, Y., He, G., Jiang, J., Jiang, J., Zhao, W.X., Wen, J.: A survey on complex
+knowledge base question answering: Methods, challenges and solutions. In: Zhou,
+Z. (ed.) IJCAI. pp. 4483–4491. ijcai.org (2021) 4
+10. Li, J., Li, D., Savarese, S., Hoi, S.C.H.: BLIP-2: bootstrapping language-image pretraining with frozen image encoders and large language models. In: ICML. vol. 202,
+pp. 19730–19742 (2023) 3, 5
+11. Li, L.H., Zhang, P., Zhang, H., Yang, J., Li, C., Zhong, Y., Wang, L., Yuan, L.,
+Zhang, L., Hwang, J., Chang, K., Gao, J.: Grounded language-image pre-training.
+In: CVPR. pp. 10955–10965 (2022) 11
+12. Li, R., Zhang, S., He, X.: Sgtr: End-to-end scene graph generation with transformer.
+In: CVPR. pp. 19464–19474 (2022) 10
+13. Li, R., Zhang, S., Wan, B., He, X.: Bipartite graph network with adaptive message
+passing for unbiased scene graph generation. In: CVPR. pp. 11109–11119 (2021) 2
+14. Li, X., Chen, L., Ma, W., Yang, Y., Xiao, J.: Integrating object-aware and
+interaction-aware knowledge for weakly supervised scene graph generation. In:
+ACMMM. pp. 4204–4213 (2022) 2, 3, 11
+15. Lin, T., Maire, M., Belongie, S.J., Hays, J., Perona, P., Ramanan, D., Dollár, P.,
+Zitnick, C.L.: Microsoft COCO: common objects in context. In: ECCV. vol. 8693,
+pp. 740–755 (2014) 3
+16. Liu, H., Li, C., Wu, Q., Lee, Y.J.: Visual instruction tuning. CoRR
+abs/2304.08485 (2023) 5
+17. Liu, S., Zeng, Z., Ren, T., Li, F., Zhang, H., Yang, J., Li, C., Yang, J., Su, H.,
+Zhu, J., Zhang, L.: Grounding DINO: marrying DINO with grounded pre-training
+for open-set object detection. CoRR abs/2303.05499 (2023) 11
+
+14
+
+Z. Chen et al.
+
+18. Mao, J.: Scene graph parser. https://github.com/vacancy/SceneGraphParser
+(2022) 1, 2, 3, 9, 10, 11, 12
+19. Miller, G.A.: Wordnet: a lexical database for english. Communications of the ACM
+38(11), 39–41 (1995) 10
+20. Nijkamp, E., Pang, B., Hayashi, H., Tu, L., Wang, H., Zhou, Y., Savarese, S., Xiong,
+C.: Codegen: An open large language model for code with multi-turn program
+synthesis. arXiv preprint arXiv:2203.13474 (2022) 4
+21. OpenAI: GPT-4 technical report. CoRR abs/2303.08774 (2023) 1, 2, 3, 4, 12
+22. OpenAI: GPT-4v(ision) System Card. https://openai.com/research/
+gpt-4v-system-card (2023) 4
+23. Tang, K., Niu, Y., Huang, J., Shi, J., Zhang, H.: Unbiased scene graph generation
+from biased training. In: CVPR. pp. 3713–3722 (2020) 2, 10
+24. Tang, K., Zhang, H., Wu, B., Luo, W., Liu, W.: Learning to compose dynamic tree
+structures for visual contexts. In: CVPR. pp. 6619–6628 (2019) 2
+25. Taori, R., Gulrajani, I., Zhang, T., Dubois, Y., Li, X., Guestrin, C., Liang, P.,
+Hashimoto, T.B.: Stanford alpaca: an instruction-following llama model (2023).
+URL https://crfm. stanford. edu/2023/03/13/alpaca. html 1(2), 3 (2023) 3
+26. Touvron, H., Martin, L., Stone, K., Albert, P., Almahairi, A., Babaei, Y., Bashlykov, N., Batra, S., Bhargava, P., Bhosale, S., et al.: Llama 2: Open foundation
+and fine-tuned chat models. arXiv preprint arXiv:2307.09288 (2023) 3, 5, 8
+27. Xu, C., Guo, D., Duan, N., McAuley, J.J.: Baize: An open-source chat model with
+parameter-efficient tuning on self-chat data. CoRR abs/2304.01196 (2023) 4
+28. Xu, D., Zhu, Y., Choy, C.B., Fei-Fei, L.: Scene graph generation by iterative message passing. In: CVPR. pp. 3097–3106 (2017) 2, 4, 10
+29. Ye, K., Kovashka, A.: Linguistic structures as weak supervision for visual scene
+graph generation. In: CVPR. pp. 8289–8299 (2021) 11
+30. Zellers, R., Yatskar, M., Thomson, S., Choi, Y.: Neural motifs: Scene graph parsing
+with global context. In: CVPR. pp. 5831–5840 (2018) 2, 4, 6, 8, 10, 11
+31. Zhang, Y., Pan, Y., Yao, T., Huang, R., Mei, T., Chen, C.W.: Learning to generate
+language-supervised and open-vocabulary scene graph using pre-trained visualsemantic space. In: CVPR. pp. 2915–2924 (2023) 2, 3, 4, 8, 9, 10, 11
+32. Zhong, Y., Shi, J., Yang, J., Xu, C., Li, Y.: Learning to generate scene graph from
+natural language supervision. In: ICCV. pp. 1823–1834 (2021) 2, 3, 4, 6, 9, 10, 11
+33. Zhu, D., Chen, J., Shen, X., Li, X., Elhoseiny, M.: Minigpt-4: Enhancing
+vision-language understanding with advanced large language models. CoRR
+abs/2304.10592 (2023) 5
+
+

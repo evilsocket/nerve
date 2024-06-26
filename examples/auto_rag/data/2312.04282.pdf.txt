@@ -1,0 +1,1795 @@
+arXiv:2312.04282v1 [cs.DB] 7 Dec 2023
+
+Adaptive Recursive Query Optimization
+Anna Herlihy
+
+Guillaume Martres
+
+Anastasia Ailamaki∗
+
+Martin Odersky
+
+EPFL
+Switzerland
+anna.herlihy@epfl.ch
+
+EPFL
+Switzerland
+guillaume.martres@epfl.ch
+
+EPFL, Google
+Switzerland
+anastasia.ailamaki@epfl.ch
+
+EPFL
+Switzerland
+martin.odersky@epfl.ch
+
+applications. Most Datalog execution engines follow a bottomup evaluation [5] strategy, in which subqueries in the form
+of unions of conjunctive queries are repeatedly applied to
+relations. State-of-the-art Datalog execution engines provide
+manual or offline join-order optimizations for these subqueries,
+but require a profiling stage and cannot adapt if the real-time
+data does not match what was profiled.
+
+Abstract—Performance-critical industrial applications, including large-scale program, network, and distributed system analyses, are increasingly reliant on recursive queries for data analysis.
+Yet traditional relational algebra-based query optimization techniques do not scale well to recursive query processing due to the
+iterative nature of query evaluation, where relation cardinalities
+can change unpredictably during the course of a single query
+execution. To avoid error-prone cardinality estimation, adaptive
+query processing techniques use runtime information to inform
+query optimization, but these systems are not optimized for the
+specific needs of recursive query processing. In this paper, we
+introduce Adaptive Metaprogramming, an innovative technique
+that shifts recursive query optimization and code generation
+from compile-time to runtime using principled metaprogramming,
+enabling dynamic optimization and re-optimization before and
+after query execution has begun. We present a custom joinordering optimization applicable at multiple stages during query
+compilation and execution. Through Carac, we evaluate the
+optimization potential of Adaptive Metaprogramming and show
+unoptimized recursive query execution time can be improved by
+three orders of magnitude and hand-optimized queries by 4x.
+
+To avoid error-prone cardinality estimation [6], adaptive
+query processing (AQP) uses runtime information to tune
+query optimization [7]. This can be combined with codegenerating data management systems [8]–[10] that improve
+query execution performance by avoiding interpretation overhead by partially evaluating query plans into compiled executables. However, code-generating AQP systems do not
+regenerate and compile code at runtime, instead jumping
+between precompiled plans or code blocks to avoid the prohibitively high cost of invoking an optimizing compiler during
+query execution [11], [12]. Because recursive queries require
+repeated execution of subqueries for multiple iterations, the
+number of potential paths is prohibitively large to enumerate
+or compile ahead-of-time. Thus, there is a need for query
+optimization techniques that can leverage runtime information
+to meet the specific optimization criteria of recursive query
+processing.
+
+I. I NTRODUCTION
+The advanced algorithms powering contemporary applications require increasingly expressive query capabilities beyond
+traditional relational algebra, for example iterative or fixedpoint computations. This demand has led to a resurgence in
+the use of recursion in analytical queries, yet the development
+of recursive query optimization techniques lags behind those
+established for non-recursive queries.
+Support for recursion was added to the ANSI’99 SQL
+standard, and yet most relational data management systems
+are not optimized for the specific needs of recursive queries:
+during the execution of a single recursive query, resulting
+relations from the current iteration are fed as input into the
+next iteration of query evaluation. As a result, the relation
+cardinalities can change unpredictably and the number of
+iterations required to execute the query is not known ahead of
+time. Existing cardinality estimation techniques assume input
+relation cardinalities do not change during execution, so cannot
+guarantee high-quality join orders after the initial iteration.
+Instead, developers turn to Datalog for high-performance recursive query processing. Datalog is a popular query language
+for recursive queries that has been used for Java program
+analysis [1], TensorFlow [2], Ethereum Virtual Machine [3],
+AWS network analysis [4], and other performance-critical
+∗
+
+To address these challenges, this work introduces Adaptive Metaprogramming, a novel technique for runtime optimization and repeated re-optimization of recursive queries.
+We implement and evaluate the design in Carac, a system
+that tightly integrates a specialized Datalog execution engine
+with a general-purpose programming language and leverages
+Multi-Stage Programming [13], a known technique from the
+Programming Languages community, to support runtime code
+generation. This paper makes the following contributions:
+We introduce Adaptive Metaprogramming, a technique that
+combines the power of code-generating just-in-time data
+management systems with Multi-Stage Programming to
+enable adaptive, continuous query re-optimization by regenerating code at runtime.
+• We leverage Adaptive Metaprogramming to enable a custom
+optimization for Datalog queries to select efficient join
+orders of conjunctive subqueries at different stages in the
+lifetime of the query: from ahead-of-time, when only queries
+are available, to just-in-time, where runtime statistics like
+relation cardinalities are available.
+•
+
+Work done in its entirety at EPFL.
+
+1
+
+Initialize compiler thread
+
+Macros
+
+Carac
+Compile time
+
+Carac
+Run time
+
+Interpret
+
+Through Carac, we show how Adaptive Metaprogramming
+can speed up unoptimized Datalog queries over 1100x
+using only compile-time optimizations. Using only runtime
+optimizations, Carac can speed up unoptimized queries by
+over 2400x while maintaining a 4x speedup over manually
+hand-optimized queries.
+
+Multi-Stage Programming
+
+Query
+Compile time
+
+KNOWN:
+KNOWN:
+KNOWN:
+- All facts
+- Most fact schema - All fact schema
+- Most rule schema - All query schema - All queries
+- All Input data
+- All Input Data
+- Some facts
+> Generate indexes > Begin profiling
+- Some queries
++ specialize data
+interpreted QP +
+structures
+leverage
+incremental
+compilation
+
+II. BACKGROUND
+A. Datalog
+Datalog [14] is a rule-based declarative language based
+in logic programming. Datalog programs take the form of a
+finite set of facts and rules. Facts are stored in the extensional
+database (EDB) and can be considered the “input data”. Rules
+are stored in the intensional database (IDB) and define how
+new facts can be derived from existing facts. A typical Datalog
+query for the transitive closure of nodes in a graph:
+
+Query
+Run time
+
+Multi-Stage Programming
+
+•
+
+KNOWN:
+- All facts
+- All queries
+- All Input Data
+- Slow ops to target
+- Cardinalities
+- Any other
+runtime
+information
+> [De]optimize
+
+Fig. 1. Stages information becomes available
+
+MSP also enables deoptimization, necessary when the assumptions that the optimization was based upon have changed
+and the optimization may no longer show speedup, through
+deferring control flow easily between generated and existing
+code.
+
+path(x, y) :- edge(x, y)
+path(x, z) :- edge(x, y), path(y, z)
+
+III. A DAPTIVE M ETAPROGRAMMING A RCHITECTURE
+
+is read as “a path from variable x to y exists if an edge exists
+from x to y; and a path exists from x to z if there is an edge
+from x to a midpoint y, and a path from y to z”. Each clause
+within a rule is called an atom, e.g., edge(x, y). Note that
+the rule path is recursively defined since a predicate in the
+head (the left-hand-side) exists in the body (the right-hand
+side) of the rule.
+The bottom-up evaluation of a Datalog program iteratively
+computes subqueries containing unions of conjunctive queries
+for each derived predicate symbol until an iteration passes
+where no new facts are discovered [14]. Evaluation can be
+made more efficient using the Semi-Naive evaluation technique, where only facts from the previous iteration are used
+to discover new facts [15].
+
+The key to Adaptive Metaprogramming is a staged approach: the Datalog program passes through a series of partial
+evaluations that continue past the start of the program runtime,
+re-generating code as needed. The fundamental performance
+benefit to code generation is specialization, which enables
+avoiding as many expensive data-dependent decisions as possible while applying the best execution strategy given the
+available information. Without the ability to make runtime
+decisions, query optimizers must rely on sometimes inaccurate
+estimations for cardinalities or cost models [6], employ an
+entirely separate profiling or “learning” stage, or miss out on
+certain optimizations entirely because the runtime cost is too
+high.
+Staging also allows for gradual specialization, so that optimization decisions can be made or previous ones revised as
+soon as new information becomes available. For example, one
+of the “killer” applications of Datalog has been program analysis [14], [16]–[19]. Static analyses that can take hundreds of
+lines of code to express in traditional imperative programming
+languages can be expressed in just a few lines of Datalog [18].
+The nature of program analysis queries is that the information
+required to execute and optimize efficiently is not available at
+a single point in time.
+The diagram in Figure 1 shows potential stages within the
+lifecycle of a Datalog query and at which stage information
+becomes available. As an example, consider an analytical
+data management system that ingests user-defined functions
+(UDFs) and performs static analysis to identify optimization
+opportunities [20]. The analytical system will have predefined
+what analyses it will perform, so out-of-the-box it will have
+access to the schema of analysis queries, i.e. the Datalog rule
+schemas. It would also likely predefine what programming
+languages it accepts, so it will have access to input data
+(i.e. fact) schemas, plus any other built-in facts representing
+invariants. If the UDF is registered with the system aheadof-time, then the facts generated from the UDF code will
+become available for analysis. Then, once the developer wants
+
+B. Metaprogramming
+Metaprogramming is a programming technique in which
+programs can treat other programs as their data, sometimes as
+the input (e.g., analytical macros) or as the output (e.g., code
+generation). Multi-Stage Programming (MSP) [13] is a variant
+of metaprogramming in which compilation happens in a series
+of phases, starting at compile time and potentially continuing
+into multiple stages at runtime.
+The MSP literature breaks staging into two fundamental
+operations, quotes and splices [13]. Quotes delay evaluation of an expression to a later phase, generally referred
+to as staging an expression. Splices compose and evaluate
+expressions, generating either expressions or another quote.
+MSP is both generative, meaning it can generate code, and
+analytical, meaning code can be analyzed and decomposed
+into sub-components. MSP enables code to be specialized at
+the level of abstraction appropriate for the optimization, but is
+also principled as it provides safety guarantees. Unlike many
+code-generation frameworks that concatenate strings or inject
+instructions at runtime, it is not possible to generate code at
+runtime that is unsound. Staged code is parsed, type-checked,
+and partially compiled into an intermediate representation by
+the language compiler during the initial program compilation.
+
+2
+
+to deploy the UDF in an analytical pipeline, knowledge of
+the adjacent operators becomes available so only then can
+inter-operator analysis queries execute. For subsequent runs
+of that analysis, the optimizer should be able to use relevant
+information from the previous runs. Alternatively, if the UDF
+is not registered ahead-of-time, then only the rule schemas
+will be available to inform the query optimization ahead-oftime. Further, if the analytical system ingests custom analyses
+then neither the facts nor the rule schemas will be available
+before query execution begins and runtime optimization is
+the only option. Staging, via phases of compile and runtime
+code generation, allows the optimizer the freedom to leverage
+concrete information as it becomes available.
+
+intermediate relations with smaller cardinalities. However, we
+cannot easily predict ahead of time what the cardinality of the
+relations will be because the result of the previous loop is fed
+into the next iteration, and even within the same iteration, we
+may be 10 relations deep into an n-way join and predicting
+the size of the join sub-tree gets very complex very quickly.
+To avoid the complexity and inaccuracy of cardinality estimation [6], Carac reads the cardinality of relations at runtime
+and uses that information to inform the execution plan. The
+ideal execution order with respect to cardinality would be
+to sort the order of input relations to the join such that the
+smallest possible relation is always the outer relation, as Carac
+uses nested loop join. Yet relation cardinalities are not always
+available, for example in ahead-of-time optimization, so the
+reordering algorithm takes into account an additional heuristic
+to predict the selectivity of the join conditions. Selectivity
+is approximated using atom connectedness, namely the more
+variables in common two atoms have, the more selective the
+join condition and the smaller the resulting intermediate relation is likely to be. Constant filters are always pushed before
+the join, and in Carac, views allow for late materialization and
+pipelining.
+Carac’s atom reordering algorithm is as follows: To select
+an order of atoms given a rule with n atoms of varying
+cardinalities, including one delta relation, Carac will first sort
+the atoms by the cardinalities of their relations and put them
+into a stack. The first atom is popped off the stack (as it will
+have the smallest cardinality) and chosen as the leftmost atom.
+Carac will then identify the atom with the most selective join
+condition with respect to the chosen atom. The next mostselective, smallest-cardinality atom will be continually added
+with respect to the most recently added atom. If Carac finds an
+atom for which no other atoms have shared join conditions, it
+will return to the stack, pop off the atom with the next-smallest
+cardinality, and repeat the algorithm until no more atoms are
+left on the stack.
+The optimization can be first applied as soon as the Datalog
+rule schemas are available. This can be at Carac compiletime and implemented with compile-time generative macros.
+Depending on what the user supplies, at compile-time the
+algorithm may not yet have access to the relation cardinalities,
+as some facts have not yet been added to the system, so the
+join-ordering will rely on the available facts and the selectivity heuristic. The performance of query execution based
+on what stage facts and rules become available is presented
+in Section VI-C. The optimization can also be performed at
+query compile-time, where the rules and cardinalities of the
+initial extensional database are available. If facts are only
+provided at runtime then this will happen at the start of query
+execution. Further, since Adaptive Metaprogramming enables
+on-the-fly recompilation of subqueries, this optimization can
+be repeatedly applied over the course of query evaluation
+to adapt to changes in the relation cardinalities. The sorting
+algorithm used is Timsort [22], so re-sorting of an alreadysorted or nearly-sorted list will be more performant than
+sorting from scratch every time. Thus, continuous re-sorting,
+
+IV. RUNTIME J OIN -O RDER O PTIMIZATION
+The order of sub-clauses, called atoms, within a Datalog rule
+definition does not affect Datalog semantics. Thus rules may
+be rewritten with different orders of atoms without changing
+the result of the program. The order of atoms can, however,
+have a significant effect on the performance of the program.
+Because of this, we chose to target rearranging the order of
+atoms within a rule to illustrate the optimization potential
+of Adaptive Metaprogramming. In the following section, we
+explain why reordering atoms can lead to performance gain
+and present the optimization algorithm applied.
+The Carac intermediate representation contains a series of
+unions of conjunctive queries. These sub-queries are generated
+from the rule definitions, which determine the set of relations
+and the select, project, and join keys. For a rule path with a
+single definition of the form:
+path(x, y) :- path(x, z), edge(z, y), edge(y, “a”)
+the generated sub-query will take the form of
+⋊$1=$2 path⋆ ⋉
+⋊$2=$4 edge⋆ ))
+[ π$0,$1 (σ$5=a (edge∆ ⋉
+π$0,$1 (σ$5=a (edge⋆ ⋉
+⋊$1=$2 path∆ ⋉
+⋊$2=$4 edge⋆ ))
+π$0,$1 (σ$5=a (edge⋆ ⋉
+⋊$1=$2 path⋆ ⋉
+⋊$2=$4 edge∆ ))
+
+where ∆ represents “delta” relations and ⋆ represents “derived” relations. Delta relations store facts discovered during
+the current iteration, and may grow or shrink unpredictably
+between iterations, while derived relations store all facts discovered over the course of one stratum (or the entire program
+if unstratified) and will be monotonically increasing. If there
+are multiple definitions for path, the result will be the union of
+the above expression for each rule definition. As can be seen
+in the above expression, for a rule definition with n atoms in
+the body that share at least one variable with another atom,
+evaluation requires a union of n queries which each contain
+an n-way join of n − 1 derived relations and 1 delta relation.
+There are a factorial number of possible left-deep join orders
+for each sub-query, and it is well known that the order in which
+join operations are executed can profoundly affect the execution time [21]. When doing n-way joins, there is the potential
+for the intermediate relations to blow up in size significantly,
+only to be reduced in size in the final join. A more performant
+execution plan could avoid a cardinality blow-up by carefully
+selecting the order of atoms so that the sub-joins produce
+
+3
+
+even if the sort order does not change significantly, will
+not introduce significant overhead. The optimization will be
+applied based on the state of the database at the point in time
+that Carac’s JIT switches from interpretation to compilation,
+discussed in detail in Section V and evaluated in Section VI-B.
+
+0 | val program = new Program(Execution(Storage()))
+1 | val edge = program.relation[Constant]("edge")
+2 | val path = program.relation[Constant]("path")
+3 | val x, y, z = program.variable()
+4 | path(x, y) :- edge(x, y)
+5 | path(x, z) :- (edge(x, y), path(y, z))
+6 | edge("a", "a") :- ()
+7 | edge("a", "b") :- ()
+8 | path.solve() // Set((a, a), (a, b))
+
+V. C ARAC : S YSTEM D ESIGN
+In this section we provide an overview of the system
+architecture of Carac, and show how Carac progressively
+lowers the input Datalog query into an executable. Section
+V-A describes the user-facing embedded DSL, Section V-B
+describes the generation and optimization of the logical query
+plan, Section V-C discusses generation of the physical plan
+for the Datalog-specific operators, and finally Section V-D
+describes relation storage and generation of the physical plan
+for the relational operators.
+We chose to write Carac in Scala because it provides Principled Metaprogramming [13] combined with compile-time
+macros [23], higher-order functions, and direct generation of
+JVM bytecode at runtime. Multi-Stage Programming language
+constructs allow us to generate code at compile-time, at the
+start of a Datalog query, or repeatedly during the execution
+of a Datalog query. The result of staging an expression is
+a transformed, often partially evaluated representation of the
+input program that can be stored and run later. In Carac, this
+can happen at different levels: the internal intermediate representation, stored higher-order functions, quotes containing
+typed ASTs of Scala code, or direct generation JVM bytecode.
+
+Fig. 2. Sample Carac input program
+
+generation of a precedence graph so that relations that rely on
+other relations will be calculated only after their dependencies
+are calculated.
+B. Execution Engine
+In this section, The main challenges that inform the design
+of Carac are discussed, including the generation and optimization of the logical query plan and how Carac’s JIT switches
+from interpreting the logical query plan to generating code for
+the physical query plan.
+1) Logical Query Plan Generation
+Carac uses a Futamura Projection [24] to generate an imperative program specialized to the input Datalog program. In
+the first stage after execution begins, a series of static rewrite
+rules are applied to the AST to perform optimizations like alias
+elimination. After the AST transformation phase, the AST is
+visited to transform the declarative Datalog constraints into an
+imperative intermediate representation of the Datalog program,
+similar to Soufflé’s Relational Algebra Machine [16]. The
+Semi-Naive evaluation strategy [5] is used to partially evaluate
+the Datalog program into a series of operations called IROps,
+including unions of conjunctive queries, read/write/update
+operations, and a DoWhile operation. While the generated
+IROp program is imperative, we consider it the logical query
+plan for both the Datalog-specific operators and the traditional
+relational algebra operators. When Carac is in interpretation
+mode, there is no further partial evaluation and the interpreter
+visits this IROp tree.
+All IROp programs have a similar core structure, shown
+in Figure 3. Carac’s IROps are represented with generalized
+algebraic data types (GADTs) [25], so they can be either
+interpreted or compiled into a function that returns the correct
+type. Static optimizations like predicate pushdown and foreach-relation loop unrolling are performed in this phase.
+
+A. Carac DSL
+Carac supports a deep embedding of a Datalog-based DSL
+into the Scala programming language extended with stratified negation and aggregation. Similarly to Flix [17], Carac
+supports first-class Datalog constraints for interoperability between general-purpose programming and the declarative Datalog programs. A simple transitive closure Datalog program
+expressed in Carac can be seen in Figure 2. On line 0, the
+program environment is constructed from two components:
+(1) an execution engine instance, responsible for the Datalog
+evaluation strategy, and (2) a relational storage and execution
+layer, responsible for the management of the generated relations and execution of relational subqueries.
+Two facts for the relation edge are defined on lines 6 and
+7, and two rules for path are defined on lines 4 and 5. On
+the final line 8, we can call solve on our rule path to
+begin execution of the query and get all the facts that can be
+generated from the input facts using the rule path and any
+other rule or fact relations that it depends on.
+Carac facts and rules can be defined at compile-time or
+incrementally added at runtime. Each fact is added to the
+corresponding relation in the relational layer as it is defined.
+As rules are defined, they are added to the program AST, and
+metadata is generated for each rule. The metadata includes
+the locations of variables and constants in the rule head and
+body, which will later be used to optimize execution, and
+
+2) Compilation granularity
+In JIT mode, Carac will begin interpretation at the root
+node of the tree, and can switch to compilation at any node
+in the IROp program tree, illustrated in Figure 3. The node
+at which compilation begins is referred to as the compilation
+“granularity”. Nodes that appear higher in the tree have fewer
+instances, so compiling at a higher granularity will incur fewer
+compilations, but the code being compiled will be larger, and
+
+4
+
+Program
+Seq::EvalN
+
+DoWhile
+
+for each rule R
+
+Seq::EvalSN
+
+Union
+
+3) Safe Points
+“Safe points” refer to locations within the execution of a
+program where an optimizing JIT compiler can safely switch
+between interpretation and compilation. When the Carac JIT
+reaches a node to compile, it can compile that node in “full” or
+“snippet”. When compiling in full, the node itself and its entire
+subtree are compiled into a single function. The interpreter will
+continue to visit nodes until it reaches the node of the correct
+granularity and then will switch entirely to the compiled code,
+only switching back once the entire subtree has been evaluated.
+The next time the interpreter reaches that node, it can use the
+existing compiled code, recompile it into a new function, or
+revert back to interpretation.
+Alternatively, Carac can compile in “snippet” when using
+the quotes compilation target, which compiles only the body
+of the targeted node, no children, and then control flow is
+deferred back to the interpreter from the compiled code by
+splicing continuations into the generated code. Compiling only
+snippets enables continuous checks for novel optimizations or
+deoptimization, which extends the staging into however many
+levels as needed. Additionally, snippet compilation allows the
+absolute minimum amount of code to be generated to mitigate
+some overhead costs of compilation.
+All program state is either returned from functions in the
+form of generated facts or stored in the relational storage layer.
+This property is why any IROp node can be considered a “safe
+point” to switch evaluation modes in Carac and the stack does
+not have to be saved or copied.
+
+for each rule R
+
+for each definition d of R
+
+Union::Rule
+
+𝜎𝜋⋈
+
+for each definition d of R
+
+for each atom in d
+
+Union::Body
+for each atom a of A in d
+
+𝜎𝜋⋈
+for each atom, {A-a} ⋅ 𝛥𝒂
+Fig. 3. Datalog IROp Program Structure
+
+the information available to make optimization decisions may
+be outdated compared to compiling at a lower granularity.
+Therefore at the highest granularity, Seq::EvalSN, the
+optimization will be applied once for every iteration of the
+Semi-Naive algorithm. The cardinalities used will be from the
+Derived database, i.e. the state of the relations at the start of
+the outer program loop. At a lower granularity, like σπ ▷◁, the
+optimization will occur before every n-way join. The relation
+cardinalities at the lower granularity will be the most accurate,
+as they will take into account the exact cardinality of the delta
+relations, but the compilation will happen more frequently.
+To avoid unnecessary compilations, Carac applies a “freshness” test before recompiling on higher-overhead compilation
+targets like quotes to check that the cardinalities have changed,
+relative to other relations, above a tunable threshold. For the
+specific case of atom reordering, it is possible to push optimization entirely to runtime for the IRGenerator compilation
+target described in Section V-C. However, this limits the ability
+of Carac to combine it with other lower-level optimizations
+enabled by code generation, for example just-in-time data
+structure specialization.
+
+C. Compilation Targets
+Carac supports four different targets for compiling IROps
+into the physical query plan. The targets range from highly
+expressive and flexible, allowing for arbitrary runtime code
+generation and continuous re-optimization, to performant but
+limited or unsafe code generation.
+1) Multi-Stage Programming Quotes & Splices
+The most powerful, expressive, and safe mechanism for
+Carac to generate code at runtime is to compile IROps into
+the Scala compiler’s Quote and Splice constructs, which implement classic Multi-Stage Programming concepts [13]. Quotes
+delay execution for a later stage and can be thought of as
+code generation, while splices trigger the execution of a quote.
+Quotes can contain other quote instances, enabling multiple
+stages of code generation. Nodes in the IROp program tree are
+compiled into quotes containing a single function definition at
+the outer-most level so that when it is time for the code to
+be executed, it can be called exactly like any other function.
+Once an operation is compiled, calling the function has
+no more overhead than an ahead-of-time compiled function.
+Quotes allow for de-optimizing if necessary, reverting back to
+interpretation, or further regenerating code.
+Because quotes are type-checked by the Scala compiler
+at Carac’s compile-time, they are both safe and the most
+powerful mechanism for code generation, as they allow for
+
+When Carac has begun compilation, it can either block
+waiting for the generated code to be callable or compile
+asynchronously and continue interpretation, switching to the
+compiled code only when it’s ready. Asynchronous compilation is intended for higher-granularity operations: for example,
+a union operation of n subqueries will begin compilation, then
+start interpreting the first sub-query. After each subquery is
+executed, the interpreter will check if the compilation is ready
+- if so, it will call into the compiled code such that it begins
+at the exact spot the interpreter left off. The goal is for Carac
+in JIT mode to not perform substantially worse than pure
+interpretation since even if compilation takes unexpectedly
+long, the interpreter can continue making progress evaluating
+the Datalog program while compilation happens on a different
+thread. However, this means that if the compilation takes
+longer than the time to finish interpretation of the sub-tree,
+then the generated code may never be used.
+
+5
+
+Time for 50 compilations (s)
+
+unlimited functionality within the generated code. However,
+the safety and expressiveness come at a price: compiling
+quotes into bytecode requires invoking the Scala compiler at
+runtime, which sometimes incurs significant overhead costs.
+Figure 4 compares the quote generation time depending on if
+the compiler is “warm”, i.e. compilation has happened at least
+50x before measurement, and “cold” meaning the compiler
+is instantiated immediately before compilation. The legend
+displays at which granularity (illustrated in Figure 3) compilation happens. The left-hand side shows “Full”, meaning
+compilation of the entire subtree, and the right-hand side
+shows “Snippet”, which compiles only the operator and splices
+continuations to revert to the interpreter after the operator completes execution. The safety properties are especially important
+when considering Datalog language extensions that allow for
+arbitrary code execution, similar to a UDF in a traditional data
+management system. The quotes and splices backend enables
+safer expressivity of the input Datalog program because it
+prevents unsafe user-supplied code from executing within
+Carac.
+
+6
+
+DoWhile
+
+5
+
+EvalN
+σπ⋈
+
+4
+
+EvalSN
+
+3
+
+Rule
+
+2
+
+Program
+Body
+
+1
+0
+
+Cold compiler
+
+Warmed up (50x)
+compiler
+Full
+
+Cold compiler
+
+— Compilation Mode —
+
+Warmed up (50x)
+compiler
+
+Snippet with continuation
+
+Fig. 4. Execution time of code generation
+
+4) IROp-Generation
+Lastly, Carac can regenerate IROps on the fly and invoke
+the interpreter to execute the new IROps when available,
+called “IRGenerator”. IROps are the most limited target, as
+they only allow for rearranging operations within the existing
+IROp program structure. For the case of the optimization
+described in Section IV, it suffices but would not scale to other
+optimizations that are applied at a lower level of abstraction
+than the IROps. While the program is still staged, as the IROps
+are a partially evaluated representation of the input Datalog
+program, the IRGenerator target does not need to invoke a
+separate compilation phase so the overhead is limited to the
+cost of sorting and rearranging the subqueries at runtime.
+The tradeoffs between the flexibility and performance of
+the different compilation targets are evaluated in Section VI.
+The choice of backend is left as a user parameter because
+Carac cannot anticipate if a user may wish to prioritize
+performance over safety (and would therefore use the bytecode
+target), expressibility of the Datalog variant over performance
+(quotes and splices), safety over expressivity (lambda), or
+are otherwise limited due to the execution environment (for
+example, using Graal Native-Image one cannot use runtime
+classloading and could therefore only use lambda and IROpgeneration), while running on the JVM enables all backends.
+
+2) Bytecode
+Alternatively, Carac supports direct generation of JVM
+bytecode from IROps, using the experimental JEP Class-File
+API Preview [26]. The bytecode generator can be invoked
+at runtime, but unlike Quotes, it does not generate code
+that can revert to interpretation once compiled. However, if
+the interpreter reaches a node that has been compiled into
+bytecode it can choose to throw out the previously generated
+bytecode and regenerate.
+Direct-to-bytecode generation is, in theory, as expressive as
+quote generation as it also allows for arbitrary code execution.
+However, manually generating bytecode instructions is errorprone and requires a much higher development cost than
+the Quotes API, which only requires writing Scala code as
+one would for regular, non-staged code. Further, because the
+generated bytecode is interpreted directly by the JVM, there
+are few safety guarantees. Bypassing the safety checks of
+invoking a full compiler leads to lower overheads but at the
+cost of losing the ergonomics and safety of writing in a typesafe programming language.
+
+D. Physical Relational Operator Layer
+Carac’s execution layer is built on top of a pluggable
+“relational layer” to store input and intermediate relations and
+plan and execute basic relational algebra operations. Each rule
+has two types of intermediate relations: a Derived database and
+a Delta database. The Derived database stores all the facts
+discovered so far throughout a Datalog program evaluation.
+The Delta database stores only the new facts derived in the
+previous iteration of the main program loop. The two databases
+are further split into Known and New databases to isolate
+the reading of previously derived facts within a subquery
+and writing of newly derived facts in the same query. This
+split between read-only and write-only relations, which are
+swapped at the end of each iteration, is what enables flexibility
+in Carac’s safe points.
+
+3) Lambda
+Carac supports a lambda-based backend that, at runtime,
+stitches together higher-order functions that are precompiled
+at Carac’s compile-time. The Lambda backend is a more
+limited compilation target as Carac can only choose between
+predefined procedures. However, the cost of invoking the
+Scala compiler at runtime can be avoided while maintaining
+the safety guarantees lacking from bytecode generation. The
+performance of the generated lambdas benefits from the ability
+of the JVM to aggressively inline these smaller functions to
+avoid overhead costs of function calls.
+
+6
+
+2500
+Speedup over "unoptimized"
+
+The relational layer API provides read and write access to
+the relations, as well as clear, swap, and diff operations.
+swap and clear serve to efficiently implement copying all
+the newly derived facts into the existing derived facts at the end
+of every loop iteration, and diff determines if the loop should
+terminate. Finally, the relational layer API provides relational
+operators that make up the sub-queries: select, project,
+join, and union. Typical relational algebra optimization and
+compilation can be performed at this level.
+So far, Carac has been integrated with a typical push-based
+and a pull-based engine that stores relations in in-memory
+Scala collections.
+
+2000
+1500
+1000
+
+Hand-optimized
+JIT IRGenerator
+JIT Quotes Async
+JIT Quotes Blocking
+JIT Bytecode Async
+JIT Bytecode Blocking
+JIT Lambda Async
+JIT Lambda Blocking
+
+500
+0
+Points-To
+
+Inverse Functions
+Benchmark
+Fig. 5. Async/Blocking, compared to unoptimized (program analysis queries)
+
+VI. E VALUATION
+deserializes the list and returns the result. The input Scala
+program, which we named “SListLib”, is a minimized representation of a typical off-the-shelf utility within an analytical
+pipeline that does a bit of “wasted” work that can be optimized
+(in this case, extra serialization). Carac automatically derives
+facts from our input Scala program by querying over the
+TASTy files using TASTy Query [28]. The input Scala program
+is around 200 lines of Scala code.
+For the input Carac query, we then extend a points-to
+analysis query with rules that define when values could be
+considered equivalent given adjacent functions that can revert
+data transformations. We then add the knowledge of which
+functions can “undo” each other given the correct arguments
+with the fact containing the name of the list library serialization functions:
+
+To evaluate Carac with a range of query structures, we
+construct a set of queries to benchmark that include queries
+that are representative of program analyses and more general
+recursive queries. In Section VI-A, we discuss the details of
+these queries and why they were chosen. In Section VI-B,
+we evaluate Carac’s runtime-optimized query performance
+compared to interpreted queries. In Section VI-C we evaluate
+Carac’s compile-time-optimized query performance compared
+to runtime-optimized, as well as the combination of compiletime with runtime optimization. In Section VI-D, we compare
+Carac’s runtime with a current state-of-the-art Datalog execution engine, Soufflé.
+Experiments are run on Intel(R) Xeon(R) Gold 5118 CPU
+@ 2.30GHz (2 x 12-core) with 395GB RAM, on Ubuntu
+18.04.5 LTS with Linux kernel 4.15.0-151-generic and Scala
+3.3.1-RC4. The JVM used is OpenJDK 64-Bit Server VM
+(build 17.0.2+8-86, mixed mode, sharing) and OpenJDK Runtime Environment (build 17.0.2+8-86) with a default heap size
+of 36GB. Each experiment is run with the Java Benchmarking
+Harness (JMH) [27] version 1.32 with 10 iterations, 10
+warm-up iterations, 10 calls per iteration (“batch size”), and a
+minimum execution time of 10 seconds per benchmark unless
+otherwise noted.
+
+InverseFns("deserialize", "serialize")
+We evaluate Carac with our inverse function analysis and
+a typical “points-to” analysis based on Andersen’s (contextfree and flow-insensitive) points-to analysis [29] on the facts
+generated from the SListLib program. We also include a
+few general, shorter-running Datalog programs: an Ackermann function [30], a small constraint-based analysis example
+program (“CBA”), a Fibonacci program, and an equality
+and prime-numbers program. The purpose of these smaller
+programs is to illustrate how the complexity of the Carac query
+affects the ability of the runtime optimizations to speed up the
+query. When talking about runtime optimizations, the longer
+the program the more time there is to calculate and apply
+optimizations without introducing disproportionate overhead.
+Smaller, faster-running programs are much less forgiving than
+longer, more complex program analysis queries. These smaller
+queries identify the point at which the queries become so
+short-running that the online optimization no longer shows
+meaningful speedup.
+
+A. Carac Query Benchmarks
+To select representative queries for our evaluation, we
+first consider a custom Datalog-based static analysis query
+to identify potential “wasted” work in the form of adjacent inverse functions. Note that most C optimizing compilers will not identify and reverse inverse operations. For
+example, for analyzing a C program, we can add the fact
+inverse(itoa, atoi) for integer-to-string conversions
+(but not the reverse, since atoi is not a total function
+on the domain of strings). Where possible, calls to entire
+symmetric serialization libraries can be declared as inverse,
+e.g., inverse(to_json, from_json).
+For the input data to this query, we select an input Scala
+program to analyze that implements and utilizes a custom
+linked list library in Scala that supports a serialize and
+deserialize function. The entry point to our input Scala
+program instantiates the custom linked list, operates over the
+list’s contents, serializes the list, does some computation, then
+
+B. Online Optimization Speedup
+To evaluate the effectiveness of Carac’s runtime optimization and staging mechanisms, we consider staged queries,
+executed with the online optimization described in Section IV,
+compared with interpreted “baseline” queries. Because there
+is no “typical” way to order Datalog atoms, we consider two
+
+7
+
+JIT IRGenerator
+
+Speedup over "optimized"
+
+5
+
+JIT Quotes
+
+JIT Bytecode
+
+formulations of our input Carac queries representing the best
+and worse cases. One formulation has been hand-optimized
+and rewritten manually by carefully stepping through execution and tracking intermediate relation cardinalities. Handoptimizing Datalog programs is a tedious process requiring
+advanced knowledge of Datalog evaluation algorithms and
+the internal execution engine implementation details. For nonexperts, finding the correct join order for complex rules has
+been called an ”insurmountable” challenge [31]. The other
+formulation of the Carac queries is written to be inefficient,
+as to simulate what happens if a naive user were to have bad
+luck in their order of atoms. There is no obvious way for a
+user to tell the difference between a good and bad ordering of
+atoms, so we compare the most and least efficient formulations
+we could identify to illustrate the speedup bounds of the
+optimization. As it is also nontrivial for Carac to determine if
+a query is optimized ahead of time or not, we use both types
+of input query to evaluate Carac’s ability to optimize programs
+that have room to improve without overly penalizing programs
+whose performance is already close to optimal.
+In all experiments, Carac executes single-threaded with only
+compilation occurring on a separate thread. When compiling
+on a separate thread, Carac can either block (“blocking”)
+or continue interpretation until the compiled code is ready
+(“async”). The storage engine is a push-based execution engine
+that stores relations in-memory in Scala Collections. The
+choice of staging mechanism within Carac is referred to as
+the “backend”. Because of the wide range of execution time
+between queries, the figures in Section VI-B report “speedup”
+(optimized execution time over baseline execution time) to
+normalize the results, but the full execution times for the
+baseline interpreted queries are reported in Table I.
+
+JIT Lambda
+
+4
+3
+2
+
+o
+Fu
+nc
+ti o
+ns
+
+er
+se
+
+Benchmark
+
+In
+v
+
+sT
+
+n
+
+Po
+in
+t
+
+m
+an
+
+es
+
+A
+ck
+er
+
+Pr
+im
+
+Fi
+bb
+on
+
+C
+
+BA
+
+Eq
+ua
+l
+
+ac
+ci
+
+1
+0
+
+1.5
+1.3
+
+JIT IRGenerator
+
+JIT Quotes
+
+JIT Bytecode
+
+JIT Lambda
+
+1.1
+0.9
+0.7
+
+In
+v
+
+Fu
+nc
+ti o
+ns
+
+o
+
+Benchmark
+
+er
+se
+
+Po
+in
+t
+
+sT
+
+n
+m
+an
+
+es
+
+A
+ck
+er
+
+Fi
+bb
+on
+
+Pr
+im
+
+BA
+
+Eq
+ua
+l
+
+ac
+ci
+
+0.5
+0.3
+
+C
+
+Speedup over "optimized"
+
+Fig. 6. Blocking, compared to hand-optimized
+
+Fig. 7. Async, compared to hand-optimized
+
+Speedup over "unoptimized"
+
+120
+
+Hand-optimized
+
+100
+
+JIT IRGenerator
+
+80
+
+JIT Quotes
+
+60
+
+JIT Bytecode
+
+40
+
+Baseline Query
+Ackermann
+CBA
+Equal
+Fibonacci
+Primes
+Points-To
+Inverse Functions
+
+JIT Lambda
+
+20
+0
+CBA
+
+Equal
+
+Fibbonacci
+Benchmark
+
+Primes
+
+Ackermann
+
+Speedup over "unoptimized"
+
+Hand-optimized
+
+20
+
+JIT IRGenerator
+
+15
+10
+
+1) JIT-optimizing “unoptimized” programs
+We first consider how close Carac can get the performance
+of programs that are not already optimized to the performance
+of hand-optimized programs. In Figures 5, the speedup of the
+JIT-optimized Carac program over the “unoptimized”, interpreted input program is shown for both the traditional pointsto analysis and our inverse function analysis programs, both
+applied to facts generated from the SListLib input program.
+The “hand-optimized” program runs about 2263x faster than
+the “unoptimized” program for the inverse function analysis.
+In the best case, Carac’s JIT optimizer produces a program
+with a speedup of around 2424x over the “unoptimized”
+input program, with no input from the user. The IRGenerator
+
+JIT Quotes
+JIT Bytecode
+JIT Lambda
+
+5
+0
+CBA
+
+Equal
+
+Fibbonacci
+Benchmark
+
+Primes
+
+Unoptimized
+7.001168
+0.038313
+0.092675
+0.336177
+0.103381
+7229.473415
+16980.17118
+
+E XECUTION TIME ( S ) OF INTERPRETED C ARAC QUERIES
+
+Fig. 8. Blocking, compared to unoptimized (general queries)
+
+25
+
+Optimized
+0.272208
+0.008064
+0.019881
+0.102191
+0.015402
+12.246468
+7.504203
+TABLE I
+
+Ackermann
+
+Fig. 9. Async, compared to unoptimized (general queries)
+
+8
+
+backend also can outperform the “hand-optimized” programs
+but less consistently than the Lambda backend. The reason for
+this improved performance is that for the JIT the optimization
+is applied repeatedly, while for the hand-optimized program
+the same join order is used throughout the execution.
+a) Compilation Targets.
+
+1538x speedup when blocking. For short-running compilations, like that of the Lambda backend, blocking compilation
+shows a 2424x speedup compared to the async speedup of
+only 1700x, as no iteration is allowed to proceed without
+the optimization applied and the JVM has more opportunities to optimize the generated lambdas. For shorter-running
+programs that operate over smaller amounts of data, Carac’s
+JIT optimizer shows speedups closer to the hand-optimized
+potential for asynchronous and blocking compilation as seen
+in Figures 9 and 8.
+
+We compare the different backends to show the tradeoff
+between expressibility, maintainability, and performance. The
+Quotes backend is the most expressive and easy to maintain
+as the code generated is fully typed at compile-time by the
+Scala compiler. It also allows for finer-tuned application of
+optimizations and arbitrary runtime code generation. However,
+the overhead costs of invoking the compiler and waiting on
+the result can limit the speedup, for example for the Inverse
+Functions query with synchronous compilation, the Quotes
+speedup is only 1538x, compared to the “potential” speedup of
+2260x. At the other end of the spectrum, the Bytecode backend more closely resembles traditional LLVM-IR generating
+RDBMSs and requires unsound generation of bytecode. The
+bytecode compilation target exchanges maintainability and
+correctness checks for performance, as it performs comparably
+to the Quotes backend on some programs, like the inverse
+function analysis, but performs better on other programs,
+like the Ackermann function. The Lambda backend relies on
+the JVM’s ability to aggressively inline functions that are
+called repeatedly. While the Quotes and Bytecode backends
+will improve with more iterations, as the JVM warms up,
+they do not show the same sharp increase in performance as
+the Lambda backend does with repeated calls. However the
+Lambda backend can only call the set of predefined lambdas,
+so it cannot arbitrarily generate code at runtime the same
+way that the Quote and Bytecode backends can. The Lambda
+backend can even outperform the interpreted “hand-optimized”
+program on some experiments due, in part, to the lack of
+tree traversal overhead. Lastly, the IRGenerator will regenerate
+the internal IR on the fly, which can then be passed to the
+interpreter. As only the IROps are generated, the “compilation”
+phase is minimal compared to the other backends, so the
+overhead of applying the optimization is minimal.
+b) Asynchronous Compilation.
+
+2) JIT-optimizing “hand-optimized” programs
+We now consider how much Carac can unintentionally
+degrade the performance of programs that are already handoptimized. In Figures 7 and 6, we show the speedup (or
+slowdown) of applying Carac’s JIT optimizations to already
+hand-optimized input Datalog programs. At worst, for very
+short-running programs where the cost of applying any optimization is a large proportion of the total runtime, Carac
+shows an end-to-end slowdown of 0.3x compared to the “handoptimized” program run on the interpreter. For the rest of
+the programs, the average slowdown when async is 0.8x of
+the optimized runtime and for blocking does not show any
+performance degradation and is 1.3x faster due to continually
+applying optimizations.
+a) Compilation Targets.
+In contrast to the results presented in Section VI-B1, for
+already-optimized programs, generally the lower the overhead
+of compilation for the backend, the worse the Carac JIT
+compiler performs - as it enables Carac to more quickly apply
+an optimization that in fact produces a slightly slower program
+than the input program. For example, for the Points-To analysis
+on SListLib, the Lambda backend has a runtime of 0.3x the
+“hand-optimized” runtime. The Quotes backend, which has a
+higher compilation cost, has a slightly better runtime of 0.5x
+the “hand-optimized” program.
+How close the optimization can get to the “hand-optimized”
+program, or if it can be exceeded, is a property of the program
+itself. For example, the Ackermann function benchmark does
+not experience any performance degradation when Carac applies JIT optimization to already-optimized programs using the
+Lambda backend. In fact, the JIT-optimized program is slightly
+faster than the interpreted hand-optimized program because
+the difference between hand-optimized and JIT-optimized is so
+small that the benefits of compiling and avoiding tree traversal
+outweigh the speedup of hand-tuning the input program.
+Ultimately, hand-tuning programs have consistently shown
+better performance than compiler-optimized programs but require intense effort and deep knowledge of Datalog and Caracspecific implementation details, and are challenging to scale
+to large input programs.
+
+Because Carac’s “safe points” occur between IROps, for
+nonblocking compilation, the overheads of invoking the compiler can delay the application of the optimization so the Carac
+program may run un-optimized for a few iterations before
+the compiled code is ready. In Figure 5, for the bars marked
+“async” Carac does not wait for compilation to finish and
+instead continues interpreting the unoptimized program until
+the compiled, optimized program is ready. For the bars marked
+“blocking”, Carac blocks evaluation until the optimized code is
+ready, so no unoptimized Datalog is ever run, but the overheads
+of invoking the compiler are unavoidable. For longer-running
+compilations, like when generating Quotes, blocking to wait
+for compilation can impact the overall speedup significantly.
+For example, for the inverse function benchmark, Carac goes
+from a 1674x speedup when asynchronously compiling to a
+
+C. Ahead-of-time Compilation
+Carac can compile query plans ahead-of-time, when Carac
+itself is compiled, reordering the join operations using the set
+of query facts and rules that are available. This Carac-compile-
+
+9
+
+Speedup over "unoptimized"
+
+time, or “offline” optimization since the cost of compilation is
+not included in the query execution time, is implemented with
+macros that utilize the same backend as Carac’s JIT Quotecompiler [32]. This offline sort optimization can be combined
+with continuous online join reordering by ahead-of-time compiling the IRGenerator backend. Because the execution engine
+uses Timsort [22] to reorder relations, sorting already-sorted
+inputs is done in linear time, and sorting inputs that have sorted
+subsets will perform better than completely unsorted inputs.
+Thus, even if not exactly correct but close, presorting offline
+will contribute to quicker online sorting and is key to why
+compile-time sorting, even if facts are not fully available, is
+worth doing even if online sorting is enabled.
+In Figure 10, we compare the speedup of query execution
+time over the “unoptimized” interpreted query (Table I) in the
+following configurations: “JIT-lambda”, Carac’s JIT with the
+lambda backend at the lowest granularity (same configuration
+as Figure 8), which does not have access to any facts or
+rules before execution begins; “Macro Facts+rules (online)”
+which has access to all facts and rules at Carac compiletime so will apply the sorting optimization using the input
+relational cardinalities. The generated code includes the online
+optimization using the IRGenerator. “Macro Rules (online)”
+works similarly, except it only has access to rules and no
+fact relation cardinalities at compile-time. As a result, the reordering of relations will depend only on the selectivity of the
+rules and not on the relation cardinalities. This configuration
+also injects the online sort into the code generated at compiletime. “Macro Facts+rules” does the compile-time reordering
+using all relations, but does not inject the online optimization.
+Finally, “Macro Rules” does the compile-time reordering using
+only the rules and does not generate code with the online
+optimization applied. In Figure 10, experiments that include
+continuous relation reordering after query execution begins are
+shown with a double-line border. Orthogonally, experiments
+that access no fact or rule information at Carac compile time
+are shown with a solid color, those that access rules only are
+spotted, and those that access rules and facts are striped.
+Generally, online reordering optimizations perform better
+than offline optimizations because the order of relations fed
+to the join can continuously update. However, continuously
+reordering relations has some overhead, and for programs for
+which the relation cardinalities do not change dramatically in
+comparison to each other, a single join order over the course
+of query execution may perform better than online reordering
+due to avoiding that overhead (illustrated in the case of the
+Primes benchmark).
+The JIT-lambda configuration performs comparatively, or
+sometimes better than the macros+online IRGenerator optimization because the lambda-generated code avoids the treetraversal overhead present in the macro configurations, as the
+macros are essentially compiling the interpreter.
+The macro experiments that gain access to fact relation cardinality at compile-time tend to perform better than those that
+rely only on rule selectivity, due to the cost of ingesting facts
+at runtime and a more optimal join-order due to knowledge
+
+JIT lambda
+100
+
+Macro Facts+rules (online)
+Macro Rules (online)
+
+80
+
+Macro Facts+rules
+
+60
+
+Macro Rules
+
+40
+20
+0
+Ackermann
+
+CBA
+
+Equal
+Benchmark
+
+Fib
+
+Primes
+
+Fig. 10. Ahead-of-time and Online Compilation
+
+of the relation cardinalities. However this is not always the
+case, for example in the Fibonacci benchmark, the Rules-only
+macro slightly outperforms the Macro Facts+Rules, a result of
+the join-ordering algorithm privileging relation cardinality over
+selectivity where, in reality, the selectivity is more influential
+on the overall execution time.
+In Figure 12 and 11 the speedup of the interpreted
+hand-optimized programs is compared with the speedup of
+compile-time-only optimizations (“Macro Rules” and “Macro
+Facts+rules”, in the same configuration as the corresponding
+bars in Figure 10). While not as effective as runtime-optimized
+programs, compile-time optimized programs show at best a
+1100x speedup for the Inverse Functions query, and can even
+slightly out-perform the hand-optimized programs for smaller
+programs like Equal, Fibonacci, and Primes, in part due to the
+use of macros.
+To conclude, for most but not all benchmarks, the earlier
+information is known, the better the optimizations applied, and
+combining compile-time and run-time optimizations perform
+better than each individually. Whether or not these conclusions
+hold for specific benchmarks is a property of the query
+itself and how relation cardinalities change over the course
+of query execution. These properties are difficult to predict
+statically, especially without access to the full fact and rule
+relations, so queries with varying properties are presented in
+this subsection. However, regardless of the query, all presented
+configurations outperform the baseline, unoptimized queries:
+by over 1100x with facts and rules, and over 480x with only
+rules.
+D. Comparison with State-of-the-art
+To get a sense for how Carac compares against existing
+Datalog engines, in this section we compare the execution
+time of equivalent Carac queries with those of a state-of-theart Datalog execution engine.
+The current state-of-the-art for Datalog evaluation is
+Soufflé [16], which ingests an extension of Datalog and
+transforms the input program through a series of partial
+evaluations, generating template-heavy C++ programs that get
+ultimately compiled into a binary executable. Soufflé and
+Carac both generate an imperative program specialized to
+
+10
+
+Speedup over "unoptimized"
+
+30
+25
+
+Interpreted hand-optimized
+Macro Facts+rules
+
+20
+
+Macro Rules
+
+language that allows for interoperability with Scala itself. In
+contrast, the Soufflé language is not an embedded DSL but
+its own Datalog-based language with extensions, including
+aggregation, user-defined functors, macros, and others.
+Soufflé provides auto-tuning capabilities via a profiling
+phase [31] that identifies optimal join orders. Figure 13
+compares the execution time of various programs expressed
+in Soufflé and Carac, on Soufflé version 2.4 and Carac in
+“full” mode, run synchronously at a granularity that takes
+into account delta relations (σπ ⋊
+⋉). In all experiments, both
+Soufflé and Carac execute in a single-threaded context. Soufflé
+is invoked without any special arguments beyond silencing
+warnings, setting threads to 1, and emitting/using statistics for
+the experiments that include a profiling phase. All experiments
+include reading in facts and writing result facts to a tabseparated file. To facilitate generating a Graal Native Image for
+Carac, the experiments in Figure 13 use Java HotSpot(TM) 64Bit Server VM Oracle GraalVM 17.0.8+9.1 (build 17.0.8+9LTS-jvmci-23.0-b14, mixed mode, sharing) on Ubuntu 22.04
+LTS with Linux kernel 5.15.0-27-generic.
+We compare Soufflé with auto-tuning, both when interpreting and compiling: first the profiling run included in
+the execution time (“profile-compile”, “profile-interp”), then
+without profiling included, using a profile generated aheadof-time on the same data the program runs over (“preprofiledcompile”, “preprofiled-interp”). We include Carac invoked in a
+few different ways to represent different usages of Carac: first,
+as an executable JAR (“jar-<backend>”), which most closely
+mimics how Soufflé is invoked. Next, we use GraalVM to
+generate a Graal Native Image (“native-lambda”), which is run
+as a native executable. GraalVM does not support generating
+a Graal Native Image for backends that require runtime classloading, as the Bytecode and Quotes do. Lastly, we include the
+same experiments for Carac but using a warmed-up JVM and
+warmed-up Scala compiler (“warm-<backend>”), which most
+closely mimics how we would expect Carac to be invoked.
+The “warm” Carac experiments generally perform better
+than the JAR experiments due to the cost of executing on
+a cold JVM/Scala compiler. The speedup can be significant
+due to aggressive inlining (for example, the average is 170x
+faster for the Lambda backend for the experiments shown in
+Figure 13), or it can be minimal for modes that benefit less
+from JVM optimizations (for example, the Quotes backend is
+only 7x and the Bytecode backend is 30x). The Graal Native
+Image outperforms the JAR for small programs (average 22x),
+but for longer-running programs like Points-To and Inverse
+Functions, the Carac program execution time dominates the
+total runtime, so the Graal Native Image does not show any
+benefit over the JAR. It also does not show benefit over the
+warm experiments.
+Carac outperforms Soufflé when compiling, both with and
+without the profiling phase included, for the experiments in
+Figure 13 because Carac can avoid the cost of invoking a full
+C++ compilation, which dominates Soufflé’s execution time.
+For the longer-running programs like Inverse Functions, at best
+Carac can outperform the “profile-compile” by 86x (Lambda,
+
+15
+10
+5
+0
+Ackermann
+
+CBA
+
+Equal
+Benchmark
+
+Fib
+
+Primes
+
+Fig. 11. Ahead-of-time Only Compilation (small)
+
+Speedup over "unoptimized"
+
+2500
+Interpreted hand-optimized
+Macro Facts+rules
+Macro Rules
+
+2000
+1500
+1000
+500
+0
+
+Points-To
+
+Benchmark
+
+Inverse Functions
+
+Fig. 12. Ahead-of-time Only Compilation
+
+— Soufflé —
+
+Execution Engine & Compilation Mode
+
+carac
+
+preprofiled-interp
+
+profile-interp
+
+profile-compile
+
+warm-quotes
+
+Inverse Functions
+
+preprofiled-compile
+
+— Carac —
+
+Points-To
+
+warm-lambda
+
+CBA
+
+warm-bytecode
+
+jar-quotes
+
+jar-lambda
+
+Ackermann
+
+native-lambda
+
+70
+60
+50
+40
+30
+20
+10
+0
+jar-bytecode
+
+Execution Time (s)
+
+the input Datalog program in the form of an intermediate
+representation comprising of relational algebra operators, control flow statements, and relation management operations.
+Soufflé supports interpretation mode and compilation mode,
+while Carac’s JIT alternates, depending on runtime information, between interpretation of the intermediate representation
+and code generation using Multi-Stage programming. Further,
+Carac supports a Datalog-based DSL embedded in the Scala
+
+souffle
+
+Fig. 13. Execution time Soufflé and Carac
+
+11
+
+warmed-up) and at worse by 3x (Quotes, JAR). Without
+profiling included (“preprofiled-compile”) Carac executes at
+best 36x and worst 1.4x faster.
+For smaller programs like Ackermann and CBA, Carac
+(Lambda, warmed-up) outperforms Soufflé’s interpreter without profiling (“preprofiled-interp”) by 14x and 32x respectively, and with profiling (“profile-interpreter”) by 30x and 64x
+respectively. For Points-To and Inverse Functions, Soufflé’s
+“preprofiled-interp” outperforms Carac’s best execution time
+(Lambda, warmed-up) by 3.3x and 3.6x. With the profiling
+phase included, Soufflé’s interpreter outperforms Carac by
+1.4x and 1.5x. However, it is an imperfect comparison because
+the Soufflé variant of Datalog is more expressive and may
+spend additional cycles for language features that the programs
+do not utilize, which would help Carac outperform Soufflé
+for some experiments. Additionally, Soufflé implements many
+orthogonal optimizations that Carac does not currently support,
+for example auto-indexing, specialized B-tree implementation,
+relation inlining, and others that would help Soufflé outperform Carac for other experiments. Although the comparison
+is not perfect, it can be concluded from Figure 13 that for
+the longest-running of the presented programs, Soufflé’s best
+auto-tuned execution time outperforms Carac’s best execution
+time by at most 3.6x.
+Ultimately, the goal of Carac is not to present an alternative
+to Soufflé but to illustrate a potential runtime optimization that
+leverages advanced programming language capabilities like
+quotes & splices that would enable Soufflé to avoid a profiling
+phase entirely, which for large programs can be significant.
+Carac can tightly knit a popular general-purpose programming
+language, Scala, with declarative Datalog queries while still
+delivering execution times that are competitive with the most
+advanced Datalog systems.
+
+[36], but RecStep [37] optimizes Datalog subquery execution
+at every iteration by using runtime statistics, including reading
+relation cardinalities and switching the build and probe sides
+for their hash-join implementation. Carac’s approach differs in
+that it leverages code generation and reorders the entire n-way
+join once per-iteration, per-predicate, or per-subquery, not per
+2-way join.
+b) Adaptive Query Processing.
+Just-in-time code-generating database systems like HyPer, HIQUE, Hekaton, ViDa, and many others [8]–[10] use
+SQL as a declarative specification to generate programs at
+query compile-time. There are several JVM-based bytecodegenerating DBMSs, for example Presto [38] and Spark [39].
+Generally, once the code for the queries is generated, they
+are not re-generated within the execution of a single query
+by the generated program. Adaptive Query Processing (AQP),
+however, which uses runtime statistics to inform query evaluation decisions to avoid the well-known inaccuracy of cost
+model-based estimation [6], has received significant attention
+from the database community [7]. Notably, NoisePage [11]
+and Umbra [12] combine AQP with code generation to modify
+generated query plans at runtime: NoisePage with manipulation of function pointer arrays and Umbra by embedding
+code fragments for all possible execution variants into the
+generated code and using LLVM’s indirectbr instruction
+to jump to label addresses at runtime. Most code-generating
+AQP systems target general-purpose SQL, while the recursive
+nature of Datalog queries makes the primary considerations for
+query optimization different [31], so Soufflé uses runtime information to inform join optimization decisions but requires an
+offline profiling stage. Carac’s goal of applying optimizations
+at the level of abstraction most appropriate for the optimization
+is shared by MLIR [40], an intermediate representation that allows co-optimizing multiple representation levels. Similarly to
+MLIR and verified lifting, Carac follows a multi-representation
+strategy and lifts input programs but additionally incorporates
+runtime information to generate optimal execution strategies.
+
+VII. R ELATED WORK
+Program optimization and runtime analysis have received
+attention from both the database and compiler communities.
+a) Datalog.
+Datalog has been used to solve fixed-point problems within
+programming languages, for example as the basis of Ascent, a
+Datalog-based logic programming language embedded in Rust
+for use in the borrow checker [33]. Datalog has also recently
+been used for Java pointer and taint analysis in Doop [1], TensorFlow [2], Ethereum Virtual Machine [3], and AWS network
+analysis [4]. Datalog is the logical foundation for Dedalus [34],
+a language designed to model distributed systems upon which
+the Bloom language is founded. Bloom uses Datalog as a basis
+to formally guarantee consistency properties of distributed
+systems. The HYDRO language stack [35] takes this approach
+a step further and argues that the next programming paradigm
+for cloud computing should involve using verified lifting to
+translate user-written programs into a logic-based internal
+representation language that has roots in Datalog. Flix [17]
+is a declarative programming language that integrates firstclass Datalog constraints into the language. Several Datalog
+engines do not implement any join-reordering optimizations
+
+VIII. C ONCLUSION
+In this work, we introduced Adaptive Metaprogramming, a novel approach that combines the power of codegenerating just-in-time data management systems with principled metaprogramming to optimize recursive queries at
+compile and runtime. Unlike existing methods, Adaptive
+Metaprogramming enables code generation and optimization
+to continue past the start of query execution, potentially
+deoptimizing when necessary, to better adapt to real-time
+data changes. Through Carac, we demonstrate that Adaptive
+Metaprogramming can enhance the performance of Datalog
+queries substantially, achieving a speed increase of three orders
+of magnitude over unoptimized queries and 4x over handtuned queries by optimizing the join order of conjunctive
+queries during Datalog execution.
+
+12
+
+R EFERENCES
+
+[19] L. D. K Hoder, N Bjørner, “Uz- an efficient engine for fixed points
+with constraints,” in Lecture Notes in Computer Science, vol. 6806,
+2011, pp. 457–462, 23rd International Conference on Computer Aided
+Verification, CAV 2011 ; Conference date: 01-07-2011.
+[20] A. Herlihy, P. Chrysogelos, and A. Ailamaki, “Boosting efficiency of external pipelines by blurring application boundaries,” in 12th Conference
+on Innovative Data Systems Research, CIDR 2022, Chaminade, January
+11-15, 2022, Online Proceedings. Chaminade, CA: www.cidrdb.org,
+2022.
+[21] V. Leis, B. Radke, A. Gubichev, A. Mirchev, P. Boncz, A. Kemper,
+and T. Neumann, “Query optimization through the looking glass,
+and what we found running the join order benchmark,” The VLDB
+Journal, vol. 27, no. 5, p. 643–668, oct 2018. [Online]. Available:
+https://doi.org/10.1007/s00778-017-0480-7
+[22] P. McIlroy, “Optimistic sorting and information theoretic complexity,” in
+Proceedings of the Fourth Annual ACM-SIAM Symposium on Discrete
+Algorithms, ser. SODA ’93. USA: Society for Industrial and Applied
+Mathematics, 1993, p. 467–474.
+[23] Stucki, Nicolas Alexander, “Scalable metaprogramming in
+scala 3,” InfoScience EPFL, 2023. [Online]. Available:
+http://infoscience.epfl.ch/record/299370
+[24] Y. Futamura, “Partial evaluation of computation process–an approach to
+a compiler-compiler,” Higher-Order and Symbolic Computation, vol. 12,
+pp. 381–391, 1999.
+[25] A. Kennedy and C. V. Russo, “Generalized algebraic data types and
+object-oriented programming,” SIGPLAN Not., vol. 40, no. 10, p. 21–40,
+oct 2005. [Online]. Available: https://doi.org/10.1145/1103845.1094814
+[26] OpenJDK, “Jep draft: Class-file api (preview).” [Online]. Available:
+https://openjdk.org/jeps/8280389
+[27] A. Shipilev, S. Kuksenko, A. Astrand, S. Friberg, and
+H. Loef, “Openjdk code tools: Jmh,” 2022. [Online]. Available:
+http://openjdk.java.net/projects/code-tools/jmh/
+[28] S.
+Center,
+“Tasty-query.”
+[Online].
+Available:
+https://github.com/scalacenter/tasty-query
+[29] A. Møller and M. I. Schwartzbach, “Static program analysis,” October 2018, department of Computer Science, Aarhus University,
+https://cs.au.dk/ amoeller/spa/spa.pdf.
+[30] Y. Sundblad, “The ackermann function. a theoretical, computational,
+and formula manipulative study,” BIT, vol. 11, no. 1, p. 107–119, mar
+1971. [Online]. Available: https://doi.org/10.1007/BF01935330
+[31] S. Arch, X. Hu, D. Zhao, P. Subotić, and B. Scholz, “Building a join
+optimizer for soufflé,” in Logic-Based Program Synthesis and Transformation, A. Villanueva, Ed. Cham: Springer International Publishing,
+2022, pp. 83–102.
+[32] N. Stucki, A. Biboudis, and M. Odersky, “A practical
+unification of multi-stage programming and macros,” SIGPLAN
+Not., vol. 53, no. 9, p. 14–27, nov 2018. [Online]. Available:
+https://doi.org/10.1145/3393934.3278139
+[33] A. Sahebolamri, T. Gilray, and K. Micinski, “Seamless deductive
+inference via macros,” in Proceedings of the 31st ACM SIGPLAN
+International Conference on Compiler Construction, ser. CC 2022.
+New York, NY, USA: Association for Computing Machinery, 2022, p.
+77–88. [Online]. Available: https://doi.org/10.1145/3497776.3517779
+[34] P. Alvaro, W. R. Marczak, N. Conway, J. M. Hellerstein, D. Maier, and
+R. Sears, “Dedalus: Datalog in time and space,” in Datalog Reloaded,
+O. de Moor, G. Gottlob, T. Furche, and A. Sellers, Eds.
+Berlin,
+Heidelberg: Springer Berlin Heidelberg, 2011, pp. 262–281.
+[35] A. Cheung, N. Crooks, J. M. Hellerstein, and M. Milano, “New
+directions in cloud programming,” in 11th Conference on Innovative
+Data Systems Research, CIDR 2021, Virtual Event, January 11-15,
+2021, Online Proceedings. www.cidrdb.org, 2021. [Online]. Available:
+http://cidrdb.org/cidr2021/papers/cidr2021 paper16.pdf
+[36] B. Ketsman and P. Koutris, “Modern datalog engines,” Foundations
+and Trends® in Databases, vol. 12, no. 1, pp. 1–68, 2022. [Online].
+Available: http://dx.doi.org/10.1561/1900000073
+[37] Z. Fan, J. Zhu, Z. Zhang, A. Albarghouthi, P. Koutris, and J. M.
+Patel, “Scaling-up in-memory datalog processing: Observations and
+techniques,” Proc. VLDB Endow., vol. 12, no. 6, p. 695–708, feb 2019.
+[Online]. Available: https://doi.org/10.14778/3311880.3311886
+[38] R. Sethi, M. Traverso, D. Sundstrom, D. Phillips, W. Xie, Y. Sun,
+N. Yegitbasi, H. Jin, E. Hwang, N. Shingte, and C. Berner, “Presto: Sql
+on everything,” in 2019 IEEE 35th International Conference on Data
+Engineering (ICDE), 2019, pp. 1802–1813.
+
+[1] Y. Smaragdakis and M. Bravenboer, “Using datalog for fast
+and easy program analysis,” in Proceedings of the First
+International Conference on Datalog Reloaded, ser. Datalog’10.
+Berlin, Heidelberg: Springer-Verlag, 2010, p. 245–251. [Online].
+Available: https://doi.org/10.1007/978-3-642-24206-9 14
+[2] S. Lagouvardos, J. T. Dolby, N. Grech, A. Antoniadis, and Y. Smaragdakis, “Static analysis of shape in tensorflow programs,” in ECOOP,
+2020.
+[3] N. Grech, L. Brent, B. Scholz, and Y. Smaragdakis, “Gigahorse: Thorough, declarative decompilation of smart contracts,” in 2019 IEEE/ACM
+41st International Conference on Software Engineering (ICSE), 2019,
+pp. 1176–1186.
+[4] J. Backes, S. Bayless, B. Cook, C. Dodge, A. Gacek, A. Hu, T. Kahsai,
+B. Kocik, E. Kotelnikov, J. Kukovec, S. McLaughlin, J. Reed, N. Rungta,
+J. Sizemore, M. Stalzer, P. Srinivasan, P. Subotic, C. Varming, and
+B. Whaley, Reachability Analysis for AWS-Based Networks. Springer
+International Publishing, 07 2019, pp. 231–241.
+[5] J. D. Ullman, “Bottom-up beats top-down for datalog,” in Proceedings
+of the Eighth ACM SIGACT-SIGMOD-SIGART PODS, ser. PODS ’89.
+New York, NY, USA: ACM, 1989, p. 140–149. [Online]. Available:
+https://doi.org/10.1145/73721.73736
+[6] V. Leis, A. Gubichev, A. Mirchev, P. Boncz, A. Kemper, and
+T. Neumann, “How good are query optimizers, really?” Proc. VLDB
+Endow., vol. 9, no. 3, p. 204–215, nov 2015. [Online]. Available:
+https://doi.org/10.14778/2850583.2850594
+[7] A. Deshpande, J. M. Hellerstein, and V. Raman, “Adaptive query
+processing: why, how, when, what next,” in Proceedings of the
+ACM SIGMOD International Conference on Management of Data,
+Chicago, Illinois, USA, June 27-29, 2006, 2006, pp. 806–807. [Online].
+Available: https://doi.org/10.1145/1142473.1142603
+[8] T. Kersten, V. Leis, A. Kemper, T. Neumann, A. Pavlo, and
+P. Boncz, “Everything you always wanted to know about compiled
+and vectorized queries but were afraid to ask,” Proc. VLDB Endow.,
+vol. 11, no. 13, p. 2209–2222, sep 2018. [Online]. Available:
+https://doi.org/10.14778/3275366.3284966
+[9] A. Kohn, V. Leis, and T. Neumann, “Adaptive execution of compiled
+queries,” in Adaptive Execution of Compiled Queries, 04 2018, pp. 197–
+208.
+[10] M. Karpathiotakis, I. Alagiannis, T. Heinis, M. Branco, and A. Ailamaki,
+“Just-in-time data virtualization: Lightweight data management with
+vida,” in Just-In-Time Data Virtualization: Lightweight Data Management with ViDa, 01 2015.
+[11] P. Menon, A. Ngom, L. Ma, T. C. Mowry, and A. Pavlo, “Permutable
+compiled queries: Dynamically adapting compiled queries without
+recompiling,” Proc. VLDB Endow., vol. 14, no. 2, p. 101–113, nov
+2020. [Online]. Available: https://doi.org/10.14778/3425879.3425882
+[12] T. Schmidt, P. Fent, and T. Neumann, “Efficiently compiling dynamic
+code for adaptive query processing,” 13th Workshop on Accelerating
+Analytics and Data Management, Sep 2022.
+[13] W. Taha, A Gentle Introduction to Multi-Stage Programming, Part
+II. Berlin, Heidelberg: Springer-Verlag, 2007, p. 260–290. [Online].
+Available: https://doi.org/10.1007/978-3-540-88643-3 6
+[14] G. Gottlob, S. Ceri, and L. Tanca, “What you always wanted to
+know about datalog (and never dared to ask),” IEEE Transactions on
+Knowledge and Data Engineering, vol. 1, no. 01, pp. 146–166, jan 1989.
+[15] J. D. Ullman, “Bottom-up beats top-down for datalog,” in ACM SIGACTSIGMOD-SIGART Symposium on Principles of Database Systems, 1989.
+[16] B. Scholz, H. Jordan, P. Subotić, and T. Westmann, “On fast
+large-scale program analysis in datalog,” in Proceedings of the 25th
+International Conference on Compiler Construction, ser. CC 2016.
+New York, NY, USA: ACM, 2016, p. 196–206. [Online]. Available:
+https://doi.org/10.1145/2892208.2892226
+[17] M. Madsen, M.-H. Yee, and O. Lhoták, “From datalog to flix:
+A declarative language for fixed points on lattices,” SIGPLAN
+Not., vol. 51, no. 6, p. 194–208, jun 2016. [Online]. Available:
+https://doi.org/10.1145/2980983.2908096
+[18] J. Whaley, D. Avots, M. Carbin, and M. S. Lam, “Using datalog with
+binary decision diagrams for program analysis,” in Proceedings of the
+Third Asian Conference on Programming Languages and Systems, ser.
+APLAS’05. Berlin, Heidelberg: Springer-Verlag, 2005, p. 97–118.
+[Online]. Available: https://doi.org/10.1007/11575467 8
+
+13
+
+[39] M. Zaharia, M. Chowdhury, T. Das, A. Dave, J. Ma, M. McCauley,
+M. J. Franklin, S. Shenker, and I. Stoica, “Resilient distributed datasets:
+A fault-tolerant abstraction for in-memory cluster computing,” in Proceedings of the 9th USENIX Conference on Networked Systems Design
+and Implementation, ser. NSDI’12. USA: USENIX Association, 2012,
+p. 2.
+[40] C. Lattner, M. Amini, U. Bondhugula, A. Cohen, A. Davis, J. A. Pienaar,
+R. Riddle, T. Shpeisman, N. Vasilache, and O. Zinenko, “MLIR: scaling
+compiler infrastructure for domain specific computation,” in IEEE/ACM
+International Symposium on Code Generation and Optimization, CGO
+2021, Seoul, South Korea, February 27 - March 3, 2021, J. W. Lee,
+M. L. Soffa, and A. Zaks, Eds. IEEE, 2021, pp. 2–14. [Online].
+Available: https://doi.org/10.1109/CGO51591.2021.9370308
+
+14
+
+

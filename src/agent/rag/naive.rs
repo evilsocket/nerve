@@ -41,14 +41,21 @@ impl VectorStore for NaiveVectorStore {
             .display()
             .to_string();
         let expr = format!("{}/**/*.txt", path);
+        let start = Instant::now();
 
-        // TODO: parallelize this
         for path in (glob(&expr)?).flatten() {
             let doc = Document::from_text_file(&path)?;
             if let Err(err) = store.add(doc).await {
                 eprintln!("ERROR storing {}: {}", path.display(), err);
             }
         }
+
+        print!(
+            "[{}] {} documents indexed in {:?}\n",
+            "rag".bold(),
+            store.documents.len(),
+            start.elapsed(),
+        );
 
         Ok(store)
     }

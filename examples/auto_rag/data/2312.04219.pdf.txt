@@ -1,0 +1,2078 @@
+Swap distance minimization in SOV languages. Cognitive and
+mathematical foundations.
+Ramon Ferrer-i-Cancho1* (0000-0002-7820-923X), Savithry Namboodiripad2
+(0000-0002-7685-5895)
+1 Quantitative, Mathematical and Computational Linguistics Research Group.
+
+arXiv:2312.04219v1 [cs.CL] 7 Dec 2023
+
+Departament de Ciències de la
+Computació, Universitat Politècnica de Catalunya (UPC), Barcelona, Catalonia, Spain.
+2 Linguistics Department, University of Michigan, Ann Arbor, Michigan, USA.
+* Corresponding author’s email: rferrericancho@cs.upc.edu.
+DOI:
+ABSTRACT
+Distance minimization is a general principle of language. A special case of this principle in the
+domain of word order is swap distance minimization. This principle predicts that variations from a
+canonical order that are reached by fewer swaps of adjacent constituents are lest costly and thus more
+likely. Here we investigate the principle in the context of the triple formed by subject (S), object
+(O) and verb (V). We introduce the concept of word order rotation as a cognitive underpinning
+of that prediction. When the canonical order of a language is SOV, the principle predicts SOV
+< SVO, OSV < VSO, OVS < VOS, in order of increasing cognitive cost. We test the prediction
+in three flexible order SOV languages: Korean (Koreanic), Malayalam (Dravidian), and Sinhalese
+(Indo-European). Evidence of swap distance minimization is found in all three languages, but it is
+weaker in Sinhalese. Swap distance minimization is stronger than a preference for the canonical
+order in Korean and especially Malayalam.
+Keywords: word order preferences, canonical order, swap distance minimization
+
+1
+
+Introduction
+
+Distance minimization pervades languages. In the domain of word order, there is massive evidence that
+the distance between words in a syntactic dependency representation of the sentence is minimized (), a
+consequence of the syntactic dependency distance minimization principle (Ferrer-i-Cancho, 2004). A
+general principle of distance minimization in word order, which instantiates as syntactic dependency
+distance minimization, has been proposed (Ferrer-i-Cancho, 2014). Furthermore, the action of distance
+minimization in languages goes beyond the common notion of physical distance. Iconicity – which has
+also been argued to shape word order (Motamedi et al., 2022) – can be viewed as a response to a pressure
+to minimize the distance between a linguistic form and meaning in production and interpretation ().
+Glottometrics XX, 20XX
+
+1
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Alignment in dialog () is the minimization of the distance between two or more speakers involved in a
+conversation. Because it operates across domains, distance minimization is likely to be one of the most
+general principles of language.
+Distance minimization in word order (Ferrer-i-Cancho, 2014) presents itself as the syntactic dependency
+distance minimization principle (Ferrer-i-Cancho, 2004) and the swap distance minimization principle
+(Ferrer-i-Cancho, 2016). Critical characteristics of a compact but general theory of language are to
+specify (a) the cognitive origins of its principles (b) the cross linguistic support of its principles, and (c)
+the separation between principles and manifestations. Then compactness is achieved by uncovering the
+many distinct manifestations of the same principle (alone or interacting with other principles). Further,
+among the manifestations of a given principle, one has to distinguish direct from indirect manifestations.
+
+1.1
+
+Syntactic dependency distance minimization
+
+Next we will revise the principle of syntactic dependency distance minimization from the standpoint of
+(a), (b) and (c) as a road map for research on swap distance minimization.
+Concerning (a), syntactic dependency distance minimization is argued to result from counteracting
+interference and decay of activation in linguistic processes () and, accordingly, syntactic dependency
+distance in sentences is positively correlated with reading times (Niu and Liu, 2022).
+Concerning (b), direct evidence of the principle of syntactic dependency distance minimization stems
+from the finding that syntactic dependency distances are smaller than expected by chance in samples of
+languages that have been growing in size and typological diversity ().
+Concerning (c), various manifestations of syntactic dependency distance minimization have been predicted. First, the acceptability of word orders and related word order preferences (). Second, formal
+properties of syntactic dependency structures such as the scarcity of crossing dependencies (GómezRodríguez and Ferrer-i-Cancho, 2017) and the tendency to uncover the root (Ferrer-i-Cancho, 2008),
+thus predicting projectivity (continuous constituents) and planarity with high probability. Furthermore,
+syntactic dependency distance minimization predicts, in combination with projectivity, that the root of
+a sentence should be placed at the center (). An implication of the predictions is that verbs, which
+are typically the roots of a sentence, should be placed at the center, as in SVO orders or SVOI orders.
+For word orders in which the verb appears first or last, syntactic dependency distance minimization
+predicts consistent branching for dependents of nominal heads (Ferrer-i-Cancho, 2015b), demonstrating
+the “unnecessity” of the headedness parameter of principles & parameters theory (). 1 The principle of
+swap distance minimization has received much less attention.
+1See Table 1 of Ferrer-i-Cancho and Gómez-Rodríguez (2021b) for further predictions.
+
+Glottometrics
+
+2
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+SVO
+
+VSO
+
+SOV
+
+VOS
+
+OSV
+
+OVS
+
+Figure 1: The word order permutation ring.
+
+1.2
+
+The order of S, V and O
+
+Research on the order of S, V and O is biased towards SOV and SVO languages. SOV and SVO are
+the most attested dominant orders (76.5% according to Dryer (2013); 83.6% of languages and 69.6%
+families according to Hammarström (2016)). Accordingly, a large body of experimental research in the
+silent gesture paradigm has focused on factors that determine the choice between SOV and SVO (see
+Motamedi et al. (2022) and references therein). That bias neglects that there are languages that lack a
+dominant order (13.7% of languages according to Dryer (2013); 2.3% of languages and 6.1% of families
+according to Hammarström (2016)) or that exhibit two, rather than one, dominant orders (Dryer, 2013).
+Crucially, in many languages which do exhibit a dominant order, the other 5 non-dominant orders are
+produced. Though understanding such variation is vital, documentation and analyses of non-dominant
+orders receive relatively little attention (Levshina et al., 2023). This is reflected in psycholinguistic work,
+where the bulk of experimental research on the processing cost of word order focuses on just two orders,
+e.g. SVO versus OVS () or SVO versus VOS (Koizumi and Kim, 2016).2 This challenge is the motivation
+of Namboodiripad’s research program on the cognitive cost of the six possible orders of S, V, and O
+in flexible order languages (). This is also why swap distance minimization is brought into play in this
+article.
+
+1.3
+
+Swap distance minimization
+
+Swap distance minimization predicts pairs of primary alternating dominant orders (Ferrer-i-Cancho,
+2016) and has been applied to shed light on the evolution of the dominant orders of S, V, and O from
+an ancestral SOV order (). In general, the principle of swap distance minimization states that variations
+2Note that practical challenges contribute to this. Comparing all six orders in an experiment requires more participants and
+different statistical tools as compared to simpler experimental designs; cf. Ohta et al. (2017).
+
+Glottometrics
+
+3
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+from a certain word order (canonical or not) that require fewer swaps of adjacent constituents are less
+costly (). To illustrate how the principles works on triples, let us consider the case of the triple formed
+by subject (S), object (O) and verb (V). The so-called word order permutation ring is a graph where the
+vertices are all the six possible orderings of the triple, and edges between two orders indicate that one
+order can be obtained from the other by swapping a pair of adjacent constituents (Figure 1). SOV and
+SVO are linked because swapping OV in SOV produces SVO, or equivalently, swapping VO in SVO
+produces SOV. For the case of triples, the permutation ring is an instance of a kind of graph which is
+called permutahedron in combinatorics (Ceballos et al., 2015). The swap distance between two orders
+is the distance (in edges) between two word orders in the permutahedron, namely, their distance is the
+minimum number of swaps of adjacent constituents that transforms one order into the other and vice
+versa.
+A prediction of the swap distance minimization is that the cognitive cost of a word order will depend
+on its distance to the canonical order. When the canonical order of a language is SOV, SOV is at swap
+distance 0, SVO and OSV are at swap distance 1, VSO and OVS are at swap distance 2, and VOS is at
+swap distance 3 (Figure 1). Thus, the principle predicts (from easiest to most costly) the sequence3
+(1)
+
+𝑆𝑂𝑉 < 𝑆𝑉𝑂, 𝑂𝑆𝑉 < 𝑉 𝑆𝑂, 𝑂𝑉 𝑆 < 𝑉𝑂𝑆.
+
+For other canonical orders, the predictions that the permutahedron generates as a function of the canonical
+order are, in order of increasing processing cost (the canonical order appears first)
+𝑆𝑉𝑂 < 𝑆𝑂𝑉, 𝑉 𝑆𝑂 < 𝑉𝑂𝑆, 𝑂𝑆𝑉 < 𝑂𝑉 𝑆
+𝑉 𝑆𝑂 < 𝑆𝑉𝑂, 𝑉𝑂𝑆 < 𝑆𝑉𝑂, 𝑂𝑉 𝑆 < 𝑂𝑆𝑉
+𝑉𝑂𝑆 < 𝑉 𝑆𝑂, 𝑂𝑉 𝑆 < 𝑆𝑉𝑂, 𝑂𝑆𝑉 < 𝑆𝑂𝑉
+𝑂𝑉 𝑆 < 𝑉𝑂𝑆, 𝑂𝑆𝑉 < 𝑆𝑂𝑉, 𝑆𝑉𝑂 < 𝑆𝑉𝑂
+(2)
+
+𝑂𝑆𝑉 < 𝑆𝑂𝑉, 𝑂𝑉 𝑆 < 𝑆𝑉𝑂, 𝑉𝑂𝑆 < 𝑉 𝑆𝑂.
+
+It is well-known that canonical orders are easier to process than non-canonical orders and thus canonical
+orders are processed faster than non-canonical orders (). The principle of swap distance minimization
+subsumes a preference for the canonical order but, crucially, it introduces a gradation for non-canonical
+orders, namely not all non-canonical orders are equally easy to process. The gradation is determined,
+by a precise definition of distance to the canonical order (Equation 1 and Equation 2). In contrast to
+3A sequence of this sort can be expressed with the following notation (Tamaoka et al., 2011)
+𝑆𝑂𝑉 < 𝑆𝑉𝑂 = 𝑂𝑆𝑉 < 𝑉 𝑆𝑂 = 𝑂𝑉 𝑆 < 𝑉𝑂𝑆.
+In our notation, = is replaced by a comma.
+Glottometrics
+
+4
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Equation 1, just of preference of the canonical word order is expressed simply as
+(3)
+
+1.4
+
+𝑆𝑂𝑉 < 𝑆𝑉𝑂, 𝑂𝑆𝑉, 𝑉 𝑆𝑂, 𝑂𝑉 𝑆, 𝑉𝑂𝑆.
+
+The present article
+
+Here we aim to contribute to research on swap distance minimization in the three directions above: (a),
+(b) and (c). We will increase the support for the principle both in terms of (a) and (b). As for (a),
+here we will introduce the concept of word order rotation as the analog of rotation in visual recognition
+experiments (). In addition, we aim to validate the arguments using proxies of cognitive cost that are
+commonly used in cognitive science research such as reaction times and error rates (). As for (b), we
+will investigate the principle in languages from distinct linguistic families and quantify its effect with
+respect to other word order principles. As for (c), we will show that swap distance minimization predicts
+the acceptability of the order of subject, verb and object as syntactic dependency distance minimization
+predicts the acceptability of sentences (). Put differently, we will show that swap distance minimization
+manifests in the form of acceptability preferences.
+We select three SOV languages which exhibit considerable word order flexibility, each from different
+language families: Sinhalese (Indo-European), Malayalam (Dravidian), and Korean (Koreanic). For
+each of these languages, all of the six possible orderings of S, V, and O are grammatical, attested, and
+have the same truth-conditional meaning (), though the degree of flexibility may vary depending on the
+context or measure of flexibility (). Sinhalese and Malayalam have been regarded as non-configurational
+(). Interestingly, Malayalam exhibits more word order flexibility than Korean while, in turn, the flexibility
+of Korean is closer to that of English (Figure 8 of Levshina et al. (2023)).
+In the context of Malayalam, the acceptability of a certain order has been argued to be determined by the
+position of the verb (Namboodiripad and Goodall, 2016). We will transform this specific proposal into
+a general competing hypothesis, namely that the cost of a certain order (no matter how it is measured) is
+determined to some degree by the position of the verb, and link it with the theory of word order: a decrease
+in cost of processing of the verb as it is placed closer to the end is actually a prediction of the principle of
+minimization of the surprisal (maximization of the predictability) of the head (Ferrer-i-Cancho, 2017).4
+In contrast to Equation 1, a preference for verb final would be expressed simply as
+(4)
+
+𝑆𝑂𝑉, 𝑂𝑆𝑉 < 𝑆𝑉𝑂, 𝑂𝑉 𝑆 < 𝑉 𝑆𝑂, 𝑉𝑂𝑆.
+
+4A word of caution is necessary concerning the term competing hypothesis. It does not mean that maximization of
+predictability excludes swap distance minimization. Both forces can co-exist, and it is tempting to think that swap distance
+minimization implies the maximization of the predictability of the head for certain canonical orders, e.g., SOV or OSV. Indeed,
+we will show that swap distance and the position of the head (the verb) are significantly correlated.
+
+Glottometrics
+
+5
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+The reminder of the article is organized as follows. Section 2 introduces the concept of word order
+rotation and a new mathematical framework. Section 3 justifies the choice of SOV languages and
+presents the data while Section 4 presents the statistical analysis methods. Section 5 shows evidence of
+swap distance minimization as predicted by Equation 1 in these three languages and compares it against
+two competing principles: a preference for the canonical order and a preference for the verb towards the
+end. Section 6 provides hawk-eye view of the results, speculates on their relation with the degree of word
+order flexibility of the languages, and proposes some issues for future research.
+
+2
+
+Theoretical foundations
+
+2.1
+
+Word order rotations
+
+Here we present an argument on the cognitive support of the minimization of swap distance to the
+canonical order that is inspired by classic research on the cognitive effort of the visual recognition of
+objects (). That research revealed that such cost depends on the rotation angle with respect to some
+canonical representation of the object. By analogy, the object is the triple formed by subject, object, and
+verb; we assume that its canonical representation is the order that language experts have identified as
+canonical; the rotation angle is the swap distance to the canonical order. However, the analogy with visual
+rotation can be made stronger by drawing the word order permutation ring on a circle as in Figure 1,
+placing a rotation axis at the center of the circle, and replacing the swap distance to the canonical order
+by the absolute value of the minimum angle of the rotation that is needed to put
+• The word order of interest in the original position of the canonical order, or equivalently,
+• The canonical order in the original position of the word order of interest.
+The rotations that are needed to transform any order of S, V and O into SOV are shown in Figure 2.
+Accordingly, the orders at distance 1 imply a rotation angle of ±60°, orders at distance 2 imply a rotation
+of angle of ±120°, and finally the order at distance 3 implies a rotation angle of ±180°. In mathematical
+language, 𝛼, the angle of rotation (in degrees) that is required to transform a certain word order into the
+canonical word order, and 𝑑, the swap distance between an order and the canonical, obey
+𝑑=
+
+2.2
+
+|𝛼|
+.
+60
+
+The correlation between a distance measure and cognitive cost
+
+Here we present a new mathematical framework to measure the effect distinct word order principles by
+translating Equation 1, Equation 3, and Equation 4 into Kendall 𝜏 correlations and also to understand
+Glottometrics
+
+6
+
+Ferrer-i-Cancho & Namboodiripad
+
+SVO
+
+VSO
+
+±0◦
+
+SOV
+
+Swap distance minimization in SOV languages.
+
+OSV
+
+SVO
+
+VOS
+
+SVO
+
+VSO
+
+VOS
+
+SOV
+
+VOS
+
+OSV
+
+OVS
+
+OSV
+
+OVS
+
+SVO
+
+VSO
+
+SVO
+
+VSO
+
+SOV
+
+VOS
+
+-60◦
+
+OSV
+
+SVO
+
+120◦
+
+60◦
+
+SOV
+
+OVS
+
+VSO
+
+SOV
+
+VSO
+
+±180◦
+
+SOV
+
+OSV
+
+VOS
+
+OVS
+
+VOS
+-120◦
+
+OVS
+
+OSV
+
+OVS
+
+Figure 2: Rotations of word orders with respect to an axis at the center of the ring (marked in red). Recall that clockwise
+rotations have negative sign while anticlockwise rotations have positive sign. To become the canonical order SOV, (a) SOV
+needs a rotation of ±0 degrees, (b) SVO needs a rotation of 60 degrees, (c) VSO needs a rotation of 120 degrees, (d) VOS
+needs a rotation of ±180 degrees, (e) OSV needs a rotation of −60 degrees, (f) OVS needs a rotation of −120 degrees.
+
+how these principles interact.
+We define 𝑠 as the cognitive cost of a certain ordering of S, V, and O. Swap distance minimization
+predicts that 𝑠 should increase following the ordering in Equation 1. Accordingly, we test the swap
+distance minimization hypothesis by measuring 𝜏(𝑑, 𝑠), the Kendall 𝜏 correlation between the target
+score 𝑠 and 𝑑, which is the swap distance between an order and the canonical order SOV. To test the
+hypothesis of the minimization of surprisal of the verb (Equation 4), we measure 𝜏( 𝑝, 𝑠), namely the
+Kendall 𝜏 correlation between the target score 𝑠 and 𝑝, the distance of the verb to the end (0 for verb-last,
+1 for medial verb and 2 for verb first). Finally, as swap distance minimization subsumes a preference for
+the canonical order (Equation 3), we also define a control hypothesis, namely that the effect is merely
+simply determined by the word order being canonical or not. That hypothesis is tested by means of
+𝜏(𝑐, 𝑠), the Kendall correlation between the target score and 𝑐, a binary variable that is zero if the order
+is canonical and 1 otherwise. We refer to 𝑑, 𝑝 and 𝑐 as distance measures. 𝑐 is a binary distance to the
+canonical order. The values of these distances in an SOV language are shown in Table 1.
+The are the three main variants of the Kendall 𝜏 correlation: 𝜏𝑎 , 𝜏𝑏 and 𝜏𝑐 (Kendall, 1970). The simplest
+definition is that of 𝜏𝑎 , that is defined, for a bivariate sample of size 𝑛, as
+(5)
+
+𝜏𝑎 =
+
+𝑛𝑐 − 𝑛𝑑
+,
+𝑛
+2
+
+where 𝑛𝑐 is the number of concordant pairs and 𝑛 𝑑 is the number of discordant pairs.
+𝜏𝑎 performs no adjustment for ties, while 𝜏𝑏 and 𝜏𝑐 do. In our study, adjustments for ties bother. As
+swap distance minimization subsumes the preference for the canonical order, we want to warrant that if
+𝜏(𝑑, 𝑠) is sufficiently large then 𝜏(𝑑, 𝑠) > 𝜏(𝑐, 𝑠) because swap distance minimization is a more precise
+Glottometrics
+
+7
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Table 1: For each of the six possible orders, we show the swap distance to the canonical order SOV (𝑑), the distance of the
+verb to the end of the triple (𝑝), the binary distance to canonical order (𝑐), the mean 𝑧-score acceptability according to the
+results of the experiments by Namboodiripad (2017, Table 2.7) and the corresponding rank transformation (the most acceptable
+has rank 1, the second most acceptable has rank 2 and so on).
+
+Note:
+
+Order
+
+𝑑
+
+𝑝
+
+𝑐
+
+Acceptability
+
+Rank transformation
+
+SOV
+OSV
+SVO
+OVS
+VSO
+VOS
+
+0
+1
+1
+2
+2
+3
+
+0
+0
+1
+1
+2
+2
+
+0
+1
+1
+1
+1
+1
+
+1.05
+0.80
+0.36
+0.30
+-0.14
+-0.36
+
+1
+2
+3
+4
+5
+6
+
+𝑝 takes the values 0 for verb final, 1 for verb medial, and 2 for verb initial. 𝑐 takes a value of 0 if the order is
+
+canonical and 1 otherwise.
+
+hypothesis than a preference for the canonical order. In the Appendix, we show two very useful properties
+of 𝜏𝑎 : if 𝜏𝑎 is large enough, then one can be certain that swap distance minimization does not reduce
+to a preference for the canonical order or to a preference for verb-last. In the language of mathematics,
+if 𝜏𝑎 (𝑑, 𝑠) > 0.3̄ then 𝜏𝑎 (𝑑, 𝑠) > 𝜏𝑎 (𝑐, 𝑠); if 𝜏𝑎 (𝑑, 𝑠) > 0.8 then 𝜏𝑎 (𝑑, 𝑠) > 𝜏𝑎 ( 𝑝, 𝑠), 𝜏𝑎 (𝑐, 𝑠). We
+also want to ensure that the comparison between 𝜏(𝑑, 𝑠) and 𝜏( 𝑝, 𝑠) is fair; notice that 𝑝 has lower
+precision than 𝑑 (𝑑 is on an integer scale between 0 and 3 while 𝑝 is on an integer scale between 0 and
+2). Adjustments for ties may cause the illusion of a weaker manifestation of swap distance minimization
+compared to other cognitive pressures.5 Hereafter 𝜏 means 𝜏𝑎 .
+Finally, notice that distinct word order principles are related and thus the Kendall 𝜏 correlation between
+two distance measures are all positive (Table 2). Kendall 𝜏 correlation between 𝑑 and 𝑝, 𝜏(𝑑, 𝑝) is
+significantly high while 𝜏(𝑑, 𝑐) and 𝜏( 𝑝, 𝑐) are not (Table 2). Obviously, the fact that 𝜏(𝑑, 𝑐) is not
+significant is clearly due to a lack of statistical power. The arguments in the Appendix for the correlation
+between 𝑐 and some other variable, allow one to conclude that 𝜏(𝑑, 𝑐) is maximum and its right 𝑝-value
+is minimum.
+Table 2: Correlogram of Kendall 𝜏 correlation between each distance measure. We use right-sided exact tests of correlation
+with 𝜏𝑎 on the matrix in Table 1. Recall 𝑑 is the swap distance to the canonical order, 𝑝 is distance of the verb to the end of the
+triple and 𝑐 is the binary canonical distance.
+Variables
+
+Kendall 𝜏 correlation
+
+𝑝-value
+
+𝑑 and 𝑝
+𝑑 and 𝑐
+𝑝 and 𝑐
+
+0.67
+0.33
+0.27
+
+0.044
+0.166
+0.333
+
+5Finally, another reason for not using 𝜏𝑏 is a further consequence of the adjustment for ties: 𝜏𝑏 is undefined when the
+variance of one of the variables is zero. With this respect, 𝜏𝑎 is robust across conditions and simplifies the coding as it does
+not require to deal with the special case of zero variance.
+
+Glottometrics
+
+8
+
+Ferrer-i-Cancho & Namboodiripad
+
+3
+
+Material
+
+3.1
+
+Why SOV languages
+
+Swap distance minimization in SOV languages.
+
+The predictions in Equation 1 and 2 raise the question of the ideal conditions where swap distance
+minimization should be tested (point (b) in Section 1). One could naively argue that these predictions
+should hold for every language in any condition. The challenge is that swap distance minimization is
+just one of the various principles that shape word order in languages: word order is a multiconstraint
+satisfaction problem (). Thus, the observation of the action of a specific word order principle requires
+identifying the conditions where that principle will suffer from less interference from other word order
+principles. For instance, it has been predicted theoretically and demonstrated empirically that the action
+of surprisal minimization (predictability maximization) should be more visible in short sentences ().
+Interestingly, it has been shown that syntactic dependency distance minimization is weaker in Warlpiri, a
+non-configurational language (Ferrer-i-Cancho et al., 2022). Indeed, discontinuous constituents, one of
+the hallmarks of non-configurational languages () may indicate that dependency distance minimization
+is weaker, as it has been demonstrated that pressure to reduce the distance between syntactically related
+elements reduces the chance of discontinuity (). Thus, interference from dependency distance minimization is expected to be weaker in non-configurational languages. Recall that dependency distance
+minimization alone would draw the verb, the root of the triple, towards the center of the triple (). In
+addition, we expect that, in languages that exhibit word order flexibility, there is more room for capturing
+the manifestation of swap distance minimization. English, which is an SVO language, is an example of
+a non-ideal language to test this because of its word order rigidity (Figure 8 of Levshina et al. (2023)).
+Given the considerations above, this article focuses on SOV languages. SOV languages are an ideal
+arena for testing this principle. In terms of representativity, SOV represents the most common dominant
+word order across languages (). Furthermore, SOV has been hypothesized to be an early stage in spoken
+languages (), and it has been regarded as a default basic word order (). This view is supported by
+the fact that SOV is often the dominant order found in sign languages which are at the early stages of
+community-level conventionalisation ().
+
+3.2
+
+Data
+
+Data is borrowed from existing publications but is available as a single file in the repository of the
+article.6 We borrow data from word order experiments in Malayalam (Namboodiripad, 2017), Korean
+(Namboodiripad et al., 2019), and Sinhalese (Tamaoka et al., 2011).7 In Korean and Malayalam, the target
+6In the data folder of https://osf.io/b62ep/.
+7For each language, the target sentences have the same structure: animate subjects, inanimate objects, and active transitive
+verbs; sample stimuli can be found in each paper. Due to space limitations, we refer the reader to those original sources for
+
+Glottometrics
+
+9
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+scores are average 𝑧-scored acceptability ratings from experiments in the spoken (listening) modality
+that are obtained from Namboodiripad (2017, Table 2.7 in Chapter 2) for Malayalam and Table 2 of
+Namboodiripad et al. (2019) for Korean. As is typical in acceptability judgment experiments, 𝑧-scores
+are used to control for individual variation in the use of the rating scale.
+All participants in the Malayalam experiment (𝑁 = 18) grew up speaking Malayalam in Kerala, India,
+where it is the dominant language. For Korean, we consider three groups that are borrowed from Namboodiripad et al. (2019): bilingual speakers of Korean and English that are split into Korean-dominant
+(𝑁 = 30), English-dominant active (individuals who are fluent in comprehension and production of
+spoken Korean; 𝑁 = 13), and English-dominant passive (individuals who are far more proficient in
+comprehension of spoken Korean than they are in production; 𝑁 = 14).
+For Sinhalese, the participants are described as native speakers. The target scores are mean reaction
+times and mean error rates in the spoken (𝑁 = 42) and written (𝑁 = 36) modality. Mean reaction times
+and mean error rates are borrowed from Table 1 and Table 2 of Tamaoka et al. (2011) for the written
+(reading) and spoken (listening) modality, respectively. Here, it is not clear how the authors controlled
+for individual variation (i.e., via 𝑧-scores or other statistical methods).
+To validate findings in Malayalam as <empty citation> did, we borrow frequencies of each of the six
+orders of S, V and O from an online corpus (Leela, 2016, Table 4) as an additional target score.8
+By target score, we mean acceptability, reaction time, error, frequency, and the variants that result from
+pairwise contrasts. Every target score (other than frequency) yields a rank variant that results from
+comparing the scores of every pair of distinct orders by means of some statistical test. Here we adopt the
+convention that these ranks reflect cognitive cost: the least costly order has rank 1, the second least costly
+has rank 2 and so on. The pairwise contrasts for Malayalam give, in order of decreasing acceptability
+(Namboodiripad, 2017)
+𝑆𝑂𝑉, 𝑂𝑆𝑉 > 𝑆𝑉𝑂, 𝑂𝑉 𝑆 > 𝑉 𝑆𝑂, 𝑉𝑂𝑆.
+Thus, SOV and OSV have acceptability rank 1, SVO and OVS have acceptability rank 2, and VSO and
+VOS have acceptability rank VSO and VOS. For Sinhalese, the pairwise contrasts for reaction time in
+spoken language give, in order of increasing reaction time (Tamaoka et al., 2011),
+𝑆𝑂𝑉 < 𝑆𝑉𝑂, 𝑂𝑉 𝑆 < 𝑂𝑆𝑉, 𝑉 𝑆𝑂, 𝑉𝑂𝑆
+further methodological details.
+8The corpus comprises three types of discourse: interviews, discussions or debates, and conversations appearing in printed
+form in online media. The genres are relatively comparable with the experimental items because they come from more casual
+and conversational contexts. The whole corpus comprises 5598 monotransitive sentences but only 67.1% contain S, V and O
+according to Table 4 (Leela, 2016, Table 4). Thus we estimate that the frequencies of S, V and O are based on 3756 sentences.
+Further details be found at http://hdl.handle.net/10803/399556 in Section 3.2.1 Methodology.
+Glottometrics
+
+10
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+and thus SOV has reaction time rank 1, SVO and OVS have reaction time rank 2 and OSV, VSO and
+VOS have reaction time rank 3. For Korean, Namboodiripad et al. (2019) report in prose that the verbmedial orders and verb-initial orders group together, but the authors do not give more details. However,
+(Namboodiripad et al., 2020) report pairwise comparisons9 in a reanalysis of the same data. The ranking
+in order of decreasing acceptability is
+𝑆𝑂𝑉 > 𝑂𝑆𝑉 > 𝑆𝑉𝑂, 𝑂𝑉 𝑆 > 𝑉 𝑆𝑂, 𝑉𝑂𝑆.
+Thus, SOV has acceptability rank 1, OSV has acceptability rank 2, SVO and OVS have acceptablity rank
+3, and VSO and VOS have acceptability rank 4. All the pairwise contrasts for the languages investigated
+in this article are summarized in Table 3.
+Table 3: Summary of pairwise contrasts, in order of increasing cognitive cost for Korean (Namboodiripad et al., 2020),
+Malayalam (Namboodiripad, 2017) and (Tamaoka et al., 2011).
+Language
+
+Group
+
+Score
+
+Modality
+
+Pairwise contrasts
+
+Korean
+Korean
+Korean
+Malayalam
+Sinhalese
+Sinhalese
+Sinhalese
+Sinhalese
+
+Korean-dominant
+English-dominant active
+English-dominant passive
+
+acceptability
+acceptability
+acceptability
+acceptability
+reaction time
+reaction time
+error
+error
+
+spoken
+spoken
+spoken
+spoken
+spoken
+written
+spoken
+written
+
+𝑆𝑂𝑉 < 𝑂𝑆𝑉 < 𝑆𝑉𝑂, 𝑂𝑉 𝑆 < 𝑉 𝑆𝑂, 𝑉𝑂𝑆
+𝑆𝑂𝑉 < 𝑂𝑆𝑉 < 𝑆𝑉𝑂, 𝑂𝑉 𝑆 < 𝑉 𝑆𝑂, 𝑉𝑂𝑆
+𝑆𝑂𝑉 < 𝑂𝑆𝑉 < 𝑆𝑉𝑂, 𝑂𝑉 𝑆 < 𝑉 𝑆𝑂, 𝑉𝑂𝑆
+𝑆𝑂𝑉, 𝑂𝑆𝑉 < 𝑆𝑉𝑂, 𝑂𝑉 𝑆 < 𝑉 𝑆𝑂, 𝑉𝑂𝑆
+𝑆𝑂𝑉 < 𝑆𝑉𝑂, 𝑂𝑉 𝑆 < 𝑂𝑆𝑉, 𝑉 𝑆𝑂, 𝑉𝑂𝑆
+𝑆𝑂𝑉 < 𝑆𝑉𝑂, 𝑂𝑉 𝑆, 𝑂𝑆𝑉, 𝑉 𝑆𝑂, 𝑉𝑂𝑆
+𝑆𝑂𝑉 < 𝑆𝑉𝑂, 𝑂𝑉 𝑆, 𝑉 𝑆𝑂 < 𝑂𝑆𝑉, 𝑉𝑂𝑆
+𝑆𝑂𝑉, 𝑆𝑉𝑂, 𝑉 𝑆𝑂, 𝑉𝑂𝑆, 𝑂𝑉 𝑆, 𝑂𝑆𝑉
+
+We define a condition as the combination of modality (spoken or written), the target score, and, optionally,
+a group.
+The sign of certain scores that measure cognitive ease is inverted before the analyses to transform them
+into scores of cognitive cost. This is the case of acceptability ratings in Malayalam and Korean and
+word order frequencies in Malayalam. As we are using Kendall 𝜏 correlation, the transformation does
+not alter the potential conclusions and has a clear advantage: all target scores can then be submitted to a
+right-sided Kendall correlation test. The resulting association between swap distance and acceptability
+rank is shown in Table 1.
+
+4
+
+Methodology
+
+All the code used to produce the results is available in the repository of the article.10
+9Bonferroni corrected, with pooled SD.
+10In the code folder of https://osf.io/b62ep/.
+
+Glottometrics
+
+11
+
+Ferrer-i-Cancho & Namboodiripad
+
+4.1
+
+Swap distance minimization in SOV languages.
+
+Kendall 𝜏 correlation
+
+We used R for the analyses. To compute Kendall 𝜏 correlation, we used neither the standard function to
+compute Kendall correlation, i.e. cor (that runs in 𝑂 (𝑛2 ) time, where 𝑛 is the size of the sample), nor the
+faster implementation cor.fk (that runs in 𝑂 (𝑛 log 𝑛) time) from the pcaPP library. The reason is that
+cor function computes Kendall 𝜏𝑏 instead of 𝜏𝑎 when there are ties.11 The documentation of cor.fk
+is not clear on this matter, but our experience suggests that it also implements 𝜏𝑏 : when we compute
+Kendall 𝜏 between the vector (1, 1, 2, 2, 3, 3) and itself, cor and cor.fk yield 1, the maximum value, as
+expected by the definition of 𝜏𝑏 . In contrast, our implementation of 𝜏𝑎 yields 0.8 because of the presence
+of ties. Therefore we computed 𝜏𝑎 using a naive implementation by us that runs in 𝑂 (𝑛2 ) time.
+
+4.2
+
+Kendall 𝜏 correlation test
+
+The standard function for the Kendall correlation test, i.e. cor.test, fails to compute accurate enough
+𝑝-values. To fix it, we implemented a function that computes, exactly, the right 𝑝-value of the Kendall
+correlation test by generating all permutations of the values of one of the variables and computing the
+Kendall 𝜏 correlation on each of those permutations. This exact test was also used for the differences
+𝜏(𝑑, 𝑠) − 𝜏( 𝑝, 𝑠) and 𝜏(𝑑, 𝑠) − 𝜏(𝑐, 𝑠).
+
+4.3
+
+Maximum correlation
+
+We distinguish two reasons why a Kendall correlation is maximum:
+• Maximum given a distance measure. Namely, given the sample as a matrix with two columns,
+one for the distance measure and the other for the score, there is no possible replacement of the
+values of the score that gives a higher correlation. See Property 3 for the maximum correlation
+and Property 5 for the minimum right 𝑝-value that is obtained when the correlation is maximum.
+• Maximum given the sample. In this case, the correlation is the maximum given the bivariate
+sample used to compute the correlation. Namely, given the sample as a matrix with two columns,
+no permutation of a column of the sample matrix yields a higher correlation. This kind of maximum
+correlation is determined computationally from its definition.
+It is easy to see that if a correlation is maximum given the distance measure, then it is also maximum
+given the sample. We also extend this notions to the differences 𝜏(𝑑, 𝑠) − 𝜏( 𝑝, 𝑠) and 𝜏(𝑑, 𝑠) − 𝜏(𝑐, 𝑠).
+11https://stat.ethz.ch/R-manual/R-devel/library/stats/html/cor.html
+
+Glottometrics
+
+12
+
+Ferrer-i-Cancho & Namboodiripad
+
+4.4
+
+Swap distance minimization in SOV languages.
+
+A Monte Carlo global analysis
+
+The Kendall 𝜏 correlation tests above suffer from lack of statistical power: the minimum 𝑝-value for the
+Kendall 𝜏 depends on the distance measure and ranges between 0.16̄ for 𝑐 and 0.005̄ for 𝑑 (Property 5). In
+the case of Sinhalese, none of the correlations across conditions and distance measures was statistically
+significant. To gain statistical power, we decided to perform a global statistical test for a given distance
+measure across all conditions. The statistic of that test is 𝑆, that is defined as the sum of all the Kendall
+correlations across all conditions for a given language and distance measure. The right 𝑝-value of the test
+was estimated by a Monte Carlo procedure as the proportion of 𝑇 = 106 randomizations where 𝑆 ′ , the
+value of 𝑆 in a randomization, satisfied 𝑆 ′ ≥ 𝑆. Each randomization consists of producing a uniformly
+random permutation the values of one the target score that are assigned to the distance measure for each
+language and distance measure. Therefore, the smallest non-zero estimated 𝑝-value that this test can
+produce is 1/𝑇 = 10−6 . The test was adapted to assess the significance of the difference between pairs
+of distance measures.
+As an orientation for discussion, we assume a significance level of 𝛼 = 0.05 throughout this article. When
+we perform statistical tests over various individual conditions, we may suffer from multiple comparisons.
+When presenting results on individual conditions, we do not correct 𝑝-values for them because this
+problem is addressed by the Monte Carlo test, where we apply Holm correction in two contexts. When
+answering the question of when a distance measure yields significance, we adjust the 𝑝-values of 𝑆(𝑑),
+𝑆( 𝑝) and 𝑆(𝑐) for each language (9 comparisons). When answering the question of when the difference
+between swap distance minimization and another principle yields significance, we adjust the 𝑝-values of
+𝑆(𝑑) − 𝑆(𝑐) and 𝑆(𝑑) − 𝑆( 𝑝) for each language (6 comparisons).
+
+5
+
+Results
+
+5.1
+
+Evidence of swap distance minimization
+
+In Korean, the correlation between acceptability and swap distance to the canonical order, (𝜏(𝑑, 𝑠)) is
+statistically significant in all three groups: Korean-dominant, English-dominant active, and Englishdominant passive (Table 4), suggesting that swap distance minimization is a robust effect. When
+acceptability ranks are used, the correlation turns out to be maximum given the sample. In the Englishdominant active group, the correlation increases when mean acceptability is replaced by acceptability
+rank. In Malayalam, that correlation is statistically significant and maximum given the distance measure
+(Table 4). When raw mean acceptability scores are replaced by acceptability ranks resulting from
+pairwise contrasts, the correlation (𝜏( 𝑝, 𝑠)) weakens (the opposite phenomenon with respect to group of
+English-dominant active in Korean) but it is still significant. That suggests that, in Malayalam, raw mean
+
+Glottometrics
+
+13
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+acceptability scores contain some information about swap distance minimization that is lost when using
+these ranks, likely due to lack of statistical power in the pairwise contrasts. The support for the swap
+distance minimization from the canonical order is confirmed when acceptability ratings are replaced
+by frequencies from Leela’s corpus, which achieve a maximum correlation given the sample (Table 4).
+These findings suggest that swap distance minimization in Malayalam is a robust phenomenon because
+it is captured by independent measures.
+Table 4: The outcome of three correlation tests. First, the Kendall 𝜏 correlation test between 𝑠, the target score, and 𝑑 is its
+swap distance to the canonical order SOV. Second, the Kendall 𝜏 correlation test between 𝑠 and 𝑝, the distance of the verb to
+the end. Second, the Kendall 𝜏 correlation test between 𝑠 and 𝑐, a binary variable that indicates if the order is canonical or
+not. For each correlation test, red indicates that the correlation is maximum (and the 𝑝-value is minimum) given the distance
+measure; orange indicates that the correlation is maximum (and 𝑝-value is minimum) given the sample.
+Language
+
+Group
+
+Score
+
+Modality
+
+𝜏(𝑑, 𝑠)
+
+𝑝-value
+
+𝜏( 𝑝, 𝑠)
+
+𝑝-value
+
+𝜏(𝑐, 𝑠)
+
+𝑝-value
+
+Korean
+Korean
+Korean
+Korean
+Korean
+Korean
+Malayalam
+Malayalam
+Malayalam
+Sinhalese
+Sinhalese
+Sinhalese
+Sinhalese
+Sinhalese
+Sinhalese
+Sinhalese
+Sinhalese
+
+Korean-d
+Korean-d
+English-d a
+English-d a
+English-d p
+English-d p
+-
+
+acceptability
+acceptability rank
+acceptability
+acceptability rank
+acceptability
+acceptability rank
+acceptability
+acceptability rank
+frequency
+reaction time
+reaction time rank
+reaction time
+reaction time rank
+error
+error rank
+error
+error rank
+
+spoken
+spoken
+spoken
+spoken
+spoken
+spoken
+spoken
+spoken
+spoken
+spoken
+written
+written
+spoken
+spoken
+written
+written
+
+0.733
+0.733
+0.667
+0.733
+0.733
+0.733
+0.867
+0.667
+0.8
+0.333
+0.467
+0.6
+0.333
+0.267
+0.4
+0
+0
+
+0.022
+0.022
+0.033
+0.022
+0.022
+0.022
+0.006
+0.044
+0.011
+0.228
+0.117
+0.061
+0.167
+0.239
+0.15
+0.6
+1
+
+0.8
+0.8
+0.8
+0.8
+0.8
+0.8
+0.8
+0.8
+0.8
+0.267
+0.4
+0.4
+0.267
+0.133
+0.2
+-0.133
+0
+
+0.011
+0.011
+0.011
+0.011
+0.011
+0.011
+0.011
+0.011
+0.011
+0.289
+0.133
+0.167
+0.333
+0.422
+0.333
+0.733
+1
+
+0.333
+0.333
+0.333
+0.333
+0.333
+0.333
+0.333
+0.267
+0.333
+0.333
+0.333
+0.333
+0.333
+0.333
+0.333
+0.2
+0
+
+0.167
+0.167
+0.167
+0.167
+0.167
+0.167
+0.167
+0.333
+0.167
+0.167
+0.167
+0.167
+0.167
+0.167
+0.167
+0.5
+1
+
+Note: 𝑐 is 0 if the order is canonical and 1 otherwise. 𝑝 is 0 for verb-last, 1 for verb-medial and 2 for verb first. In Korean,
+the groups are Korean-d (Korean-dominant), English-d a (English-dominant active) and English-d p (English-dominant
+passive).
+
+In Sinhalese, we find no support for swap distance minimization on individual conditions except for
+reaction times in the written modality, where the correlation between reaction time and swap distance to
+the canonical order yields a borderline 𝑝-value (𝑝-value=0.061). When the raw mean reaction times in
+that modality are replaced by ranks obtained from pairwise contrasts, the correlation 𝜏(𝑑, 𝑠) decreases
+(𝜏(𝑑, 𝑠) drops from 0.6 to 𝜏( 𝑝, 𝑠) = 0.3), suggesting that raw reaction times may contain some information
+about swap distance minimization that is lost during the pairwise contrasts. Interestingly, the correlation
+with these ranks is maximum given the sample (Table 4). In contrast, the rank transformation resulting
+from pairwise contrasts has the opposite effect for reaction time and error in the spoken modality: 𝜏(𝑑, 𝑠)
+increases after applying that transformation. That suggests that mean reaction time and mean error rate
+
+Glottometrics
+
+14
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+are noisy in the spoken modality.
+Table 5: Summary of the outcome of the Monte Carlo global analysis over all conditions for each language 𝑆 is the sum of the
+Kendall 𝜏 correlation over all conditions for a certain distance measure. 𝑑 is swap distance to the canonical order, 𝑝 is distance
+of the verb to the end of the triple, and 𝑐 is binary canonical distance. 𝑝-values have been adjusted with Holm correction (as
+explained in Section 4.
+Language
+Korean
+Malayalam
+Sinhalese
+
+𝑆(𝑑)
+
+𝑝-value
+
+4.33
+2.33
+2.4
+
+< 10 −6
+1.8 · 10 −5
+4.6 · 10 −3
+
+𝑆( 𝑝)
+
+𝑝-value
+
+4.8
+2.4
+1.53
+
+< 10 −6
+1.4 · 10 −5
+0.065
+
+𝑆(𝑐)
+
+𝑝-value
+
+2
+0.93
+2.2
+
+2.4 · 10 −5
+9.3 · 10 −3
+1.6 · 10 −5
+
+𝑆(𝑑) − 𝑆(𝑐)
+
+𝑝-value
+
+𝑆(𝑑) − 𝑆( 𝑝)
+
+𝑝-value
+
+2.33
+1.4
+0.2
+
+9 · 10 −4
+
+-0.47
+-0.07
+0.87
+
+1
+1
+0.11
+
+2.1 · 10 −3
+1
+
+Although statistical support for swap distance minimization is missing on individual conditions in
+Sinhalese, the Monte Carlo global analysis (Table 5) indicates that the sum of Kendall 𝜏 correlations
+over all conditions is significantly high (𝑆(𝑑) = 2.4, 𝑝-value = 1.5 · 10−3 ), suggesting that swap distance
+minimization is present but weak in Sinhalese. In Korean and Malayalam, the Monte Carlo global
+analysis just confirms the findings on individual languages (Table 5; 𝑝-value < 10−5 in both languages).
+
+5.2
+
+Evidence of maximization of the predictability of the verb
+
+The correlation between the distance from the verb to the end of the sentence and each of the scores
+(𝜏( 𝑝, 𝑠)) was statistically significant for Korean and Malayalam over all conditions, and it was indeed
+maximum given the distance measure (Table 4). In both languages and across all conditions, 𝜏( 𝑝, 𝑠)
+was maximum given the distance measure. However, the global analysis (Table 5) revealed that the
+sum of Kendall 𝜏 correlations over all conditions is borderline significant in Sinhalese (𝑆( 𝑝) = 1.53,
+𝑝-value = 0.066), suggesting that the maximization of the predictability of the verb has some global
+effect on that language. In Korean and Malayalam, the Monte Carlo global analysis based on 𝑆( 𝑝) just
+confirms the findings on individual languages (Table 5; 𝑝-value < 10−5 in both languages).
+
+5.3
+
+Evidence of a preference for the canonical order
+
+The correlation between the binary distance to the canonical order and each of the scores (𝜏( 𝑝, 𝑠)) was
+never statistically significant across languages and conditions (Table 4), but this is due to the lack of the
+statistical power of the test (the minimum 𝑝-value is 0.16̄ as explained in the Appendix). Indeed, the
+Monte Carlo global analysis based on 𝑆(𝑐) shows that a preference for the canonical order has a significant
+effect in all languages but much more strongly in Korean and Sinhalese (Table 5; 𝑝-value < 10−2 in all
+languages). The latter could be due to the larger amount of conditions in Sinhalese and Korean, which
+may amplify the statistical effect.
+
+Glottometrics
+
+15
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Table 6: The outcome of two Kendall correlation difference tests. The first test is on 𝜏(𝑑, 𝑠) − 𝜏(𝑐, 𝑠). The second test is on
+𝜏(𝑑, 𝑠) − 𝜏( 𝑝, 𝑠). In each correlation test, orange indicates that the correlation is maximum (and then the 𝑝-value is minimum)
+given the sample.
+Language
+
+Group
+
+Score
+
+Modality
+
+𝜏(𝑑, 𝑠) − 𝜏(𝑐, 𝑠)
+
+𝑝-value
+
+𝜏(𝑑, 𝑠) − 𝜏( 𝑝, 𝑠)
+
+𝑝-value
+
+Korean
+Korean
+Korean
+Korean
+Korean
+Korean
+Malayalam
+Malayalam
+Malayalam
+Sinhalese
+Sinhalese
+Sinhalese
+Sinhalese
+Sinhalese
+Sinhalese
+Sinhalese
+Sinhalese
+
+Korean-d
+Korean-d
+English-d a
+English-d a
+English-d p
+English-d p
+-
+
+acceptability
+acceptability rank
+acceptability
+acceptability rank
+acceptability
+acceptability rank
+acceptability
+acceptability rank
+frequency
+reaction time
+reaction time rank
+reaction time
+reaction time rank
+error
+error rank
+error
+error rank
+
+spoken
+spoken
+spoken
+spoken
+spoken
+spoken
+spoken
+spoken
+spoken
+spoken
+written
+written
+spoken
+spoken
+written
+written
+
+0.4
+0.4
+0.333
+0.4
+0.4
+0.4
+0.533
+0.4
+0.467
+0
+0.133
+0.267
+0
+-0.067
+0.067
+-0.2
+0
+
+0.1
+0.078
+0.133
+0.078
+0.1
+0.078
+0.006
+0.078
+0.022
+0.6
+0.35
+0.233
+0.5
+0.611
+0.383
+0.883
+1
+
+-0.067
+-0.067
+-0.133
+-0.067
+-0.067
+-0.067
+0.067
+-0.133
+0
+0.067
+0.067
+0.2
+0.067
+0.133
+0.2
+0.133
+0
+
+0.753
+0.728
+0.778
+0.728
+0.753
+0.728
+0.5
+0.833
+0.558
+0.5
+0.433
+0.247
+0.5
+0.256
+0.167
+0.267
+1
+
+Note: 𝜏(𝑑, 𝑠) is the correlation between a score and swap distance. 𝜏(𝑐, 𝑠) is the correlation between a score and the
+binary distance to canonical order. 𝜏( 𝑝, 𝑠) is the correlation between a score and the distance to end of the verb. In Korean,
+the groups are Korean-d (Korean-dominant), English-d a (English-dominant active) and English-d p (English-dominant
+passive).
+
+5.4
+
+Can the results be reduced to simply a preference for the canonical order?
+
+It could be argued the finding of swap distance minimization effects is a mere consequence of a rather
+obvious expectation: canonical orders are easier to process than non-canonical orders. Indeed, swap
+distance minimization also predicts a preference for canonical orders but adds a gradation on noncanonical orders. However, we find that the correlation between a target score and swap distance to
+canonical order (𝜏(𝑑, 𝑠)) as well as the correlation between a target score and distance of the verb to the
+end (𝜏( 𝑝, 𝑠)) are always greater than the correlation between the target score and being canonical or not
+(𝜏(𝑐, 𝑠)) in both Korean and Malayalam; this is also the case in Sinhalese with two exceptions: error
+in the spoken and written modality (Table 4 and Table 6). In Korean, the difference 𝜏(𝑑, 𝑠) − 𝜏(𝑐, 𝑠)
+is always positive but never significant. However, the difference is borderline significant in all groups
+when acceptability ranks are used (𝑝-value = 0.078). In Malayalam, the analysis of 𝜏(𝑑, 𝑠) − 𝜏(𝑐, 𝑠)
+(Table 6) indicates that swap distance minimization has a significantly stronger effect than a preference for
+a canonical order across conditions (although the 𝑝-value of acceptability ranks, i.e. 0.078 is borderline).
+Furthermore, concerning mean acceptability, the difference is maximum given the sample. The Monte
+Carlo global analysis shows that indeed 𝑆(𝑑) − 𝑆(𝑐) is significantly large in both Korean and Malayalam
+(𝑝-value < 10−4 ), indicating that swap distance minimization is significantly stronger than a preference
+
+Glottometrics
+
+16
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+for a canonical order (Table 5).
+In Sinhalese, the difference 𝜏(𝑑, 𝑠) − 𝜏(𝑐, 𝑠) is never statistically significant across conditions and that is
+confirmed by the Monte Carlo global analysis (𝑝-value = 0.369). (Table 5).
+
+5.5
+
+Swap distance minimization versus maximization of the predictability of the verb
+
+In Korean, the effect of swap distance minimization is weaker than the force that drags the verb towards
+the end. In particular, the correlation between acceptability and swap distance to the canonical order
+(𝜏(𝑑, 𝑠)) is always smaller than the correlation between mean acceptability and verb position (𝜏( 𝑝, 𝑠)).
+In Table 4 and Table 6, we can check that 𝜏(𝑑, 𝑠) < 𝜏( 𝑝, 𝑠) in all conditions. The 𝑝-value of 𝜏(𝑑, 𝑠)
+are greater than those of 𝜏( 𝑝, 𝑠) (Table 4). Unsurprisingly, we find that the 𝜏(𝑑, 𝑠) − 𝜏( 𝑝, 𝑠) is never
+significant – neither on individual conditions (Table 6), nor on the global analysis (see 𝑆(𝑑) − 𝑆( 𝑝) in
+Table 5).
+In Malayalam results are mixed: the sign of 𝜏(𝑑, 𝑠) − 𝜏( 𝑝, 𝑠) depends on the condition but 𝜏(𝑑, 𝑠)
+beats 𝜏( 𝑝, 𝑠) in the condition where both 𝜏(𝑑, 𝑠) and 𝜏( 𝑝, 𝑠) are maximum given the distance measure
+(𝜏(𝑑, 𝑠) = 0.867 > 𝜏( 𝑝, 𝑠) = 0.8 in Table 4). Thus, in that condition, swap distance minimization
+has an effect in Malayalam that cannot be reduced to preference for verb-last. The lack of verb initial
+orders with two overt arguments in Leela’s corpus, in spite of being grammatically possible, suggests
+that undersampling may be limiting the observation of a stronger swap distance minimization effect
+when frequencies are used as a proxy for cognitive cost. As it happened with Korean, we find that the
+𝜏(𝑑, 𝑠) − 𝜏( 𝑝, 𝑠) is never significant neither on individual conditions (Table 6) nor on the global analysis
+(see 𝑆(𝑑) − 𝑆( 𝑝) in Table 5).
+In Sinhalese we find the opposite phenomenon with respect to Korean: the effect of swap distance
+minimization is stronger: given a score and a condition, 𝜏(𝑑, 𝑠) > 𝜏( 𝑝, 𝑠) in all cases. Interestingly, we
+find that the 𝜏(𝑑, 𝑠) − 𝜏( 𝑝, 𝑠) is never significant on individual conditions (Table 6) and this is confirmed
+in the global analysis (see 𝑆(𝑑) − 𝑆( 𝑝) in Table 5).
+
+6
+
+Discussion
+
+We have seen that an effect consistent with swap distance minimization is found in all three languages
+(Table 4). However, we have seen that in Sinhalese, the effect is weak and requires a global analysis over
+all conditions for it to become statistically significant (Table 5).
+We have demonstrated that swap distance minimization is significantly stronger than a preference for
+the canonical order in Korean and Malayalam by means of a global analysis across conditions (Table 5).
+In Malayalam, swap distance minimization is so strong that its superiority with respect to a preference
+
+Glottometrics
+
+17
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+SVO
+3
+
+VSO
+5
+
+SOV
+1
+
+VOS
+6
+
+OSV
+2
+
+OVS
+4
+
+Figure 3: The word order permutation ring with the acceptability rank of every word order marked in red below each word
+order. The word order with the highest mean acceptability has rank 1, the word order with the 2nd highest mean acceptability
+has rank 2 and so on.
+
+for the canonical order manifests also on individual conditions (Table 6). Notice that the acceptability
+ranks in Table 1 coincide with a labelling of the vertices of the permutahedron following a traversal of
+the permutahedron from SOV (Figure 3), which is known as breadth first traversal in computer science
+(Cormen et al., 1990). There are 5! = 120 possible traversals starting at SOV, but only 4 four of them are
+breadth first traversals; the acceptability rank (that results from transforming mean acceptability scores
+into ranks) has hit one of them. In Sinhalese, swap distance minimization is neither significantly stronger
+than a preference for the canonical order nor significantly stronger than the preference for verb-last
+(Table 5) that is believed to explain acceptability in Malayalam ().
+
+We have provided evidence that swap distance minimization is cognitively relevant in capturing human
+behavior: it is significantly stronger than the principle it subsumes, i.e. the preference for the canonical
+order, in Korean and in Malayalam. In Sinhalese, we failed to find that swap distance minimization is
+acting significantly stronger than a preference for the canonical order. It is possible that swap distance
+minimization is acting beyond a preference for the canonical order, but its additional contribution with
+respect to other word order principles may remain statistically invisible. First, recall that swap distance
+minimization subsumes the preference for the canonical word order. Second, swap distance minimization
+and preference for verb-last are strongly correlated. Recall that the Kendall 𝜏 correlation between 𝑑 and
+𝑝, 𝜏(𝑑, 𝑝) is significantly high while 𝜏(𝑑, 𝑐) and 𝜏( 𝑝, 𝑐) are not (Table 2). This is in line with the view
+that word order is a multiconstraint satisfaction principle, and word orders can compete or collaborate
+(Ferrer-i-Cancho, 2017). Third, our analyses on Sinhalese are based on data which is averaged across
+participants. Because we could not control for individual variation in that language as in Namboodiripad’s
+dataset (Section 3), the effects of swap distance minimization could indeed be stronger than what our
+Glottometrics
+
+18
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+analysis has revealed. Thus, controlling for individual variation in Sinhalese should be the subject of
+future research. Finally, the behavioral measures are not uniform across languages, as we currently do not
+have acceptability scores for Sinhalese, which could contribute to apparent differences across languages.
+In neurolinguistics, it has been found that activity in certain brain regions (e.g., the left inferior frontal
+gyrus) is higher for non-canonical orders than for canonical orders (Meyer and Friederici, 2016). We
+suggest an interpretation of this finding as a consequence of a mental “rotation” operation to retrieve
+the canonical order (Figure 2) and propose a new research line: the use of swap distance as a more
+fine grained predictor of brain activity with respect to the traditional binary contrast of canonical versus
+non-canonical order (Meyer and Friederici, 2016, Table 48.1).
+The strength of the swap distance minimization compared to the effect of other principles depends
+on the language. In Korean, the manifestation of swap distance minimization is weaker than that of
+the maximization of the predictability of the verb but stronger than a preference for the canonical order
+(Table 6). In Malayalam, swap distance minimization exhibits the strongest effect (Table 4). In Sinhalese,
+swap distance minimization is the second strongest, as in Korean, but the preference for a canonical order
+exhibits the strongest effect(Table 4).
+We speculate that the major findings summarized above are consistent with the following scenario. First,
+recall that there is evidence that Korean exhibits a word order flexibility close to that of English and that
+Korean is more rigid than Malayalam (Levshina et al., 2023). The proposals of Sinhalese and Malayalam
+as non-configurational languages () suggest these two languages exhibit more word order freedom than
+Korean.12
+Second, consider the following arguments. As we discussed in Section 1, strong evidence of swap
+distance minimization requires that interference from other word order principles is reduced. The fact
+that Korean is the only language where the maximization of the predictability of the verb has the strongest
+effect, provides additional support for the rigidity of Korean and the possible interference of that principle
+with swap distance minimization. As one moves from more rigid word orders to more flexible word
+orders, one expects that the manifestation of swap distance minimization becomes clearer. Accordingly,
+Malayalam exhibits the strongest manifestation of swap distance minimization but a weaker effect of the
+maximization of the predictability of the verb. However, an excess of word order flexibility may shadow
+the manifestation of swap distance minimization. If we assume that Sinhalese has the highest degree of
+12Non-configurationality can be seen from a strong a priori theoretical assumption, namely that non-configurationality is
+an adjustable parameter in a language as opposed to an emergent property which becomes apparent via the interaction of a
+constellation of other factors Ferrer-i-Cancho, 2017. We take the position of Levshina et al., 2023, that languages are not
+separable into configurational or non-configurational, but rather that they vary along a cline in degree of flexibility. However,
+we do currently mention a role for non-configurationality on Page 19.
+
+Glottometrics
+
+19
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+word order flexibility, it is not surprising that none of the principles has a significant effect on individual
+conditions (Table 4) and that swap distance minimization does not show a significantly stronger effect
+than other word order preferences after a global analysis over conditions (Table 5).
+A weakness of the arguments above is that, for Sinhalese, we are not measuring word order flexibility in
+the same way as for Korean and Malayalam. We are just assuming it should be very flexible according
+the non-configurational hypothesis (), and, as argued in (Levshina et al., 2023), going from categorical to
+gradient characterizations of constituent order typology is critical to building explanatory models in this
+domain (see also Yan and Liu (2023) for research on categorical versus gradient characterizations). Thus,
+an urgent task is to investigate word order flexibility in Sinhalese in a cross-linguistically comparable way,
+perhaps with the same methodology as in Namboodiripad’s research program (). The complementary is
+also another important question for future research, namely, investigating reaction times and error rates in
+Malayalam and Korean with the methodology of (Tamaoka et al., 2011). We hope this research stimulates
+researchers also to investigate languages with canonical orders other than SOV (cf. Garrido Rodriguez
+et al., 2023). The predictions of swap distance minimization on non-SOV languages are already available
+in Equation 2.
+Finally, an implication of swap distance minimization for word order evolution is a tendency to preserve
+the canonical order, as variants that deviate from it will be more costly (contra misinterpretations of
+efficiency-based explanations which might lead one to predict that SOV languages should eventually
+change to SVO). That tendency would be reinforced by other principles that determine the optimality of
+the canonical word order, e.g., in verb final languages, the placement of the verb is optimal with respect
+to maximization of the predictability of the verb (Ferrer-i-Cancho, 2017), and we have shown that a
+preference for verb-last and swap distance minimization are strongly correlated (Table 2). Therefore, it
+is not surprising that grammars are robustly transmitted even during instances of rapid discontinuities
+in language change, such as the emergence of creole languages; the dominant word order in creoles is
+overwhelmingly that of the lexifiers (Blasi et al., 2017). As such, swap distance minimization provides
+one potential answer for why languages vary when it comes to how much they minimize dependencies.
+Moreover, the findings here exemplify cases where general efficiency-based explanations do not lead to
+the same outcomes for every language, even when those languages on the surface seem to be very similar.
+Additional typological features, such as degree of flexibility, interact with swap distance minimization
+and dependency length minimization, leading us to predict structured variation across languages in how
+these very general principles are applied and manifest.
+
+Glottometrics
+
+20
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Acknowledgments
+We are very grateful to L. Alemany-Puig for a careful revision of the manuscript and to L. Meyer
+for helpful comments. We also thank V. Franco-Sánchez and A. Martí-Llobet for helpful discussions
+on swap distance minimization. We became aware of the concept of permutahedron in combinatorics
+thanks to V. Franco-Sánchez. RFC is supported by a recognition 2021SGR-Cat (01266 LQMC) from
+AGAUR (Generalitat de Catalunya) and the grants AGRUPS-2022 and AGRUPS-2023 from Universitat
+Politècnica de Catalunya.
+
+References
+Alemany-Puig, L., Esteban, J. L., Ferrer-i-Cancho, R. (2022). Minimum projective linearizations of trees in
+linear time. Information Processing Letters, 174, 106204. https://doi.org/10.1016/j.ipl.2021.106204
+Austin, P., Bresnan, J. (1996). Non-configurationality in Australian aboriginal languages. Natural Language and
+Linguistic Theory, 14(2), 215–268. https://doi.org/10.1007/bf00133684
+Blasi, D. E., Michaelis, S. M., Haspelmath, M. (2017). Grammars are robustly transmitted even during the
+emergence of creole languages. Nature Human Behaviour, 1(10), 723–729. https://doi.org/10.1038/s41562-0170192-4
+Ceballos, C., Manneville, T., Pilaud, V., Pournin, L. (2015). Diameters and geodesic properties of generalizations of the associahedron. Discrete Mathematics & Theoretical Computer Science, DMTCS Proceedings,
+27th International Conference on Formal Power Series and Algebraic Combinatorics (FPSAC 2015). https :
+//doi.org/10.46298/dmtcs.2540
+Cooper, L. A., Shepard, R. N. (1973). Chronometric studies of the rotation of mental images. In W. G. CHASE
+(Ed.), Visual information processing (pp. 75–176). Academic Press. https://doi.org/10.1016/B978-0-12-1701505.50009-3
+Corbett, G. (1993). The head of Russian numeral expressions. In Heads in grammatical theory (pp. 11–35).
+Cambridge University Press Cambridge. https://doi.org/https://doi.org/10.1017/CBO9780511659454
+Cormen, T. H., Leiserson, C. E., Rivest, R. L. (1990). Introduction to algorithms. The MIT Press.
+Dingemanse, M., Blasi, D. E., Lupyan, G., Christiansen, M. H., Monaghan, P. (2015). Arbitrariness, iconicity,
+and systematicity in language. Trends in Cognitive Sciences, 19(10), 603–615. https://doi.org/https://doi.org/10.
+1016/j.tics.2015.07.013
+Dryer, M. S. (2013). Order of subject, object and verb. In M. S. Dryer M. Haspelmath (Eds.), The world atlas of
+language structures online. Max Planck Institute for Evolutionary Anthropology. http://wals.info/chapter/81
+Ferrer-i-Cancho, R. (2004). Euclidean distance between syntactically linked words. Physical Review E, 70,
+056135. https://doi.org/10.1103/PhysRevE.70.056135
+
+Glottometrics
+
+21
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Ferrer-i-Cancho, R. (2008). Some word order biases from limited brain resources. A mathematical approach.
+Advances in Complex Systems, 11(3), 393–414. https://doi.org/10.1142/S0219525908001702
+Ferrer-i-Cancho, R. (2014). Towards a theory of word order. Comment on “Dependency distance: A new perspective on syntactic patterns in natural language” by Haitao Liu et al. Physics of Life Reviews, 21, 218–220.
+https://doi.org/10.1016/j.plrev.2017.06.019
+Ferrer-i-Cancho, R. (2015a). The placement of the head that minimizes online memory. A complex systems
+approach. Language Dynamics and Change, 5(1), 114–137. https://doi.org/10.1163/22105832-00501007
+Ferrer-i-Cancho, R. (2015b). Reply to the commentary “Be careful when assuming the obvious”, by P. Alday.
+Language Dynamics and Change, 5(1), 147–155. https://doi.org/10.1163/22105832-00501009
+Ferrer-i-Cancho, R. (2016). Kauffman’s adjacent possible in word order evolution. The evolution of language:
+Proceedings of the 11th International Conference (EVOLANG11).
+Ferrer-i-Cancho, R. (2017). The placement of the head that maximizes predictability. An information theoretic
+approach. Glottometrics, 39, 38–71.
+Ferrer-i-Cancho, R., Gómez-Rodríguez, C. (2021a). Anti dependency distance minimization in short sequences.
+a graph theoretic approach. Journal of Quantitative Linguistics, 28(1), 50–76. https://doi.org/10.1080/09296174.
+2019.1645547
+Ferrer-i-Cancho, R., Gómez-Rodríguez, C., Esteban, J. L., Alemany-Puig, L. (2022). Optimality of syntactic
+dependency distances. Physical Review E, 105(1), 014308. https://doi.org/10.1103/PhysRevE.105.014308
+Ferrer-i-Cancho, R., Gómez-Rodríguez, C. (2021b). Dependency distance mininimization predicts compression.
+Proceedings of the Second Workshop on Quantitative Syntax (Quasy, SyntaxFest 2021), 45–57. https://aclanthology.
+org/2021.quasy-1.4/
+Futrell, R., Levy, R. P., Gibson, E. (2020). Dependency locality as an explanatory principle for word order.
+Language, 96(2), 371–412. https://doi.org/10.1353/lan.2020.0024
+Futrell, R., Mahowald, K., Gibson, E. (2015). Large-scale evidence of dependency length minimization in 37
+languages. Proceedings of the National Academy of Sciences USA, 112(33), 10336–10341. https://doi.org/https:
+//doi.org/10.1073/pnas.1502134112
+Garrido Rodriguez, G., Norcliffe, E., Brown, P., Huettig, F., Levinson, S. C. (2023). Anticipatory processing in
+a verb-initial Mayan language: Eye-tracking evidence during sentence comprehension in Tseltal. Cognitive Science,
+47(1), e13292. https://doi.org/https://doi.org/10.1111/cogs.13219
+Garrod, S., Pickering, M. J. (2013). Dialogue: Interactive alignment and its implications for language learning
+and language change. In The language phenomenon (pp. 47–64). Springer Berlin Heidelberg. https://doi.org/10.
+1007/978-3-642-36086-2_3
+Gell-Mann, M., Ruhlen, M. (2011). The origin and evolution of word order. Proceedings of the National Academy
+of Sciences USA, 108(42), 17290–17295. https://doi.org/10.1073/pnas.1113716108
+
+Glottometrics
+
+22
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Gildea, D., Temperley, D. (2007). Optimizing grammars for minimum dependency length. Proceedings of the 45th
+Annual Meeting of the Association of Computational Linguistics, 184–191. https://www.aclweb.org/anthology/
+P07-1024
+Givón, T. (1979). On understanding grammar. Academic.
+Gómez-Rodríguez, C., Christiansen, M., Ferrer-i-Cancho, R. (2022). Memory limitations are hidden in grammar. Glottometrics, 52, 39–64. https://doi.org/10.53482/2022_52_397
+Gómez-Rodríguez, C., Ferrer-i-Cancho, R. (2017). Scarcity of crossing dependencies: A direct outcome of a
+specific constraint? Physical Review E, 96, 062304. https://doi.org/10.1103/PhysRevE.96.062304
+Hale, K. (1983). Warlpiri and the grammar of non-configurational languages. Natural Language and Linguistic
+Theory, 1(1). https://doi.org/10.1007/bf00210374
+Hammarström, H. (2016). Linguistic diversity and language evolution. Journal of Language Evolution, 1(1),
+19–29. https://doi.org/10.1093/jole/lzw002
+Hyönä, J., Hujanen, H. (1997). Effects of case marking and word order on sentence parsing in Finnish: An eye
+fixation analysis. Quarterly Journal of Experimental Psychology, 50, 841–858. https://doi.org/10.1080/713755738
+Kaiser, E., Trueswell, J. C. (2004). The role of discourse context in the processing of a flexible word-order
+language. Cognition, 94(2), 113–147. https://doi.org/10.1016/j.cognition.2004.01.002
+Kendall, M. G. (1970). Rank correlation methods (4th). Griffin.
+Koizumi, M., Kim, J. (2016). Greater left inferior frontal activation for SVO than VOS during sentence comprehension in kaqchikel. Frontiers in Psychology, 7. https://doi.org/10.3389/fpsyg.2016.01541
+Leela, M. (2016). Early acquisition of word order: Evidence from Hindi, Urdu and Malayalam [Doctoral dissertation, Universitat Autonoma de Barcelona]. http://hdl.handle.net/10803/399556
+Levshina, N., Namboodiripad, S., Allassonnière-Tang, M., Kramer, M., Talamo, L., Verkerk, A., Wilmoth,
+S., Rodriguez, G. G., Gupton, T. M., Kidd, E., Liu, Z., Naccarato, C., Nordlinger, R., Panova, A., Stoynova, N.
+(2023). Why we need a gradient approach to word order. Linguistics, 61(4), 825–883. https://doi.org/10.1515/ling2021-0098
+Lin, D. (1996). On the structural complexity of natural language sentences. COLING 1996 Volume 2: The 16th
+International Conference on Computational Linguistics. https://aclanthology.org/C96-2123
+Liu, H. (2008). Dependency distance as a metric of language comprehension difficulty. Journal of Cognitive
+Science, 9, 159–191. https://doi.org/10.17791/jcs.2008.9.2.159
+Liu, H., Xu, C., Liang, J. (2017). Dependency distance: A new perspective on syntactic patterns in natural
+languages. Physics of Life Reviews, 21, 171–193. https://doi.org/10.1016/j.plrev.2017.03.002
+
+Glottometrics
+
+23
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Meir, I., Sandler, W., Padden, C., Aronoff. (2010). Emerging sign languages. In M. Marschark P. E. Spencer
+(Eds.), Oxford handbook of deaf studies, language, and education (pp. 267–280, Vol. 2). Oxford University Press
+Oxford. https://doi.org/10.1093/oxfordhb/9780195390032.013.0018
+Menn, L. (2000). It’s time to face a simple question: Why is canonical form simple? Brain and Language, 71(1),
+157–159. https://doi.org/10.1006/brln.1999.2239
+Meyer, L., Friederici, A. D. (2016). Chapter 48 - neural systems underlying the processing of complex sentences.
+In G. Hickok S. L. Small (Eds.), Neurobiology of language (pp. 597–606). Academic Press. https://doi.org/https:
+//doi.org/10.1016/B978-0-12-407794-2.00048-1
+Mohanan, K. (1983). Lexical and configurational structures. The Linguistics Review, 3, 113–139. https://doi.org/
+10.1515/tlir.1983.3.2.113
+Morrill, G. (2000). Incremental processing and acceptability. Computational Linguistics, 25(3), 319–338. https:
+//aclanthology.org/J00-3002
+Motamedi, Y., Wolters, L., Schouwstra, M., Kirby, S. (2022). The effects of iconicity and conventionalization
+on word order preferences. Cognitive Science, 46(10). https://doi.org/10.1111/cogs.13203
+Namboodiripad, S., Garcia-Amaya, L., Kramer, M., Tobin, S., Sedarous, Y., Henriksen, N., Boland, J.,
+Coetzee, A. (2020). Verb position and flexible constituent order processing: Comparing verb-final and verbmedial languages. Poster at 33rd CUNY Conference on Human Sentence Processing. Amherst, Massachusetts.
+https://osf.io/d9wq8/
+Namboodiripad, S., Goodall, G. (2016). Verb position predicts acceptability in a flexible SOV language. Poster
+at 29th CUNY Conference on Human Sentence Processing. Gainesville, Florida.
+Namboodiripad, S. (2017). An Experimental Approach to Variation and Variability in Constituent Order [PhD
+Thesis]. UC San Diego. https://escholarship.org/uc/item/2sv6z8bz
+Namboodiripad, S. (2019). A gradient approach to flexible constituent order. https://doi.org/10.31234/osf.io/rvjn5
+Namboodiripad, S., Kim, D., Kim, G. (2019). English dominant and Korean speakers show reduced flexibility
+in constituent order. Proceedings of Chicago Linguistics Society 53. http://savi.ling.lsa.umich.edu/publications/
+CLSmanuscript.pdf
+Newmeyer, F. J. (2000). On the reconstruction of ’proto-world’ word order. In C. K. et al. (Ed.), The evolutionary
+emergence of language (pp. 372–388). Cambridge University Press.
+Niu, R., Liu, H. (2022). Effects of syntactic distance and word order on language processing: An investigation
+based on a psycholinguistic treebank of English. Journal of Psycholinguistic Research, 51(5), 1043–1062. https:
+//doi.org/10.1007/s10936-022-09878-4
+Occhino, C., Anible, B., Wilkinson, E., Morford, J. P. (2017). Iconicity is in the eye of the beholder: How
+language experience affects perceived iconicity. Gesture, 16(1), 100–126.
+
+Glottometrics
+
+24
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Ohta, S., Koizumi, M., Sakai, K. L. (2017). Dissociating effects of scrambling and topicalization within the left
+frontal and temporal language areas: An fMRI study in Kaqchikel Maya. Frontiers in Psychology, 8, 748.
+Perniss, P., Thompson, R., Vigliocco, G. (2010). Iconicity as a general property of language: Evidence from
+spoken and signed languages. Frontiers in Psychology, 1. https://doi.org/10.3389/fpsyg.2010.00227
+Pickering, M. J., Garrod, S. (2006). Alignment as the basis for successful communication. Research on Language
+and Computation, 4(2-3), 203–228. https://doi.org/10.1007/s11168-006-9004-0
+Prabath, K., Ananda, M. L. (2017). Configurationality and mental grammars: Sentences in Sinhala with reduplicated expressions. International Journal of Multidisciplinary Studies, 3(2), 25. https://doi.org/10.4038/ĳms.
+v3i2.4
+Sandler, W., Meir, I., Padden, C., Aronoff, M. (2005). The emergence of grammar: Systematic structure in a
+new language. Proceedings of the National Academy of Sciences USA, 102, 2661–2665. https://doi.org/10.1073/
+pnas.0405448102
+Tamaoka, K., Kanduboda, P., Sakai, H. (2011). Effects of word order alternation on the sentence processing of
+Sinhalese written and spoken forms. Open Journal of Modern Linguistics, 1, 24–32. https://doi.org/10.4236/ojml.
+2011.12004
+Tarr, M. J., Pinker, S. (1989). Mental rotation and orientation-dependence in shape recognition. Cognitive
+Psychology, 21, 233–282. https://doi.org/10.1016/0010-0285(89)90009-1
+Temperley, D. (2008). Dependency-length minimization in natural and artificial languages. Journal of Quantitative
+Linguistics, 15(3), 256–282. https://doi.org/10.1080/09296170802159512
+Temperley, D., Gildea, D. (2018). Minimizing syntactic dependency lengths: Typological/Cognitive universal?
+Annual Review of Linguistics, 4(1), 67–80. https://doi.org/10.1146/annurev-linguistics-011817-045617
+Winter, B., Sóskuthy, M., Perlman, M., Dingemanse, M. (2022). Trilled /r/ is associated with roughness, linking
+sound and touch across spoken languages. Scientific Reports, 12(1). https://doi.org/10.1038/s41598-021-04311-7
+Xu, C., Liang, J., Liu, H. (2017). DDM at work. Physics of Life Reviews, 21, 233–240. https://doi.org/10.1016/j.
+plrev.2017.07.001
+Yan, J., Liu, H. (2023). Basic word order typology revisited: A crosslinguistic quantitative study based on UD
+and WALS. Linguistics Vanguard. https://doi.org/10.1515/lingvan-2021-0001
+
+Appendix
+The maximum Kendall correlation
+Recall the definition of 𝜏 in Equation 5. Let 𝑛0 be the number of pairs that are neither concordant nor
+discordant.
+
+Glottometrics
+
+25
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Property 1.
+(6)
+
+𝑛0
+𝑛0
+𝑛 − 1 ≤ 𝜏 ≤ 1 − 𝑛 .
+2
+
+2
+
+Proof. By definition,
+ 
+𝑛
+𝑛 𝑐 + 𝑛 𝑑 + 𝑛0 =
+.
+2
+The substitution
+ 
+𝑛
+𝑛𝑐 =
+− 𝑛 𝑑 − 𝑛0
+2
+transforms Equation 5 into
+2𝑛 𝑑 + 𝑛0
+.
+𝑛
+
+𝜏 =1−
+
+2
+
+The latter and the fact that 𝑛 𝑑 ≥ 0 by definition leads to
+𝜏 ≤ 1−
+
+𝑛0
+𝑛 .
+2
+
+By symmetry, the substitution
+ 
+𝑛
+𝑛𝑑 =
+− 𝑛 𝑐 − 𝑛0
+2
+transforms Equation 5 into
+𝜏=
+
+2𝑛𝑐 + 𝑛0
+− 1.
+𝑛
+2
+
+The latter and the fact that 𝑛𝑐 ≥ 0 by definition leads to
+𝜏≥
+
+𝑛0
+𝑛  − 1.
+2
+
+Hence we conclude Equation 6.
+Consider the Kendall 𝜏 correlation between 𝑥 and 𝑦. Let 𝑁 𝑥 be the number of distinct values of 𝑥 and
+𝑁 𝑦 be the number of distinct values of 𝑦. Let us group the values of 𝑥 in a tie and define 𝑡𝑖 the number of
+tied values in the 𝑖-th group. Let us group the values of 𝑦 in a tie and define 𝑢 𝑖 the number of tied values
+in the 𝑖-th group. Then
+Property 2.
+(7)
+
+𝑁𝑥   𝑁𝑦  
+©∑︁ 𝑡𝑖 ∑︁ 𝑢 𝑖 ª
+𝑛0 ≥ max ­
+,
+®.
+2
+2
+𝑖=1
+« 𝑖=1
+¬
+
+Proof. Notice that pairs formed with values in a tie cannot be neither concordant nor discordant. Then
+
+the 𝑖-th tie group of 𝑥 contributes with 𝑡2𝑖 pairs of points that are not concordant nor discordant. Then,
+the overall contribution to pairs of this sort by 𝑥 is
+𝑁𝑥  
+∑︁
+𝑡𝑖
+𝑖=1
+
+Glottometrics
+
+2
+
+.
+
+26
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Similarly, the contribution by 𝑦 to pairs of points that are neither concordant nor discordant is
+𝑁𝑦  
+∑︁
+𝑢𝑖
+
+2
+
+𝑖=1
+
+.
+
+Combining the contributions of 𝑥 and 𝑦 one retrieves Equation 7. The reader with some statistical
+background may have already realized that the summations over the number of distinct pairs in a group
+above are the ingredients of the adjustment for ties in the denominator in the definition of 𝜏𝑏 (Kendall,
+1970).
+The next property presents the range of variation of 𝜏 for each distance measure
+Property 3. Consider the Kendall correlation, i.e 𝜏(𝑥, 𝑦) where 𝑥 is some distance measure and 𝑦 can
+be any (for instance, 𝑦 can be some score 𝑠). We have that
+−
+
+13
+13
+= −0.86̄ ≤ 𝜏(𝑑, 𝑦) ≤
+= 0.86̄
+15
+15
+4
+4
+− = −0.8 ≤ 𝜏( 𝑝, 𝑦) ≤ = 0.8.
+5
+5
+1
+1
+− = −0.3̄ ≤ 𝜏(𝑐, 𝑦) ≤ = 0.3̄.
+3
+3
+
+Proof. Now we will derive the range of variation of 𝜏 for each distance measure by applying an implication
+of Equation 7, namely
+𝑁𝑥  
+∑︁
+𝑡𝑖
+
+𝑛0 ≥
+
+2
+
+𝑖=1
+
+.
+
+Notice that
+𝑛0 =
+
+𝑁𝑥  
+∑︁
+𝑡𝑖
+
+2
+
+𝑖=1
+
+This happens when all the values of 𝑦 are different. This is a typical situation when using continuous
+scores, as repeated values are unlikely except in case of lack of numerical precision.
+Consider the matrix in Table 1. In case of 𝜏(𝑑, 𝑠), there are four groups with 𝑡1 = 𝑡4 = 1 (for 𝑑 = 1 and
+𝑑 = 3) and 𝑡2 = 𝑡3 = 2 (for 𝑑 = 1 and 𝑑 = 2), that yield
+𝑛0 =
+
+𝑁𝑥  
+∑︁
+𝑡𝑖
+𝑖=1
+
+ 
+2
+=2
+=2
+2
+2
+
+and then Equation 6 gives
+𝜏(𝑑, 𝑠) ≤ 1 −
+
+13
+2
+=
+.
+15 15
+
+In case of 𝜏( 𝑝, 𝑠), there are three groups with 𝑡1 = 𝑡2 = 𝑡3 = 2 (two points in a tie for 𝑝 = 0, 𝑝 = 1 and
+also 𝑝 = 2), that yield
+𝑛0 = 3
+
+Glottometrics
+
+ 
+2
+=3
+2
+27
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+and then Equation 6 gives
+3
+4
+= .
+15 5
+
+𝜏( 𝑝, 𝑠) ≤ 1 −
+
+Finally, in case of 𝜏(𝑐, 𝑠), there are only two groups with 𝑡1 = 1 and 𝑡2 = 5 (5 points in a tie for 𝑐 = 1),
+that yield
+ 
+5
+𝑛0 =
+= 10
+2
+and then Equation 6 gives
+𝜏(𝑐, 𝑠) ≤ 1 −
+
+10 1
+= .
+15 3
+
+The lower bounds are obtained just by inverting the sign thanks to Equation 6.
+The following corollary indicates that if 𝜏(𝑑, 𝑦) is sufficiently large then no other distance measure can
+give a higher correlation and also the symmetric, namely, if 𝜏(𝑑, 𝑦) is sufficiently small then no other
+distance measure can give a smaller correlation.
+Corollary 1. If 𝜏(𝑑, 𝑦) > 1/3 then 𝜏(𝑑, 𝑦) > 𝜏(𝑐, 𝑦). If 𝜏(𝑑, 𝑦) > 4/5 then 𝜏(𝑑, 𝑦) > 𝜏( 𝑝, 𝑦), 𝜏(𝑐, 𝑦).
+If 𝜏(𝑑, 𝑦) < −1/3 then 𝜏(𝑑, 𝑦) < 𝜏(𝑐, 𝑦). If 𝜏(𝑑, 𝑦) < −4/5 then 𝜏(𝑑, 𝑦) < 𝜏( 𝑝, 𝑦), 𝜏(𝑐, 𝑦).
+Proof. A trivial consequence of Proposition 3.
+
+The minimum 𝑝-value of the Kendall correlation test
+As we explain in Section 4, the 𝑝-value of the Kendall 𝜏 correlation test is computed exactly by
+enumerating all the 6! = 720 permutations. In general,
+𝑝-value ≥
+
+𝑚
+,
+𝑛!
+
+where 𝑚 is the number of permutation with the same 𝜏 as the actual one. Notice that 𝑚 ≥ 1 because
+the permutation that coincides with the current ordering yields the same 𝜏. As the test is one-sided and
+𝑚 ≥ 1, one obtains
+𝑝-value ≥ 1/6! =
+
+1
+= 0.00138̄.
+720
+
+However, a more accurate lower bound of 𝑚 is given by
+Property 4.
+(8)
+
+Glottometrics
+
+𝑁𝑦
+𝑁𝑥
+©Ö Ö ª
+𝑚 ≥ max ­
+𝑡𝑖 !,
+𝑢 𝑖 !® .
+𝑖=1
+𝑖=1
+«
+¬
+
+28
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+Proof. Every permutation of values in the same tie group does not produce a different sequence. For
+the 𝑖-th group of 𝑥, there are 𝑡𝑖 ! permutations of values in the same group that do not produce a different
+sequence. Integrating all the groups, one obtains that there are
+𝑁𝑥
+Ö
+
+𝑡𝑖 !
+
+𝑖=1
+
+permutations of the 𝑥 column of the matrix that produce the same sequence. By symmetry, there are
+𝑁𝑦
+Ö
+
+𝑢𝑖 !
+
+𝑖=1
+
+permutations of the 𝑦 column of the matrix that produce the same sequence. Combining the contributions
+of 𝑥 and 𝑦, we obtain Equation 8.
+Equation 8 leads to more accurate lower bounds of the 𝑝-value of 𝜏 that are presented in the following
+property.
+Property 5. Consider the 𝑝-value of the exact right sided correlation test of 𝜏(𝑥, 𝑦) where 𝑥 is some
+distance and 𝑦 can be any (for instance, 𝑦 can be some score 𝑠). The 𝑝-value of 𝜏(𝑑, 𝑦) satisfies
+𝑝-value ≥
+
+1
+= 0.005̄.
+180
+
+The 𝑝-value of 𝜏( 𝑝, 𝑦) satisfies
+𝑝-value ≥
+
+1
+= 0.01̄.
+90
+
+𝑝-value ≥
+
+1
+= 0.16̄.
+6
+
+The 𝑝-value of 𝜏(𝑐, 𝑦) satisfies
+
+Proof. Now we will derive a lower bound of the 𝑝-value for each distance measure neglecting any
+information of about the distribution of the values of 𝑦, namely applying an implication of Equation 8,
+that is
+𝑚≥
+
+𝑁𝑥
+Ö
+
+𝑡𝑖 !.
+
+𝑖=1
+
+Notice that
+𝑚=
+
+𝑁𝑥
+Ö
+
+𝑡𝑖 !
+
+𝑖=1
+
+holds when all the values of 𝑦 are different. This is a typical situation when using continuous scores, as
+we have explained above.
+For 𝜏(𝑑, 𝑠), the four groups with 𝑡1 = 𝑡4 = 1 (for 𝑑 = 1 and 𝑑 = 3) and 𝑡2 = 𝑡3 = 2 (for 𝑑 = 1 and 𝑑 = 2)
+give
+𝑝-value ≥
+Glottometrics
+
+4
+1
+=
+.
+6! 180
+29
+
+Ferrer-i-Cancho & Namboodiripad
+
+Swap distance minimization in SOV languages.
+
+For 𝜏( 𝑝, 𝑠), the three groups with 𝑡1 = 𝑡2 = 𝑡3 = 2 (two points in a tie for 𝑝 = 0, 𝑝 = 1 and also 𝑝 = 2)
+give
+𝑝-value ≥
+
+8
+1
+=
+.
+6! 90
+
+Finally, for 𝜏(𝑐, 𝑠), the only two groups with 𝑡1 = 1 and 𝑡2 = 5 (5 points in a tie for 𝑐 = 1) give
+𝑝-value ≥
+
+Glottometrics
+
+5! 1
+= = 0.16̄.
+6! 6
+
+30
+
+

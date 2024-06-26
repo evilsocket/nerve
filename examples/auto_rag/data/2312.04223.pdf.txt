@@ -1,0 +1,761 @@
+Sensing the Body: Towards Best Practices for Integrating
+Physiological Signals in HCI
+Francesco Chiossi
+
+Ekaterina R. Stepanova
+
+Benjamin Tag
+
+Simon Fraser University
+Canada
+katerina_stepanova@sfu.ca
+
+Monash University
+Melbourne, Australia
+benjamin.tag@monash.edu
+
+Arindam Dey
+
+Sven Mayer
+
+Alexandra Kitson
+
+Simon Fraser University
+Surrey, Canada
+akitson@sfu.ca
+
+The University of
+Queensland
+Brisbane, Australia
+a.dey@uq.edu.au
+
+LMU Munich
+Munich, Germany
+info@sven-mayer.com
+
+Monica
+Perusquía-Hernández
+Nara Institute of Science
+and Technology (NAIST)
+Nara, Japan
+perusquia@ieee.org
+
+Abdallah El Ali
+
+Centrum Wiskunde &
+Informatica
+Amsterdam, Netherlands
+abdallah.el.ali@cwi.nl
+
+Document
+
+Repository
+
+Reproducible Data Workflow
+
+Protocol Methods &
+Apparatus
+
+Protocol Pipeline
+
+Protocol versioned 
+
+code, data dictionary,
+metadata
+
+Data Preprocessing
+
+Data Curation
+
+Link Materials in the
+paper
+
+Stage
+
+arXiv:2312.04223v1 [cs.HC] 7 Dec 2023
+
+LMU Munich
+Germany
+francesco.chiossi@lmu.de
+
+Raw Data Collection
+
+Data Storage
+
+Publication
+
+Maintenance & Legacy
+
+Figure 1: Reproducibility Workflow for Physiological Signals in HCI. Icons at the bottom represent the key steps in the workflow
+of a typical HCI user study, from inception to reporting. Book icons indicate components for reproducible best practices that
+map onto this workflow. Repository icons on top provide potential open-source platforms to share documented protocols.
+
+ABSTRACT
+Recently, we saw a trend toward using physiological signals in
+interactive systems. These signals, offering deep insights into users’
+Permission to make digital or hard copies of part or all of this work for personal or
+classroom use is granted without fee provided that copies are not made or distributed
+for profit or commercial advantage and that copies bear this notice and the full citation
+on the first page. Copyrights for third-party components of this work must be honored.
+For all other uses, contact the owner/author(s).
+CHI EA ’24, May 11–16, 2024, Honolulu, HI, USA
+© 2024 Copyright held by the owner/author(s).
+ACM ISBN 979-8-4007-0331-7/24/05.
+https://doi.org/10.1145/3613905.3636286
+
+internal states and health, herald a new era for HCI. However, as this
+is an interdisciplinary approach, many challenges arise for HCI researchers, such as merging diverse disciplines, from understanding
+physiological functions to design expertise. Also, isolated research
+endeavors limit the scope and reach of findings. This workshop
+aims to bridge these gaps, fostering cross-disciplinary discussions
+on usability, open science, and ethics tied to physiological data in
+HCI. In this workshop, we will discuss best practices for embedding
+physiological signals in interactive systems. Through collective
+efforts, we seek to craft a guiding document for best practices in
+
+CHI EA ’24, May 11–16, 2024, Honolulu, HI, USA
+
+physiological HCI research, ensuring that it remains grounded in
+shared principles and methodologies as the field advances.
+
+CCS CONCEPTS
+• Human-centered computing → Human computer interaction (HCI).
+
+KEYWORDS
+Physiological Computing, Affective Computing, Open Science, Physiological Signals, Replicability, Reproducibility, Transparency, Ethics
+ACM Reference Format:
+Francesco Chiossi, Ekaterina R. Stepanova, Benjamin Tag, Monica PerusquíaHernández, Alexandra Kitson, Arindam Dey, Sven Mayer, and Abdallah El
+Ali. 2024. Sensing the Body: Towards Best Practices for Integrating Physiological Signals in HCI. In Extended Abstracts of the CHI Conference on Human
+Factors in Computing Systems (CHI EA ’24), May 11–16, 2024, Honolulu, HI,
+USA. ACM, New York, NY, USA, 7 pages. https://doi.org/10.1145/3613905.
+3636286
+
+1
+
+MOTIVATION
+
+In the human-computer interaction (HCI) community, we see a
+growing interest in integrating physiological signals (e.g., heart
+rate, breathing, electrodermal activity, brain activity, muscle tension) for usability evaluation and as input for interactive systems.
+Physiological sensors are devices that measure our physiological
+signals and, when analyzed, can provide insights into our physical and affective states [41]. Additionally, physiological sensors
+can be employed in physiologically-adaptive systems for tailoring
+interactions to users’ states or prompt changes in the system to
+encourage a desirable user state [8–10]. Here, the field is developing traction, and we foresee more growth as sensor technology
+becomes more viable and embedded in interactive systems [5, 6].
+A recent increase in review papers mapping out sections of the
+design domain with physiological sensors reveals the desire of the
+community to structure and better understand the dimensions of
+this emerging design space. For instance, Moge et al. [31] presented
+a systematic review on interpersonal biofeedback outlining the use
+of physiological signals in social interaction. Previously, Prpa et al.
+[35] presented an analysis of theoretical frameworks underlying
+the design of breath-responsive systems. In addition, Yu et al. [48]
+reviewed biofeedback systems for stress management, identifying
+several challenges in the interpretation of signals, scalability of
+systems, and sparse evaluation. While all of these systematic revisions outlined biosignals’ existing and future opportunities, others
+have identified methodological issues and a lack of shared best
+practices [2, 36, 45]. Specifically, integrating physiological signals
+in HCI necessitates a diverse skill set, from understanding physiological functioning and its associated psychological and cognitive
+processes to expertise in signal acquisition and processing, machine
+learning, and design, each a research area of its own.
+The confluence of multiple disciplines presents a challenging
+learning curve for researchers and designers looking to incorporate
+physiological signals into studies and interactive systems. In contrast to building upon peers’ work, the current landscape of physiological signals in HCI sees most research groups independently
+developing their datasets, analysis pipelines, and methodologies.
+
+Chiossi et al.
+
+Thus, HCI contributions to physiological computing are challenging as they must adhere to high standards from multiple disciplines
+(neuroscience, cognitive science, design). To meet such rigorous
+standards, HCI researchers must develop expertise in each discipline. There is a need to provide a shared framework and guidelines
+to support HCI research using physiological signals.
+Stemming from the work in other disciplines [12, 20, 34], HCI
+researchers have started to provide guidelines to support incorporating physiological signals. Here, Babaei et al. [2] evaluated
+practices for the recording and preprocessing of electrodermal activity (EDA). Similarly, Putze et al. [36] have provided reporting
+practices for electroencephalographic signals (EEG) to support reproducible and reusable results. Finally, Treacy Solovey et al. [45]
+have evaluated experimental practices for fNIRS research in HCI
+and highlighted principles and patterns for effective brain-based
+adaptive interaction techniques. While there have been strides towards the establishment of reporting guidelines and an emphasis
+on transparency within the HCI community, evidence suggests that
+these efforts have not significantly influenced the methodological
+detail in conventional journal publications [11, 15, 33, 38]. The lack
+of methodological detail indicates a potential need for alternative
+strategies to enhance transparency and reporting in the HCI field.
+As a result, these recent surveys imply that understanding and
+replicability issues persist in HCI. Therefore, it is time to establish more intensive cross-disciplinary conversations to synthesize
+current practices in physiological HCI research. This workshop
+will combine quantitative and qualitative researchers working with
+biodata to address issues around the open science, use and interpretation, and ethics of physiological data in HCI. Ultimately, we will
+deliver a living document formalizing best practices as in previous
+work [2] (see, https://edaguidelines.github.io/) to provide the HCI
+community with sound and robust guidelines.
+
+1.1
+
+Workshop Topics
+
+We aim to structure group discussions during this workshop around
+four key topics and challenges commonly faced by researchers
+and designers working with physiological signals. The discussion
+will allow attendees to share their experiences and help to identify
+and articulate common challenges across diverse domains. Through
+this communal effort, we will begin to map out future directions for
+the field of physiological computing to address these challenges.
+1.1.1 Topic 1: Replicability and Research Transparency. As HCI
+continues integrating physiological signals, applying FAIR Principles1 becomes necessary for repeatability, reproducibility, and
+replicability. Several processes and platforms, like the Open Science
+Framework2 and Zenodo3 , have been developed to foster community building. Open data-sharing enables result validation, supports
+data aggregation for meta-analysis, encourages creative re-analysis,
+and adapts to evolving scientific methodologies. However, open
+data alone does not guarantee replicability. Often, data from individual, small-scale research projects –termed the "long tail of science"–
+is produced with specific contexts or constraints in mind [19]. To
+make this data usable by the wider community, there is a need
+1 https://www.go-fair.org/fair-principles/
+2 https://osf.io/
+
+3 https://zenodo.org/
+
+Sensing the Body
+
+for standardized documentation or even formal models detailing
+how the data should be shared and interpreted. For instance, OpenNeuro4 or ARTEM-IS [42] advocate for standardized datasets with
+joint documentation models. Such efforts have demonstrated that
+data sharing can amplify scientific studies’ impact, drawing contributions from various disciplines [46]. In the HCI domain, there are
+notable examples like Babaei et al. [2] practices for EDA recording
+and Bergström et al. [4] checklist for VR experiments. The Association for Computing Machinery (ACM) introduced badges5 to
+reward research transparency, acknowledging the broader movement toward open science.
+While there’s been a push towards reproducibility and transparency, e.g., the first HCI conference introduced an open science
+track6 , or with changes even in the review processes of prominent
+HCI conferences, studies suggest that many in the field still do not
+openly publish their research artifacts [38]. This could stem from
+misunderstandings about the process, the multifaceted nature of
+HCI, or underestimating the importance of transparency. Balancing
+privacy concerns with open science ambitions remains a complex
+challenge, especially when dealing with sensitive physiological
+data.
+1.1.2 Topic 2: I/O of Physiological Signals. Integrating physiological signals in HCI presents many technical challenges [39]. At the
+core, issues are related to the robustness, scalability, and adaptability of continuously sensing (wearable) physiological sensors [44].
+Especially outside the controlled environment of a lab, these physiological sensors often demand calibration and are vulnerable to
+motion artifacts [27]. This is further complicated when systems rely
+on physiological data to infer users’ states or emotions, such as anxiety or task engagement, as discussed in our previous workshops
+[17, 18]. Concerning scalability, researchers are increasingly adopting software-based physiological measurements, such as pulse and
+vital sign measurement using remote PPG from facial data, and used
+across mixed reality setups [30]. To advance the field, it is essential
+to go beyond isolated use cases and establish foundational physiological principles. Further challenges include coupling physiological
+signals with the appropriate body feedback modalities [1, 10] or
+body augmentation, which can lead to questioning the sense of
+agency [13].
+1.1.3 Topic 3: Meaning-Making and User Experience of Physiological Signals. The various applications using biosignals reveal the
+plurality of effects this technology can have on individuals and our
+relationship to our own and others’ bodies. These effects can have
+long-term consequences of reshaping these relationships beyond
+the moment of the interaction. For instance, using biofeedback can
+improve one’s interoceptive awareness (awareness of one’s internal
+processes) [24], and receiving information about others’ internal
+state can improve users’ ability to empathize with them, ultimately
+enhancing mutual understanding [14, 21]. This could be particularly
+useful when only limited affective cues are shared between users,
+e.g., when people lack sensitivity to such cues, such as users with
+autism. However, this enhanced access to others’ states through
+4 https://openneuro.org/
+
+5 https://www.acm.org/publications/policies/artifact-review-badging
+6 https://iui.acm.org/2023/call_for_open_science.html
+
+CHI EA ’24, May 11–16, 2024, Honolulu, HI, USA
+
+biosignals also carries the risk of drawing too much attention towards an externalized representation of biodata and away from the
+human at the other end.
+Biodata provides us with insights into the state and process of
+our bodies. However, interpreting these signals is often ambiguous [22]. For example, what does it mean if my heart rate is 10 beats
+faster than my partner’s, and how does this influence biofeedback
+displays (cf., [16])? Considering a case from affective computing,
+there is a growing debate arising from the constructionist models
+of emotions [25] on how much could be possible to infer from the
+physiological data about users’ emotions given the lack of universal expressions of emotions [3]. The influence of the context of
+use presents another challenge for considering variant meaningmaking processes. Naturally, our social relationships significantly
+affect our comfort level with sharing our intimate biodata. A heartbeat visualization that may be intimate for close relationships [26],
+it might feel like oversharing in a professional relationship [37],
+or can represent an abstract human unity when received from a
+distant stranger [28].
+1.1.4 Topic 4: Ethical and Privacy Concerns. Working with biosignals inevitably raises ethical concerns and privacy considerations.
+Our physiology is inherently private, and by that nature, so should
+biodata be considered sensitive and private, providing agency to
+each individual to make an informed decision to share. In affective
+computing, an ethics framework has been proposed where recommendations are given to developers, operators, and regulators [32].
+This is because of the unexpected usages that arise beyond the
+expectations of the initial system designer.
+Biosignals often disclose insights into our internal states beyond our immediate awareness, complicating the issue of consent
+for data sharing. Our limited grasp over such physiological processes underscores the need for establishing transparent, meaningful ground truths to prevent misinterpretations and ensure ethical
+use in biosignal research. Hence, its interpretive potential when
+making it accessible to others. Thus, we must consider users’ sensitivity and potential vulnerability when designing biodata-sharing
+systems. Questions of privacy, agency over data, equity and power
+relationships, data use, and storage are crucial in considering how
+we design such technology. This issue is further amplified by the
+lack of consistent data privacy and security standards across health,
+academia, and private business domains, where the industry is often
+not bounded by the same data security standards as academic and
+medical fields. Could a privacy-by-design approach be an initial
+solution? With this approach, we can embed privacy considerations
+into every stage of adaptive and biofeedback systems’ design and
+development process [7]. Alternatively, federated learning could
+offer a solution by enabling model training without centralizing
+sensitive physiological data, ensuring privacy and regulatory compliance [23].
+
+2
+
+ORGANIZERS
+
+Francesco Chiossi (https://www.francesco-chiossi-hci.com/) is a
+PhD researcher in the Media Informatics Group at LMU Munich.
+With a background in cognitive neuroscience, he focuses on implicit
+measures of human behavior, such as EDA and EEG, as an implicit
+input to design physiologically-adaptive systems.
+
+CHI EA ’24, May 11–16, 2024, Honolulu, HI, USA
+
+Ekaterina R. Stepanova is a Ph.D. Candidate at the School of
+Interactive Arts and Technology at Simon Fraser University with a
+background in cognitive science, developmental psychology, and
+virtual reality. Her research employs somaesthetics and embodied
+cognition to design mediated experiences with bioresponsive and
+immersive technologies.
+Benjamin Tag is a Lecturer at Monash University. He researches
+Human-AI Interaction, Digital Emotion Regulation, and human
+cognition with a focus on inferring mental state changes from
+physiological data collected in the wild.
+Monica Perusquia-Hernandez (https://www.monicaperusquia.
+com/) is an assistant professor at the Nara Institute of Science and
+Technology (NAIST), Japan, working in affective computing, signal
+processing, and interoceptive awareness enhancement in cyberphysical systems. Her work relies on Computer Vision, EMG, EEG,
+ECG, and EDA for congruence estimation between facial expressions and emotions.
+Alexandra Kitson (https://www.alexandrakitson.com) is a postdoctoral fellow in the Tangible Embodied Child Computer Interaction Lab at Simon Fraser University whose research is focused on
+designing, developing, and evaluating interactive systems such as
+wearables and virtual reality to support both personal and social
+transformation and emotional well-being.
+Arindam Dey is a computer scientist on a mission to make Metaverse better for users in various ways. Currently, he is a Research
+Scientist at Meta, focusing on health and safety in the metaverse.
+He is also Honorary Research Fellow at the University of Queensland, Australia, primarily focusing on Mixed Reality and Empathic
+Computing.
+Sven Mayer (https://sven-mayer.com) is an assistant professor
+at LMU Munich. His research sits at the intersection between HCI
+and Artificial Intelligence, where he focuses on the next generation
+of computing systems. He uses artificial intelligence to design, build,
+and evaluate future human-centered interfaces.
+Abdallah El Ali (https://abdoelali.com) is an HCI research scientist at Centrum Wiskunde & Informatica (CWI) in Amsterdam
+within the Distributed & Interactive Systems group. He leads the research area on Affective Interactive Systems, combining advances in
+HCI, eXtended Reality, and Artificial Intelligence to measure, infer,
+and augment human cognitive, affective, and social interactions.
+
+3
+
+PLAN TO PUBLISH PROCEEDINGS
+
+We will publish the workshop proceedings on CEUR-WS.org. Moreover, the workshop website will host papers accepted two weeks
+before the conference upon the authors’ consent.
+
+4
+
+WEBSITE
+
+The website will contain a call for papers, links to materials and
+activities for asynchronous engagement, and links to accepted position papers. Finally, the most important contribution of the website
+will be a living document that relates to best practices for biosignals
+research in HCI concerning validity, reproducibility, and privacy.
+
+5
+
+PRE-WORKSHOP PLANS:
+
+The plan for this workshop began at DIS [43] and at MobileHCI [40].
+From those two workshops, we have established a community and
+
+Chiossi et al.
+
+joint effort on Slack7 . Organizing this workshop is the important
+next step in the long-term plan discussed, and members of the new
+micro-community on Slack were invited to contribute to the organization of this new workshop. A dedicated webpage will be hosted
+on the first author website8 . We will promote the workshop on the
+Slack server, in research groups, and at upcoming HCI conferences.
+Standard CfP releases via mailing lists and social media channels
+will also be used to increase the reach and inclusivity of the event.
+To ensure a productive discussion, we will select participants
+with relevant expertise working with biosignals from a physiological computing, design, and ethics perspective. Prospective participants will be invited to either submit a position paper (1-4 pages),
+or a copy of their previously published paper exploring one of the
+workshop topics. Authors will be encouraged to follow the accessibility guidelines for their submissions. Additionally, participants
+will be asked to complete a short survey to help us better understand the distribution of participants and forms of engagement
+(online or in-person) to optimize the planned workshop structure.
+The survey will inquire on the planned form of attendance, the
+primary field or work, ranking of the interest in proposed workshop topics with an option to suggest new ones, and consent to be
+invited to a Slack group for communication with organizers and
+other attendees before the workshop. We aim to attract and select
+about 30-35 participants.
+Review of Submissions. Our focus for reviewing will be on the
+submissions’ potential to provoke relevant discussion at the workshop. We expect position papers that present provocative views of
+the future, case studies, or extensions to existing work to discuss
+interesting research outcomes. The workshop organizers will primarily be responsible for reviewing and determining acceptance. If
+we receive unrelated submissions, this will be expanded to those in
+the existing Slack community.
+
+6
+
+WORKSHOP MODE
+
+We will conduct a synchronous hybrid workshop. Our hybrid approach will facilitate sharing between virtual and in-person attendees, ensuring discussion grounded in equitable and diverse
+participation, integrating a broad range of perspectives.
+Hybridity and Asynchronous Engagement. During the workshop,
+we will introduce discussion topics to attendees using a presentation
+projected in the physical room and shared on the teleconference
+platform for remote attendees. We will use a Miro board to note
+discussion topics to make them available for in-person and remote
+participants. One of the organizers will copy the topics from the
+whiteboard into the Miro board and vice-versa. Remote participants will use the Miro Boards, which will also be projected on
+the whiteboards in the conference room. This way, participants in
+the conference room can add physical notes to the same discussion
+space and see the contributions of remote participants. We will
+use automated transcription in Zoom during large group discussions to improve accessibility. We will share all the materials on the
+workshop website and through the Slack channel for access by participants who cannot attend synchronous sessions. These materials
+7 Physiological Interaction Slack Server
+8 https://www.hcilab.org/physiochi24
+
+Sensing the Body
+
+will include papers submitted by accepted participants, descriptions
+of the provocation exercises that participants can experiment with
+by themselves, prompt cards used for structuring the discussion,
+and links to the Miro board summarizing our discussion.
+Materials. We will bring sketching materials, such as paper,
+sticky notes, markers, etc., for physically present participants to
+note down their discussion and prepare a Miro board for online participants and the summary of everyone’s discussion. Website, Miro
+board, and all other materials will adhere to accessibility criteria outlined by ACM. We will continue to consult with CHI Accessibility
+Chairs to ensure accessibility before and during the workshop.
+Accessibility and Inclusivity. Accepted authors will be expected to
+enhance the accessibility of their submissions by including accurate
+subtitles for videos and ensuring their PDFs are screen-readerfriendly. We will proactively contact our workshop attendees to
+identify and address additional accessibility requirements for the
+event day.
+
+7
+
+WORKSHOP STRUCTURE
+
+The workshop spans a full day and will be built into four rounds
+(arranged around the natural breaks in the conference). In all parts,
+the aim is to encourage discussion, especially before breaks and
+lunch, where the most natural discussions are likely to occur. One
+organizer will lead the in-person workshop for each program section, ensuring a lively and interactive session. Simultaneously, a
+second organizer will facilitate the online participation and discussion, ensuring that remote participants are equally engaged and
+included in the proceedings.
+Round 1: Kickoff and Speed Dating (40 minutes). The workshop will begin with an introduction by the organizers and a short
+warm-up speed-dating activity. This speed-dating activity will help
+attendees to focus on the workshop interest and engage with the
+other participants. Participants will be asked to introduce themselves and explain their motivation to participate in the workshop.
+They will also be asked to briefly introduce the work (e.g., method or
+application). Due to the expected diversity in participants’ research
+backgrounds, we will start by organizing into different groups based
+on identifying statements (e.g., qualitative researcher or quantitative researcher) based on the survey we ask participants to fill in.
+The ultimate aims of Round 1 are a) to explicate the scope of the
+workshop and the expertise in the room, b) to highlight the variety
+of expertise, and c) to end up with mixed groups around the tables.
+Further, by doing so, we aim to avoid being on laptops and settling
+into a passive form of listening to talks. Once in mixed groups, the
+remainder of R1 will focus on important shared research questions
+and create a physical post-it mindmap on an available large surface
+and a Miro board for online attendants.
+Round 2: Research Transparency for Biosignals in HCI (60
+minutes). Once in mixed groups, in R2, we will focus on important
+challenges for Open Science practices and create a physical post-it
+mindmap or on a Miro Board. Chiossi will provide an introductory
+talk (10 minutes) on open guiding principles [47], where data should
+be Findable, Accessible, Interoperable, and Reusable (FAIR). This
+allows participants to have a shared background in the topic. Then,
+
+CHI EA ’24, May 11–16, 2024, Honolulu, HI, USA
+
+participants will engage in 3 rounds of medium to small group
+discussions (4-8 participants per group) in the form of roundtables.
+The main goal of each group is to identify how each group member
+follows or does not follow FAIR guidelines in their work. One moderator per group will be chosen to report to all other participants
+on the discussion outcomes. Each group, online and offline, will
+be joined by one organizer, who will focus on timekeeping and
+deliverables to ensure that the groups are ready to contribute to
+the large group discussion at the end. We expect to discuss all FAIR
+principle statements before lunch. This exercise will flow naturally
+into the first coffee break, where discussions can be continued.
+Round 3: Keynote. (60 minutes). We plan to invite one keynote
+speaker to the workshop. The keynote will be an established researcher in the physiological computing area, and the talk will
+cover all four topics of the workshop in 30 minutes, followed by an
+extensive Q & A and a discussion session. This round will have an
+expected duration of one hour.
+Discussion Lunch (90 minutes). Depending on the arrangements
+available for lunch in the area, we aim to send groups (arranged
+in R1) to lunch to continue discussions. We will ask each group to
+return to the afternoon session with a considered set of biosignal
+measures that they employ in their research and which challenges
+they face regarding the construct validity. The lunch session is
+expected to last 90 minutes.
+Round 4: Meaning-Making and UX of Biosignals (45 minutes). To avoid a post-lunch slump, this session will first bring
+the ideas back to the room from lunch and start with grouping
+researchers by biosignal of interest: brain (EEG and fNIRS), peripheral (EDA, ECG, electrogastrography), biosignals with implicit and
+explicit control (eye-tracking and electromyography, i.e., EMG).
+Each group will develop a shared definition of how each biosignal
+is physiologically interpreted, and to ensure a breadth of discussion,
+list what each signal is mapped in their HCI research to which construct and as input for interaction. The definition and application
+areas will be presented and discussed by a representative of each
+group.
+Round 5: Sharing Biosignals (45 minutes). Given the now
+shared theoretical background and alignment on definitions across
+participants, we will switch the focus from physiological evaluation to a multi-user, social perspective of sharing biosignals. Here,
+participants who selected the topic of sharing biosignals will pitch
+their presentations on their submitted position paper - case study.
+Groups previously formed in Round 4 will discuss how biodata can
+be represented, either individually [21] or as an aggregate from multiple users, offering potential privacy solutions [37]. Second, groups
+will discuss the centrality of visual representations in biofeedback
+designs [29] and explore the potential of other sensory modalities.
+Participants will highlight the challenges and opportunities in mapping and representing signals for multiple users, presenting the
+outcome of discussions by emphasizing the need for symmetrical
+data representation and its impact on user interpretation.
+Round 6: Privacy and Ethics (60 minutes). The final part
+of the afternoon block activity will focus on responsible research,
+ethics, and privacy. As a community, we expect this to be a key focus
+
+CHI EA ’24, May 11–16, 2024, Honolulu, HI, USA
+
+issue for the future, with physiological interaction and technology
+presenting several potentially invasive challenges. We intend to
+use the Legal and Moral-IT cards on tables to provoke discussion9 .
+Either submitting authors or invited speakers will be invited to cofacilitate this activity, where they have already considered aspects
+of this theme.
+
+8
+
+POST-WORKSHOP PLANS
+
+We will publish the guidelines summary on the workshop website.
+Ideally, this could result in a joint publication between organizers
+and participants. Finally, we will prepare a proposal for a special
+issue at TOCHI on integrating biosignals in HCI, potentially including a Dagstuhl proposal and further workshops at SIGCHI
+conferences (IUI and UbiComp). Additionally, involved authors
+will mentor early-career researchers via the Slack Server and future events. The Slack Server will serve as a platform to engage
+participants, continuing the evolving discussion of challenges and
+opportunities presented by designing with biosignals: post questions, share posts about their work, recruit participants, and form
+collaborations.
+
+9
+
+CALL FOR PARTICIPATION
+
+Biosensing technologies are increasingly more widely integrated
+in HCI. Biosignals provide novel opportunities for interaction, offering valuable insights into ordinarily hidden processes inside our
+bodies, revealing somatic information about our and other’s bodies,
+emotions, health, and cognitive processes. However, integrating
+biosignals in HCI presents many challenges about transparency,
+UX, I/O, interpretation of biodata, and broader ethical concerns. To
+map out the landscape of existing challenges and future research
+directions, we invite participants working with biosignals to join a
+one-day hybrid workshop held at the 2024 ACM SIGCHI Conference on Human Factors in Computing Systems following a hybrid
+format. We welcome participants from HCI, Psychology, Neuroscience, Data Science, Mixed Reality, and Digital Ethics. We invite
+submissions of 2-4 page position papers or case studies, presenting a
+project, or articulating a challenge related to this call. Alternatively,
+authors may submit their previously published papers raising relevant questions. Submissions should be sent to EasyChair 10 , must
+adhere to accessibility guidelines outlined by ACM, and use a CEUR
+Workshop Proceedings template. The organizing committee will
+select submissions based on the quality and contribution of the
+work relating to the workshop themes, with a special focus on
+biosignal integration. At least one author of each accepted submission must attend (in-person or remote) and register for the
+workshop and the CHI’24 conference. For more information, please
+visit https://www.hcilab.org/physiochi24/.
+
+ACKNOWLEDGMENTS
+Francesco Chiossi was supported by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation), Project-ID 251654672TRR 161. Katerina Stepanova was supported by the Social Sciences and Humanities Research Council of Canada. M. PerusquiaHernandez was supported by JSPS Kakenhi Grant Number 22K21309.
+9 https://lachlansresearch.com/the-moral-it-legal-it-decks/
+
+10 https://easychair.org/conferences/?conf=physiochi24
+
+Chiossi et al.
+
+Sven Mayer was supported by National Research Data Infrastructure for and with Computer Science (NFDIxCS).
+
+REFERENCES
+[1] Miquel Alfaras, William Primett, Muhammad Umair, Charles Windlin, Pavel
+Karpashevich, Niaz Chalabianloo, Dionne Bowie, Corina Sas, Pedro Sanches,
+Kristina Höök, Cem Ersoy, and Hugo Gamboa. 2020. Biosensing and actuationplatforms coupling body input-output modalities for affective technologies. Sensors (Basel) 20, 21 (Oct. 2020), 5968. https://doi.org/10.3390/s20215968
+[2] Ebrahim Babaei, Benjamin Tag, Tilman Dingler, and Eduardo Velloso. 2021. A
+Critique of Electrodermal Activity Practices at CHI. In Proceedings of the 2021
+CHI Conference on Human Factors in Computing Systems (Yokohama, Japan) (CHI
+’21). Association for Computing Machinery, New York, NY, USA, Article 177,
+14 pages. https://doi.org/10.1145/3411764.3445370
+[3] Lisa Feldman Barrett. 2021. AI weighs in on debate about universal facial expressions. Nature 589, 7841 (Jan. 2021), 202–203. https://doi.org/10.1038/d41586-02003509-5 ZSCC: 0000000 Number: 7841 Publisher: Nature Publishing Group.
+[4] Joanna Bergström, Tor-Salve Dalsgaard, Jason Alexander, and Kasper Hornbæk.
+2021. How to evaluate object selection and manipulation in vr? guidelines from
+20 years of studies. In proceedings of the 2021 CHI conference on human factors in
+computing systems. 1–20. https://doi.org/10.1145/3411764.3445193
+[5] Guillermo Bernal, Nelson Hidalgo, Conor Russomanno, and Pattie Maes. 2022.
+Galea: A physiological sensing system for behavioral research in virtual environments. In 2022 IEEE Conference on Virtual Reality and 3D User Interfaces (VR).
+IEEE, 66–76. https://doi.org/10.1109/VR51125.2022.00024
+[6] Francesco Chiossi, Thomas Kosch, Luca Menghini, Steeven Villa, and Sven Mayer.
+2023. SensCon: Embedding Physiological Sensing into Virtual Reality Controllers.
+Proc. ACM Hum.-Comput. Interact. 7, MHCI, Article 223 (sep 2023), 32 pages.
+https://doi.org/10.1145/3604270
+[7] Francesco Chiossi and Sven Mayer. 2023. How Can Mixed Reality Benefit From
+Physiologically-Adaptive Systems? Challenges and Opportunities for Human
+Factors Applications. arXiv preprint arXiv:2303.17978 (2023). https://doi.org/10.
+48550/arXiv.2303.17978
+[8] Francesco Chiossi, Changkun Ou, Carolina Gerhardt, Felix Putze, and Sven Mayer.
+2023. Designing and Evaluating an Adaptive Virtual Reality System using EEG
+Frequencies to Balance Internal and External Attention States. arXiv preprint
+arXiv:2311.10447 (2023). https://doi.org/10.48550/arXiv.2311.10447
+[9] Francesco Chiossi, Yagiz Turgut, Robin Welsch, and Sven Mayer. 2023. Adapting
+Visual Complexity Based on Electrodermal Activity Improves Working Memory
+Performance in Virtual Reality. Proc. ACM Hum.-Comput. Interact. 7, MHCI,
+Article 196 (sep 2023), 26 pages. https://doi.org/10.1145/3604243
+[10] Francesco Chiossi, Johannes Zagermann, Jakob Karolus, Nils Rodrigues, Priscilla
+Balestrucci, Daniel Weiskopf, Benedikt Ehinger, Tiare Feuchtner, Harald Reiterer,
+Lewis L Chuang, et al. 2022. Adapting visualizations and interfaces to the user.
+it-Information Technology 64, 4-5 (2022), 133–143. https://doi.org/10.1515/itit2022-0035
+[11] Peter E Clayson, Kaylie A Carbine, Scott A Baldwin, and Michael J Larson.
+2019. Methodological reporting behavior, sample sizes, and statistical power in
+studies of event-related potentials: Barriers to reproducibility and replicability.
+Psychophysiology 56, 11 (2019), e13437. https://doi.org/10.1111/psyp.13437
+[12] Peter E Clayson, Andreas Keil, and Michael J Larson. 2022. Open science in human
+electrophysiology. , 43–46 pages. https://doi.org/10.1016/j.ijpsycho.2022.02.002
+[13] Patricia Cornelio, Patrick Haggard, Kasper Hornbaek, Orestis Georgiou, Joanna
+Bergström, Sriram Subramanian, and Marianna Obrist. 2022. The sense of agency
+in emerging technologies for human-computer integration: A review. Front.
+Neurosci. 16 (Sept. 2022), 949138. https://doi.org/10.3389/fnins.2022.949138
+[14] Arindam Dey, Hao Chen, Ashkan Hayati, Mark Billinghurst, and Robert W
+Lindeman. 2019. Sharing manipulated heart rate feedback in collaborative virtual
+environments. In 2019 IEEE International Symposium on Mixed and Augmented
+Reality (ISMAR). IEEE, 248–257. https://doi.org/10.1109/ISMAR.2019.00022
+[15] Florian Echtler and Maximilian Häußler. 2018. Open Source, Open Science, and
+the Replication Crisis in HCI. In Extended Abstracts of the 2018 CHI Conference
+on Human Factors in Computing Systems (Montreal QC, Canada) (CHI EA ’18).
+Association for Computing Machinery, New York, NY, USA, 1–8. https://doi.
+org/10.1145/3170427.3188395
+[16] Abdallah El Ali, Rayna Ney, Zeph MC van Barlow, and Pablo Cesar. 2023. Is
+That My Heartbeat? Measuring and Understanding Modality-Dependent Cardiac
+Interoception in Virtual Reality. IEEE Transactions on Visualization and Computer
+Graphics (2023). https://doi.org/10.1109/TVCG.2023.3320228
+[17] Abdallah El Ali, Monica Perusquía-Hernández, Pete Denman, Yomna Abdelrahman, Mariam Hassib, Alexander Meschtscherjakov, Denzil Ferreira, and Niels
+Henze. 2020. MEEC: First Workshop on Momentary Emotion Elicitation and
+Capture. In Extended Abstracts of the 2020 CHI Conference on Human Factors in
+Computing Systems. 1–8. https://doi.org/10.1145/3334480.3375175
+[18] Abdallah El Ali, Monica Perusquía-Hernández, Mariam Hassib, Yomna Abdelrahman, and Joshua Newn. 2021. MEEC: Second Workshop on Momentary Emotion
+
+Sensing the Body
+
+Elicitation and Capture. In Extended Abstracts of the 2021 CHI Conference on Human Factors in Computing Systems. 1–6. https://doi.org/10.1145/3411763.3441351
+[19] Adam R Ferguson, Jessica L Nielson, Melissa H Cragin, Anita E Bandrowski, and
+Maryann E Martone. 2014. Big data from small data: data-sharing in the’long
+tail’of neuroscience. Nature neuroscience 17, 11 (2014), 1442–1447. https://doi.
+org/10.1038/nn.3838
+[20] Gisela Govaart, Antonio Schettino, Saskia Helbling, David Mehler, William
+Xiang Quan Ngiam, David Moreau, Francesco Chiossi, Anthony Zanesco, YuFang Yang, Remi Gau, et al. 2022. EEG ERP preregistration template. (2022).
+https://doi.org/10.31222/osf.io/4nvpt
+[21] Linda Hirsch, Florian Müller, Francesco Chiossi, Theodor Benga, and Andreas Martin Butz. 2023. My Heart Will Go On: Implicitly Increasing Social
+Connectedness by Visualizing Asynchronous Players’ Heartbeats in VR Games.
+Proc. ACM Hum.-Comput. Interact. 7, CHI PLAY, Article 411 (oct 2023), 26 pages.
+https://doi.org/10.1145/3611057
+[22] Noura Howell, Laura Devendorf, Rundong Tian, Tomás Vega Galvez, Nan-Wei
+Gong, Ivan Poupyrev, Eric Paulos, and Kimiko Ryokai. 2016. Biosignals as
+social cues: Ambiguity and emotional interpretation in social displays of skin
+conductance. In DIS’16. 865–870. https://doi.org/10.1145/2901790.2901850
+[23] Ce Ju, Dashan Gao, Ravikiran Mane, Ben Tan, Yang Liu, and Cuntai Guan. 2020.
+Federated transfer learning for EEG signal classification. In 2020 42nd annual
+international conference of the IEEE engineering in medicine & biology society
+(EMBC). IEEE, 3040–3045. https://doi.org/10.1109/EMBC44109.2020.9175344
+[24] Paul Lehrer and David Eddie. 2013. Dynamic processes in regulation and some implications for biofeedback and biobehavioral interventions. Applied psychophysiology and biofeedback 38 (2013), 143–155. https://doi.org/10.1007/s10484-0139217-6
+[25] Kristen A Lindquist, Joshua Conrad Jackson, Joseph Leshin, Ajay B Satpute,
+and Maria Gendron. 2022. The cultural evolution of emotion. Nature Reviews
+Psychology (2022), 1–13. https://doi.org/10.1038/s44159-022-00105-4
+[26] Fannie Liu, Chunjong Park, Yu Jiang Tham, Tsung-Yu Tsai, Laura Dabbish, Geoff
+Kaufman, and Andrés Monroy-Hernández. 2021. Significant Otter: Understanding
+the Role of Biosignals in Communication. In CHI’21. 1–15.
+[27] Pedro Lopes, Lewis L Chuang, and Pattie Maes. 2021. Physiological I/O. In CHI
+EA’21. 1–4.
+[28] Rafael Lozano-Hemmer. 2019. Remote Pulse. Retrieved September 8, 2021 from
+https://www.lozano-hemmer.com/remote_pulse.php
+[29] Ewa Lux, Marc TP Adam, Verena Dorner, Sina Helming, Michael T Knierim, and
+Christof Weinhardt. 2018. Live biofeedback as a user interface design element:
+A review of the literature. Communications of the Association for Information
+Systems 43, 1 (2018), 18.
+[30] Daniel McDuff, Christophe Hurter, and Mar Gonzalez-Franco. 2017. Pulse and
+Vital Sign Measurement in Mixed Reality Using a HoloLens. In Proceedings of the
+23rd ACM Symposium on Virtual Reality Software and Technology (Gothenburg,
+Sweden) (VRST ’17). Association for Computing Machinery, New York, NY, USA,
+Article 34, 9 pages. https://doi.org/10.1145/3139131.3139134
+[31] Clara Moge, Katherine Wang, and Youngjun Cho. 2022. Shared User Interfaces
+of Physiological Data: Systematic Review of Social Biofeedback Systems and
+Contexts in HCI. In Proceedings of the 2022 CHI Conference on Human Factors in
+Computing Systems (New Orleans, LA, USA) (CHI ’22). Association for Computing
+Machinery, New York, NY, USA, Article 301, 16 pages. https://doi.org/10.1145/
+3491102.3517495
+[32] Desmond C. Ong. 2021. An Ethical Framework for Guiding the Development
+of Affectively-Aware Artificial Intelligence. In 2021 9th International Conference
+on Affective Computing and Intelligent Interaction (ACII). 1–8. https://doi.org/10.
+1109/ACII52823.2021.9597441 ISSN: 2156-8111.
+[33] Mariella Paul and Nivedita Mani. 2022. Preprocessing and analysis practices
+in developmental N400 research–a systematic review and pipeline comparison.
+(2022). https://doi.org/10.31234/osf.io/j235p
+[34] Russell A Poldrack, Chris I Baker, Joke Durnez, Krzysztof J Gorgolewski, Paul M
+Matthews, Marcus R Munafò, Thomas E Nichols, Jean-Baptiste Poline, Edward
+Vul, and Tal Yarkoni. 2017. Scanning the horizon: towards transparent and
+reproducible neuroimaging research. Nature reviews neuroscience 18, 2 (2017),
+115–126. https://doi.org/10.1038/nrn.2016.167
+[35] Mirjana Prpa, Ekaterina R Stepanova, Thecla Schiphorst, Bernhard E Riecke,
+and Philippe Pasquier. 2020. Inhaling and Exhaling: How Technologies Can
+Perceptually Extend our Breath Awareness. In CHI’20. 1–15. https://doi.org/10.
+1145/3313831.3376183
+[36] Felix Putze, Susanne Putze, Merle Sagehorn, Christopher Micek, and Erin T
+Solovey. 2022. Understanding hci practices and challenges of experiment reporting with brain signals: Towards reproducibility and reuse. ACM Transactions on Computer-Human Interaction (TOCHI) 29, 4 (2022), 1–43. https:
+//doi.org/10.1145/3490554
+[37] Chao Ying Qin, Jun-Ho Choi, Marios Constantinides, Luca Maria Aiello, and
+Daniele Quercia. 2020. Having a Heart Time? A Wearable-based Biofeedback
+System. In MobileHCI’20. ACM, Germany, 1–4. https://doi.org/10.1145/3406324.
+3410539
+
+CHI EA ’24, May 11–16, 2024, Honolulu, HI, USA
+
+[38] Kavous Salehzadeh Niksirat, Lahari Goswami, Pooja S. B. Rao, James Tyler,
+Alessandro Silacci, Sadiq Aliyu, Annika Aebli, Chat Wacharamanotham, and
+Mauro Cherubini. 2023. Changes in Research Ethics, Openness, and Transparency in Empirical Studies between CHI 2017 and CHI 2022. In Proceedings
+of the 2023 CHI Conference on Human Factors in Computing Systems (Hamburg,
+Germany) (CHI ’23). Association for Computing Machinery, New York, NY, USA,
+Article 505, 23 pages. https://doi.org/10.1145/3544548.3580848
+[39] Albrecht Schmidt. 2016. Biosignals in Human-Computer Interaction. Interactions
+23, 1 (dec 2016), 76–79. https://doi.org/10.1145/2851072
+[40] Christina Schneegass, Max Wilson, Horia A Maior, Francesco Chiossi, Anna L
+Cox, and Jason Wiese. 2023. The Future of Cognitive Personal Informatics.
+In Proceedings of the 25th International Conference on Mobile Human-Computer
+Interaction. 1–5. https://doi.org/10.1145/3565066.3609790
+[41] Lin Shu, Jinyan Xie, Mingyue Yang, Ziyi Li, Zhenqi Li, Dan Liao, Xiangmin Xu,
+and Xinyi Yang. 2018. A review of emotion recognition using physiological
+signals. Sensors 18, 7 (2018), 2074. https://doi.org/10.3390/s18072074
+[42] Anđela Šoškić, Vanja Kovic, Johannes Algermissen, Nastassja L Fischer, Giorgio
+Ganis, Remi Gau, Guiomar Niso, Robert Oostenveld, Dejan Pajić1, Mariella Paul12,
+et al. 2023. ARTEM-IS for ERP: Agreed Reporting Template for EEG MethodologyInternational Standard for documenting studies on Event-Related Potentials.
+(2023). https://doi.org/10.31234/osf.io/mq5sy
+[43] Ekaterina R Stepanova, John Desnoyers-Stewart, Alexandra Kitson, Bernhard E
+Riecke, Alissa N Antle, Abdallah El Ali, Jeremy Frey, Vasiliki Tsaknaki, and
+Noura Howell. 2023. Designing with Biosignals: Challenges, Opportunities, and
+Future Directions for Integrating Physiological Signals in Human-Computer
+Interaction. In Companion Publication of the 2023 ACM Designing Interactive
+Systems Conference. 101–103. https://doi.org/10.1145/3563703.3591454
+[44] Tucker Stuart, Jessica Hanna, and Philipp Gutruf. 2022. Wearable devices for
+continuous monitoring of biosignals: Challenges and opportunities. APL Bioengineering 6, 2 (2022), 021502. https://doi.org/10.1063/5.0086935
+[45] Erin Treacy Solovey, Daniel Afergan, Evan M Peck, Samuel W Hincks, and
+Robert JK Jacob. 2015. Designing implicit interfaces for physiological computing:
+Guidelines and lessons learned using fNIRS. ACM Transactions on ComputerHuman Interaction (TOCHI) 21, 6 (2015), 1–27. https://doi.org/10.1145/2687926
+[46] Ruben Vicente-Saez and Clara Martinez-Fuentes. 2018. Open Science now: A
+systematic literature review for an integrated definition. Journal of business
+research 88 (2018), 428–436. https://doi.org/10.1016/j.jbusres.2017.12.043
+[47] Mark D Wilkinson, Michel Dumontier, IJsbrand Jan Aalbersberg, Gabrielle Appleton, Myles Axton, Arie Baak, Niklas Blomberg, Jan-Willem Boiten, Luiz Bonino
+da Silva Santos, Philip E Bourne, et al. 2016. The FAIR Guiding Principles for
+scientific data management and stewardship. Scientific data 3, 1 (2016), 1–9.
+https://doi.org/10.1038/sdata.2016.18
+[48] Bin Yu, Mathias Funk, Jun Hu, Qi Wang, and Loe Feijs. 2018. Biofeedback for
+everyday stress management: A systematic review. Frontiers in ICT 5 (2018), 23.
+https://doi.org/10.3389/fict.2018.00023
+
+

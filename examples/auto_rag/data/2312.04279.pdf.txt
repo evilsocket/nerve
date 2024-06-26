@@ -1,0 +1,1381 @@
+IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. XX, NO. X, DECEMBER 2023
+
+1
+
+MSEVA : A System for Multimodal Short Videos
+Emotion Visual Analysis
+
+arXiv:2312.04279v1 [cs.SI] 7 Dec 2023
+
+Qinglan Wei, Member, IEEE, Yaqi Zhou, Yuan Zhang∗
+
+Abstract—YouTube Shorts, a new section launched by YouTube
+in 2021, is a direct competitor to short video platforms like
+TikTok. It reflects the rising demand for short video content
+among online users. Social media platforms are often flooded
+with short videos that capture different perspectives and emotions
+on hot events. These videos can go viral and have a significant
+impact on the public’s mood and views. However, short videos’
+affective computing was a neglected area of research in the
+past. Monitoring the public’s emotions through these videos
+requires a lot of time and effort, which may not be enough
+to prevent undesirable outcomes. In this paper, we create the
+first multimodal dataset of short video news covering hot events.
+We also propose an automatic technique for audio segmenting
+and transcribing. In addition, we improve the accuracy of
+the multimodal affective computing model by about 4.17% by
+optimizing it. Moreover, a novel system MSEVA for emotion
+analysis of short videos is proposed. Achieving good results on
+the bili-news dataset, the MSEVA system applies the multimodal
+emotion analysis method in the real world. It is helpful to conduct
+timely public opinion guidance and stop the spread of negative
+emotions. Data and code from our investigations can be accessed
+at: http://xxx.github.com.
+Index Terms—Multimodal data, emotion analysis, short videos,
+social media.
+
+I. I NTRODUCTION
+HORT video has become a wide range of production and
+dissemination of a multimodal media format attributed to
+their convenience and accessibility. With the rise of mobile
+internet technology, a variety of short video platforms has
+opened up a short video era for the audience. The length of
+a short video is usually measured in seconds. It refers to a
+new short video that is played on the network platform for
+people to watch, browse, and share at any time. It spreads
+to the audience through mobile internet technology, with
+entertainment, fashion, and opinions about current events as
+the main content, so as to gain the attention of the audience
+[1].
+Nowadays, short video is one of the most important media formats for the dissemination of hot events or topics.
+The main characteristics of short videos are as follows:
+First, short videos contain rich modal content such as video,
+audio, and text, with each modality being crucial for emotion analysis. Therefore, this paper employs the method of
+multimodal emotion analysis to analyze the emotion of short
+videos by combining the video, audio, and textual data of
+short videos. Second, short videos have high transmission
+
+S
+
+The authors are with the Communication University of China,
+Beijing 100000, China (e-mail: qlwei@cuc.edu.cn; yqzhou@cuc.edu.cn;
+yzhang@cuc.edu.cn)
+*: Corresponding author
+
+speeds. Due to the rich social interaction functions of the
+short video platform, users can comment on short videos,
+forward them, and even create short videos inspired by their
+favorite content. Consequently, analyzing the inherent emotion
+of popular short videos related to hot events can help us
+comprehend public attitudes and anticipate the direction of
+public opinions. Third, short videos typically have simple but
+strong emotions. Because short videos have the characteristics
+of fragmented transmission, they abandon the form and logic
+of traditional videos in the past. Instead, short videos are
+created for strong emotional impacts on the audience in a
+short duration, in order to gain high likes and comments.
+Thus, compared to traditional videos, conducting multimodal
+emotion analysis on short videos can usually get more accurate
+results, which effectively harnesses the potential of short
+videos as a burgeoning multimedia resource.
+In our analysis of hot events on short video platforms, we
+observed that the emotions of short videos posted by state
+media exert significant influence on we media and the public.
+The analysis for different platforms and hot events is shown
+in Figure 1. Taking the Chinese short video platform Bilibili
+as an example, in response to Japan’s decision to discharge
+nuclear wastewater from the Fukushima nuclear power plant
+into the Pacific Ocean, CCTV News posted a short video titled
+“Associate with Evil Elements”. This short video condemned
+Japan’s action of releasing nuclear wastewater with an angry
+tone. Subsequently, another short video was posted by Chinese
+we media with the title “The Discharge of Nuclear Wastewater
+Has Not Been Discussed Yet”, urging the Chinese public to
+recognize the dangers of Japan’s nuclear wastewater discharge.
+These two short videos both have high view counts. In short
+video platforms, the emotional interpretations are popular with
+the audience, which can be said to keep up with the trend
+of the times [1]. Such short videos often trigger widespread
+emotional resonance due to the strong interactivity of internet
+platforms. Therefore, emotion analysis on short videos is a
+significant research focus. The MSEVA system that we
+designed can monitor the latent emotions of short videos on
+short video platforms and regulate public opinion quickly.
+The key contributions of this work are as follows:
+1) A multimodal short video dataset named bili-news is
+constructed, which has overall annotation of short video
+emotions. The automatic audio segmentation and transcription
+method is proposed to improve the efficiency throughout the
+dataset construction process. Also, the annotation enhances the
+emotion recognition. The dataset is openly accessible.
+2) We have improved the accuracy of the result by approximately 4.17% by optimizing the method of text modality based
+
+IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. XX, NO. X, DECEMBER 2023
+
+2
+
+TABLE I
+S EGMENTATION AND TRANSCRIPTION METHODS OF CURRENT
+MULTIMODAL DATASET
+
+Fig. 1. Examples of emotional influence from state media on we media
+
+on the V2EM [2] multimodal emotion analysis model. Additionally, we conduct experiments considering the comparison
+of state-of-the-art small and large language models.
+3) The MSEVA system is a novel emotion analysis approach
+that we propose in this paper. It is designed for short videos
+and addresses the research gap discussed in Section II-B
+and II-C. The system achieves end-to-end emotion analysis
+for short videos and provides visualized results, including
+emotions of comprehensive analysis, emotions of individual
+modalities, and temporal analysis. The system is open-source.
+II. R ELATED W ORK
+A. Datasets of Multimodal Emotion Analysis
+Among current datasets, the dialogs of the IEMOCAP [3]
+dataset were manually segmented at the dialog turn level,
+and the professional transcription was obtained from Ubiqus.
+All videos in CMU-MOSEAS [4] have manual and punctuated transcriptions. Punctuation markers are used to separate
+sentences, similar to CMU-MOSEI [5]. In the process of
+dataset construction, we found that current methods mainly
+rely on manual segmentation and transcription, as shown in
+Table I. Although this method ensures dataset accuracy and
+richness, it has some limitations. The manual segmentation
+and transcription processes need substantial human effort and
+time, hindering the update of the dataset. Besides, the utterance
+level segmentation and annotation might overlook the overall
+emotions of short videos, which is a focal point of our study.
+The current datasets for multimodal emotion analysis are
+composed of segments of long videos. However, the short
+video is an independent and complete media form that differs
+from segments of long videos. We need to focus on the short
+videos on social media platforms.
+The construction of datasets currently depends on the
+manual segmentation and annotation method, which requires a lot of human effort. In addition, most datasets
+consist of long videos with emotional annotations for each
+utterance. Hence, we need to build a dataset for short
+videos with emotional annotations for the whole video.
+B. General Multimodal Analysis of Short Videos
+Early research mainly focused on short videos on the
+Vine platform. In 2014, Redi et al. [9] proposed a set of
+
+Dataset
+
+Manual
+Segmentation
+
+Automatic
+Segmentation
+
+Manual
+Transcription
+
+Automatic
+Transcription
+
+IEMOCAP [3]
+CMU-MOSI [6]
+CMU-MOSEI [5]
+UR-FUNNY [7]
+CH-SIMS [8]
+CMU-MOSEAS [4]
+
+!
+!
+!
+!
+!
+!
+
+#
+#
+#
+#
+#
+#
+
+#
+!
+!
+!
+!
+!
+
+!
+#
+#
+#
+#
+#
+
+computational features like audio features and visual features
+that they map to the components of creativity and a supervised
+approach to automatically detect creative videos. In 2016,
+Zhang et al. [10] proposed a tree-guided multi-task multimodal learning model to estimate the venue category for each
+unseen microvideo. In the same year, Chen et al. [11] proposed
+a TMALL model for popularity prediction, which was the
+earliest prediction analysis on the popularity of short videos.
+In 2020, for Tiktok and MovieLens, two micro-video recommendation datasets, Tao et al. [12] developed a new method
+MGAT, which incorporates attention mechanism into the graph
+neural network framework, to disentangle user preferences
+on different modalities. In 2023, Qi et al. [13] constructed
+FakeSV, the largest short video dataset about fake news based
+on Douyin and Kuaishou, and provided a new multimodal
+detection model SV-FEND which exploits the cross-modal
+correlations to select the most informative features and utilizes
+the social context information for detection.
+The analysis of multimodal data of short videos is a
+hot research topic, involving areas such as popularity
+prediction, location classification, video recommendations,
+and fake video detection. However, current studies only
+focus on objective features and their relation with user
+behavior, neglecting the intrinsic emotion.
+C. General Multimodal Emotion Analysis of Videos
+Early research on video emotion analysis was not in the
+wild, their research primarily focused on movie segments and
+movie review data. In 2003, Kang et al. [14] discussed a new
+technique for detecting affective events using Hidden Markov
+Models (HMM), based on low-level features, including color,
+motion, and shot cut rate. In 2006, Wang et al. [15] proposed
+the combination of visual and audio features with support
+vector machines and achieved good results. In 2013, with the
+rapid development of multimedia social platforms, Wollmer et
+al. [16] focused on automatically analyzing a speaker’s sentiment in online videos containing movie reviews. In addition to
+textual information, this approach considers adding audio features as typically used in speech-based emotion recognition as
+well as video features encoding valuable valence information
+conveyed by the speaker. In 2018, in order to process a large
+
+IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. XX, NO. X, DECEMBER 2023
+
+number of online videos and improve the processing power of
+real-time emotion analysis, Tran et al. [17] proposed a realtime multimodal emotion analysis model, which leveraged the
+processing speed of extreme learning machine and graphics
+processing unit to overcome the limitations of standard learning algorithms and central processing unit (CPU).
+There is some research that take GIFs as objects of emotion
+analysis, which are similar to our study. However, these GIFs
+consist of only a few frames, which is quite different from
+short videos. In 2014, Jou et al. [18] proposed the first
+model to predict the emotions perceived by viewers after
+they are shown animated GIF images. In 2019, Yang et al.
+[19] proposed KAVAN network which consists of a facial
+attention module and a hierarchical segment temporal module
+to conduct human-centered GIF emotion recognition.
+As for the end-to-end video emotion analysis methods,
+there are still few relevant studies. General existing works
+on multimodal emotion analysis adopt a two pipeline, first
+extracting feature representations for each single modality
+and then performing end-to-end learning with the extracted
+feature. In 2020, Zhao et al. [20] proposed to recognize video
+emotions in an end-to-end manner based on convolutional
+neural networks (CNNs), and developed a deep Visual-Audio
+Attention Network (VAANet). In 2021, Dai et al. [21] developed a fully end-to-end model FE2E that connects the two
+phases and optimizes them jointly. In 2022, Wei et al. [2]
+designed a fully multimodal video-to-emotion system FV2ES
+for fast yet effective recognition inference. For visual modality,
+FV2ES used RepVGG to improve the efficiency of multimodal emotion analysis. The Hierarchical-Attention Spectrum
+Computing Module was used to improve the accuracy of the
+model for audio modality, and the pre-trained Albert model
+was used for feature extraction and prediction for textual
+modality.
+Earlier research on video emotion analysis mostly concentrated on movie segments and review data, and the endto-end emotion analysis was limited. Even though there
+were some multimodal affective computing methods, they
+were not suitable for short videos.
+III. O UR W ORK
+A. Bili-News Dataset Construction
+As discussed in Section II-A, automatic utterance-level
+segmentation and transcription methods have not been adopted
+in current multimodal emotion analysis datasets. Most existing
+datasets focus on emotion for utterance-segmented videos,
+lacking overall annotations for the emotions of the entire short
+videos. In this section, we present the bili-news dataset
+construction, which involves two steps: (a) employing
+automatic segmentation and transcription methods and
+(b) selecting and assigning overall emotion annotations for
+the dataset. The following subsections describe the process
+of constructing this dataset in more detail.
+1) Automatic Segmentation and Transcription Method
+In this section, we propose the first automatic segmentation
+and transcription method and use it in the process of bili-news
+construction. According to the speaker’s speech rhythm, we
+
+3
+
+Fig. 2. The process of automatic segmentation and transcription method
+
+segment the audio part of short videos and obtain the start
+time and end time of each sentence. We then feed the audio
+segments to the Whisper model [22] which transcribes the
+speech into English text in a consistent way. The process
+is shown in Figure 2. This method greatly reduces the cost
+of manual segmentation and transcription and enhances the
+efficiency of dataset construction.
+The detect-silence function in pydub library is used to detect
+the silence interval in speech. According to our experiments,
+a threshold of 0.8 seconds was selected as the cutoff for
+segmenting the original audio into short segments corresponding to each sentence. Subsequently, for each short segment,
+the Whisper model is utilized for speech recognition and
+translation, generating the subtitle text of each sentence. The
+segmentation timestamps and subtitle texts were then outputted
+into files. Since the Whisper model has the available pretrained optimal model that can be directly utilized. According to the universality of speech recognition and translation
+tasks, there is no need to add datasets for fine-tuning in
+practical applications, so this paper will not train the Whisper
+model additionally. Moreover, the Whisper model supports
+multi-language speech recognition and translation tasks, such
+as Chinese→Chinese, English→English, Chinese→English,
+Korean→English, and so on, which enables the automatic
+utterance-level segmentation and transcription of audio in
+multiple languages.
+2) Selecting and Assigning Emotion Annotations
+Firstly, we crawled 1820 short videos related to recent
+hot events from the Bilibili platform. Secondly, we designed
+special criteria for our research and manually selected the
+short videos, resulting in a final set of 165 videos. Thirdly,
+we invited 12 crowdsourced judges to annotate the emotion
+of the entire short video in the bili-news dataset. Then, we
+dropped short videos with unclear emotion annotations, which
+may not be significant in our research. We ultimately retained
+147 short videos and validated the consistency of the labeling
+dataset. The details of the selection process and the short video
+subjective annotation experiment are as follows.
+To ensure the short videos in the bili-news dataset meet
+our research, we designed some criteria for selecting the short
+videos we crawled: (a) featuring one or two main characters;
+(b) the speech is clear and in the same language; (c) the
+duration is less than three minutes; (d) having a simple and
+strong emotion. Additionally, we dropped the policy-related
+short videos to ensure the objectivity of the dataset.
+For the short videos we selected, we organized a short
+
+IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. XX, NO. X, DECEMBER 2023
+
+video subjective evaluation experiment to label the emotion
+of short videos. In order to control the quality of annotation, a
+qualification test is designed for the judges. Through the test,
+the judges who have the habit of browsing short videos and
+can clearly judge the emotion of short videos are selected.
+For some English short videos of the dataset, the judges with
+good scores in CET-4 and CET-6 are specially selected to
+annotate these videos. Our experiment included 12 crowdsourced judges (6 men and 6 women). Each short video was
+randomly assigned to a group of 3 people to annotate for
+negative, positive, and uncertain labels. In order to ensure
+the effectiveness of annotation, this paper provides training
+before the experiment to help judges better distinguish positive
+and negative emotions. This training introduces the Positive
+and Negative Affect Schedule (PANAS) of psychology. After
+learning 20 different specific descriptions of positive and
+negative emotions, the judges annotated the positive and
+negative intensity of emotions in short videos. This paper
+selects the most one among the three annotations to label short
+videos. Only when at least two annotators agree with the same
+exact emotion, the short video annotation is considered valid.
+Finally, 147 short videos are retained in the dataset.
+To measure the annotation consistency among different
+judges, this paper calculates the Fleiss ’kappa of the labels
+of 3 judges in the constructed bili-news dataset, then obtains
+K>0.65, which has a considerable degree of consistency in
+the annotations. In addition, in order to verify the quality of
+annotations, this section selected annotated short videos with
+different annotations which may be confusing, and invited a
+new judge to annotate selected short videos, and 96% of the
+annotations were the same as the original labels. According
+to the new annotations, we also calculated Cohen’s Kappa to
+measure the consistency with the original annotations, then
+the result was K>0.85. This shows good consistency which
+proves that the bili-news dataset is available.
+B. Optimize Multimodal Emotion Analysis Model
+In this section, we proposed a more effective multimodal
+emotion analysis model V2EM-RoBERTa based on the V2EM
+model [2] by optimizing the method of text modality. We
+investigated recent multimodal affective computing models.
+Then, we performed some experiments with small language
+models that are commonly used. Moreover, we employed
+state-of-the-art large language models for text modality inference. We then contrasted the results of the experiments
+using small and large language models respectively. The
+details of our work are as follows.
+In this section, we conducted experiments and optimizations
+on its textual modality approach. The reason for selecting
+the textual modality is shown in Table II, where we show
+multimodal emotion analysis developed over the past three
+years. In the “Modality” column, it is evident that almost
+all recent models have integrated visual modality (V), textual
+modality (T), and acoustic modality (A) for comprehensive
+analysis. In the “Effect” column, we can see that almost the
+textual modality has the greatest impact, so we optimize our
+approach for the textual modality to maximize the performance
+of the model.
+
+4
+
+TABLE II
+S UMMARY OF CURRENT MULTIMODAL EMOTION ANALYSIS MODEL
+
+Years
+
+Method
+
+Modality
+
+Effect
+
+Textual
+Model
+
+2021
+2021
+2021
+2022
+2022
+2022
+2023
+2023
+
+CMCN [24]
+FE2E [21]
+HFU-BERT [25]
+AMOA [26]
+CERS [27]
+FV2ES [2]
+QAP [28]
+TETFN [29]
+
+V+T
+V+T+A
+V+T+A
+V+A+T
+V+A+T
+V+A+T
+V+A+T
+V+A+T
+
+T>V
+T>V>A
+T>A>V
+T>A>V
+T>A>V
+T>V>A
+T>V>A
+
+BERT
+Transformer
+BERT
+BERT
+BART
+ALBERT
+ALBERT
+BERT
+
+Fig. 3.
+model
+
+The architecture of V2EM-Roberta multimodal emotion analysis
+
+From Table II, we can find that most methods in textual
+modality use pre-trained models of BERT-based models for
+textual feature extraction. Therefore, we explored various
+BERT-based models and some small language models for
+textual features in our experiments, as detailed in Chapter 4.
+Among them, the RoBERTa model [23] has a larger number
+of model parameters, uses a larger batch size during training,
+and uses more datasets including CC-News for training, so it
+has superior performance in our experiments.
+Recently, large language models have become very popular. Considering the partial similarity between the tasks
+of text emotion analysis and multimodal emotion analysis,
+we attempted to employ large language models for textual
+modality emotion analysis. Subsequently, we combined the
+results from three modalities through linear fusion to get
+the final prediction. Considering the size of the number of
+parameters, we select a large language model with the number
+of parameters ranging from 200M to 500M for comparative
+experiments. The experimental results are shown in Chapter 4.
+The results indicated that the performance of large language
+models was not as good as small language models trained on
+the dataset, which verifies the conclusion drawn by Zhang et
+al. [30] that LLMs lag behind in more complex tasks requiring
+deeper understanding or structured sentiment information.
+Therefore, based on the open-source end-to-end V2EM
+model [2], we proposed a more effective multi-modal emotion
+analysis model named V2EM-RoBERTa. For the visual modality, the V2EM-RoBERTa takes the capture of image frames
+
+IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. XX, NO. X, DECEMBER 2023
+
+at fixed intervals as input. Due to short videos containing
+explicit subjects, facial expression is the most important for
+emotion analysis of a video frame. Indeed, the mtcnn face
+recognition model is used to intercept the face part of the video
+frame, and then the RepVGG network is used to extract visual
+features. The visual features are encoded using a Transformer
+model with a location-embedded layer containing mode time
+information. For the acoustic modality, the V2EM-RoBERTa
+model will extract the log-mel frequency feature of the original audio, expand it into two-dimensional frequency feature
+graphs, divide the feature graph into 16 sub-graph sequences,
+and input them into NesT structure to extract acoustic features.
+Then the features were inputted into the Transformer model
+which can model time information to encode the data. For
+the text modality, we extract the features of the text using the
+pretrained small language model RoBERTa, then we use the
+Transformer model to extract the temporal features of the text.
+Finally, the data of all modalities are input into the Forward
+Feed Network and get the prediction of all modalities, and
+we used the linear fusion to get the final prediction. The
+architecture of the multimodal emotion analysis model in this
+paper is shown in Figure 3.
+
+5
+
+TABLE III
+T HE COMPRESSION STRATEGY OF SHORT VIDEOS WITH DIFFERENT
+RESOLUTIONS
+
+Original video
+resolution
+
+Target video resolution
+
+(470∼490)*(550∼570)
+(845∼865)*(470∼490)
+(470∼490)*(840∼860)
+(1070∼1090)*(1910∼1930)
+
+180*224
+214*120
+120*214
+144*216
+
+and portrait orientations. After several experiments, we devised
+a compression strategy for different types of videos, as shown
+in Table III. The facial detection inputted into the V2EMRoberta model is shown in Figure 5. The left image is the
+facial detection from the dataset for model training, while the
+right image is the facial detection from the short video for
+model inference. It is evident that our compression strategy
+ensures comparable face image size during both training and
+inference.
+IV. E XPERIMENTS
+
+C. The Construction of the MSEVA System
+
+A. Statistical Analysis of Bili-news Dataset
+
+The main flow and components of the MSEVA system are
+shown in Figure 4. The system has three main modules: (a)
+Data Format Preprocessing Module: this module transforms
+the short video file that users provide to enable adaptable
+handling of short videos with various resolutions. (b) Automatic Segmentation and Transcription Module: the module
+is designed according to the method proposed in Section III-A
+for utterance-level segmentation and transcription. (c) the
+Pre-trained multimodal emotion analysis Model (V2EMRoberta): the aligned modalities after segmentation are fed
+into this module to obtain the final result.
+In the experiment, we found that some short videos with
+long durations caused substantial memory occupation, but
+there was no increase in accuracy. To address this problem
+and finer emotion analysis for short videos, we developed
+an automatic segmentation and transcription module based on
+the method in Section III-A. This module generates text files
+containing the start and end timestamps of each sentence along
+with the corresponding subtitle text. Then, the segmented
+audio and video, together with the subtitle text are input into
+the V2EM-Roberta model for multimodal emotion analysis.
+The visual modality processing approach of the V2EMRoberta model using the RepVGG net, where the input face
+images are of size 48*48. Because of the various resolutions
+and diverse sizes of face images in the Bilibili platform’s short
+videos, we need to conduct preprocess operations to standardize the data format. The data format preprocessing module is
+essential to enable the system’s adaptability to short videos
+with different resolutions. Our data format preprocessing
+module workflow is as follows. We use the FFmpeg tool to
+convert mp4 and mp3 to avi and wav. Then, According to the
+statistics in this section, there are four types of short video
+resolution in the Bili-news dataset, including both landscape
+
+The bili-news dataset has four distinctive characteristics:
+(a) Definite Emotion: Short videos have a distinct and strong
+emotion, with a balanced ratio of positive to negative emotions.
+(b) Diverse Durations: The dataset has a variety of short video
+durations. (c) Bilingual Content: Short videos in the bili-news
+dataset have English and Chinese languages. (d) Various
+Posters: Short videos are given by people with different media
+institutions. The short videos in this dataset show a remarkable
+diversity, aligning well with the rich variety of short video
+content typically found on social media platforms, which
+facilitates objective evaluations. A partial screenshot of the
+bili-news dataset is shown in Figure 6.
+In this section, we calculate the emotion annotation of short
+videos in the bili-news dataset, and the statistical information
+is shown in column one of Table IV. There are 236 positive
+annotations, 185 negative annotations, and only 20 uncertain
+annotations, which verify that the short videos in this dataset
+have clear emotions.
+Regarding the duration of short videos, if the duration is
+too short, the video may not effectively convey emotions
+and might lack the ability to guide or propagate emotions.
+Conversely, if the duration is excessively long, the video’s
+emotion might change halfway through, potentially conveying
+positive emotion in the first half and negative emotions in
+the latter half. Considering the research significance of this
+paper, we select short videos with durations below three minutes, ensuring that the emotion remains consistent throughout.
+Among the short videos in the bili-news dataset, there are 40
+short videos that lasted less than one minute, 58 short videos
+that lasted one to one and a half minutes, 37 short videos that
+lasted one and a half to two minutes, seven short videos that
+lasted two to two and a half minutes, and five short videos that
+lasted longer than two and a half minutes. The video duration
+
+IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. XX, NO. X, DECEMBER 2023
+
+6
+
+Fig. 4. The architecture of multimodal short videos emotion visual analysis (MSEVA) System
+
+Fig. 5. The example for the similar resolution of face area after our data
+format preprocessing module (the left image is the input during training of
+IEMOCAP dataset, and the right image is the input from short video during
+inference of Bili-news dataset)
+
+the bili-news data set, there are not only 115 short videos
+in Chinese but also 32 short videos in English. The ratio of
+Chinese to English is about 4:1, as shown in column three of
+Table IV.
+The short videos in this dataset are posted by both state media and we media. This dataset encompasses content from 28
+prominent Bilibili accounts, including six we media accounts
+and 22 state media accounts. Specifically, 94 short videos are
+posted by CCTV News, seven from Phoenix Satellite TV, and
+six from CGTN. A detailed distribution of the short video
+poster is shown in column four of Table IV.
+B. Ablation Study of Automatic Segmentation and Transcription Module
+
+Fig. 6. Example snapshots of short videos from our bili-news dataset
+
+distribution of the bili-news dataset is shown in column two
+of Table IV.
+The languages of this dataset are not only Chinese but
+also English. In the process of dataset construction, we don’t
+restrict the language, except each short video is required to
+appear in only one language in short videos. Therefore, in
+
+To validate the necessity of automatic segmentation and
+transcription modules we introduced in Section III-A, we compared the effects of non-transcribed methods and transcribed
+methods respectively on the trained multimodal emotion analysis model. In the case of the non-transcribed method, we used
+the title of the short video crawled as the input of textual
+modality. We transferred the multimodal emotion analysis
+model trained on the CMU-MOSEI dataset (label marked -3 -1
+as negative and label marked 1-3 as positive) to the bili-news
+dataset for experiments. The textual inputs for the experiments
+are the titles we crawled and the subtitles transcribed by
+our method respectively. Using the text generated by this
+module, instead of using the title, can improve the accuracy
+of the multimodal emotion analysis model by up to about
+10.01%, as evidenced by the experimental results in Table
+V.
+In order to validate the effectiveness of the automatic segmentation and transcription method on end-to-end short video
+
+IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. XX, NO. X, DECEMBER 2023
+
+7
+
+TABLE IV
+S TATISTICAL ANALYSIS OF BILI - NEWS DATASET
+Label
+
+Duration
+
+Language
+
+TABLE V
+T HE RESULT OF DIFFERENT TEXTUAL INPUT ( TITLE AND TRANSCRIPTION )
+
+ACC-2 (%) Precision (%) Recall (%) F1 (%)
+Non-transcribed
+(Title)
+Transcribed
+(Transcription)
+
+74.82
+
+51.82
+
+86.36
+
+64.77
+
+82.31
+
+55.37
+
+89.33
+
+68.37
+
+TABLE VI
+T HE RESULT OF DIFFERENT TEXTUAL INPUT ( MANUAL TRANSCRIPTION
+AND AUTOMATIC TRANSCRIPTION )
+
+Transcription ACC-2 (%) Precision (%) Recall (%) F1 (%)
+Manual
+Automatic
+
+82.08
+82.91
+
+78.17
+83.35
+
+88.81
+82.06
+
+83.15
+82.70
+
+multimodal emotion analysis, we compared the performance
+of subtitles by manually transcribed and subtitles generated
+by this method on the optimal multimodal emotion analysis
+model trained on the CMU-MOSEI dataset.These were used as
+textual modal inputs and tested on the CMU-MOSEI dataset’s
+test set. The experimental results are shown in Table VI. In
+terms of accuracy, there is little difference between manual
+transcription and automatic transcription. In terms of precision,
+automatic transcription outperforms manual transcription by
+6.63%. However, automatic transcription exhibits lower performance than manual transcription in terms of recall and F1
+score. The quality of manual transcription should be higher
+than that of automatic transcription, so the result of manual
+transcription is better than automatic transcription. Our experiments confirmed that the automatic transcription method
+has a similar effect to the artificial one in terms of accuracy
+and precision, and it also saves much labor costs.
+
+C. Performance and Computational Efficiency Analysis of
+V2EM-RoBERTa Model
+Our experiment relies on CPU Intel (R) Xeon (R) Gold
+6326 CPU @ 2.90GHz and GPU Nvidia RTX3090, only one
+graphics card and CPU are used for training the model, and
+only the CPU is used for inference.
+
+Poster
+
+1) Multimodal Emotion Analysis Experiment
+We conducted optimization experiments for the text modality of the V2EM model on the IEMOCAP dataset [3] and
+the CMU-MOSEI dataset [5]. On the IEMOCAP dataset, we
+extract video frames at a rate of 800 frames per second.
+The epoch is set to 30, the batch size is set to 1, and the
+accumulation gradient is set to 4. We combine some small
+language models for feature extraction of text modality into
+V2EM models for optimization experiments. As the Section
+III-B mentioned, we try the pretrained small language models
+like Albert [31], GPT2 [32], BART [33], Distilbert [34],
+RoBERTa [23]. The results are shown in Table VII. On the
+MOSEI dataset, due to the long duration of some videos in the
+dataset and the limitation of the graphics card, we extract a
+fixed set of 10 video frames per video for the visual modality
+input. Other experimental parameters remained consistent with
+those of the IEMOCAP dataset, and the results are shown in
+Table VIII. We found that using a pre-trained RoBERTa
+text model [23] improved accuracy by approximately
+4.17% compared to the base model. However, the training
+time is longer because the number of parameters of the
+RoBERTa model is larger than that of Albert.
+2) Textual Modal Emotion Analysis Experiment
+In order to validate that RoBERTa model has a better
+effect than Albert model and other small language models,
+we conducted a textual modal experiment on the IEMOCAP
+dataset. The experimental parameters are set the same as the
+previous experiments, and the experimental results are shown
+in Table IX. The results show that the RoBERTa model has
+the best performance on text modality.
+3) Multimodal Experiments Integrated with Large Language
+Models
+As mentioned in Section III-B, we also conducted experiments using some state-of-the-art large language models like
+bloomz [35], mt0 [35], flan-t5 [36] on the IEMOCAP dataset.
+In these experiments, we used a unified prompt command for
+the pre-trained large language models to inference in the text
+modality, while other modalities were trained and tested in the
+same way as the V2EM model. The results are shown in Table
+X. We can see that using large language models not only takes
+longer time for training but also the results are not as good as
+small language models. Therefore, for current multimodal
+emotion analysis tasks, employing small language models
+proves to be better.
+
+IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. XX, NO. X, DECEMBER 2023
+
+8
+
+TABLE VII
+T HE RESULT OF MULTIMODAL EMOTION ANALYSIS WITH DIFFERENT SMALL LANGUAGE MODELS FOR TEXTUAL FEATURE EXTRACTION BASED ON THE
+V2EM MODEL ON THE IEMOCAP DATASET
+
+Text Model
+
+ACC-2 (%)
+
+Recall (%)
+
+Precision (%)
+
+F1 (%)
+
+AUC (%)
+
+Parameters
+
+Training Time
+
+Albert-base-v2
+GPT2
+BART
+distilbert-base-uncased
+RoBERTa-base
+
+0.8023
+0.7508
+0.7833
+0.8023
+0.8372
+
+0.6696
+0.5527
+0.5958
+0.5953
+0.6585
+
+0.4515
+0.3447
+0.4076
+0.4504
+0.5208
+
+0.5335
+0.4234
+0.4767
+0.5043
+0.5755
+
+0.8412
+0.7416
+0.7951
+0.8070
+0.8587
+
+11M
+137M
+139M
+67M
+125M
+
+8.89h
+8.56h
+9.2h
+8.30h
+9.08h
+
+TABLE VIII
+T HE RESULT OF MULTIMODAL EMOTION ANALYSIS EXPERIMENTS WITH DIFFERENT SMALL LANGUAGE MODELS FOR TEXTUAL FEATURE EXTRACTION
+BASED ON THE V2EM MODEL ON THE CMU-MOSEI DATASET
+
+Text Model
+
+ACC-2 (%)
+
+Recall (%)
+
+Precision (%)
+
+F1 (%)
+
+AUC (%)
+
+Parameters
+
+Training Time
+
+Albert-base-v2
+GPT2
+BART
+distilbert-base-uncased
+RoBERTa-base
+
+0.7141
+0.6659
+0.6995
+0.7270
+0.7328
+
+0.6137
+0.5617
+0.6088
+0.5686
+0.6142
+
+0.3651
+0.3046
+0.3596
+0.3716
+0.3933
+
+0.4553
+0.3935
+0.4417
+0.4431
+0.4722
+
+0.7254
+0.6538
+0.7951
+0.7187
+0.7437
+
+11M
+137M
+139M
+67M
+125M
+
+37.28h
+36.89h
+38.45h
+38.30h
+38.40h
+
+TABLE IX
+T HE RESULT OF TEXTUAL MODEL EMOTION ANALYSIS EXPERIMENTS WITH DIFFERENT SMALL LANGUAGE MODELS FOR THE TEXTUAL FEATURE
+EXTRACTION ON THE IEMOCAP DATASET )
+
+Text Model
+
+ACC-2 (%)
+
+Recall (%)
+
+Precision (%)
+
+F1 (%)
+
+AUC (%)
+
+Parameters
+
+Training Time
+
+Albert-base-v2
+GPT2
+BART
+distilbert-base-uncased
+RoBERTa-base
+
+0.8087
+0.6707
+0.8083
+0.8148
+0.8462
+
+0.5681
+0.5906
+0.5758
+0.6129
+0.5903
+
+0.4483
+0.2961
+0.4472
+0.4877
+0.5354
+
+0.4906
+0.3793
+0.4945
+0.5300
+0.5595
+
+0.8027
+0.6908
+0.8168
+0.8382
+0.8442
+
+11M
+137M
+139M
+67M
+125M
+
+3.0h
+2.6h
+3.76h
+1.71h
+2.78h
+
+TABLE X
+T HE RESULT OF MULTIMODAL EMOTION ANALYSIS EXPERIMENTS INTEGRATED WITH LARGE LANGUAGE MODELS AND SMALL LANGUAGE MODELS ON
+THE IEMOCAP DATASET )
+
+Text Model
+
+ACC-2 (%)
+
+Recall (%)
+
+Precision (%)
+
+F1 (%)
+
+AUC (%)
+
+Parameters
+
+Training Time
+
+Albert-base-v2 (SLM)
+RoBERTa-base (SLM)
+bloomz-560m (LLM)
+mt0-base (LLM)
+flan-t5-base (LLM)
+
+0.8023
+0.8372
+0.7530
+0.7411
+0.7483
+
+0.6696
+0.6585
+0.5850
+0.6487
+0.5848
+
+0.4515
+0.5208
+0.3766
+0.3668
+0.3531
+
+0.5335
+0.5755
+0.4497
+0.4612
+0.4349
+
+0.8412
+0.8587
+0.7601
+0.7690
+0.7492
+
+11M
+125M
+560M
+580M
+248M
+
+8.89h
+2.78h
+9.53h
+13.07h
+11.10h
+
+IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. XX, NO. X, DECEMBER 2023
+
+9
+
+Fig. 7. The interface of the multimodal emotion analysis for short videos
+Fig. 8. The interface of the temporal emotion analysis for short videos
+
+D. The Test of the MSEVA System Analysis
+1) Comprehensive Emotion Analysis Interface for Short
+Videos
+Clicking the emotion analysis button allows us to do
+real-time emotion analysis for short videos and make a
+complete appraisal of emotions. In this test, we inputted
+the short video titled “The female anchor tearfully recalls the
+fear of the interview” in the bili-news dataset. As shown in
+Figure 7, the interface first shows the emotion of the video,
+indicating whether it is positive or negative. Subsequently, it
+shows specific scores for different emotions, with the highest
+score being the final result. For this example, the result is sad,
+which aligns with our subjective judgment and the label.
+To provide finer analysis, our proposed system performs
+temporal analysis, as emotions in a short video may
+vary partially throughout its duration. Leveraging the endto-end multimodal emotion analysis module based on the
+pretrianed V2EM-RoBERTa model, we automatically segment
+the short video into sentences, feeding them into the module to
+inference for each sentence. We utilize an emotion fluctuation
+graph for visual representation, enhancing the comprehension
+of the short video’s emotional trajectory. The interface is
+depicted in Figure 8.
+In addition, the system offers emotion analysis results
+for each modality, allowing the analysis of short video
+emotions from various perspectives. We utilize a decisionlevel fusion approach in the final result, which means we
+linearly combine these results of individual modality to get
+the final result. We show the emotional analysis result for each
+modality in Figure 9.
+2) The Performance of the MSEVA System
+We tested the emotion analysis of the MSEVA system on the
+bili-news dataset. The dataset consisted of 147 short videos,
+including 62 negative videos and 85 positive videos. The result
+is shown as Table XI. By comparing the system’s emotion
+analysis results with the label in the bili-news dataset, we
+computed the accuracy and F1 score. They were 76.2%
+and 81.5%, respectively.
+The analysis error of the MSEVA system appears in the case
+that the subject criticizes and warns against negative behaviors
+
+Fig. 9. The interface of each modality emotion analysis for short videos
+
+using a humorous way or a lighthearted broadcasting method.
+In this case, even though the subject’s speech contains negative
+vocabulary such as harm, prohibition, or punishment, the video
+is still recognized as a positive video by the MSEVA system.
+When the subject’s speaking style, tone, and content are
+consistent, the model attains more accurate recognition.
+The wrong case: There is no star when it comes to legal
+issues, “Deng Lun” needs to speak and act with caution in
+life.
+Case study: The main content of this short video is about
+the news that the star Deng Lun was fined for tax evasion.
+Although the anchor’s broadcast style is very serious, and the
+
+TABLE XI
+T HE PERFORMANCE OF THE EMOTION ANALYSIS OF THE MSEVA SYSTEM
+
+Ground Truth
+
+The result of system
+Positive
+Negative
+
+Positive
+
+77
+
+8
+
+Negative
+
+27
+
+35
+
+IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. XX, NO. X, DECEMBER 2023
+
+TABLE XII
+V IDEO SCREENSHOTS OF THESE CASES ( WRONG CASE ON THE LEFT,
+CORRECT CASE ON THE RIGHT )
+Wrong Case
+
+Correct Case
+
+10
+
+There are some limitations in this work. The relatively
+limited number of short videos in the bili-news dataset could
+be expanded while ensuring data standardization. In the future,
+we can fine-tune the multimodal emotion analysis model
+on the expanded bili-news dataset so that we can enhance
+the model’s performance. The performance of the MSVEA
+system needs to be further improved and to be more available
+for the real short videos on the platforms. Moreover, the
+computational time of the current system is high and requires
+further optimization.
+ACKNOWLEDGMENTS
+This study was supported by the National Social Science
+Foundation of China (No. 62301510), the Fundamental Research Funds for the Central Universities (No. CUC23GZ005),
+the Fundamental Research Funds for the Central Universities
+(No. CUC23ZDTJ004).
+R EFERENCES
+
+speaking content is also a relatively heavy topic, the audience
+will have the thought that he deserves his punishment, which
+is positive, so the analysis result of the model is wrong.
+The correct case: Ouyang Xiadan: The suspect who beat a
+9-year-old boy to death was detained, and the mental problem
+is not “immunity”.
+Case study: The short video is mainly about the suspect
+of the violent incident suffering from mental illness. In view
+of this social problem, the anchor calls for strengthening the
+treatment and control of patients with mental illness to prevent
+them from causing serious social problems. The emotion of
+the short video is negative, and the result of the MSEVA model
+is correct.
+Table XII shows the video screenshot of these cases.
+V. C ONCLUSION AND F UTURE W ORK
+In this paper, we propose the methods of automatic segmentation and transcription method which supports multilingual
+videos and improve the efficiency of the multimodal dataset
+construction. This method improves the usability of short
+video emotion analysis in our life. We firstly construct the
+multimodal emotion analysis dataset bili-news based on short
+videos, which includes the annotation for the overall emotion
+of short videos. This dataset is openly accessible. In addition, we achieved approximately 4.17% improvement in the
+accuracy of the multimodal emotion analysis model based on
+V2EM [2]. We conducted several relevant experiments on pretrained small language models and the current large language
+models, validating the importance of small language models
+for multimodal emotion analysis and that large language
+models cannot completely replace small language models now.
+Finally, we propose the MSEVA system, designed for endto-end visual analysis of short videos. This system utilized
+a multimodel emotion analysis model trained on the CMUMOSEI dataset and was tested on the bili-news dataset. The
+results of the experiments show that the system is effective
+and significant in real-life applications.
+
+[1]
+
+Shuai Yang, Yuzhen Zhao, and Yifang Ma. “Analysis of
+the reasons and development of short video applicationTaking Tik Tok as an example”. In: Proceedings of the
+2019 9th International Conference on Information and
+Social Science (ICISS 2019), Manila, Philippines. 2019,
+pp. 12–14.
+[2] Qinglan Wei, Xuling Huang, and Yuan Zhang. “FV2ES:
+A Fully End2End Multimodal System for Fast Yet Effective Video Emotion Recognition Inference”. In: IEEE
+Transactions on Broadcasting 69.1 (2022), pp. 10–20.
+[3] Carlos Busso et al. “IEMOCAP: Interactive emotional
+dyadic motion capture database”. In: Language resources and evaluation 42 (2008), pp. 335–359.
+[4] Amir Zadeh et al. “CMU-MOSEAS: A multimodal
+language dataset for Spanish, Portuguese, German and
+French”. In: Proceedings of the Conference on Empirical Methods in Natural Language Processing. Conference on Empirical Methods in Natural Language Processing. Vol. 2020. NIH Public Access. 2020, p. 1801.
+[5] AmirAli Bagher Zadeh et al. “Multimodal language
+analysis in the wild: Cmu-mosei dataset and interpretable dynamic fusion graph”. In: Proceedings of the
+56th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers). 2018,
+pp. 2236–2246.
+[6] Amir Zadeh. “Micro-opinion sentiment intensity analysis and summarization in online videos”. In: Proceedings of the 2015 ACM on International Conference on
+Multimodal Interaction. 2015, pp. 587–591.
+[7] Md Kamrul Hasan et al. “UR-FUNNY: A multimodal
+language dataset for understanding humor”. In: arXiv
+preprint arXiv:1904.06618 (2019).
+[8] Wenmeng Yu et al. “Ch-sims: A chinese multimodal
+sentiment analysis dataset with fine-grained annotation
+of modality”. In: Proceedings of the 58th annual meeting of the association for computational linguistics.
+2020, pp. 3718–3727.
+
+IEEE TRANSACTIONS ON COMPUTATIONAL SOCIAL SYSTEMS, VOL. XX, NO. X, DECEMBER 2023
+
+[9]
+
+[10]
+
+[11]
+
+[12]
+
+[13]
+
+[14]
+
+[15]
+
+[16]
+
+[17]
+
+[18]
+
+[19]
+
+[20]
+
+[21]
+
+[22]
+
+[23]
+
+[24]
+
+Miriam Redi et al. “6 seconds of sound and vision:
+Creativity in micro-videos”. In: Proceedings of the
+IEEE Conference on Computer Vision and Pattern
+Recognition. 2014, pp. 4272–4279.
+Jianglong Zhang et al. “Shorter-is-better: Venue category estimation from micro-video”. In: Proceedings of
+the 24th ACM international conference on Multimedia.
+2016, pp. 1415–1424.
+Jingyuan Chen et al. “Micro tells macro: Predicting the
+popularity of micro-videos via a transductive model”.
+In: Proceedings of the 24th ACM international conference on Multimedia. 2016, pp. 898–907.
+Zhulin Tao et al. “Mgat: Multimodal graph attention
+network for recommendation”. In: Information Processing & Management 57.5 (2020), p. 102277.
+Peng Qi et al. “FakeSV: A multimodal benchmark
+with rich social context for fake news detection on
+short video platforms”. In: Proceedings of the AAAI
+Conference on Artificial Intelligence. Vol. 37. 12. 2023,
+pp. 14444–14452.
+Hang-Bong Kang. “Affective content detection using
+HMMs”. In: Proceedings of the eleventh ACM international conference on Multimedia. 2003, pp. 259–262.
+Hee Lin Wang and Loong-Fah Cheong. “Affective understanding in film”. In: IEEE Transactions on circuits
+and systems for video technology 16.6 (2006), pp. 689–
+704.
+Martin Wöllmer et al. “Youtube movie reviews: Sentiment analysis in an audio-visual context”. In: IEEE
+Intelligent Systems 28.3 (2013), pp. 46–53.
+Ha-Nguyen Tran and Erik Cambria. “Ensemble application of ELM and GPU for real-time multimodal
+sentiment analysis”. In: Memetic Computing 10 (2018),
+pp. 3–13.
+Brendan Jou, Subhabrata Bhattacharya, and Shih-Fu
+Chang. “Predicting viewer perceived emotions in animated GIFs”. In: Proceedings of the 22nd ACM international conference on Multimedia. 2014, pp. 213–216.
+Zhengyuan Yang, Yixuan Zhang, and Jiebo Luo.
+“Human-centered emotion recognition in animated
+gifs”. In: 2019 IEEE International Conference on Multimedia and Expo (ICME). IEEE. 2019, pp. 1090–1095.
+Sicheng Zhao et al. “An end-to-end visual-audio attention network for emotion recognition in user-generated
+videos”. In: Proceedings of the AAAI Conference on
+Artificial Intelligence. Vol. 34. 01. 2020, pp. 303–311.
+Wenliang Dai et al. “Multimodal end-to-end sparse
+model for emotion recognition”. In: arXiv preprint
+arXiv:2103.09666 (2021).
+Alec Radford et al. “Robust speech recognition via
+large-scale weak supervision”. In: International Conference on Machine Learning. PMLR. 2023, pp. 28492–
+28518.
+Yinhan Liu et al. “Roberta: A robustly optimized bert pretraining approach”. In: arXiv preprint
+arXiv:1907.11692 (2019).
+Cheng Peng et al. “Cross-modal complementary network with hierarchical fusion for multimodal sentiment
+
+[25]
+
+[26]
+
+[27]
+
+[28]
+
+[29]
+
+[30]
+
+[31]
+
+[32]
+[33]
+
+[34]
+
+[35]
+
+[36]
+
+11
+
+classification”. In: Tsinghua Science and Technology
+27.4 (2021), pp. 664–679.
+Sanghyun Lee, David K Han, and Hanseok Ko. “Multimodal emotion recognition fusion analysis adapting
+BERT with heterogeneous feature unification”. In: IEEE
+Access 9 (2021), pp. 94557–94572.
+Ziming Li et al. “AMOA: Global acoustic feature
+enhanced modal-order-aware network for multimodal
+sentiment analysis”. In: Proceedings of the 29th International Conference on Computational Linguistics.
+2022, pp. 7136–7146.
+Anupama Ray et al. “A multimodal corpus for
+emotion recognition in sarcasm”. In: arXiv preprint
+arXiv:2206.02119 (2022).
+Ziming Li et al. “QAP: A Quantum-Inspired AdaptivePriority-Learning Model for Multimodal Emotion
+Recognition”. In: Findings of the Association for Computational Linguistics: ACL 2023. 2023, pp. 12191–
+12204.
+Di Wang et al. “TETFN: A text enhanced transformer
+fusion network for multimodal sentiment analysis”. In:
+Pattern Recognition 136 (2023), p. 109259.
+Wenxuan Zhang et al. “Sentiment Analysis in the Era of
+Large Language Models: A Reality Check”. In: arXiv
+preprint arXiv:2305.15005 (2023).
+Zhenzhong Lan et al. “Albert: A lite bert for selfsupervised learning of language representations”. In:
+arXiv preprint arXiv:1909.11942 (2019).
+Alec Radford et al. “Language models are unsupervised
+multitask learners”. In: OpenAI blog 1.8 (2019), p. 9.
+Mike Lewis et al. “Bart: Denoising sequence-tosequence pre-training for natural language generation,
+translation, and comprehension”. In: arXiv preprint
+arXiv:1910.13461 (2019).
+Victor Sanh et al. “DistilBERT, a distilled version of
+BERT: smaller, faster, cheaper and lighter”. In: arXiv
+preprint arXiv:1910.01108 (2019).
+Niklas Muennighoff et al. “Crosslingual generalization through multitask finetuning”. In: arXiv preprint
+arXiv:2211.01786 (2022).
+Hyung Won Chung et al. “Scaling instruction-finetuned
+language models”. In: arXiv preprint arXiv:2210.11416
+(2022).
+
+

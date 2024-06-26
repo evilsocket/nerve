@@ -1,0 +1,1013 @@
+arXiv:2312.04296v1 [cs.CV] 7 Dec 2023
+
+Cross-codex Learning for Reliable Scribe
+Identification in Medieval Manuscripts
+Julius Weißmann1*, Markus Seidl1 , Anya Dietrich2
+and Martin Haltrich3
+1* Media and Digital Technologies, St. Pölten University of
+
+Applied Sciences, Matthias Corvinus – Straße 15, St. Pölten,
+3100, Lower Austria, Austria.
+2 MEG Unit, Brain Imaging Center - Goethe University,
+Heinrich-Hoffmann Strasse 10, Frankfurt am Main, 60528, Hesse,
+Germany.
+3 Research Center, Klosterneuburg Abbey, Stiftspl. 1,
+Klosterneuburg, 3400, Lower Austria, Austria.
+
+*Corresponding author(s). E-mail(s):
+weissmann.julius@gmail.com;
+Contributing authors: markus.seidl@fhstp.ac.at;
+a.dietrich@med.uni-frankfurt.de;
+m.haltrich@stift-klosterneuburg.at;
+Abstract
+Historic scribe identification is a substantial task for obtaining information about the past. Uniform script styles, such as the Carolingian
+minuscule, make it a difficult task for classification to focus on meaningful features. Therefore, we demonstrate in this paper the importance
+of cross-codex training data for CNN based text-independent off-line
+scribe identification, to overcome codex dependent overfitting. We report
+three main findings: First, we found that preprocessing with masked
+grayscale images instead of RGB images clearly increased the F1-score
+of the classification results. Second, we trained different neural networks
+on our complex data, validating time and accuracy differences in order
+to define the most reliable network architecture. With AlexNet, the network with the best trade-off between F1-score and time, we achieved
+for individual classes F1-scores of up to 0,96 on line level and up to
+
+1
+
+2
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+1.0 on page level in classification. Third, we could replicate the finding that the CNN output can be further improved by implementing
+a reject option, giving more stable results. We present the results on
+our large scale open source dataset – the Codex Claustroneoburgensis database (CCl-DB) – containing a significant number of writings
+from different scribes in several codices. We demonstrate for the first
+time on a dataset with such a variety of codices that paleographic
+decisions can be reproduced automatically and precisely with CNNs.
+This gives manifold new and fast possibilities for paleographers to gain
+insights into unlabeled material, but also to develop further hypotheses.
+Keywords: scribe identification, deep learning, computer vision, digital
+humanities, carolingian minuscule
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+3
+
+Fig. 1: Examples from the CCl-DB [6] of three lines of different codices from
+one scribe. The ink and parchment appearance differs, although it’s written
+from the same scribe (class A 30) [10, 11]. Top: CCl 206, middle: CCl 197,
+bottom: CCl 217
+
+1 Introduction
+In European scriptoria the script Carolingian minuscule was used until the
+second half of 12th century for writing and copying books (codices). This Latin
+script was the first standardized script in the medieval period. Hence, the
+scribes aimed for a uniform typeface. Which scribe wrote which parts of a codex
+is usually not denoted in the codices. However, the identification of scribes
+over different codices can help to understand the organization of scriptoria
+and the travels of codices as well as scribes between the monasteries. The
+historic auxiliary science paleography deals inter alia with the identification
+of scribes based on certain scribe-typical features of the writing. However, due
+to the sheer mass of codex pages, this is a tedious and time-consuming task
+and requires a high level of domain expertise.
+Consequently, only a limited amount of medieval codices has been investigated with a focus on scribe identification. The automation utilizing pattern
+recognition and machine learning allows for larger amounts of material. However, to the best of our knowledge data of most automation-based approaches
+are either limited to even only one [1–3] or a few different codices or include
+material from way larger time periods (e.g. [4, 5]).
+To overcome these shortcomings, we investigate automated scribe identification on a large dataset we compiled: The CCl-DB [6]. This dataset contains
+51 individual codices with a total amount of 17071 pages. These codices originate from the library of Klosterneuburg Abbey and were written in the late
+12th century in Carolingian minuscule [7, 8].
+We are aiming to answer two central questions: a) Can the scribe assignments coming from decades of work by paleographic experts [9–11] be
+successfully modelled and predicted ? and b) If so, can we use the models to
+predict scribes for codex pages that have unclear scribe assignments or no scribe
+assignments at all ? A substantial potential data specific risk seen in work
+by others that could render our work useless is that we could model not only
+script specific features but also book specific features such as the parchment
+and page margins. To mitigate this risk, we identified scribes that have been
+
+4
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+Table 1: Subset of the CCl-DB
+Training codices (test A and B )
+
+Separate codices (test B only)
+
+Class
+
+Lines
+per codex
+
+#Codices
+
+Codices
+
+Lines
+per codex
+
+#Codices
+
+Codices
+
+A 30
+
+450
+
+8
+
+1500
+
+2
+
+32, 217
+
+A 259
+B 259
+
+1200
+720
+
+3
+5
+
+1754
+1439
+
+1
+1
+
+706
+246
+
+A 20
+B 20
+A 215
+A 258
+
+1200
+900
+1200
+1800
+
+3
+4
+3
+2
+
+30, 31, 197, 206,
+226, 246, 256, 257
+209, 259, 949
+259, 622, 706, 212,
+671
+21, 28, 39
+22, 195, 216, 764
+215, 219, 703
+258, 707
+
+3000
+119
+3000
+3000
+
+1
+1
+1
+1
+
+20
+20
+245
+203
+
+The dataset for our experiments is a subset of the seven common scribes of the CCl-DB [6].
+We generated a dataset, with two groups of codices – the training codices and the separate
+codices. From the training codices we choose for every class 3600 random lines, that are
+uniformly distributed over all books. In total these are 25200 lines that are separated into
+training, validation and test data (test A) according to the ratio of 60 %, 20 % and 20 %
+respectively. The separate books are used for an extra test set test B. There are up to 3000
+lines of one class, depending on the codex-size.
+
+found in at least 3 codices. The subset we use contains 252001 random lines
+uniformly distributed over 7 scribes in 31 different historic codices, in order to
+train the models to recognize the scribe without codex specific features.
+In the last decade, convolutional neural networks (CNNs) have proven to
+efficiently classify writers in modern and historic context and other tasks such
+as segmentation [12], optical character recognition [13], and writer identification [1, 14]. For our classification model we compared several general purpose
+object and concept detection CNNs as well as specific architectures for scribe
+identification (see Table 3). Surprisingly, the classic AlexNet [15] provided the
+best trade-off between F1-score and time. We show that we can distinguish the
+scribes described by paleographic experts and even identify potential wrong
+scribe assignments. Furthermore, in combination with the reject option introduced by [2] we demonstrate that we can reliably predict the scribes for codices
+with unclear or missing scribe assignments.
+In this paper, we focus on three major issues:
+• the importance of cross-codex based training data for automatic scribe
+identification
+• the feasibility of training a model based on scribe assignments by the
+paleographers Haidinger and Lackner [9–11, 16]
+• the necessity of exploiting the confidence in scribe predictions to reveal
+uncertainties in the dataset.
+1
+A typical single column page contains 31 or 32 lines. The vast majority of our books is in single
+column layout, hence we can roughly estimate that the 25200 lines correspond to 800 pages.
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+5
+
+Fig. 2: Image data of the CCl-DB [6] (CCl 20, S. 3r, hand A 20 [9]). The
+CCl-DB provides the codices page by page (left) and on line-level (right-top).
+The line-level images are produced automatically by the segmentation of Transkribus [32]. The neural network classification works with squared images,
+therefore we cropped the line images into squares and resized them into the
+network input size
+
+The latter is a central requirement, as there is no objective ground truth
+for scribe assignments for the medieval codices we are using. Our contribution
+in this paper is threefold:
+Firstly, we demonstrate the necessity of book independent training of scribe
+models, which has been neglected in other studies. Secondly, we demonstrate
+that contrary to the results of Xing and Qiao [14] standard architectures are
+sufficiently accurate to reliably identify medieval scribes in a classification
+pipeline.
+Thirdly, our work consequently facilitates comprehensive and convincing
+studies on large datasets and allows new insights into the historic monastic
+life and the relationships between the monasteries.
+The paper is structured as follows: after an overview about related work
+in section 2 we outline the dataset in section 4. In section 3 we explain the
+applied methods for scribe identification. We show and discuss the results in
+section 5 and finally conclude the paper in section 6.
+
+2 Related work
+Computer-aided historic handwritten document analysis includes segmentation, text recognition, dating and writer identification as well as verification.
+Segmentation usually separates the written or drawn content from the carrier material (such as parchment or paper) [12, 17]. Based on this, a possible
+next step is handwritten text recognition (HTR) [18]. Either the segments
+or the written content alone or a combination of both modalities allow further investigations like dating, writer verification [19, 20] and identification
+[4, 5, 14].
+Different processes for scribe identification can be used, such as textdependent and text-independent. Text-dependent [21] methods allow identifying the writer on particular characters or words, whereas text-independent [22]
+approaches can be applied on new unseen content. Two kinds of handwritten
+
+6
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+Fig. 3: Overall procedure of the proposed scribe recognition system. The
+rounded boxes symbolize data, whereas the angular boxes show processes
+
+text patterns can be used: on-line and off-line writer identification. On-line
+[22] systems work with time series of the formation process, while off-line [14]
+solutions are limited to the images of the written text document.
+Writer identification is a strong topic in document analysis and therefore
+much discussed. In the last years, a variety of solutions have been provided.
+These methods can be grouped into codebook-based and codebook-free methods. Codebook-based refer to a codebook that serves as a background model.
+This model is based on statistical features like in [23]. The codebook-free methods include for example the width of ink traces, which was used from Brink
+et al. [24] to predict the writer in medieval and modern handwritten documents, or the hinge feature provided by Sheng and Lambert [25] in order to
+identify writers in handwritten English text in the IAM-dataset [26]. Further,
+there have been strong results in using the Scale-Invariant Feature Transform
+(SIFT) for writer identification [27–29].
+In recent years, the number of Deep Learning (DL) based studies in document analysis increased drastically [3, 5, 14]. As mentioned in the introduction,
+the interest in using such techniques is due to their ability to provide powerful
+state-of-the-art solutions in an efficient and reliable way. During the training,
+the DL model learns the best fitting features for the classification. Therefore,
+no handcrafted features are required.
+In [30] Fiel and Sablatnig presented the strong performance of CNN’s for
+scribe identification on modern data sets.
+Xing and Qiao [14] performed a writer identification on the modern IAM
+and the HWDB1.1 dataset. They developed a special multi-stream CNN
+architecture based on AlexNet and outperformed previous approaches on
+handcrafted features.
+In [2] Cilia et al. demonstrated a comparison between deep learning and
+handcrafted features on the Avila Bible that is written in Carolingian minuscule. These classical features, as Cilia et al. call them, are handcrafted features,
+that have been developed in cooperation with paleographers. The results of
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+7
+
+Table 2: F1-score for image preprocessing on patch level
+Data
+
+Network
+
+RGB
+
+GS
+
+GS mask
+
+AlexNet
+Deep Writer
+Half Deep Writer
+∅
+
+0.25
+0.25
+0.25
+0.25
+
+0.56
+0.44
+0.41
+0.47
+
+0.64
+0.57
+0.54
+0.58
+
+AlexNet
+Deep Writer
+Half Deep Writer
+∅
+
+0.30
+0.26
+0.35
+0.30
+
+0.53
+0.32
+0.30
+0.38
+
+0.60
+0.42
+0.38
+0.47
+
+Test A
+
+Test B
+
+Preprocessed input images and their impact on the classification of the test data. The
+experiment was performed on the three different networks AlexNet, Half DeepWriter and
+Deepwriter. As a result, the averaged F1-score is given. We provide two F1-scores of separate
+test sets (see Table 1).
+
+their studies emphasize the effectiveness of deep learning features in contrast
+to the handcrafted features.
+
+3 Methods for Scribe Identification
+In our research, we investigate scribe identification in contrast to writer identification, since the specific individual of the writing is generally not known for
+our material. Scribe identification is discussed in a medieval context only in
+a very limited range, like at the International Conference on Document Analysis and Recognition (ICDAR) competitions [4] or in conjunction with the
+Avila bible [2]. However, the aforementioned datasets are of limited use for
+our goals. The Avila bible is literally only one codex and consequently does
+not allow cross-codex scribe identification. The datasets used in the historical
+ICDAR competitions [4, 31] span time periods of many centuries, and hence
+include different scripts and carrier materials. Thus, scribe identification in the
+large amounts of medieval codices in Europe’s libraries is still a challenge and
+our approach allows novel insights as it focuses on a wide range of codices of
+several scribes in the short period of the late 12th century.
+
+4 Dataset
+We perform experiments on a subset (see Table 1) of seven scribes provided
+by the CCl-DB [6]. We selected the scribes which have contributed to as
+many books as possible to allow cross-codex evaluation. Samples in the dataset
+were handwritten on parchment in Carolingian minuscule (see Figure 1 and
+2) on one- and two-column pages. These codices have been written down in
+the scriptorium of Klosterneuburg in the last third of the 12th century. The
+
+8
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+Fig. 4: Example for the preprocessing (CCl 212, S. 1r, hand B 259 [11]). The
+lines of the CCl-DB [6] are provided as RGB images (top). From these, we
+converted the images to grayscale (middle). The masked grayscaled images are
+produced by removing the background from the ink
+data is provided by the Scribe ID AI2 project and has been labelled by paleographic experts based on the activity of the paleographers Haidinger and
+Lackner [9–11, 16]. 52 labelled codices are provided in the CCl-DB. This
+database enables new possibilities within document analysis and especially in
+handwriting recognition.
+To the best of our knowledge, there is no comparable database available
+that provides the workings of many medieval scribes in various codices and in
+such a short period of time.
+This section will introduce the pipeline of our line-based scribe identification approach. The pipeline is grouped into three main parts (see Figure 3).
+In the first part – the image preprocessing – we focus on providing the following network input images that are reduced to their scribe specific information.
+The second part presents the neural network classification approach. Here we
+compare different CNNs as image classifiers for scribe identification. Finally,
+the third part covers the post-processing which generates the final score. This
+is where we introduce the computation of the line score and the reject option –
+a method to improve the prediction. All parts will be detailed in the following.
+
+4.1 Image preprocessing
+The dataset contains not only the codex pages, but also the extracted lines.
+The line data is usually correctly extracted from the pages, however there are
+some small snippets with no noticeable content in the dataset. As image lines
+are generally of wide aspect ratio, we use a simple heuristic (width/height ≤
+5) to skip these uninformative snippets already in the step of preprocessing.
+For studying the optimal input image data we generated grayscale images
+and masked grayscale images additionally to the RGB data (see Figure 4).
+When we masked the images we followed the example of Stefano et al. [33]. We
+applied their fixed threshold value, equal to 135, to separate the ink and the
+parchment of the grayscale images (see Figure 4). In related work [2, 4, 30, 34],
+binarization is often applied to text images. However, since our masking does
+not work reliably enough to produce meaningful binarization, we omit this
+step in this work.
+2
+
+See: https://research.fhstp.ac.at/en/projects/scribe-id-ai
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+9
+
+Table 3: Network performance patch level
+Network
+
+F1 Test B
+
+Time
+
+img. (h ∗ w)
+
+Densenet*
+AlexnetNet
+ResNet18*
+Inception v3*
+VGG*
+SqueezeNet*
+MNASNet*
+DeepWriter
+Half DeepWriter
+
+0.61
+0.60
+0.56
+0.55
+0.53
+0.50
+0.43
+0.42
+0.38
+
+503
+115
+164
+683
+610
+135
+196
+66
+62
+
+224 ∗ 224
+227 ∗ 227
+224 ∗ 224
+299 ∗ 299
+224 ∗ 224
+224 ∗ 224
+224 ∗ 224
+113 ∗ 226
+113 ∗ 113
+
+Nine different CNN architectures are trained on the data of Table 1 to compare their performance on patch level. The weighted averaged F1-Score we use, is measured on test B (see
+Table 1) and rounded to two decimal places. The training-time is given in rounded minutes.
+The models marked by * originate from the torchvision library
+
+As already mentioned, the lines of the CCl-DB are of different aspect ratio,
+but the networks we implemented are working with a fixed input size. In order
+to handle the different lengths of the lines, we followed the patch scanning
+strategy of Xing and Qiao [14]. First, the images have been resized in height
+to the specific network input image height, while maintaining the aspect ratio
+of the line. Afterwards, we cropped the lines from left to right into patches
+(see Figure 2). This sliding window comprises the network specific input image
+width. Due to the large dataset (see Table 1), there is no need for data augmentation. Hence, we generated patches with no overlap. Only one overlap
+occurs at the last image of each line, as the last patch of the line is generated
+by positioning the sliding window at the end of the line. Finally, we scaled and
+normalized the patches.
+
+4.2 Patch level classification
+Xing and Qiao [14] achieved high identification accuracies with their customized CNN’s on the line level data of the IAM [26] dataset. They optimized
+AlexNet to the task of writer identification on the IAM dataset and denoted
+the architecture Half DeepWriter. Next, they developed the DeepWriter
+architecture, which is an improvement of Half DeepWriter that enables the
+computation of two sequential image patches in a single pass with a multistream architecture. Xing and Qiao showed that DeepWriter produces the best
+results on the line level data of the IAM dataset. Therefore, we implemented
+these three auspicious architectures as per description of Xing and Qiao [14],
+when we tested the potential of preprocessed images on our data (see Table 1).
+Additionally, we compared several other general-purpose object and concept detection architectures in our study to find the best one suited to our
+specific data. For this purpose, we used models provided by Torchvision [35]
+(see Table 3) and only adapted the input layer to the grayscale images and
+the output layer to the seven classes.
+
+10
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+As shown in different studies, pre-training and fine-tuning a CNN can lead
+to better results [14, 36]. Xing and Qiao [14] demonstrated this on the IAM
+[26] and the HWDB [37] dataset. Therefore, we trained the described models
+on the IAM dataset, fine-tuned them on our data and compared the results
+with the from scratch trained weights.
+The models have been trained with a batch size of 32 over 10 epochs with
+a learning rate of 1 ∗ 10−5 on ADAM. The error was calculated with the cross
+entropy. Over all ten epochs, the instance of the model that performed best
+on the validation data has been saved for the next steps of the experiments.
+
+4.3 Postprocessing
+We pursue a patch, line and page level classification, but as already described,
+the network classification is on patch level. To compute the line and page
+score, we follow the example of Xing and Qiao [14]. They calculate the final
+PN
+score vector fi for the jth writer, of all patches N of one line fi = N1
+i=1 fij .
+This averaged Softmax output serves as the basis for the final step of the
+post-processing – the reject option.
+Cilia et al. [2] proposed the reject option to generate more reliable results
+for the writer identification on the Avila bible. They showed that sometimes
+it is better to withdraw a precarious decision than accepting all predictions.
+In such a case, they reject the prediction with the reject option.
+We used the line score as a probability distribution to check the probabilities for all writers. As Cilia et al. explained, the error-reject curve shows the
+impact of the reject rate to the wrong predictions and allows finding the optimal threshold for rejecting a prediction. Our reject rate is given by the line
+score of one writer. The reject rate corresponds to the wrong predictions.
+
+5 Results
+The purpose of this study was to train a model that classifies reliable and
+efficiently scribes in cross-codex data. We want to enable the automatic continuation of the work of paleography experts following their example, in order
+to allow research in large scale. In this study we would like to find a model that
+is not only reliable but also fast in processing, as it is the basis for research on
+active learning.
+In Table 2 we show the importance of cross-codex test data and the risk of
+overfitting.
+In the evaluation of our scribe classification pipeline, we found:
+1. Image preprocessing plays a key role in cross-codex scribe identification. In
+comparison to RGB images, masked grayscale images roughly doubled the
+F1-score in the classification task.
+2. Further, we showed that AlexNet provides very fast, and among the most
+reliable predictions in classifying the scribes of our data set.
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+11
+
+Table 4: Results of test B
+Scribe
+
+F1-p
+
+F1-l
+
+F1-pg
+
+#-p
+
+#-l
+
+#-pg
+
+B 259
+A 259
+A 30
+A 20
+B 20
+A 215
+A 258
+
+0.60
+0.79
+0.62
+0.90
+0.05
+0.07
+0.68
+
+0.76
+0.94
+0.76
+0.96
+0.24
+0.06
+0.79
+
+0.85
+0.98
+0.74
+1.00
+0.00
+0.00
+0.83
+
+31309
+34004
+56173
+71565
+1957
+65689
+67520
+
+1340
+1672
+2805
+2814
+111
+2897
+2893
+
+42
+52
+66
+72
+3
+92
+96
+
+F1-score on test B (see Table 1). The F1-score is measured on patch- (p) and line- (l) and
+page-level (pg). The weighted averaged test data are random lines of unseen books, as these
+lines are of various length, they result in a different amount of patches. Due to the image
+preprocessing the total of samples is slightly lower than in Table 1.
+
+3. Contrary to expectations, pre-training the network on the IAM database
+leads to worse results, which is why we omitted this step.
+Applying the best fitting trained model, it turned out that it is very effective
+and even indicates incorrect data.
+Moreover, we introduce the reject option on our dataset in order to get rid
+of precarious classifications and found that it underlines the results.
+Finally, we deployed the pipeline to processes open paleographic topics.
+
+5.1 Cross-codex data
+The CCl-DB provides handwritings of several scribes in different codices.
+Therefore, we compared two test sets (see Table 2) to check if the networks
+tend to learn codex-specific features. For this experiment we trained the architectures AlexNet, Half Deep Writer and DeepWriter. Referring to [14] these
+networks are suitable for handwriting identification. We found, that the test
+set test B which contains test samples from books which have not been used
+for training (see Table 1) is more comprehensive than test A because all three
+trained networks performed better on test A whether the input images have
+been RGB grayscale or masked. We conclude, that the networks learned codexspecific features in test A. Therefore, we used the test set test B for further
+experiments to obtain more reliable results.
+
+5.2 Classification pipeline
+1. To find the best type of input image for the CNN classification, we preprocessed the dataset in three different ways. We compared RGB images with
+grayscale and masked grayscale images and found that masked grayscale
+images produce the best F1-score in the test data (see Table 2). Consequently, the following experiments are based on this powerful image
+preprocessing. The masking has proven to be effective enough even though
+
+12
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+Fig. 5: Confusion matrix of the data of test B on page level (see Table 3)
+
+we used a simple threshold-based algorithm that sometimes does not reliably distinguish between ink and parchment. Hence, we could replace it in
+further studies by a better learning-based solution.
+2. As there are different networks available for image classification, we compare
+in Table 3 nine powerful architectures. AlexNet achieves with an F1-score of
+0.60 on patch level and 115 minutes training time the best trade-off between
+F1-score and time. Only DenseNet achieved a small improvement of 0.01 in
+comparison to AlexNet but with a training time of 503 minutes it is much
+less time efficient. Even though latest state-of-the-art models performed
+better, with a growing number of parameters, the processing time would be
+impractical for our purpose, and as already shown (see Table 2) data-centric
+approaches such as masked grayscale images are more influential. Given
+these F1 and training time results, we claim AlexNet to be best suited for
+our purposes and thus used it for all further experiments.
+3. To understand whether pre-training is beneficial, we follow the example
+of [14]. Accordingly, we pre-trained AlexNet on 301 writers of the IAM
+dataset and fine-tuned the model on the CCl-DB data. The pre-trained and
+fine-tuned model generates an F1-score of 0.58 whereas the from scratch
+trained model outperformed this result with an F1-score of 0.60 on page
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+13
+
+Fig. 6: Error-reject curves for five different scribes on the data of test B on
+line level (see Table 1)
+
+level. Because of the lower F1-score of the pre-trained and fine-tuned model
+model, we assume that there are not enough shared features between the
+CCl-DB and the IAM dataset. However, as shown by Studer et al. [36],
+models in general benefit from pre-training. We assume, that larger and
+more comprehensive datasets than the IAM handwriting database could
+improve our model.
+
+5.3 Automatic paleographic classification
+To figure out, which reliability values can be reached by the trained AlexNet,
+we evaluated the data of test B. The main experiments are performed on line
+level (see Figure 7), but we also provide test results on patch and page level
+(see Table 4). Furthermore, we show the confusion matrix of the same test
+data on page level in Figure 5. We observe, that the line level classification
+generally reinforces the patch level results and the page level classification
+generally reinforces the line level results.
+Another particularity in Table 4 and Figure 5 are the dichotomous scores.
+Five of seven classes are predicted well, such as F1-scores up to 1.0 on page
+level and 0.96 on line level in the case of A20 (see Table 4). Only the two
+classes B 20 and A 215 seem to be less precisely predicted on the test data.
+
+14
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+We observe low F1-Scores of 0.0 on page level as well as 0.24 and 0.06 on
+line level respectively. However, the low predictions for the two classes B 20
+and A 215 strengthen the hypothesis of a powerful model as investigations of
+our paleographic partners revealed the labelling of these classes to be most
+probably incorrect. The paleographers actually labeled this test data as several
+not defined classes. Thus, the classification of the two classes proposed by the
+network might indeed correspond to the correct scribes and could therefore
+give new insight. However, confirmation by future research using our approach
+would be needed.
+
+5.4 Reject Option
+To investigate whether implementing a reject option improves results we tested
+the five classes B 259, A 259, A 30, A 20, A 258 on it. These are the classes
+shown previously without conflicts in the test data of test B. Figure 6 shows
+that increasing the reject rate minimizes the error. The reject curves of Figure 6
+drop quickly, indicating a strong influence of the threshold. As Cilia et al. [2]
+explained, the reject option is therefore suitable for the scribe identification on
+the CCl-DB. Therefore, we choose a reject option based on the threshold of
+40 %, as it ensures low error with high sample rate. As class B 20 and A 215
+are difficult to evaluate from the test data, the threshold is adapted to 60 %.
+
+5.5 Into the wild: Using our model on data with
+unknown scribes
+The central aim of our approach is to contribute new insights for paleography.
+Therefore, we examined sections from the codices that the experts limited to
+one scribe, although they could not determine the exact individual. As shown
+in Figure 7 the trained model contributes meaningful classifications for these
+parts. The first plot can be considered as reference, this is the part of CCl 214
+written by A 30. In this example, the model recognizes class A 30 as main
+class. The remaining six plots can be differentiated into two groups. On the
+one hand there are plots b, d and f which give significant results that refer to
+one scribe class B 20, A 30 and A 215 respectively. On the other hand, there
+are plots like in c, e and g that produce diffuse classification, not focused on
+one class. We conclude that these less significant predictions are caused either
+by scribes the model hasn’t learned yet or by more than one scribe.
+
+6 Conclusion
+In this paper, we want to study the question of how to train a reliable and
+efficient model that allows cross-codex scribe identification in the strongly
+standardized medieval Carolingian minuscule of the CCl-DB. To this aim, we
+first figured out the risk of codex specific overfitting and showed the importance
+of cross-codex data to overcome this issue. We also found, that the reduction of
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+15
+
+RGB-images to grayscale masked images helps the network to focus on scribe
+specific features and leads to significantly better results.
+After comparing several networks, AlexNet was used in our pipeline to
+generate a classification on patch, line and page level. Finally, we improved
+the final score by implementing the reject option.
+One of the limitations of the proposed method is the basic segmentation,
+which is challenging on the historic parchment. This limitation leads to a natural direction of future work, focusing on improving the segmentation method
+that also allows binarization. In a broader context we see future work to use
+our approach - which allows efficient scribe predictions for unseen books - in
+an active learning loop that leverages the expert knowledge from paleographers. A visual interface could allow expert verification and correction of the
+predictions with the goal to iteratively re-train and test our model with new
+scribe hypotheses.
+
+Funding
+This work has received funding from the Lower Austrian FTI-Call 2018 under
+grant agreement No FTI18-004 (project Active Machine Learning for Automatic Scribe Identification in 12th Century Manuscripts). Moreover, the work
+was supported by ERASMUS+ from the German Academic Exchange Service
+(DAAD).
+
+Acknowledgments
+We would like to thank the team of the Klosterneuburg abbey library, as well
+as the team of the institute of Creative\Media/Technologies of the St. Pölten
+University of Applied Sciences for their help.
+
+Works Cited
+[1] De Stefano, C., Fontanella, F., Maniaci, M., Scotto di Freca, A.: A method
+for scribe distinction in medieval manuscripts using page layout features.
+In: Maino, G., Foresti, G.L. (eds.) Image Analysis and Processing – ICIAP
+2011, pp. 393–402. Springer, Berlin, Heidelberg (2011)
+[2] Cilia, N.D., De Stefano, C., Fontanella, F., Marrocco, C., Molinara, M.,
+Freca, A.S.d.: An experimental comparison between deep learning and
+classical machine learning approaches for writer identification in medieval
+documents. Journal of Imaging 6(9) (2020). https://doi.org/10.3390/
+jimaging6090089
+[3] Cilia, N.D., De Stefano, C., Fontanella, F., Marrocco, C., Molinara, M.,
+Freca, A.S.: An end-to-end deep learning system for medieval writer
+identification. Pattern Recognition Letters 129, 137–143 (2020). https:
+//doi.org/10.1016/j.patrec.2019.11.025
+
+16
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+[4] Fiel, S., Kleber, F., Diem, M., Christlein, V., Louloudis, G., Nikos, S.,
+Gatos, B.: Icdar 2017 competition on historical document writer identification (historical-wi). In: 2017 14th IAPR International Conference on
+Document Analysis and Recognition (ICDAR), vol. 01, pp. 1377–1382
+(2017). https://doi.org/10.1109/ICDAR.2017.225. IEEE
+[5] Chammas, M., Makhoul, A., DEMERJIAN, J.: Writer identification
+for historical handwritten documents using a single feature extraction
+method. In: 19th International Conference on Machine Learning and
+Applications (ICMLA 2020), Miami (on line), United States (2020).
+https://doi.org/10.1109/ICMLA51294.2020.00010
+[6] Seidl, M., Haltrich, M., ...: Codex Claustroneoburgensis-Datenbank (CClDB). figshare https://phaidra.fhstp.ac.at/view/o:4631 (2021)
+[7] Schneider, K.: Paläographie und Handschriftenkunde Für Germanisten.
+De Gruyter, Berlin/Boston (2014)
+[8] Bischoff, B.: Paläographie des Römischen Altertums
+abendländischen Mittelalters. E. Schmidt, Berlin (2004)
+
+und
+
+des
+
+[9] Haidinger, A.: Katalog der Handschriften des Augustiner Chorherrenstiftes Klosterneuburg. Veröffentlichungen der Kommission für Schrift- und
+Buchwesen des Mittelalters, vol. 2. Wien (1983)
+[10] Haidinger, A.: Katalog der Handschriften des Augustiner Chorherrenstiftes Klosterneuburg. Veröffentlichungen der Kommission für Schrift- und
+Buchwesen des Mittelalters, vol. 2. Wien (1991)
+[11] Lackner, F.: Katalog der Handschriften des Augustiner Chorherrenstiftes Klosterneuburg. Veröffentlichungen der Kommission für Schrift- und
+Buchwesen des Mittelalters, vol. 2. Wien (2012)
+[12] Oliveira, S.A., Seguin, B., Kaplan, F.: dhsegment: A generic deep-learning
+approach for document segmentation. 2018 16th International Conference
+on Frontiers in Handwriting Recognition (ICFHR), 7–12 (2018)
+[13] Islam, N., Islam, Z., Noor, N.: A survey on optical character recognition system. ITB Journal of Information and Communication Technology
+(2016)
+[14] Xing, L., Qiao, Y.: Deepwriter: A multi-stream deep cnn for textindependent writer identification. In: 2016 15th International Conference
+on Frontiers in Handwriting Recognition (ICFHR), pp. 584–589. IEEE
+Computer Society, Los Alamitos, CA, USA (2016). https://doi.org/10.
+1109/ICFHR.2016.0112
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+17
+
+[15] Krizhevsky, A., Sutskever, I., Hinton, G.E.: Imagenet classification with deep convolutional neural networks. In: Pereira, F.,
+Burges, C.J.C., Bottou, L., Weinberger, K.Q. (eds.) Advances in
+Neural Information Processing Systems, vol. 25. Curran Associates, Inc., ??? (2012). https://proceedings.neurips.cc/paper/2012/file/
+c399862d3b9d6b76c8436e924a68c45b-Paper.pdf
+[16] Haidinger, A.: manuscripta.at – ein webportal zu mittelalterlichen
+handschriften in österreichischen bibliotheken. Schriften der Vereinigung Österreichischer Bibliothekarinnen und Bibliothekare (VÖB), 53–61
+(2010)
+[17] Tensmeyer, C., Davis, B., Wigington, C., Lee, I., Barrett, B.: Pagenet:
+Page boundary extraction in historical handwritten documents. In: Proceedings of the 4th International Workshop on Historical Document
+Imaging and Processing. HIP2017, pp. 59–64. Association for Computing Machinery, New York, NY, USA (2017). https://doi.org/10.1145/
+3151509.3151522
+[18] Chammas, E., Mokbel, C., Likforman-Sulem, L.: Handwriting recognition of historical documents with few labeled data. In: 2018 13th IAPR
+International Workshop on Document Analysis Systems (DAS), pp. 43–
+48. IEEE Computer Society, Los Alamitos, CA, USA (2018). https:
+//doi.org/10.1109/DAS.2018.15
+[19] Shaikh, M.A., Duan, T., Chauhan, M., Srihari, S.N.: Attention based
+writer independent verification. 2020 17th International Conference on
+Frontiers in Handwriting Recognition (ICFHR), 373–379 (2020)
+[20] Dey, S., Dutta, A., Toledo, J.I., Ghosh, S.K., Lladós, J., Pal, U.: Signet:
+Convolutional siamese network for writer independent offline signature
+verification. CoRR abs/1707.02131 (2017) https://arxiv.org/abs/1707.
+02131
+[21] Said, H.E.S., Baker, K.D., Tan, T.N.: Personal identification based on
+handwriting. Proceedings. Fourteenth International Conference on Pattern Recognition (Cat. No.98EX170) 2, 1761–1764 (1998). https://doi.
+org/10.1109/ICPR.1998.712068
+[22] Yang, W., Jin, L., Liu, M.: Deepwriterid: An end-to-end online textindependent writer identification system. IEEE Intelligent Systems 31(2),
+45–53 (2016). https://doi.org/10.1109/MIS.2016.22
+[23] Maaten, L.V.D., Postma, E.: Improving automatic writer identification.
+In: PROC. OF 17TH BELGIUM-NETHERLANDS CONFERENCE ON
+ARTIFICIAL INTELLIGENCE (BNAIC 2005, pp. 260–266 (2005)
+
+18
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+[24] Brink, A.A., Smit, J., Bulacu, M.L., Schomaker, L.R.B.: Writer identification using directional ink-trace width measurements. Pattern Recognition
+45(1), 162–171 (2012). https://doi.org/10.1016/j.patcog.2011.07.005
+[25] He, S., Schomaker, L.: Delta-n hinge: Rotation-invariant features for
+writer identification. In: 2014 22nd International Conference on Pattern
+Recognition, pp. 2023–2028 (2014). https://doi.org/10.1109/ICPR.2014.
+353
+[26] Marti, U.V., Bunke, H.: The iam-database: an english sentence database
+for offline handwriting recognition. International Journal on Document
+Analysis and Recognition 5(1), 39–46 (2002)
+[27] Xiong, Y.-J., Wen, Y., Wang, P.S.P., Lu, Y.: Text-independent writer
+identification using sift descriptor and contour-directional feature. In:
+2015 13th International Conference on Document Analysis and Recognition (ICDAR), pp. 91–95 (2015). https://doi.org/10.1109/ICDAR.2015.
+7333732
+[28] Fiel, S., Sablatnig, R.: Writer retrieval and writer identification using local
+features. Proceedings - 10th IAPR International Workshop on Document
+Analysis Systems, DAS 2012 (2012). https://doi.org/10.1109/DAS.2012.
+99
+[29] Wu, X., Tang, Y., Bu, W.: Offline text-independent writer identification
+based on scale invariant feature transform. Information Forensics and
+Security, IEEE Transactions on 9, 526–536 (2014). https://doi.org/10.
+1109/TIFS.2014.2301274
+[30] Fiel, S., Sablatnig, R.: Writer identification and retrieval using a convolutional neural network. In: Azzopardi, G., Petkov, N. (eds.) Computer
+Analysis of Images and Patterns, pp. 26–37. Springer, Cham (2015).
+Springer
+[31] Christlein, V., Nicolaou, A., Seuret, M., Stutzmann, D., Maier, A.: Icdar
+2019 competition on image retrieval for historical handwritten documents,
+pp. 1505–1509 (2019). https://doi.org/10.1109/ICDAR.2019.00242
+[32] Kahle, P., Colutto, S., Hackl, G., Mühlberger, G.: Transkribus - a service platform for transcription, recognition and retrieval of historical
+documents. In: 2017 14th IAPR International Conference on Document
+Analysis and Recognition (ICDAR), vol. 04, pp. 19–24 (2017). https:
+//doi.org/10.1109/ICDAR.2017.307
+[33] De Stefano, C., Maniaci, M., Fontanella, F., Scotto di Freca, A.: Layout
+measures for writer identification in mediaeval documents. Measurement 127, 443–452 (2018). https://doi.org/10.1016/j.measurement.2018.
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+19
+
+06.009
+[34] Cloppet, F., Églin, V., Kieu, V.C., Stutzmann, D., Vincent, N.: Icfhr2016
+competition on the classification of medieval handwritings in latin
+script. In: 2016 15th International Conference on Frontiers in Handwriting Recognition (ICFHR), pp. 590–595 (2016). https://doi.org/10.1109/
+ICFHR.2016.0113
+[35] Marcel, S., Rodriguez, Y.: Torchvision the machine-vision package of
+torch. In: Proceedings of the 18th ACM International Conference on Multimedia. MM ’10, pp. 1485–1488. Association for Computing Machinery,
+New York, NY, USA (2010). https://doi.org/10.1145/1873951.1874254.
+https://doi.org/10.1145/1873951.1874254
+[36] Studer, L., Alberti, M., Pondenkandath, V., Goktepe, P., Kolonko, T.,
+Fischer, A., Liwicki, M., Ingold, R.: A comprehensive study of imagenet
+pre-training for historical document image analysis. 2019 International
+Conference on Document Analysis and Recognition (ICDAR), 720–725
+(2019)
+[37] Liu, C.-L., Yin, F., Wang, D.-H., Wang, Q.-F.: Casia online and offline chinese handwriting databases, pp. 37–41 (2011). https://doi.org/10.1109/
+ICDAR.2011.17
+
+Cross-codex Learning for Scribe Identification –PREPRINT
+
+Amount in %
+
+20
+
+A30
+A20
+B20
+B259
+A259
+A258
+A215
+
+80
+60
+40
+20
+0
+UnfilteredReject Option
+
+Amount in %
+
+(b) Unknown scribe in CCl 214 on 17 lines
+
+100
+80
+60
+40
+20
+0
+UnfilteredReject Option
+
+Amount in %
+
+(d) Second unknown scribe in CCl 213
+on 1740 lines
+
+100
+80
+60
+40
+20
+0
+UnfilteredReject Option
+
+(f) Fourth unknown scribe in CCl 213 on
+25 lines
+
+Amount in %
+
+40
+20
+0
+UnfilteredReject Option
+
+(c) First unknown scribe in CCl 213 on
+1386 lines
+
+Amount in %
+
+100
+80
+60
+40
+20
+0
+UnfilteredReject Option
+
+40
+20
+0
+UnfilteredReject Option
+
+(e) Third unknown scribe in CCl 213 on
+23281 lines
+
+Amount in %
+
+Amount in %
+
+(a) Scribe A30 in CCl 214 on 19110 lines.
+
+60
+40
+20
+0
+UnfilteredReject Option
+
+(g) Fifth unknown scribe in CCl 213 on
+899 lines
+
+Fig. 7: Scribe identification on line level and with reject option. All figures
+are based on the parts of one scribe. These new codices are labeled with one
+given (a) and six unknown scribes (b-g)
+
+

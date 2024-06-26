@@ -1,0 +1,3022 @@
+PREPRINT
+
+1
+
+Towards Knowledge-driven Autonomous Driving
+
+arXiv:2312.04316v1 [cs.RO] 7 Dec 2023
+
+Xin Li∗ , Yeqi Bai∗ , Pinlong Cai∗† , Licheng Wen, Daocheng Fu, Bo Zhang, Xuemeng Yang, Xinyu Cai,
+Tao Ma, Jianfei Guo, Xing Gao, Min Dou, Botian Shi† , Yong Liu, Liang He and Yu Qiao
+Abstract—This paper explores the emerging knowledge-driven autonomous driving technologies. Our investigation highlights the
+limitations of current autonomous driving systems, in particular their sensitivity to data bias, difficulty in handling long-tail scenarios,
+and lack of interpretability. Conversely, knowledge-driven methods with the abilities of cognition, generalization and life-long learning
+emerge as a promising way to overcome these challenges. This paper delves into the essence of knowledge-driven autonomous driving
+and examines its core components: dataset & benchmark, environment, and driver agent. By leveraging large language models, world
+models, neural rendering, and other advanced artificial intelligence techniques, these components collectively contribute to a more
+holistic, adaptive, and intelligent autonomous driving system. The paper systematically organizes and reviews previous research efforts
+in this area, and provides insights and guidance for future research and practical applications of autonomous driving. We will continually
+share the latest updates on cutting-edge developments in knowledge-driven autonomous driving along with the relevant valuable opensource resources at: https://github.com/PJLab-ADG/awesome-knowledge-driven-AD.
+Index Terms—Knowledge-driven, Autonomous driving, Simulation, Driver agent
+
+✦
+
+1
+
+I NTRODUCTION
+
+I
+
+N recent years, autonomous driving has undergone substantial
+development, primarily propelled by continuous advancements
+in sensor technology [1]–[3], rapid progress in machine learning
+and artificial intelligence (AI) [4]–[6], as well as innovations
+in high-precision mapping and positioning technologies [7], [8],
+etc. The positive influence of regulations and policies has further
+contributed to this progress. Despite noteworthy advancements in
+autonomous driving, persistent challenges remain. An overreliance
+on data-driven approaches exposes systems to data bias, resulting
+in overfitting on training data [9], [10]. This challenge impedes
+existing autonomous driving systems from effectively addressing
+long-tail and cross-domain issues [3], [11], thereby limiting their
+adaptability in new environments. Moreover, existing autonomous
+driving systems lack interpretability [12]–[14]. Data-driven algorithms are often perceived as black boxes, presenting a challenge
+to provide human-understandable explanations for their decisions.
+This challenge impedes the ability to confirm whether the model
+genuinely makes intelligent decisions and restricts the potential
+for guiding further optimization of the system. Despite numerous
+attempts to address these issues [15]–[17], no universally reliable
+method can satisfactorily resolve them. Consequently, addressing
+challenges such as data bias, long-tail issues, cross-domain problems, and the lack of interpretability remains a critical focus for
+ongoing research and development in autonomous driving.
+Contemporary autonomous driving methodologies involve
+training models through the accumulation of extensive datasets
+
+•
+•
+•
+•
+•
+
+X. Li, Y. Bai, P. Cai, L. Wen, D. Fu, B. Zhang, X. Yang, X. Cai, T. Ma,
+J. Guo, X. Gao, M. Dou, B. Shi and Y. Qiao are with Shanghai Artificial
+Intelligence Laboratory.
+X. Li and L. He are also with East China Normal University.
+T. Ma is also with the Chinese University of Hong Kong.
+Y. Liu is with Zhejiang University.
+∗ indicates equal contribution. † denotes corresponding authors: Pinlong
+Cai (caipinlong@pjlab.org.cn) and Botian Shi (shibotian@pjlab.org.cn)
+
+to impart proficient driving capabilities [18], [19]. Data-driven
+models tend to prioritize common cases while overlooking rare
+corner cases. This constraint is rooted in the assumption of
+independence and identical distribution (i.i.d.) underlying datadriven methodologies, which proves challenging to meet in realworld scenarios [20]–[22]. Despite the expanding scale of data
+collection, the inherent limitation arises from the inadequacy of
+limited data to encompass an infinite array of corner cases [13],
+[23], [24]. To make fundamental strides in autonomous driving, it
+is crucial to explore technological changes and replicate human
+learning patterns in driving through modeling [25], [26]. As
+underscored by Yann LeCun [27], human proficiency in mastering
+fundamental driving skills and adeptly adapting to diverse and
+unpredictable scenarios, such as navigating complex traffic conditions and changing weather, requires merely dozens of hours of
+professional practice. This accentuates the efficient learning and
+knowledge summarization capabilities inherent in humans.
+Knowledge is the concretization and generalization of human
+representation of scenes and events in the real world, representing
+a summary of experiences and causal reasoning [28]. The foundational concepts and significant implications of knowledge-driven
+approaches can be elucidated through the evolutionary trends in
+AI. Fig. 1 illustrates different technological paradigms. (1) The
+rule-driven paradigm depends on meticulous logical reasoning
+or thorough empirical validation using manually crafted rules.
+These methods aim to encapsulate specific observed phenomena
+in the real world to facilitate an understanding of driving scenarios
+from the semantic space. However, handcrafted rules cannot cope
+with highly complex learning tasks. Moreover, the complexity and
+diversity of the real world impose evident limitations on these
+methods, unable to tolerate the fuzziness of continuous space and
+noisy data [29]. (2) The data-driven paradigm is to establish
+connectivity-based systems supported by massive data and computational power, capable of emulating the thought processes and
+world exploration of humans. However, the learned representation
+space processed by data-driven models differs significantly from
+the scenario semantic space of the human cognitive system,
+
+PREPRINT
+
+2
+
+Summarize
+
+Model
+
+Guide
+
+Infer
+
+Scenario
+Semantic Space
+
+Driving Scenarios
+
+Driving Scenarios
+
+Rule-driven Paradigm
+
+Driving Scenarios
+
+Representation Space
+
+Data-driven Paradigm
+
+⓵ Induce
+
+⓶ Deduce
+
+⓸ Infer
+
+⓷ Reflect
+
+Knowledge-augmented
+Representation Space
+
+Scenario
+Semantic Space
+
+Knowledge-driven Paradigm
+3
+
+Fig. 1. Comparison of three technical paradigms to autonomous driving. (1) The rule-based paradigm utilizes the understanding of driving scenarios
+that are summarized in the scenario semantic space to guide driving. (2) The data-based paradigm tends to model the driving scenarios into the
+representation space, which is subsequently inferred to the real world to accomplish driving tasks. (3) The knowledge-driven paradigm induces
+information of driving scenarios into knowledge-augmented representation space, which can be deduced to generalized knowledge in the scenario
+semantic space, subsequently inferring the scenarios to guide the drive with the knowledge reflection.
+
+lacking the composability of knowledge and the interpretability of
+logic [29]. Moreover, data-driven models inevitably encounter the
+data bias or catastrophic forgetting phenomenon [30], [31]. (3) The
+knowledge-driven paradigm aims to integrate the characteristics
+of rule-driven and data-driven paradigms, which is a crucial
+support for propelling significant advancements in the current
+AI field [29], [32]. Knowledge-driven methods aim to induce
+information of driving scenarios into knowledge-augmented representation space and deduce to the generalized driving semantic
+space. It enables the emulation of human understanding of the real
+world and the acquisition of learning and reasoning capabilities
+from experience. Thus, knowledge-driven approaches will be an
+indispensable pathway for the evolution of the next generation of
+autonomous driving systems.
+Currently, knowledge-driven methods are gradually emerging,
+with early research endeavors seeking to incorporate knowledge
+to enhance system performance, particularly in the realm of
+autonomous driving [33]–[37]. However, these studies have not yet
+been systematically organized and summarized. The knowledgedriven paradigm typically comprises the following key components:
+Dataset & Benchmark. Datasets are digitized perceptions of
+the real world gathered through various sensors, represented in
+forms such as images [12], [38], point clouds [39], [40], etc. The
+datasets can be endowed with semantic information through manual or automated annotations to construct mechanistic connections
+between different objects aligning to human cognition [41]–[46].
+The benchmarks established on the datasets serve as evaluation
+metrics for assessing model performance. It is not only a crucial
+step in developing data-driven methods but also a prerequisite for
+constructing large models with general understanding capabilities.
+However, overemphasizing the inference capabilities of models
+on datasets may result in the “overfitting” dilemma, thereby
+significantly constraining the models’ generalization abilities.
+Environment. Environments always serve as cradles for the
+
+intelligent agents, providing necessary resource conditions for
+their survival. The natural world constitutes the only real environment. In contrast to the extended iteration cycles and high trialand-error costs of the real environment, AI agents can engage in
+rapid learning and continuous iteration within closed-loop virtual
+environments. Emerging neural rendering technologies facilitate
+extensive 3D scene reconstruction at a low cost, creating highly
+realistic road scenes to robustly support closed-loop environment
+construction [47]–[51]. The World Model, designed to model
+the environment, has the potential to enhance the authentic understanding of driving scenarios, facilitating the progression of
+autonomous driving from perception to cognition [52]–[55]. Both
+neural rendering technologies and world models can facilitate
+the realization of closed-loop virtual simulations to effectively
+generate rare corner cases that are difficult to capture in the real
+world [55], [56].
+Driver Agent. Knowledge-driven methods shift from passive,
+data-centric learning to active, cognition-based understanding of
+the world by systematically applying domain knowledge and
+reasoning capabilities [57]–[59]. This transformation enables autonomous driving to effectively understand and adapt to unseen
+driving scenarios [60]–[62]. As possessing rich human driving experience and common sense, Large Language Models (LLMs) are
+commonly employed as foundation models for knowledge-driven
+autonomous driving nowadays to actively understand, interact,
+acquire knowledge, and reason from driving scenarios [46], [63]–
+[65]. Similar to embodied AI’s standpoint, true intelligence can
+only be achieved by curiosity-driven first-person intelligence in
+the environment [66], [67]. Intelligent agents can continually explore and comprehend their surroundings to support autonomous
+decision-making and creativity. Analogous to embodied AI, the
+driving agent should possess the ability to interact with the driving
+environment, engaging in exploration, understanding, memory,
+and reflection to achieve genuine intelligence [65], [68].
+
+PREPRINT
+
+The objective of this paper is to comprehensively summarize the emerging technological trend involved with
+knowledge-driven autonomous driving. We delve into the system framework and core components of knowledge-driven autonomous driving, subsequently analyzing the opportunities and
+challenges in this field. This paper seeks to provide valuable insights for future research and practical application of autonomous
+driving, striving to steer its development towards greater safety,
+reliability, and efficiency.
+
+2
+
+W HAT IS AND W HY K NOWLEDGE - DRIVEN AU TONOMOUS D RIVING ?
+
+This section delineates the advantages of knowledge-driven approaches over data-driven methods, illustrated through examples
+drawn from the evolution of Computer Vision (CV) technologies. Subsequently, we discuss the surge in the development of
+knowledge-driven techniques driven by generative models like
+LLMs, and emphasize the significance of data-driven methods in
+the advancement of autonomous driving.
+2.1
+
+Paradigm: Data-driven vs. Knowledge-driven
+
+Limitations of Data-Driven Paradigm. While existing autonomous driving systems have achieved success in many aspects
+under the data-driven paradigm, they still struggle to adapt to
+new driving situations, suffer from overfitting issues caused by
+data bias, and cannot explain their decisions, ultimately failing to
+reach a satisfactory level of autonomous driving. The main reason
+behind these limitations is that data-driven methods emphasize
+training for specific domains and typically result in systems
+that excel at the training datasets [69]–[71], but exhibit weak
+generalization and scalability [72]–[74]. This inherent limitation
+presents a formidable obstacle for autonomous driving systems
+in coping with the diverse and unpredictable corner cases that
+frequently arise in real-world driving scenarios [11], [75].
+Advantages of Knowledge-driven Paradigm. In contrast to
+traditional data-driven methods, knowledge-driven autonomous
+driving enables vehicles to have a comprehensive understanding
+of their surroundings. Essentially, knowledge-driven autonomous
+driving involves a reasoned, knowledge-based understanding of
+the real world, enabling it to handle various complex driving
+scenarios and adapt to ever-changing environments. This understanding involves not only object detection but also semantics understanding [57] and context-aware relationship reasoning
+within the environment [76], to solve complex problems such
+as multitasking learning and end-to-end learning [77], [78]. Furthermore, the recent emergence of research related to the world
+model is an advanced form of scenario understanding [27], [52],
+[53], [79], [80], which is capable of understanding the world
+and even generating predictions of future world content. The
+knowledge-driven paradigm can improve system interpretability
+and trustworthiness, making it easier for human to comprehend
+the decisions and actions of autonomous driving.
+The prevailing belief asserts that attaining human-like driving
+capabilities is pivotal in realizing autonomous driving [81], [82].
+Data-driven approaches tend to learn different driving abilities
+from various driving scenarios, whereas their performances are
+constrained by the size of the collected dataset [83]. Data-driven
+methods only fit the inputs and outputs of the dataset for a few
+specific tasks, which makes the acquired capabilities only able
+
+3
+
+to deal with driving scenarios that are closely related to the
+collected dataset, and cannot generalize and scale to other unseen
+scenarios. Nevertheless, as the volume of collected data grows,
+the coverage possibility for new corner cases diminishes, and the
+marginal effect of capability enhancement becomes increasingly
+pronounced [84], [85]. In contrast, knowledge-driven methods
+incorporate human knowledge and common sense into the autonomous driving system, facilitating the establishment of interconnections between different driving domains derived from realworld driving scenarios. Analogous to how a human only needs
+to have seen an ostrich in a zoo to recognize an ostrich running
+on a road, the knowledge-driven methods enable understanding
+and decision reasoning for complex autonomous driving scenarios
+through generalized scenario understanding capabilities acquired
+in other domains [13], [86]. Therefore, this approach is anticipated
+to bridge the gap between various driving domains, ultimately
+resulting in more generalized driving capabilities. Remarkably, the
+capabilities derived from this paradigm demonstrate the capacity
+to drive in broader domains compared to those obtained through
+data-driven approaches. This concept is further elucidated in Fig.
+2: although data-driven approaches can acquire driving capability
+by extracting features from datasets, both single-domain learning
+and multi-domain learning are abstractions in high-dimensional
+spaces, ci or C ′ , with limited generalization capabilities. While
+knowledge-driven approaches can compress the driving capability
+space Cˆ into a low-dimensional manifold space [87] by summarizing the experiences from multi-domain data to construct
+foundational models with general comprehension capabilities. The
+driving scenario corresponding to this space not only includes the
+data collected during training, but also covers a lot of unseen data,
+including a large number of corner cases.
+2.2
+
+Exploring the Knowledge-driven Trend in CV Tasks
+
+In recent years, the traditional computer vision community has
+witnessed a significant transformation, shifting from the perceptive paradigm to the cognitive paradigm. In the earlier phase,
+data-driven methods predominantly focused on task completion
+without a profound understanding of the underlying semantics.
+This resulted in models that were effective at discrimination tasks
+but lacked true comprehension of the data, like Image Classification has historically been a cornerstone of CV. Traditional datadriven methods, such as Convolutional Neural Networks (CNNs),
+focused on training models to recognize and categorize images.
+These methods excelled at specific tasks including handwritten
+digits classification [88] and pioneering classification task research
+on ImageNet [89]. Data-driven approaches for 2D Object Detection [90] aimed to locate and classify objects within images.
+Methods like Faster R-CNN [91] and YOLO [92] were widely
+adopted for this purpose. However, these methods primarily emphasized task performance without deep semantic understanding.
+And Semantic/Instance Segmentation involves identifying object
+boundaries and their categories. Techniques like U-Net [93] and
+Mask R-CNN [94] are representative of data-driven approaches
+that excelled at segmentation tasks but did not emphasize semantic
+comprehension.
+In contrast, knowledge-driven approaches aim to empower CV
+tasks with a deeper understanding of semantics and recognition.
+To address the issue that traditional methods fail to genuinely
+understand data, some research has shifted towards training generative models or combining multimodal data to learn more robust
+
+4
+
+Driving Capability
+
+Driving Scenario
+
+PREPRINT
+
+di
+
+d1
+
+di′
+
+d2
+
+d1′
+
+ddii
+
+d n′
+
+c2
+
+Data-driven paradigm (Single domain)
+
+c2
+
+Data-driven paradigm (Multiple domain)
+
+dn
+
+d2
+
+d1
+
+cn
+
+ci
+
+c1
+
+di
+
+ddnn
+dd22
+
+dd11
+
+d 2′
+
+cn
+
+ci
+
+c1
+
+dn
+
+cn
+
+ci
+
+c1
+
+c2
+
+Knowledge-driven paradigm
+
+Fig. 2. Comparison between the single-domain data-driven paradigm (left), cross-domain data-driven paradigm (center), and the knowledge-driven
+paradigm (right). The gray × in the driving scenario represents corner cases, while it transitions to green × , indicating that the method can
+handle them respectively. Data-driven approaches focus on collecting domain-specific data di and obtaining driving capabilities ci that are limited
+to handling only similar or corresponding domains d′i . Even if implementing multiple domains data-driven approaches, it only can learn the driving
+capability C ′ for processing the union of datasets D′ . In contrast, knowledge-driven approaches aim to understand coherent features across
+domains by incorporating human knowledge or common sense and to establish relationships between features, which achieve a broader range
+of driving capabilities Ĉ that far exceed the performances of single-domain data-driven and cross-domain data-driven methods, i.e., D̂ ≫ D′ >
+{d1 , d2 , . . . , dn }.
+
+data representations. For instance, Image Captioning [95] attempts
+to make models comprehend the content of images and generate
+descriptive text, thereby demonstrating the model’s true understanding of the image content. The Visual Question Answering
+(VQA) [96] verifies the model’s reasoning ability by constructing
+complex question-answer pairs related to image content. There are
+even datasets like Visual Genome [97] that can perform multiple
+complex tasks such as object detection, image description, and
+object relationship inference simultaneously. Moreover, with the
+increase in computational power, research in this domain has
+expanded from images to videos. Until now, research in the
+field of CV remains dynamic. The emergence of Generative
+Adversarial Networks (GAN) [98], [99] and Variational Autoencoders (VAE) [100] validates the potential of generative models,
+while the Diffusion Model [101]–[103] has elevated cross-modal
+understanding to a new level.
+2.3 LLM: A Milestone for Knowledge-driven Approaches
+Recently, LLMs have achieved remarkable performance. These
+models have achieved remarkable performance by leveraging
+extensive training on massive text datasets, showcasing powerful text generation and comprehension capabilities. LLMs have
+demonstrated their competence in understanding natural language
+and tackling diverse complex tasks [104], emerging as a milestone in the development of knowledge-driven methods. Some
+notable examples of LLMs include GPT-3 [105], PaLM [106],
+LLaMA [107], and GPT-4 [108]. Notably, the emergent capability
+in LLMs is one of their most distinguishing features compared to
+smaller language models. Specifically, capabilities such as contextual learning [109], instruction following [110], [111], and chain
+of thought reasoning [112] are three typical emergent abilities in
+LLMs. Specifically, ChatGPT [113] and GPT-4 [108] represent
+significant advancements in LLM capabilities, especially in natural
+language understanding and generation. It’s worth noting that
+LLMs are seen as equipped with human-like intelligence and
+common sense to hold the potential to bring us closer to the field
+
+of Artificial General Intelligence (AGI) [104], [114]. Remarkable
+breakthroughs in LLMs underscore the critical importance of highquality data. These models exhibit robust reasoning capabilities
+and also possess emergent capacity, which lays a solid foundation
+for the development of knowledge-driven autonomous driving.
+2.4 Significance of Knowledge-driven Methods to Autonomous Driving
+Data is critical to the development of autonomous driving technology, which relies on massive amounts of data to optimize
+algorithmic models to be able to recognize and understand the
+road environment to make the right decisions and actions [6],
+[115]. For example, the huge amount of data and driving scenarios
+accumulated by Tesla is an important reason for being able to
+stay ahead of the curve in autonomous driving algorithms. As
+the autonomous driving task is evolving from a single perception
+task to an integrated multi-task of perception and decision-making
+[116], the diversity and richness of autonomous driving data
+modalities are becoming critical. However, models trained solely
+on large amounts of collected data can only be third-person
+intelligence [66], [67], which refers to an AI system that observes, analyzes, and evaluates human behaviors and performances
+from a bystander’s perspective. However, the ultimate form of
+autonomous driving will be the realization of a generalized AI
+for the driving domain [117], [118], which makes the shift from
+the data-driven paradigm to the knowledge-driven paradigm an
+inevitable requirement for the evolution of autonomous driving.
+The knowledge-driven paradigm does not completely detach
+from the original data-driven approaches but adds the design of
+knowledge or common sense based on the data-driven approaches,
+such as common sense judgment, empirical induction, logical
+reasoning, etc. Knowledge-driven methods rely on AI agents
+to explore the environment and acquire general knowledge, as
+opposed to the implementation of predefined human rules or
+the portrayal of abstract characteristics from collected data [27],
+[79]. Specifically, the iterative updating of the knowledge-driven
+approach requires the continuous summarization of data from the
+
+PREPRINT
+
+5
+
+Dataset & Benchmark
+Traditional
+
+Driver Agent
+Pipeline
+
+Knowledge-augmented
+
+…
+
+Environment
+World Model
+
+Reconstruction
+
+…
+Simulator
+
+Detection
+
+Prediction
+
+Plan
+
+Control
+
+Life-long learning
+
+Cognition
+
+Domain-agnostic
+
+nuPlan
+
+HighwayEnv
+
+Knowledge-driven
+AD System
+
+Fig. 3. Key components in knowledge-driven autonomous driving.
+
+Agent’s interaction with the environment to form new specialized
+domain knowledge to enhance the specialized capabilities [32],
+[119]. Recent advancements in autonomous driving reflect this
+shift from purely data-driven methodologies to those that derivation from knowledge-driven.
+Transformation of Perception Module. Previous autonomous driving perception modules usually perform open-loop
+fitting on a dataset to recognize and localize semantic information
+in the scene, including 3D object detection [69], [120], [121],
+lane detection [122], [123], semantic segmentation [124], [125],
+etc. The inputs to the perception module are usually pictures
+captured by cameras and point cloud information collected by
+LiDAR. Correspondingly, there are camera-only [120], [126],
+LiDAR-only [69], [127], [128], and LiDAR-camera fusion [121],
+[129], [130] schemes for perception methods. Recently, many
+scholars have realized that a full understanding of the environment
+requires a shift from perception to cognition. Since the setup of
+in-vehicle sensors is often a comprehensive coverage of multiple
+types and perspectives, the multimodal data collected needs to be
+semantically aligned in a high-dimensional space to realize a true
+understanding of the driving scene [131], [132].
+Knowledge-embedded Decision-making and Planning.
+Early automated driving decision planning was usually done by
+building explicit mathematical models for fitting driving data,
+including the classical car-following and lane-changing models
+[133]–[135]. To improve the applicability of the models in different scenarios, these explicit mathematical models need to be
+continuously improved based on expert knowledge and increase
+the complexity of the models. However, the diversity of real-world
+scenarios makes such improvements increasingly challenging.
+As a result, researchers often resort to manually designed state
+machines to address as many corner cases encountered in realvehicle testing as possible [136]–[138]. Contrastingly, another
+category of modeling concepts aims to harness the exploratory
+capabilities of heuristic search methods and the approximation
+power of deep learning, with the goal of surmounting challenges
+associated with manual design. Despite these efforts, these approaches continue to encounter difficulties in complex scenarios. Heuristic search methods heavily rely on human-designed
+heuristic functions, and the dimension explosion also poses a
+challenge in achieving approximate optimal solutions within finite
+time [139], [140]. Reinforcement learning methods require closedloop training in simulation engines or even real environments
+at a high cost and expense, and the convergence conditions of
+
+the model often depend on the reasonableness of the manually
+designed reward function [141], [142]. Although it is possible to
+obtain the reward function from the data by inverse reinforcement
+learning methods [143], it also means that the model is less
+capable of generalizing to different environments. Incorporating
+human knowledge to support autonomous driving also presents a
+significant challenge for decision planning. Compared with the
+insurmountable limitations of other decision planning models,
+including social force-based models [144], [145], risk field-based
+models [146], [147], etc., the powerful knowledge utilization and
+reasoning capabilities recently demonstrated by LLMs are more
+suitable for understanding, reasoning, and decision making for
+autonomous driving [13], [148], [149].
+The Trend towards Modular Convergence. The end-to-end
+technology route was also the plain idea of early research in
+autonomous driving. For example, CMU’s Navlab implemented
+an autonomous driving system based on an end-to-end model
+as early as the 1980s [150], which used visual sensor data as
+inputs and directly outputted steering wheel angle, brake pedal
+strength, and other in-line signals to control the vehicle. However,
+this was limited by the uncertainty brought by the arithmetic
+conditions and black-box system at that time. With the diversified and uneven development of autonomous driving perception,
+planning, control, and other technologies, emerging autonomous
+driving companies represented by Tesla and Waymo have gradually constructed a modular-based autonomous driving pipeline
+[151], [152], which has become prevalent autonomous driving solutions. Subsequently, perception, planning, and decision-making
+have shown a trend of convergence, including the integration of
+prediction and decision-making, and even end-to-end autonomous
+driving [5], [78], [153], [154]. Researchers generally realize that
+autonomous driving is oriented to the ultimate goal of vehicle
+performance such as safety and efficiency [155], [156]. End-toend autonomous driving can avoid overall performance degradation due to heterogeneous optimization directions and cascading
+information transfer errors [116].
+From a knowledge-driven perspective, perception, prediction,
+planning, and control have a sequential causal relationship, which
+is easily evidenced in common driving scenarios. For instance, a
+cyclist turning back in a non-motorized lane could indicate an intention to make a turn, and a vehicle activating its turn signal while
+proceeding straight may signify an upcoming lane change within
+a few seconds. The separate perception modules, which merely
+convey bounding boxes to the prediction and decision-making
+
+PREPRINT
+
+modules, present challenges in ensuring the subsequent modules’
+performance effectiveness. In contrast, the end-to-end frameworks
+based on module fusion can efficiently extract and convey features
+closely associated with the driving task. However, existing end-toend frameworks still represent only a high level of abstraction of
+knowledge and are unable to articulate the utilization of driving
+knowledge manifested in the model output [5], [157]. Therefore,
+the textualized explanation of scene understanding and logical
+reasoning provided by the LLMs is anticipated to enhance the
+credibility and robustness of the existing end-to-end framework.
+In summary, the knowledge-driven paradigm stands at the forefront of recent advancements in autonomous driving technology.
+When equipped with high-quality data and a suitable environmental platform, the pivotal question becomes the design of effective
+knowledge-driven modeling solutions. This entails integrating
+human driving experience and common sense into the system,
+developing knowledge models endowed with the capability to
+reason and solve intricate driving challenges. Knowledge-driven
+modeling approaches empower autonomous driving systems to
+adeptly navigate evolving traffic and road scenarios, thereby
+enhancing system performance, interpretability, and safety. In the
+following sections, we will introduce the knowledge-driven system
+framework synthesized with key components, as illustrated in Fig.
+3. This includes the development of datasets and benchmarks,
+how to construct high-quality environments, and how to acquire
+knowledge-driven driver agents for autonomous driving.
+
+3
+
+DATASETS & B ENCHMARKS
+
+The safety and reliability of autonomous driving systems have
+always been crucial evaluation factors. For the evaluation of
+knowledge-driven autonomous driving, researchers develop and
+assess these systems using appropriate datasets, benchmarks, and
+metrics. Traditional data-driven autonomous driving datasets [43],
+[158]–[163] provide mappings from sensor data to perception,
+prediction, and planning labels. Accompanied by the emergence of knowledge-driven autonomous driving, various groups
+of researchers augment preexisting [41], [164]–[169] or recently acquired datasets [45], [170]–[173] with different types
+of knowledge, mainly in the modality of natural language and
+gaze heatmap. By incorporating external knowledge, the intelligence level of autonomous driving models gradually evolves
+from perception level to cognition level, ensuring stronger reliability and interpretability. This section first introduces traditional autonomous driving datasets and then delves into existing
+knowledge-augmented autonomous driving datasets and corresponding benchmarking tasks. Finally, this section presents commonly used tasks and evaluation metrics in knowledge-oriented
+autonomous driving benchmarks.
+3.1
+
+Traditional Datasets
+
+This section provides a detailed introduction to traditional autonomous driving datasets, which are also visualized in Fig. 4(a).
+KITTI dataset [158] is a collection of sensor data recorded
+in and around Karlsruhe, Germany, with the main purpose of
+advancing computer vision and robotic algorithms for autonomous
+driving. It includes camera images, laser scans, high-precision
+GPS measurements, and IMU accelerations. The dataset provides
+precise instructions for accessing the data and insights into sensor
+limitations and common challenges. The sensor setup consists of
+grayscale and color cameras, a 3D laser scanner, and an inertial
+
+6
+
+and GPS navigation system. The dataset is divided into categories
+such as ’Road’, ’City’, ’Residential’, ’Campus’, and ’Person’, and
+includes raw data, object annotations in the form of 3D bounding
+boxes, tracklets, and calibration data.
+Cityscapes dataset [159] is a large-scale benchmark suite
+for semantic urban scene understanding. It consists of stereo
+video sequences captured from a moving vehicle in 50 different
+cities, primarily in Germany. The dataset includes 5,000 images
+with high-quality pixel-level annotations and an additional 20,000
+images with coarse annotations. The data recording and annotation
+methodology were designed to capture the variability of outdoor
+street scenes. The dataset provides both fine and coarse pixellevel annotations for 30 visual classes, including instance-level
+labels for humans and vehicles. The annotations were carefully
+quality controlled, and the dataset includes vehicle odometry,
+outside temperature, and GPS tracks. The Cityscapes dataset
+surpasses previous attempts in terms of size, annotation quality,
+scene variability, and complexity.
+Berkeley DeepDrive Video dataset (BDDV) [160] is a large
+and diverse dataset consisting of real driving videos and GPS/IMU
+data. It covers various driving scenarios such as cities, highways,
+towns, and rural areas in major US cities. Compared to earlier
+datasets like KITTI and Cityscapes, BDDV stands out in terms
+of its scale, providing over 10,000 hours of driving videos. Additionally, BDDV includes smartphone sensor data such as GPS,
+IMU, gyroscope, and magnetometer readings, which can be used
+to analyze vehicle trajectory and dynamics. The dataset aims to
+capture the diversity of driving scenes, car makes and models,
+and driving behaviors. This makes BDDV suitable for learning a
+generic driving model.
+Honda Research Institute Driving dataset (HDD) [161] is a
+collection of sensor data recorded from an instrumented vehicle in
+the San Francisco Bay Area. The dataset includes video from three
+cameras, 3D LiDAR data, GPS signals, and signals from the vehicle’s CAN bus. The data collection aimed to capture diverse traffic
+scenes and driver behaviors. The dataset consists of 104 hours of
+video, with annotations based on a 4-layer representation of driver
+behavior. The annotation methodology incorporates both objective
+criteria and subjective judgment. The dataset provides insights into
+driver behavior, including goal-oriented actions, stimulus-driven
+actions, causes, and attention. The dataset is around 150GB in size
+including 137 sessions with an average duration of 45 minutes.
+nuScenes dataset [43] is a collection of driving data from
+Boston and Singapore, featuring diverse locations, weather conditions, and driving scenarios. The dataset includes 84 logs with
+15 hours of driving data, captured using Renault Zoe electric
+cars equipped with various sensors. The data is carefully synchronized, and localization is achieved through a robust LiDAR-based
+method. Highly accurate human-annotated semantic maps and
+baseline routes are provided. The dataset contains 1000 interesting
+scenes manually selected, covering high traffic density, rare events,
+and challenging situations. Expert annotators provide detailed annotations for 23 object classes, including pedestrians and vehicles.
+The dataset encourages research on long-tail problems and offers
+high-frequency sensor frames.
+Waymo Open dataset (WOD) [162] provides sensor data collected using five LiDAR sensors and five high-resolution pinhole
+cameras. The LiDAR data includes the first two returns of each
+laser pulse, while the camera images are captured using rolling
+shutter scanning. The dataset offers ground truth annotations for
+both LiDAR and camera data, including 3D bounding boxes for
+
+PREPRINT
+
+7
+
+Fig. 4. (a) Traditional and (b) knowledge-augmented autonomous driving datasets. The arrow indicates that the knowledge-augmented datasets
+are derived from the corresponding source dataset through secondary annotation.
+
+objects in LiDAR data and 2D bounding boxes for objects in
+camera images. Multiple coordinate systems are used, such as
+global, vehicle, sensor, and image frames. The dataset covers
+suburban and urban areas, with approximately 12 million labeled
+3D LiDAR objects and 12 million labeled 2D image objects.
+3.2
+
+Knowledge-augmented Datasets
+
+This section provides a detailed introduction to knowledgeaugmented autonomous driving datasets, which are also visualized
+in Fig. 4(b). Additionally, Table 1 presents key attributes of
+existing knowledge-augmented datasets.
+Berkeley DeepDrive eXplanation (BDD-X) dataset [166]
+contains over 77 hours of driving videos with accompanying
+textual justifications for driving actions. It includes diverse driving
+conditions and activities, such as lane changes and turns, annotated
+by human annotators familiar with US driving rules. It consists
+of a training set, a validation set, and a test set with a total
+of 6,984 videos. BDD-X dataset aims to improve the trust and
+user-friendliness of self-driving cars by providing explanations for
+their decisions. To fulfill this goal, the dataset utilizes three benchmarking tasks, namely vehicle control, explanation generation, and
+scene captioning.
+Cityscapes-Ref dataset [165] focuses on object referring in
+videos, incorporating language descriptions and human gaze. It
+includes 5,000 stereo video sequences from the Cityscapes dataset,
+with annotations for object descriptions, bounding boxes, and
+gaze recordings. The dataset aims to address the limitations of
+previous datasets by providing temporal, spatial context, and gaze
+information. Cityscapes-Ref dataset employs the task of object
+referring for benchmarking.
+DR(eye)VE dataset [170], [174] consists of 555,000 frames
+from 74 sequences, captured during a driving experiment with
+eight drivers in various contexts and weather conditions. The
+
+dataset includes eye-tracking data from SMI ETG glasses and carcentric views from a roof-mounted camera. The dataset enables
+the analysis of driver behavior and attention in real-life driving
+scenarios. Fixation maps are computed using a temporal sliding
+window, and attention drifts are labeled for evaluation purposes.
+Multiple baselines are tested on DR(eye)VE dataset for the task of
+gaze prediction.
+Honda Research Institute-Advice dataset. Honda Research
+Institute-Advice Dataset (HAD) [167] consists of 5,675 driving
+video clips with human-annotated textual advice. The videos are
+collected from the HDD dataset [161] and include various driving
+activities in urban settings. Annotators describe the driver’s actions
+and provide attention descriptions from a driving instructor’s perspective. The dataset contains a total of 25,549 action descriptions
+and 20,080 attention descriptions. The advice covers topics such
+as speed, driving maneuvers, traffic conditions, and road elements.
+Multiple baseline methods are evaluated on HAD dataset for the
+task of vehicle control.
+Talk2Car dataset [41] is built upon the nuScenes dataset
+and includes 850 videos with written commands for autonomous
+driving. The dataset covers different cities, weather conditions, and
+times of day. Each video has annotations for six cameras, LIDAR,
+GPS, IMU, RADAR, and 3D bounding boxes for 23 object classes.
+The dataset contains 11,959 commands, with an average of 11.01
+words per command. The dataset provides a wide distribution
+of commands, object distances, and object categories. Talk2Car
+dataset employs the task of object referring for benchmarking.
+DADA-2000 dataset [171], [175] is a collection of accident videos obtained from various video websites. It consists
+of 658,476 frames from 2000 videos, covering a duration of
+6.1 hours. The dataset includes diverse accident categories and
+provides annotations for spatial crash objects, temporal accident
+windows, and attention maps. It offers a comprehensive represen-
+
+PREPRINT
+
+8
+
+TABLE 1
+Key attributes of existing knowledge-augmented datasets. C, L, and R stand for Camera, LiDAR, and Radar respectively.
+
+Dataset
+
+Sensors
+
+Knowledge Form
+
+Tasks
+
+Metrics
+
+BDD-X [166]
+
+C
+
+Explanation
+
+Vehicle Control, Explanation Generation, Scene Captioning
+
+MAE, MDC, BLEU-4, METEOR,
+CIDEr-D
+
+Cityscapes-Ref [165]
+
+C
+
+Object Referral, Gaze Heatmap
+
+Object Referring
+
+Acc@1
+
+DR(eye)VE [170]
+
+C
+
+Gaze Heatmap
+
+Gaze Prediction
+
+CC, KLD, IG
+
+HAD [167]
+
+C
+
+Advice
+
+Vehicle Control
+
+MAE, MDC
+
+Talk2Car [41]
+
+C+L+R
+
+Object Referral
+
+Object Referring
+
+IoU@0.5
+
+C
+
+Gaze Heatmap, Crash Objects, Accident Window
+
+Gaze Prediction
+
+CC, KLD, NSS, SIM
+
+HDBD [172]
+
+C
+
+Gaze Heatmap, Takeover Intention
+
+Driver Takeover Detection
+
+AUC
+
+Refer-KITTI [164]
+
+C+L
+
+Object Referral
+
+Object Referring, Object Tracking
+
+HOTA
+
+DRAMA [173]
+
+C
+
+Advice, Risk Localization
+
+Motion Planning
+
+L2 Error, Collision Rate
+
+Rank2Tell [45]
+
+C+L
+
+Object Referral, Importance Ranking
+
+Importance Estimation, Scene Captioning
+
+F1 Score, Accuracy, BLEU-4, METEOR, ROUGE, CIDER
+
+DriveLM [169]
+
+C+L+R
+
+Scene Captioning, Question Answering
+
+Scene Captioning, Question Answering
+
+-
+
+NuScenes-QA [168]
+
+C+L+R
+
+Question Answering
+
+Question Answering
+
+Exist, Count, Object, Status, Comparison, Acc
+
+DADA-2000 [171]
+
+tation of accident situations in driving scenes and is more complex
+compared to previous datasets for driving accident analysis. This
+dataset utilizes gaze prediction as the primary benchmarking task.
+
+visual attributes, and reasoning descriptions. DRAMA dataset
+utilizes motion planning as the primary benchmarking task.
+
+HRI Driver Behavior dataset (HDBD) [172] contains driver
+behavior data collected from simulator and real scene videos.
+The dataset includes behavioral and physiological signals from
+28 participants, along with environmental and vehicle sensory
+information. The data was collected using eye-tracking devices,
+physiological sensors, and vehicle/driving simulator sensory data.
+The dataset includes human-AV interaction data from 32 participants, focusing on monitoring L2 automated driving through
+intersections. The dataset provides information on takeover intention, HMI transparency levels, maneuvers, weather conditions,
+and synchronized signals for analysis. Authors evaluate multiple
+baseline methods on HDBD dataset for driver takeover detection
+task.
+
+Rank2Tell dataset [45] consists of 116 video clips captured at
+intersections using multiple cameras, LiDAR sensors, and GPS in
+diverse traffic scenes. The dataset focuses on identifying and ranking important agents that can influence the ego vehicle’s driving.
+Annotations are provided by five annotators, considering agent
+identification, localization, ranking, and captioning. The dataset
+emphasizes explainability by providing captions that explain why
+agents are deemed significant. The dataset enables the evaluation
+of agent importance perception and caption diversity in traffic
+scenes. This dataset employs two benchmarking tasks, namely
+importance estimation and scene captioning.
+
+Refer-KITTI dataset [164] is a dataset constructed based on
+the public KITTI dataset [158], aimed at referring understanding.
+It utilizes instance-level box annotations from KITTI and a labeling tool to efficiently annotate referent objects across frames. The
+dataset features diverse scenes and provides descriptive statistics
+on object numbers and temporal dynamics. Refer-KITTI includes
+818 expressions and is split into 15 training videos and 3 testing
+videos, offering flexibility and temporal challenges for referent object association. This dataset utilizes object referring and tracking
+as the primary benchmarking task.
+DRAMA dataset [173] is designed for evaluating visual
+reasoning capabilities in driving scenarios. It consists of 17,785
+interactive driving scenarios recorded from urban roads in Tokyo.
+The dataset includes synchronized videos, CAN signals, and IMU
+information. Annotations are provided through object-level and
+video-level questions and answers, focusing on identifying important objects and generating associated attributes and captions. The
+dataset statistics highlight the distribution of labels, object types,
+
+DriveLM dataset [169] is an autonomous driving dataset that
+connects LLMs and autonomous driving systems. It incorporates
+linguistic information and reasoning abilities to facilitate perception, prediction, and planning (P3) in autonomous driving. The
+dataset includes frame-based QA pairs connected in a graph-style
+structure, covering perception, prediction, and planning tasks. It is
+based on the nuScenes dataset and aims to enhance the reasoning
+and decision-making capabilities of autonomous driving systems.
+Scene captioning and question answering tasks are incorporated
+for benchmarking.
+nuScenes-QA dataset [168] is constructed for 3D question answering in driving scenarios. It combines scene graphs generated
+from 3D annotations with manually designed question templates
+to generate question-answer pairs. The dataset contains 459,941
+pairs based on 34,149 visual scenes, with a wide range of question
+types and lengths. It is the largest 3D-related question answering
+dataset, providing balanced distributions of questions and answers.
+The dataset poses challenges for models due to its complexity and
+diverse visual semantics.
+
+PREPRINT
+
+3.3
+
+Benchmarking Tasks and Evaluation Metrics
+
+This section offers an in-depth overview of various benchmarking
+tasks and associated evaluation metrics specific to knowledgedriven autonomous driving.
+Motion Prediction and Planning involves forecasting the
+trajectories of various traffic participants (vehicles, pedestrians,
+etc.), and planning the future movements of an ego vehicle in
+both open-loop and closed-loop manners. Key metrics for motion
+prediction include Average Displacement Error (ADE), Final
+Displacement Error (FDE), Miss Rate, Overlap Rate, Average
+Heading Error (AHE), and Mean Average Precision (mAP). ADE
+assesses the average displacement error of the closest prediction to
+the ground truth trajectory, while FDE evaluates the displacement
+error at a specific future time step. Miss Rate is determined by
+whether the model’s predictions for traffic participants fall within
+certain thresholds of the ground truth trajectory. Overlap Rate
+examines the incidence of predicted trajectories overlapping with
+other objects in the scenario. AHE is defined as the average of
+the heading angle differences between the predicted trajectory and
+the ground truth. mAP provides a comprehensive evaluation by
+categorizing trajectories and measuring the precision and recall of
+the predictions against the ground truth. For the task of open-loop
+planning, metrics are similar to those of motion prediction, as they
+involve predicting the ego vehicle’s future trajectory. In contrast,
+closed-loop ego vehicle planning tasks entail following the output
+trajectory from the method and continuously interacting with traffic participants in the dynamic scene. Key metrics for closed-loop
+planning tasks typically include No at-fault Collisions, Drivable
+Area Compliance, Speed Limit Compliance, Comfort, and Time
+to Collision (TTC) within bounds. These metrics ensure that
+the ego vehicle’s trajectory avoids collisions with other vehicles,
+drives within the mapped drivable area, and obeys speed limits
+at all times. Comfort is measured by evaluating the minimum
+and maximum longitudinal and lateral accelerations of the ego
+vehicle’s driven trajectory.
+Scene Captioning and Explanation Generation. Given a
+stream or a frame of sensory data, e.g. camera and/or LiDAR
+data, these two tasks require the captioning model and explaining
+model to generate description and reasoning texts. To evaluate the
+performance of captioning and explaining models, metrics including BLEU [176], METEOR [177], ROUGE [178], CIDEr [179],
+CIDEr-D [180] are adopted, whose details are discussed below.
+BLEU [176] is an automatic evaluation metric that measures the
+similarity between a machine-generated translation and reference
+translations based on n-gram precision. It calculates the precision
+of n-grams up to a 4-gram level by counting matching n-grams.
+The modified precisions for each n-gram length are combined using a weighted geometric mean to compute the BLEU score, which
+ranges from 0 to 1. METEOR [177] is an automatic evaluation
+metric used to assess the quality of machine-generated translations
+or text generation systems. It captures overall quality, fluency, and
+adequacy. METEOR calculates the number of matching unigrams
+between the machine-generated translation and reference translations, considering exact word matches, stemming, and synonymy.
+Precision, recall, alignment, and ordering scores are combined
+using a weighted harmonic mean to obtain the final METEOR
+score. ROUGE [178] is an automatic evaluation metric commonly
+used in NLP to assess text summarization systems. It quantifies the
+overlap between the generated summary and reference summaries.
+ROUGE involves preprocessing, n-gram matching, calculation
+
+9
+
+of recall and precision, and computation of the F-measure as
+the harmonic mean of recall and precision. ROUGE scores are
+typically computed for multiple n-gram lengths and aggregated
+to obtain an overall score. Consensus-based Image Description
+Evaluation (CIDEr) [179] is an evaluation metric used in the field
+of computer vision and image captioning to assess the quality
+of automatically generated image captions. It aims to capture
+both the relevance and diversity of the generated captions. CIDEr
+measures the consensus between the generated captions and the
+human-generated reference captions. The CIDEr metric computes
+the similarity between the generated captions and the reference
+captions based on n-gram matching and term frequency-inverse
+document frequency (TF-IDF) weighting. CIDEr with Diversity
+(CIDEr-D) [180] is an extension of the CIDEr metric that incorporates diversity into the evaluation. It encourages the generation
+of diverse and informative captions by penalizing captions that are
+similar to each other. CIDEr-D achieves this by adding a diversity
+term to the original CIDEr score, which measures the uniqueness
+of the generated captions.
+Object Referring involves referring to specific objects within
+images or scenes using natural language descriptions. In object
+referring, a typical scenario involves an image or a scene accompanied by a textual description that refers to a particular
+object or region of interest within that visual input. The goal is
+to develop models that can comprehend the textual description
+and effectively map it to the corresponding object or region in the
+image. Commonly used metrics include Acc@1 and IoU@0.5.
+Acc@1 metric is a commonly used evaluation measure to assess
+the performance of models in accurately localizing or identifying
+referred objects. Formally, let N denote the total number of object
+referral instances in the evaluation dataset. For each instance, the
+model generates a ranked list of predictions, typically consisting of
+bounding boxes or class labels. The Acc@1 metric measures the
+percentage of instances where the ground truth annotation for the
+referred object aligns with the top-ranked prediction made by the
+model. IoU@0.5 metric is a commonly used evaluation measure to
+assess the accuracy of object localization. Formally, let N denote
+the total number of object referral instances in the evaluation
+dataset. For each instance, the model generates a predicted bounding box for the referred object, and there is a corresponding ground
+truth bounding box provided. The IoU@0.5 metric calculates the
+percentage of instances where the Intersection over Union between
+the predicted bounding box and the ground truth bounding box
+exceeds or equals 0.5.
+Gaze Prediction involves predicting the spatial probability
+distribution of a person’s gaze within a given visual scene in
+autonomous driving. Commonly used evaluation metrics include
+Pearson’s Correlation Coefficient (CC) [181], Kullback–Leibler
+Divergence (KLD) [182], Information Gain (IG) [183], Normalized Scanpath Saliency (NSS), and Similarity Metric (SIM). To
+be specific, CC [181] measures the linear relationship between
+two variables. It quantifies the strength and direction of the linear
+association between the predicted attention map and the groundtruth fixations. Pearson’s correlation coefficient ranges from -1 to
+1, where a value of 1 indicates a perfect positive linear relationship, 0 indicates no linear relationship, and -1 indicates a perfect
+negative linear relationship. KLD [182] quantifies the amount of
+information lost when comparing the probability distribution of
+the predicted attention maps to the ground-truth distribution. A
+smaller KLD value indicates a lower amount of information loss,
+meaning that the predicted maps closely resemble the ground-truth
+
+PREPRINT
+
+10
+
+Perceive
+
+Assemble
+
+Real World
+
+Simulation
+
+Graphics engine
+Collect
+
+Model
+
+Environment
+
+Real data
+
+Gain
+
+Render
+
+Implicit reconstruction
+
+Environment
+
+Trigger
+Generalize
+
+Guide
+
+Vehicle
+
+Knowledge
+
+World model
+
+Simulate
+
+Synthetic data
+
+Vehicle
+
+Enhance
+Fig. 5. From the real-world environment to the virtual simulation environment. The utilization of graphics engines enables the perception of realworld environments and the assembly of virtual simulated environments, while this approach incurs high costs. Implicit reconstruction methods,
+which render simulated environments by collecting data from multiple sources, emerge as a promising and cost-effective solution. Integrating
+knowledge and data to construct world models facilitates a genuine understanding of the environment, enabling the accomplishment of diverse
+tasks, particularly in synthesizing data to support closed-loop simulations.
+
+distribution. NSS calculates the mean value of positive positions
+in the predicted attention map. It measures how well the predicted
+attention map aligns with the ground-truth fixations, with higher
+values indicating better alignment. SIM evaluates the similarity
+between the predicted attention map and the ground-truth distribution. A larger SIM value indicates a better approximation of the
+ground-truth distribution by the predicted attention map.
+Question Answering. In autonomous driving scenarios, the
+Question Answering task refers to the process of answering
+questions related to the visual perception of the autonomous
+vehicle. It involves analyzing the visual data captured by the
+vehicle’s sensors, such as cameras, LiDAR, or radar, and providing
+meaningful answers to questions about the environment. The
+questions in NuScenes-QA [168] can be categorized into five
+groups based on their query formats. The first category is “Exist”,
+which involves querying whether a particular object exists in
+the scene. The second category is “Count”, where the model is
+asked to count objects in the scene that meet specific conditions
+mentioned in the question. The third category is “Object”, which
+tests the model’s ability to recognize objects in the scene based
+on language descriptions. The fourth category is “Status”, which
+involves querying the status of a specified object. Lastly, the
+fifth category is “Comparison”, where the model is requested to
+compare specified objects or their statuses.
+
+4
+
+followed by deploying the model on vehicles for on-road testing.
+New issues identified during road testing prompt engineers to
+repeat the entire process. However, this process involves considerable human and material resources, as several stages incur
+significant costs, including data collection, annotation, and model
+training [18]. Thus, some researchers have shifted focus towards
+“virtual testing” [184], [187]. Shadow mode [188] represents a
+typical virtual testing approach to self-supervised training by
+constructing supervisory signals based on the real environment
+and human driver decisions. Shadow mode enables cloud-based
+training through data feedback or on-vehicle training through
+federated learning. Testing on simulation engines is another highly
+anticipated approach [189]–[191]. The self-training and iteration
+processes within simulated environments can reduce the costs
+of data collection and annotation and more closely with human
+learning skills: observation, interaction, and imitation [192]. This
+methodology is expected to play a crucial role in the knowledgedriven autonomous driving paradigm. Additionally, the emergence
+of world models enables us to contemplate key issues in scene
+understanding and construction from the perspective of generative
+models. As shown in Fig. 5, we demonstrate the combination of
+the real-world environment and the virtual simulation.
+This section shows the role of the environment in knowledgedriven autonomous driving from three perspectives: (1) simulation
+engines; (2) high-fidelity sensor simulation; (3) world models.
+
+E NVIRONMENT
+
+Similar to other AI agent systems, autonomous driving systems
+require continuous iteration through training to enhance performance, thereby strengthening their adaptability in the environment. Training can utilize collected datasets from real-world
+environments or take place within constructed closed-loop simulation environments [184]–[186]. Previous autonomous driving
+algorithms predominantly rely on the former approach. This
+involves initial offline training and testing using collected data,
+
+4.1
+
+Simulation Engines
+
+Simulation engines for autonomous vehicles refer to computerbased simulations of real-world scenarios, including urban roads,
+highways, various weather conditions, and traffic situations, to
+facilitate improved training and evaluation of algorithm performance [193]. Compared to traditional on-road testing, simulation
+engines offer several advantages. Firstly, simulation engines provide a safer and more controlled environment, mitigating potential
+
+PREPRINT
+
+11
+
+Real-world
+Dataset
+Multi-view images
+
+Data clean & labeling
+
+Point cloud
+
+GPS & posture
+
+Full scene
+Reconstruction
+Neural rendering
+
+Decoupling of fore-background scenes
+
+Generation of dynamic trajectory
+
+Sensor type
+
+Sensor model and noise simulation
+
+Sensor deployment
+
+Sensor
+Simulation
+
+Fig. 6. Generalized environment based on neural rendering. (1) Real-world data: Processing and annotating multi-view images and point clouds, and
+comprehending scenes through information derived from GPS and poses; (2) Full scene reconstruction: Neural rendering technology can decouple
+and reconstruct foreground and background separately, and various generalized scenes can be generated using dynamic trajectory generation
+technology; (3) Sensor simulation: Exploring different types of in vehicle sensors, different layout schemes, and simulations under weather and
+other disturbances.
+
+risks associated with testing autonomous vehicles on real roads.
+Secondly, simulation engines can generate large-scale annotated
+datasets, which are crucial for training deep learning models.
+Additionally, simulation engines assist development teams in
+faster iteration and debugging, enabling anomaly detection and algorithm optimization, thereby enhancing development efficiency.
+Lastly, simulation engines can generate diverse scenarios in a
+well-controlled environment, ensuring that the system can respond
+correctly to various challenges.
+In existing autonomous driving systems, distinct simulation
+tools are available for each stage, including perception, decisionmaking, planning and control. For example, SUMO [190] and
+LimSim [191] can simulate traffic flows and model the motion
+interactions between vehicles; HighwayEnv [194], nuPlan [195],
+and waymax [196] provide closed-loop simulation for decisionmaking; CarSim [197] provides simulation for vehicle dynamics. However, comprehensive testing for autonomous driving
+necessitates simulation engines that encompass various stages,
+creating a simulation environment closely resembling the real
+world. Therefore, Virtual Test Drive [198] and CARLA [189] are
+designed based on game engines, such as Unreal Engine [199] and
+Unity Engine [200], aiming to establish three-dimensional endto-end closed-loop simulation environments. Nevertheless, this
+construction method still demands substantial human and material
+resources for manually designing road structures and creating
+three-dimensional objects, posing challenges for large-scale applications. Moreover, simulators based on these game engines still
+exhibit significant deficiencies, contributing to domain gaps that
+impair the accuracy of algorithms trained in simulated scenarios
+when applied in the real world.
+The current research trend involves integrating real-world data
+into simulation engines [201]. Firstly, the realism of simulation
+engines can be heightened by leveraging knowledge gained from
+real-world data. Furthermore, datasets often contain precise anno-
+
+tation information, facilitating a more comprehensive evaluation
+of the capabilities of the autonomous driving algorithm across
+different perception and decision-making modules within the simulation engine. Lastly, real-world data may encompass challenging
+scenarios, and incorporating these scenarios into simulation engines aids in testing the algorithms’ robustness when confronted
+with various challenges. It is noteworthy that, as datasets cannot
+cover all conceivable scenarios, simulation engines also need to
+synthesize data to encompass diverse scenarios.
+
+4.2
+
+High-Fidelity Sensor Simulation
+
+Although synthesizing large-scale data through simulation engines
+is advantageous for training autonomous driving systems [202],
+achieving high-fidelity sensor simulation within these engines is
+a current research challenge. Due to the poor rendering realism
+of autonomous driving simulators based on game engines [203],
+meeting the requirements of end-to-end closed-loop simulation for
+sensor simulation becomes difficult. Consequently, models trained
+in these closed-loop simulators struggle to reflect their real-world
+capabilities. Rendering quality has thus become a focal area of
+research in simulation engine technology.
+In recent years, the emergence of neural rendering technologies has shed light on this direction, like Neural Radiance Fields
+(NeRF) [204]. Neural rendering models objects through implicit
+representations, calculating the difference between the rendering
+result and ground truth and using backpropagation to refine the
+representation, ultimately achieving high-quality 3D reconstruction and rendering. Following the introduction of neural rendering
+technology, it rapidly expanded from single-object reconstruction
+to applications in indoor environments [205]–[208], static scenes
+(BlockNeRF [209]), and dynamic scenarios (NeuRAD [210]).
+Subsequently, UniSim [51] achieved decoupled 3D reconstruction of foreground objects, demonstrating generalization and the
+
+PREPRINT
+
+ability to generate new data. StreetSurf [50] achieved decoupled reconstruction of close-range, mid-range (streets), and farrange (sky) scenes, further enhancing the quality of street scene
+reconstruction. MARS [48] also utilized NeRF technology to
+construct an autonomous driving simulation engine. Additionally,
+ReSimAD [72] validated the performance improvement brought
+about by applying data generated by neural rendering to perception
+algorithm training, demonstrating the importance of high-fidelity
+sensor simulation.
+Despite the widespread attention neural rendering technology
+has garnered in academia and industry, and ongoing efforts to
+better apply this technology to autonomous driving scenarios,
+challenges persist in constructing simulation engines based on
+neural rendering technology. Firstly, neural rendering technology
+fundamentally remains a 3D reconstruction algorithm, demanding
+high-quality reconstruction data and sensitivity to motion blur,
+pose errors, lighting changes, lens flares, and other factors in
+input data. Secondly, the pursuit of high-fidelity in 3D reconstruction compromises its generalization, making it challenging to
+generate photorealistic virtual scenes like diffusion models [211],
+GANs [98], and other generative models. Thirdly, large-scale
+scene reconstruction and rendering pose significant computational
+challenges, impacting the feasibility of constructing sensor-level
+high-fidelity simulation engines using neural rendering in terms of
+reconstruction speed and real-time rendering.
+Due to the limited generalization capabilities of neural rendering for scenes, using it for environment simulation can only
+originate from reconstruction data, making it difficult to contribute
+to the generation of corner cases that are relevant to autonomous
+driving simulation. Fig. 6 demonstrates a promising technical
+framework for the generalized environment based on neural rendering. Drawing upon multi-view images, LiDAR-collected point
+clouds, precise GPS coordinates, sensor pose, and multi-sensor
+calibrations [212], neural rendering technology exhibits the capability to independently reconstruct the foreground and background
+within a given scene. The foreground reconstruction encapsulates
+the nuanced portrayal of movements and interactions among traffic
+participants. The latest dynamic trajectory generation techniques
+[213], [214] can facilitate the generation of varied traffic flows
+distinct from the original scene. The achievement of high-fidelity
+sensor simulation necessitates a thorough consideration of diverse
+sensor types, placements [215], and potential environmental perturbations, including those induced by varying weather conditions.
+
+4.3
+
+Environment Understanding by World Model
+
+The world model aims to simulate and understand physical laws
+and phenomena in the real world, or can be considered as an
+abstract representation of the environment [222]. The main idea
+of the model is to build an abstract representation of the real
+world by learning data acquired from multiple sensors, such as
+images, sounds and sensor data. The model can then use this
+abstract representation to make inferences and predictions in order
+to make decisions about unknown situations. Such models have
+a wide range of applications in areas such as robot control,
+autonomous driving, and game AI. Currently world model is
+usually built as an end-to-end deep learning framework that can
+train using self-supervised or weakly supervised methods directly
+from raw sensor data without extracting features manually. The
+advantage of this model is that it can handle complex nonlinear
+
+12
+
+relationships between different objects in the scene and adaptively
+fit different environments and tasks. This makes the world model
+a universal way of understanding the real world, similar to the
+way humans think [79]. The JEPA model [27] aims to construct
+mapping relationships between different inputs in the encoding
+space by minimizing input information and prediction errors. The
+world model can enhance the ability of autonomous driving to
+understand the environment and support large-scale high-quality
+driving video generation [217]–[221], as shown in Table 2. For
+example, DriveDreamer [53] uses a diffusion model to construct a
+comprehensive representation of complex environments, enabling
+recognition of structured traffic constraints and the ability to
+predict the future. GAIA-1 [52] is a fully end-to-end generative
+model that utilizes video, text, and action inputs to generate real
+driving scenarios, and also enables prediction of future tokenized
+sequences. Differing from the aforementioned approaches, Zhang
+et al. [80] propose an unsupervised world model on sensor data
+derived from point clouds, it tokenizes point clouds using a
+vector quantized variational autoencoder (VQVAE) [223] combined with a PointNet and adopts a combination of generative
+masked modeling and discrete diffusion for learning a world
+model. OccWorld [224] can forecast future scene evolutions and
+ego movements jointly based on the given past 3D occupancy
+observations in a self-supervised manner.
+The predictive capability of world models involves inferring
+the relative positions and movement trends of other vehicles based
+on current and past scene information, enabling the modeling
+of potential effects of various actions and informed decisionmaking [80], [225]. Beyond merely predicting original sensor
+signals, world models are intended to emulate human thinking and
+comprehension of the real world. To achieve this, world models
+need to incorporate expert experience embedding and interactive
+learning [226]–[228], enhancing their multitasking capabilities
+and establishing them as foundational models for knowledgedriven autonomous driving [229].
+
+5
+
+D RIVER AGENTS
+
+The section initially delves into the development of embodied
+AI and its connection to autonomous driving. Following that,
+it succinctly summarizes recent studies focusing on LLMs in
+autonomous driving, leveraging their robust reasoning and interpretable capabilities. Ultimately, a generalized knowledge-driven
+framework is introduced, spotlighting crucial components such as
+cognition, memory, planning, and reflection, with the overarching
+goal of enhancing scene understanding and decision-making.
+5.1
+
+Embodied AI
+
+Embodied AI [230]–[232] is a facet of intelligence emphasizing
+the direct interaction between an intelligent system and its environment, involving perception, understanding, and action. Notably, advancements in embodied intelligence have concentrated
+on humanoid robots and embodied AGI. As the ideal form of
+embodied AI, humanoid robots have been improving their autonomy, flexibility and intelligence [233], such as the Optimus
+humanoid robot introduced by Tesla, whose motion control ability
+has been evolving, providing a strong hardware foundation for
+the development of embodied AI. Meanwhile, embodied AGI is
+also considered an important way to realize advanced AI and has
+attracted the attention of many scholars [234].
+
+PREPRINT
+
+13
+
+TABLE 2
+Overall comparison with existing methods to generate realistic driving scenarios.
+
+Method
+
+Priors
+Box
+
+HD Map
+
+BEVGen [216]
+BEVControl [217]
+MagicDrive [218]
+DrivingDiffusion [219]
+WoVoGen [220]
+Drive-WM [55]
+
+✗
+✗
+✓
+✗
+✓
+✓
+
+✓
+✓
+✓
+✓
+✓
+✓
+
+GAIA-1 [55]
+DriveDreamer [53]
+DrivingDiffusion [219]
+Drive-WM [55]
+WoVoGen [220]
+ADriver-I [221]
+
+✓
+✓
+✓
+✓
+✓
+✗
+
+✓
+✓
+✓
+✓
+✓
+✗
+
+Outputs
+Mutil-view
+Video
+✓
+✓
+✓
+✓
+✓
+✓
+✓
+✓
+✓
+✓
+✓
+✓
+
+Metrics†
+FID↓
+FVD↓
+25.54
+24.85
+16.20
+15.85
+27.60
+12.99
+
+-
+
+52.6
+15.8
+15.8
+5.5
+
+452.0
+332.0
+122.7
+417.7
+97.0
+
+† means that the generation quality are evaluated on the nuScenes [43].
+
+LLMs are anticipated to elevate natural and human-like text
+and image interactions within the domain of embodied AI [235].
+They play a pivotal role in assisting embodied AI systems in
+comprehending and perceiving their surroundings, interpreting
+intricate task descriptions, formulating task plans, collaborating
+seamlessly with other system modules, adapting to dynamic
+environments, and facilitating social interactions with humans
+through natural language exchanges [119], [236]. Despite these
+advantages, it is imperative to address potential drawbacks, such
+as decision uncertainty. The uncertainties of LLMs also bring
+risks to embodied AI, potentially resulting in biases or errors
+in information processing, thereby compromising the systems’
+functionality and the reliability of task completion.
+Autonomous driving can be considered within the realm of
+embodied AI, whereas the open and dynamic traffic environment
+faced by autonomous driving necessitates a heightened focus on
+system reliability and generalization [237]. While autonomous
+driving can rely on the common sense understanding and logical reasoning ability of LLMs, they cannot completely rely on
+LLMs’ output as final decisions. Therefore, adopting a knowledgedriven paradigm can enhance autonomous driving by integrating
+mechanisms for long-term learning and knowledge accumulation,
+facilitating prompt adaptation to environmental changes through
+immediate feedback and adjustment.
+5.2
+
+Applying LLMs to Enhance Autonomous Driving
+
+As shown in Table 3, with the rapid advancement of LLMs,
+provides a foundation for injecting human knowledge and common sense into Driver Agents, sparking numerous new research
+endeavors. This learning ability is of significance in the perception module of the autonomous driving system, which greatly
+improves the system’s adaptability and generalization capabilities
+in changing and complex driving environments. Talk2BEV [42]
+augment BEV maps with language to enable general-purpose
+linguistic reasoning for driving scenarios. LanguagePrompt [44]
+uses language prompts as semantic cues and combines LLMs with
+3D detection tasks and tracking tasks. Although it achieves better
+performance compared to other methods, the advantages of LLMs
+do not directly affect the tracking task. Rather, the tracking task
+
+serves as a query to assist LLMs in performing 3D detection tasks.
+As for planning, decision-making and control in autonomous
+driving, numerous studies aim to harness the robust commonsense comprehension and reasoning capabilities of LLMs to aid
+drivers [13], [240]. Some works seek to emulate and even fully
+replace drivers [61], [68], [241], [245]. When employing LLMs
+for closed-loop control in autonomous driving, the majority of
+research efforts [13], [68], [245] incorporate a memory module to
+capture driving scenarios, experiences, and other crucial driving
+information. As well known, an end-to-end autonomous driving
+system takes raw sensor data as input and generates a plan
+and/or low-level control actions as output. We recognize endto-end autonomous vehicle aligns seamlessly with the structure
+in multimodal input-to-text in LLMs. this inherent compatibility,
+several studies are now exploring the viability of integrating LLMs
+into end-to-end autonomous driving. In contrast to conventional
+end-to-end autonomous driving systems [5], [252], end-to-end
+autonomous driving systems based on LLMs exhibit robust interpretability, trustworthiness, and advanced scene comprehension
+capabilities, which opens up avenues for practical application and
+implementation of end-to-end autonomous driving [61], [246],
+[247], [249], [250]. Understanding driving scenes like visual
+question answering or captioning tasks at a correct and high
+level is crucial for ensuring driving safety. DrivingLLM [229]
+evaluate the model’s performance in the driving scene with a
+visual and spatial understanding based on visual question answering or captioning tasks. More recently, in showcasing the
+proficiency of GPT-4V [108], On The Road With GPT-4V [253]
+provide comprehensive tests on GPT-4V in both diverse traffic
+scenarios and span from basic scene understanding to complex
+causal reasoning. Various exploratory efforts have utilized Vision
+Language Models (VLMs) to comprehend traffic scenes through
+specific downstream tasks. As mentioned in Sec 4.1, simulation
+is pivotal in the advancement of autonomous driving. Yet, existing
+simulation platforms face constraints in replicating the realism and
+diversity of agent behaviors, hindering the effective translation of
+simulation results into real-world applications. SurrealDriver [64]
+introduces a novel generative driver agent simulation framework,
+leveraging LLMs. It demonstrates the ability to perceive intricate
+driving scenarios and generate realistic driving maneuvers.
+
+PREPRINT
+
+14
+
+TABLE 3
+Knowledge-driven methods based on LLMs in Autonomous Driving.
+
+Category
+
+Methods
+Language Prompt [44]
+Can You Text What
+[238]
+Is Happening
+
+Image, Text
+
+LLM (GPT-3.5 [113]), language prompts, tracking
+
+Perception
+
+Image, Text
+
+LLM (DistilBERT [239]), trajectory prediction
+
+Drive Like A Human [13]
+
+2D BEV, Text
+
+LLM (GPT-3.5), closed-loop system, decision-making and control.
+
+Drive as You Speak [240]
+
+2D BEV, Map, GNSS,
+Radar, LiDAR, Image
+
+LLM (GPT-4 [108]), decision-making
+
+DiLu [68]
+
+Text
+
+LLM (GPT-3.5), agent, memory module, knowledge, reasoning, decisionmaking and control
+
+LanguageMPC [241]
+
+Text
+
+LLM (GPT-3.5), decision-making and control
+
+Talk2BEV [42]
+
+Image, Text
+
+large vision language model (LVLM) BLIP-2 [242] and LLaVA [243],
+augmented bird’s-eye view (BEV) maps
+
+TrafficGPT [244]
+
+Text
+
+LLM (GPT-3.5), analyze, decision-making
+
+Receive Reason React [245]
+
+Text
+
+LLM (GPT-4), reasoning, decision-making
+
+DriveGPT4 [61]
+
+Image, Text, Action
+
+LLM (LLaMA2 [107]), action, reasoning.
+
+GPT-Driver [246]
+
+Image, Text, Action
+
+LLM (GPT-3.5), motion planner, trajectory generation and control
+
+Drive Any where [247]
+
+Image, Text
+
+LLM (BLIP) open set learning, ViT [248], perception,
+
+Agent-Driver [249]
+
+Image, Text, Action
+
+LLM (GPT-3.5), agent, tool library, reasoning, cognitive memory
+
+DESIGN-Agent [250]
+
+Image, Text
+
+LLM (GPT-3.5), agent, reasoning
+
+Driving with LLMs [229]
+
+Text
+
+LLM (LLaMa [107], GPT-3.5) questions answering
+
+Dolphins [132]
+
+Image, Text
+
+LLM (OpenFlamingo [251]), Vision Language Action, Grounded Chain
+of Thought (GCoT), reflection
+
+LINGO-1 [131]
+
+Image, Text, Action
+
+LLM (GPT-3.5), Vision Language Action, reasoning
+
+SurrealDriver [64]
+
+Text
+
+LLM (GPT-3.5), generative simulation, human-like driving behaviors
+
+Decision-making
+&
+Planning
+&
+Control
+
+End-to-End
+
+VQA
+&
+Captioning
+
+Simulation
+
+Modalities
+
+The common sense understanding and logical reasoning of
+LLMs are vital for autonomous driving. However, direct applications of LLMs decision-maker may face challenges [13], [240].
+To address this, adopting few-shot prompts guides the model
+in understanding unknown scenarios, considering interpretability and reasonability [68]. Despite the advantages of few-shot
+prompts, challenges exist, especially in complex tasks where the
+number of prompts may be insufficient. Building powerful autonomous driving systems involves fine-tuning generalized models
+for specific driving scenarios [254], leveraging deep learning
+on extensive driving data. Autonomous driving systems need to
+comprehensively understand traffic environments, road structures,
+and human behavior, integrating text and image information
+for enhanced perception. Incorporating interaction processes and
+competitive games enables systems to grasp behaviors with other
+traffic participants and learn complex decision-making strategies.
+Large-scale training in simulators improves generalization, while
+iterative optimization, real-time feedback, and emphasis on safety
+standards lead to continuous improvement in model performance.
+5.3
+
+Generalized Knowledge-driven Framework
+
+A generalized knowledge-driven framework, inspired by recent
+advancements like Smallville [65], Dilu [68], LLM-Brain [255],
+etc., is essential for autonomous driving. This framework integrates various components and technologies, as depicted in Fig. 7,
+encompassing cognition, planning, reflection, memory, and more.
+Cognitive understanding transcends traditional detection and seg-
+
+Characteristics
+
+mentation tasks, demanding a profound comprehension of specific
+task environments. Crucially, planning correct actions based on
+object relationships becomes pivotal, with autonomous reflection
+necessary in the face of decision failures leading to anomalies. The
+memory module is enriched by both positive and negative samples,
+contributing to knowledge distillation. In a closed-loop continuous
+learning system, accumulated knowledge guides decision-making
+and reflection processes. Despite the general domain knowledge
+provided by rapidly advancing LLMs, precise performance in
+autonomous driving tasks mandates the empowerment and enhancement of knowledge-driven frameworks.
+Cognition. Various sensors such as cameras, radar, and LiDAR
+are employed to capture environmental information, subsequently
+transformed into semantic representations of the environment
+[256]–[259]. This information can be processed by leveraging
+LLMs, enabling semantic understanding and logical reasoning
+[42], [260], [261]. LLM-based systems demonstrate the capability to identify objects on roads and comprehend traffic signs
+[262], [263]. However, to enhance scene understanding, LLMs
+necessitate closed-loop environments, incorporating positive and
+negative feedback, overcoming illusions, and continuously expanding knowledge through lifelong learning [264], [265]. Cognition, involving the comprehension of objects and their interconnections, demands continuous fine-tuning of cognitive models
+in autonomous driving to address scenarios from simplistic to
+sophisticated through interaction with the environment.
+Memory. The outcomes of semantic understanding are stored
+
+PREPRINT
+
+15
+
+Plan
+
+Cognize
+
+Understanding
+
+Environment
+
+Form
+
+Success
+Record
+
+Plan
+
+Recall
+
+Data
+Reflect
+
+Knowledge
+
+Guide
+
+Memory
+
+Form
+
+Success
+
+Failure
+Distill
+
+Fig. 7. Generalized knowledge-driven framework.
+
+in the internal memory, constructing a dynamic perception of
+the environment [266]. This enables the system to retain and
+continually update its understanding of the surroundings. Furthermore, historical driving experiences and knowledge are archived
+in the internal memory. When confronted with a comparable
+situation, the system retrieves past semantic understanding and
+driving decisions to adeptly address similar scenarios. Distinctions between long-term and short-term memory are essential.
+Memory cultivated through numerous similar scenes fine-tunes
+the foundation model, fostering a rapid reasoning ability akin to
+human unconditional reflection. Contrasely, short-term memory
+only preserves recent and unfamiliar scenarios, ensuring swift
+adaptation to diverse environments.
+Planning. By amalgamating sensing results, historical knowledge, and LLMs’ reasoning capabilities, the system formulates
+dections for path planning, speed control, and obstacle avoidance [241], [246], [267]. Ensuring planned behaviors align with
+traffic rules and safety standards is crucial for achieving secure autonomous driving. While LLMs serve as a means of
+knowledge extraction and utilization, they function as a linguistic
+bridge between existing human knowledge and machine execution processes, facilitating interpretive reasoning and decisionmaking. However, LLMs, as carriers of general knowledge, require artificially designed prompts and feed shots for application
+in vehicle manipulation. Moreover, relying solely on LLMs for
+driving decisions is a transitional approach; developing large-scale
+symbolic models tailored to autonomous driving represents a more
+specialized avenue.
+Reflection. The driving decisions undergo interpretation using
+LLMs, contributing to an understanding of systems’ behaviors.
+Analyzing the LLMs’ outputs allows for the evaluation of the
+system’s decision rationality, facilitating continuous optimization
+and learning to enhance performance and robustness [60], [268],
+[269]. Additionally, reflection can incorporate expert systems,
+leveraging accident cases from datasets or human-derived lessons
+to swiftly identify and localize potential issues, thereby finding
+suitable solutions for knowledge-driven systems.
+
+6
+
+O PPORTUNITIES AND C HALLENGES
+
+Knowledge embedding dataset. Ensuring dataset richness involves covering daily driving situations, emergencies, and extreme
+
+weather conditions. This diversity enhances the model’s ability
+to understand and adapt to various realistic driving scenarios
+comprehensively. The use of natural language annotation, closely
+resembling a driver’s thought and decision-making process, improves the model’s understanding of human behavior and aligns
+it with real driving cognition. Annotators with ample driving experience ensure accurate annotation of diverse driving situations,
+focusing on scenario understanding for enhanced accuracy and
+quality. While language has demonstrated impressive proficiency
+in knowledge-embedding datasets, it cannot be conclusively stated
+that language is the only way to represent knowledge. Therefore,
+delving into more suitable methods of knowledge representation
+presents a worthy research direction.
+Efficient and realistic virtual environment. Virtual environments need to overcome challenges through refined neural
+rendering technology, achieving efficiency and realism in simulations. Optimizing 3D reconstruction algorithms strikes a balance
+between high fidelity and generalization, focusing on adaptability.
+Diverse and realistic virtual landscapes result from independently
+reconstructing foreground and background using various data
+sources. Techniques like Gaussian Splatting [270] offer efficiency
+in the handling of large-scale scenes, enabling real-time, highperformance virtual driving environments. Proactive exploration
+in environment understanding aims to construct intelligent models simulating real-world physical laws. Leveraging data from
+multiple sensors establishes an abstract representation of the
+environment. Incorporating such environments enhances training
+and testing for autonomous driving systems, fostering continuous
+advancements in the field.
+VLMs. VLMs offer enhanced integration compared to LLMs,
+aiming to approach human-level perception and understanding.
+Crucial for decision-making and behavior planning, VLMs excel
+in surrounding perception and scene understanding [271]–[274].
+VLMs outperform in traffic scenario understanding by fusing
+visual and linguistic information, and comprehending complex
+situations like road signs, traffic signs, and pedestrians. Their
+multimodal semantic understanding ensures reliable interpretation
+of traffic participants’ states and behaviors, particularly excelling
+in deep understanding and reasoning in intricate scenes. However,
+it’s essential to note that specialized learning is required for
+VLMs’ 3D spatial understanding and driving skills, presenting
+a focus for future research and development.
+
+PREPRINT
+
+16
+
+Requirements and Validation of Knowledge-Driven Approaches. Knowledge-driven autonomous driving demands enhanced cognitive and understanding capabilities, necessitating
+comprehension of common objects and intricate relationships
+between them based on physical laws and traffic rules. This
+involves understanding vehicle movements, interactions with other
+traffic participants, and ensuring maneuvers comply with traffic
+regulations. Knowledge-driven approaches extend beyond traditional performance metrics, requiring comprehensive validation of
+the entire process, from scenario understanding to vehicle maneuvering. Such validation enhances system transparency, aligns
+decision-making processes with intuitive human knowledge, and
+ultimately strengthens the credibility and safety of autonomous
+driving systems, reducing the risk of generating hallucinatory
+decisions [275], [276].
+
+[2]
+
+7
+
+[7]
+
+C ONCLUSION
+
+Knowledge-driven autonomous driving is the revolutionary
+paradigm that is promising to break through the current bottlenecks of autonomous driving. It emphasizes life-long learning, iterative revolution, and the integration of multimodal data,
+promising improved performance, safety, and interpretability in
+autonomous driving systems. The transition towards knowledgedriven autonomous driving reflects a pivotal evolution in technology development, emphasizing scenario understanding and
+reasoned decision-making. First, we introduce the foundational
+components of knowledge-driven autonomous driving: Dataset
+& Benchmark, Environment, and Driver Agent. These components, especially when synergized with advanced technologies like
+LLMs, world models, and neural rendering, collectively enhance
+the intelligence of autonomous systems. This integration facilitates
+a deeper and more holistic interaction with the driving environment, thereby augmenting the system’s overall capabilities. Next,
+we present a comprehensive knowledge-driven framework for
+autonomous driving, including critical components like cognition,
+planning, reflection, and memory, aiming to empower autonomous
+driving systems with scenario understanding, strategic decisionmaking, and life-long learning. Finally, we also highlight opportunities and challenges in knowledge-driven autonomous driving,
+including the importance of diverse datasets for comprehensive
+model training, the incorporation of natural language annotation
+for alignment with human thought processes, the creation of
+efficient virtual environments through refining neural rendering
+and optimizing 3D reconstruction, and the integration of LLMs for
+decision-making and behavior planning in complex driving scenarios, concluding with an emphasis on the verification measures
+for autonomous vehicles. Nevertheless, the journey towards fully
+realizing the potential of knowledge-driven autonomous driving is
+not devoid of challenges. This paper aims to highlight the significance of adopting knowledge-driven approaches in the evolving
+landscape of autonomous driving technologies. Our objective is
+to steer future research and practical applications in the direction
+of creating more intelligent, adaptable, and robust autonomous
+driving systems.
+
+R EFERENCES
+[1]
+
+Y. Li and J. Ibanez-Guzman, “Lidar for autonomous driving: The
+principles, challenges, and trends for automotive lidar and perception
+systems,” IEEE Signal Processing Magazine, vol. 37, no. 4, pp. 50–61,
+2020.
+
+[3]
+
+[4]
+
+[5]
+
+[6]
+
+[8]
+
+[9]
+
+[10]
+
+[11]
+
+[12]
+
+[13]
+
+[14]
+
+[15]
+
+[16]
+
+[17]
+
+[18]
+
+[19]
+
+[20]
+
+[21]
+
+[22]
+
+J. Van Brummelen, M. O’Brien, D. Gruyer, and H. Najjaran, “Autonomous vehicle perception: The technology of today and tomorrow,”
+Transportation Research Part C: Emerging Technologies, vol. 89, pp.
+384–406, 2018.
+C. Xiang, C. Feng, X. Xie, B. Shi, H. Lu, Y. Lv, M. Yang, and
+Z. Niu, “Multi-sensor fusion and cooperative perception for autonomous
+driving: A review,” IEEE Intelligent Transportation Systems Magazine,
+2023.
+Y. Zhang, Z. Zhu, W. Zheng, J. Huang, G. Huang, J. Zhou, and
+J. Lu, “BEVerse: Unified perception and prediction in birds-eye-view for
+vision-centric autonomous driving,” arXiv preprint arXiv:2205.09743,
+2022.
+Y. Hu, J. Yang, L. Chen, K. Li, C. Sima, X. Zhu, S. Chai, S. Du,
+T. Lin, W. Wang et al., “Planning-oriented autonomous driving,” in
+Proceedings of the IEEE/CVF Conference on Computer Vision and
+Pattern Recognition, 2023, pp. 17 853–17 862.
+L. Chen, Y. Li, C. Huang, B. Li, Y. Xing, D. Tian, L. Li, Z. Hu, X. Na,
+Z. Li et al., “Milestones in autonomous driving and intelligent vehicles:
+Survey of surveys,” IEEE Transactions on Intelligent Vehicles, vol. 8,
+no. 2, pp. 1046–1056, 2022.
+Z. Bao, S. Hossain, H. Lang, and X. Lin, “High-definition map generation technologies for autonomous driving: a review,” arXiv preprint
+arXiv:2206.05400, 2022.
+J. Cheng, L. Zhang, Q. Chen, X. Hu, and J. Cai, “A review of visual slam
+methods for autonomous driving vehicles,” Engineering Applications of
+Artificial Intelligence, vol. 114, p. 104992, 2022.
+Z. Cao, X. Li, K. Jiang, W. Zhou, X. Liu, N. Deng, and D. Yang,
+“Autonomous driving policy continual learning with one-shot disengagement case,” IEEE Transactions on Intelligent Vehicles, vol. 8, no. 2,
+pp. 1380–1391, 2022.
+S. Huang, B. Zhang, B. Shi, H. Li, Y. Li, and P. Gao, “SUG: Singledataset unified generalization for 3D point cloud classification,” in
+Proceedings of the 31st ACM International Conference on Multimedia,
+2023, pp. 8644–8652.
+J. Wang, X. Wang, T. Shen, Y. Wang, L. Li, Y. Tian, H. Yu, L. Chen,
+J. Xin, X. Wu et al., “Parallel vision for long-tail regularization: Initial
+results from IVFC autonomous driving testing,” IEEE Transactions on
+Intelligent Vehicles, vol. 7, no. 2, pp. 286–299, 2022.
+É. Zablocki, H. Ben-Younes, P. Pérez, and M. Cord, “Explainability
+of deep vision-based autonomous driving systems: Review and challenges,” International Journal of Computer Vision, vol. 130, no. 10, pp.
+2425–2452, 2022.
+D. Fu, X. Li, L. Wen, M. Dou, P. Cai, B. Shi, and Y. Qiao, “Drive like
+a human: Rethinking autonomous driving with large language models,”
+arXiv preprint arXiv:2307.07162, 2023.
+J. Zhang, J. Pu, J. Chen, H. Fu, Y. Tao, S. Wang, Q. Chen, Y. Xiao,
+S. Chen, Y. Cheng et al., “DSiV: Data science for intelligent vehicles,”
+IEEE Transactions on Intelligent Vehicles, 2023.
+H. Shao, L. Wang, R. Chen, H. Li, and Y. Liu, “Safety-enhanced
+autonomous driving using interpretable sensor fusion transformer,” in
+Conference on Robot Learning. PMLR, 2023, pp. 726–737.
+T. Jing, H. Xia, R. Tian, H. Ding, X. Luo, J. Domeyer, R. Sherony, and
+Z. Ding, “Inaction: Interpretable action decision making for autonomous
+driving,” in European Conference on Computer Vision. Springer, 2022,
+pp. 370–387.
+Y. Guan, Y. Ren, Q. Sun, S. E. Li, H. Ma, J. Duan, Y. Dai, and
+B. Cheng, “Integrated decision and control: Toward interpretable and
+computationally efficient driving intelligence,” IEEE Transactions on
+Cybernetics, vol. 53, no. 2, pp. 859–873, 2022.
+B. Yu, C. Chen, J. Tang, S. Liu, and J.-L. Gaudiot, “Autonomous
+vehicles digital twin: A practical paradigm for autonomous driving
+system development,” Computer, vol. 55, no. 9, pp. 26–34, 2022.
+L. Masello, B. Sheehan, F. Murphy, G. Castignani, K. McDonnell, and
+C. Ryan, “From traditional to autonomous vehicles: A systematic review
+of data availability,” Transportation Research Record, vol. 2676, no. 4,
+pp. 161–193, 2022.
+P. Wu, X. Jia, L. Chen, J. Yan, H. Li, and Y. Qiao, “Trajectory-guided
+control prediction for end-to-end autonomous driving: A simple yet
+strong baseline,” Advances in Neural Information Processing Systems,
+vol. 35, pp. 6119–6132, 2022.
+L. Fantauzzo, E. Fanı̀, D. Caldarola, A. Tavera, F. Cermelli, M. Ciccone,
+and B. Caputo, “Feddrive: Generalizing federated learning to semantic
+segmentation in autonomous driving,” in IEEE/RSJ International Conference on Intelligent Robots and Systems. IEEE, 2022, pp. 11 504–
+11 511.
+V. P. Chellapandi, L. Yuan, S. H. Zak, and Z. Wang, “A survey
+
+PREPRINT
+
+[23]
+
+[24]
+[25]
+
+[26]
+
+[27]
+[28]
+[29]
+
+[30]
+
+[31]
+
+[32]
+
+[33]
+
+[34]
+
+[35]
+
+[36]
+
+[37]
+
+[38]
+
+[39]
+
+[40]
+
+[41]
+
+[42]
+
+[43]
+
+of federated learning for connected and automated vehicles,” arXiv
+preprint arXiv:2303.10677, 2023.
+D. Bogdoll, J. Breitenstein, F. Heidecker, M. Bieshaar, B. Sick, T. Fingscheidt, and M. Zöllner, “Description of corner cases in automated
+driving: Goals and challenges,” in Proceedings of the IEEE/CVF International Conference on Computer Vision Workshop, 2021, pp. 1023–
+1028.
+H. X. Liu and S. Feng, ““curse of rarity” for autonomous vehicles,”
+arXiv preprint arXiv:2207.02749, 2022.
+W. Wang, L. Wang, C. Zhang, C. Liu, L. Sun et al., “Social interactions
+for autonomous driving: A review and perspectives,” Foundations and
+Trends® in Robotics, vol. 10, no. 3-4, pp. 198–376, 2022.
+A. Sestino, A. M. Peluso, C. Amatulli, and G. Guido, “Let me drive
+you! the effect of change seeking and behavioral control in the artificial
+intelligence-based self-driving cars,” Technology in Society, vol. 70, p.
+102017, 2022.
+Y. LeCun, “A path towards autonomous machine intelligence version
+0.9.2, 2022-06-27,” Open Review, vol. 62, 2022.
+H. J. Levesque, “Knowledge representation and reasoning,” Annual
+Review of Computer Science, vol. 1, no. 1, pp. 255–287, 1986.
+W. Wang, Y. Yang, and F. Wu, “Towards data-and knowledge-driven
+artificial intelligence: A survey on neuro-symbolic computing,” arXiv
+preprint arXiv:2210.15889, 2022.
+I. J. Goodfellow, M. Mirza, D. Xiao, A. Courville, and Y. Bengio,
+“An empirical investigation of catastrophic forgetting in gradient-based
+neural networks,” arXiv preprint arXiv:1312.6211, 2013.
+J. Kirkpatrick, R. Pascanu, N. Rabinowitz, J. Veness, G. Desjardins,
+A. A. Rusu, K. Milan, J. Quan, T. Ramalho, A. Grabska-Barwinska
+et al., “Overcoming catastrophic forgetting in neural networks,” Proceedings of the National Academy of Sciences, vol. 114, no. 13, pp.
+3521–3526, 2017.
+B. Zhang, J. Zhu, and H. Su, “Toward the third generation artificial
+intelligence,” Science China Information Sciences, vol. 66, no. 2, p.
+121101, 2023.
+C. Tang, N. Srishankar, S. Martin, and M. Tomizuka, “Grounded
+relational inference: Domain knowledge driven explainable autonomous
+driving,” arXiv preprint arXiv:2102.11905, 2021.
+L. Sur, C. Tang, Y. Niu, E. Sachdeva, C. Choi, T. Misu, M. Tomizuka,
+and W. Zhan, “Domain knowledge driven pseudo labels for interpretable
+goal-conditioned interactive trajectory prediction,” in IEEE/RSJ International Conference on Intelligent Robots and Systems. IEEE, 2022,
+pp. 13 034–13 041.
+M. Bahari, I. Nejjar, and A. Alahi, “Injecting knowledge in datadriven vehicle trajectory predictors,” Transportation Research Part C:
+Emerging Technologies, vol. 128, p. 103010, 2021.
+Q. Lan and Q. Tian, “Instance, scale, and teacher adaptive knowledge
+distillation for visual detection in autonomous driving,” IEEE Transactions on Intelligent Vehicles, vol. 8, no. 3, pp. 2358–2370, 2022.
+A. Khan, “A framework for autonomous process design: Towards datadriven and knowledge-driven systems,” Ph.D. dissertation, University of
+Cambridge, 2023.
+K. Huang, B. Shi, X. Li, X. Li, S. Huang, and Y. Li, “Multi-modal
+sensor fusion for auto driving perception: A survey,” arXiv preprint
+arXiv:2202.02703, 2022.
+R. Abbasi, A. K. Bashir, H. J. Alyamani, F. Amin, J. Doh, and
+J. Chen, “Lidar point cloud compression, processing and learning for
+autonomous driving,” IEEE Transactions on Intelligent Transportation
+Systems, vol. 24, no. 1, pp. 962–979, 2022.
+B. Fei, W. Yang, L. Liu, T. Luo, R. Zhang, Y. Li, and Y. He, “Selfsupervised learning for pre-training 3D point clouds: A survey,” arXiv
+preprint arXiv:2305.04691, 2023.
+T. Deruyttere, S. Vandenhende, D. Grujicic, L. Van Gool, and M. F.
+Moens, “Talk2Car: Taking control of your self-driving car,” in Proceedings of the 2019 Conference on Empirical Methods in Natural
+Language Processing and the 9th International Joint Conference on
+Natural Language Processing, 2019, pp. 2088–2098.
+V. Dewangan, T. Choudhary, S. Chandhok, S. Priyadarshan, A. Jain,
+A. K. Singh, S. Srivastava, K. M. Jatavallabhula, and K. M. Krishna,
+“Talk2bev: Language-enhanced bird’s-eye view maps for autonomous
+driving,” arXiv preprint arXiv:2310.02251, 2023.
+H. Caesar, V. Bankiti, A. H. Lang, S. Vora, V. E. Liong, Q. Xu,
+A. Krishnan, Y. Pan, G. Baldan, and O. Beijbom, “nuScenes: A
+multimodal dataset for autonomous driving,” in Proceedings of the
+IEEE/CVF Conference on Computer Vision and Pattern Recognition,
+2020, pp. 11 621–11 631.
+
+17
+
+[44]
+
+[45]
+
+[46]
+
+[47]
+
+[48]
+
+[49]
+
+[50]
+
+[51]
+
+[52]
+
+[53]
+
+[54]
+
+[55]
+
+[56]
+
+[57]
+
+[58]
+
+[59]
+
+[60]
+
+[61]
+
+[62]
+
+[63]
+
+[64]
+
+[65]
+
+D. Wu, W. Han, T. Wang, Y. Liu, X. Zhang, and J. Shen, “Language
+prompt for autonomous driving,” arXiv preprint arXiv:2309.04379,
+2023.
+E. Sachdeva, N. Agarwal, S. Chundi, S. Roelofs, J. Li, B. Dariush,
+C. Choi, and M. Kochenderfer, “Rank2tell: A multimodal driving
+dataset for joint importance ranking and reasoning,” arXiv preprint
+arXiv:2309.06597, 2023.
+T. Schick, J. Dwivedi-Yu, R. Dessı̀, R. Raileanu, M. Lomeli, L. Zettlemoyer, N. Cancedda, and T. Scialom, “Toolformer: Language models
+can teach themselves to use tools,” arXiv preprint arXiv:2302.04761,
+2023.
+X. Hu, G. Xiong, Z. Zang, P. Jia, Y. Han, and J. Ma, “PC-NeRF: Parentchild neural radiance fields under partial sensor data loss in autonomous
+driving environments,” arXiv preprint arXiv:2310.00874, 2023.
+Z. Wu, T. Liu, L. Luo, Z. Zhong, J. Chen, H. Xiao, C. Hou,
+H. Lou, Y. Chen, R. Yang et al., “MARS: An instance-aware, modular and realistic simulator for autonomous driving,” arXiv preprint
+arXiv:2307.15058, 2023.
+Z. Li, L. Li, and J. Zhu, “READ: Large-scale neural scene rendering for
+autonomous driving,” Proceedings of the AAAI Conference on Artificial
+Intelligence, vol. 37, no. 2, pp. 1522–1529, 2023.
+J. Guo, N. Deng, X. Li, Y. Bai, B. Shi, C. Wang, C. Ding, D. Wang, and
+Y. Li, “Streetsurf: Extending multi-view implicit surface reconstruction
+to street views,” arXiv preprint arXiv:2306.04988, 2023.
+Z. Yang, Y. Chen, J. Wang, S. Manivasagam, W.-C. Ma, A. J. Yang,
+and R. Urtasun, “Unisim: A neural closed-loop sensor simulator,” in
+Proceedings of the IEEE/CVF Conference on Computer Vision and
+Pattern Recognition, 2023, pp. 1389–1399.
+A. Hu, L. Russell, H. Yeo, Z. Murez, G. Fedoseev, A. Kendall,
+J. Shotton, and G. Corrado, “Gaia-1: A generative world model for
+autonomous driving,” arXiv preprint arXiv:2309.17080, 2023.
+X. Wang, Z. Zhu, G. Huang, X. Chen, and J. Lu, “Drivedreamer: Towards real-world-driven world models for autonomous driving,” arXiv
+preprint arXiv:2309.09777, 2023.
+C. Min, D. Zhao, L. Xiao, Y. Nie, and B. Dai, “Uniworld: Autonomous driving pre-training via world models,” arXiv preprint
+arXiv:2308.07234, 2023.
+Y. Wang, J. He, L. Fan, H. Li, Y. Chen, and Z. Zhang, “Driving into the
+future: Multiview visual forecasting and planning with world model for
+autonomous driving,” arXiv preprint arXiv:2311.17918, 2023.
+Y. Li, F. Liu, L. Xing, Y. He, C. Dong, C. Yuan, J. Chen, and L. Tong,
+“Data generation for connected and automated vehicle tests using deep
+learning models,” Accident Analysis & Prevention, vol. 190, p. 107192,
+2023.
+K. Muhammad, T. Hussain, H. Ullah, J. Del Ser, M. Rezaei, N. Kumar,
+M. Hijji, P. Bellavista, and V. H. C. de Albuquerque, “Vision-based
+semantic segmentation in scene understanding for autonomous driving:
+Recent achievements, challenges, and outlooks,” IEEE Transactions on
+Intelligent Transportation Systems, 2022.
+L. Fan, D. Cao, C. Zeng, B. Li, Y. Li, and F.-Y. Wang, “Cognitivebased crack detection for road maintenance: An integrated system in
+cyber-physical-social systems,” IEEE Transactions on Systems, Man,
+and Cybernetics: Systems, 2022.
+L. Li, T. Zhou, W. Wang, J. Li, and Y. Yang, “Deep hierarchical
+semantic segmentation,” in Proceedings of the IEEE/CVF Conference
+on Computer Vision and Pattern Recognition, 2022, pp. 1246–1257.
+Y. Cui, S. Huang, J. Zhong, Z. Liu, Y. Wang, C. Sun, B. Li, X. Wang,
+and A. Khajepour, “DriveLLM: Charting the path toward full autonomous driving with large language models,” IEEE Transactions on
+Intelligent Vehicles, 2023.
+Z. Xu, Y. Zhang, E. Xie, Z. Zhao, Y. Guo, K. K. Wong, Z. Li, and
+H. Zhao, “DriveGPT4: Interpretable end-to-end autonomous driving via
+large language model,” arXiv preprint arXiv:2310.01412, 2023.
+D. I. Mikhailov, “Optimizing national security strategies through
+llm-driven artificial intelligence integration,” arXiv preprint
+arXiv:2305.13927, 2023.
+S. Bubeck, V. Chandrasekaran, R. Eldan, J. Gehrke, E. Horvitz, E. Kamar, P. Lee, Y. T. Lee, Y. Li, S. Lundberg et al., “Sparks of artificial
+general intelligence: Early experiments with GPT-4,” arXiv preprint
+arXiv:2303.12712, 2023.
+Y. Jin, X. Shen, H. Peng, X. Liu, J. Qin, J. Li, J. Xie, P. Gao,
+G. Zhou, and J. Gong, “SurrealDriver: Designing generative driver
+agent simulation framework in urban contexts based on large language
+model,” arXiv preprint arXiv:2309.13193, 2023.
+J. S. Park, J. C. O’Brien, C. J. Cai, M. R. Morris, P. Liang, and
+M. S. Bernstein, “Generative agents: Interactive simulacra of human
+behavior,” arXiv preprint arXiv:2304.03442, 2023.
+
+PREPRINT
+
+[66]
+
+[67]
+
+[68]
+
+[69]
+
+[70]
+
+[71]
+
+[72]
+
+[73]
+
+[74]
+
+[75]
+
+[76]
+
+[77]
+
+[78]
+
+[79]
+[80]
+
+[81]
+
+[82]
+
+[83]
+
+[84]
+
+[85]
+
+[86]
+
+[87]
+
+[88]
+
+Y. Peng, J. Han, Z. Zhang, L. Fan, T. Liu, S. Qi, X. Feng, Y. Ma,
+Y. Wang, and S.-C. Zhu, “The tong test: Evaluating artificial general intelligence through dynamic embodied physical and social interactions,”
+Engineering, 2023.
+S. Gildert and G. Rose, “Building and testing a general intelligence
+embodied in a humanoid robot,” arXiv preprint arXiv:2307.16770,
+2023.
+L. Wen, D. Fu, X. Li, X. Cai, T. Ma, P. Cai, M. Dou, B. Shi, L. He, and
+Y. Qiao, “Dilu: A knowledge-driven approach to autonomous driving
+with large language models,” arXiv preprint arXiv:2309.16292, 2023.
+T. Yin, X. Zhou, and P. Krahenbuhl, “Center-based 3D object detection
+and tracking,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2021, pp. 11 784–11 793.
+Z. Guo, X. Gao, J. Zhou, X. Cai, and B. Shi, “SceneDM: Scene-level
+multi-agent trajectory generation with consistent diffusion models,”
+arXiv preprint arXiv:2311.15736, 2023.
+X. Li, B. Shi, Y. Hou, X. Wu, T. Ma, Y. Li, and L. He, “Homogeneous
+multi-modal feature fusion and interaction for 3D object detection,” in
+European Conference on Computer Vision. Springer, 2022, pp. 691–
+707.
+B. Zhang, X. Cai, J. Yuan, D. Yang, J. Guo, R. Xia, B. Shi, M. Dou,
+T. Chen, S. Liu et al., “ReSimAD: Zero-shot 3D domain transfer for
+autonomous driving with source reconstruction and target simulation,”
+arXiv preprint arXiv:2309.05527, 2023.
+X. Pan, Y. You, Z. Wang, and C. Lu, “Virtual to real reinforcement
+learning for autonomous driving,” arXiv preprint arXiv:1704.03952,
+2017.
+D. Li, L. Meng, J. Li, K. Lu, and Y. Yang, “Domain adaptive state representation alignment for reinforcement learning,” Information Sciences,
+vol. 609, pp. 1353–1368, 2022.
+D. Bogdoll, S. Guneshka, and J. M. Zöllner, “One ontology to rule
+them all: Corner case scenarios for autonomous driving,” in European
+Conference on Computer Vision. Springer, 2022, pp. 409–425.
+R. Fernandez-Rojas, A. Perry, H. Singh, B. Campbell, S. Elsayed,
+R. Hunjet, and H. A. Abbass, “Contextual awareness in humanadvanced-vehicle systems: a survey,” IEEE Access, vol. 7, pp. 33 304–
+33 328, 2019.
+K. Ishihara, A. Kanervisto, J. Miura, and V. Hautamaki, “Multi-task
+learning with attention for end-to-end autonomous driving,” in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern
+Recognition, 2021, pp. 2902–2911.
+S. Casas, A. Sadat, and R. Urtasun, “MP3: A unified model to map,
+perceive, predict and plan,” in Proceedings of the IEEE/CVF Conference
+on Computer Vision and Pattern Recognition, 2021, pp. 14 403–14 412.
+M. Mitchell, “AI’s challenge of understanding the world,” p. eadm8175,
+2023.
+L. Zhang, Y. Xiong, Z. Yang, S. Casas, R. Hu, and R. Urtasun, “Learning unsupervised world models for autonomous driving via discrete
+diffusion,” arXiv preprint arXiv:2311.01017, 2023.
+W. Schwarting, A. Pierson, J. Alonso-Mora, S. Karaman, and D. Rus,
+“Social behavior for autonomous vehicles,” Proceedings of the National
+Academy of Sciences, vol. 116, no. 50, pp. 24 972–24 978, 2019.
+Z.-X. Xia, W.-C. Lai, L.-W. Tsao, L.-F. Hsu, C.-C. H. Yu, H.-H. Shuai,
+and W.-H. Cheng, “A human-like traffic scene understanding system: A
+survey,” IEEE Industrial Electronics Magazine, vol. 15, no. 1, pp. 6–15,
+2020.
+D. Dubois, P. Hájek, and H. Prade, “Knowledge-driven versus datadriven logics,” Journal of Logic, Language and Information, vol. 9, pp.
+65–89, 2000.
+M. O’Kelly, A. Sinha, H. Namkoong, R. Tedrake, and J. C. Duchi,
+“Scalable end-to-end autonomous vehicle testing via rare-event simulation,” Advances in Neural Information Processing Systems, vol. 31,
+2018.
+X. Yan, Z. Zou, S. Feng, H. Zhu, H. Sun, and H. X. Liu, “Learning
+naturalistic driving environment with statistical realism,” Nature Communications, vol. 14, no. 1, p. 2037, 2023.
+S. Kothawade, V. Khandelwal, K. Basu, H. Wang, and G. Gupta,
+“AUTO-DISCERN: autonomous driving using common sense reasoning,” arXiv preprint arXiv:2110.13606, 2021.
+L. K. Saul and S. T. Roweis, “Think globally, fit locally: unsupervised
+learning of low dimensional manifolds,” Journal of machine learning
+research, vol. 4, no. Jun, pp. 119–155, 2003.
+L. Deng, “The mnist database of handwritten digit images for machine
+learning research [best of the web],” IEEE signal processing magazine,
+vol. 29, no. 6, pp. 141–142, 2012.
+
+18
+
+[89]
+
+J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei, “ImageNet:
+A large-scale hierarchical image database,” in IEEE Conference on
+Computer Vision and Pattern Recognition. Ieee, 2009, pp. 248–255.
+[90] Z. Zou, K. Chen, Z. Shi, Y. Guo, and J. Ye, “Object detection in 20
+years: A survey,” Proceedings of the IEEE, 2023.
+[91] S. Ren, K. He, R. Girshick, and J. Sun, “Faster R-CNN: Towards
+real-time object detection with region proposal networks,” Advances
+in Neural Information Processing Systems, vol. 28, 2015.
+[92] J. Redmon, S. Divvala, R. Girshick, and A. Farhadi, “You only look
+once: Unified, real-time object detection,” in Proceedings of the IEEE
+Conference on Computer Vision and Pattern Recognition, 2016, pp.
+779–788.
+[93] O. Ronneberger, P. Fischer, and T. Brox, “U-net: Convolutional networks for biomedical image segmentation,” in Medical Image Computing and Computer-Assisted Intervention–MICCAI 2015: 18th International Conference, Munich, Germany, October 5-9, 2015, Proceedings,
+Part III 18. Springer, 2015, pp. 234–241.
+[94] K. He, G. Gkioxari, P. Dollár, and R. Girshick, “Mask R-CNN,” in
+Proceedings of the IEEE International onference on computer vision,
+2017, pp. 2961–2969.
+[95] Q. You, H. Jin, Z. Wang, C. Fang, and J. Luo, “Image captioning
+with semantic attention,” in Proceedings of the IEEE Conference on
+Computer Vision and Pattern Recognition, 2016, pp. 4651–4659.
+[96] S. Antol, A. Agrawal, J. Lu, M. Mitchell, D. Batra, C. L. Zitnick, and
+D. Parikh, “Vqa: Visual question answering,” in Proceedings of the
+IEEE International Conference on Computer vision, 2015, pp. 2425–
+2433.
+[97] R. Krishna, Y. Zhu, O. Groth, J. Johnson, K. Hata, J. Kravitz, S. Chen,
+Y. Kalantidis, L.-J. Li, D. A. Shamma et al., “Visual genome: Connecting language and vision using crowdsourced dense image annotations,”
+International journal of computer vision, vol. 123, pp. 32–73, 2017.
+[98] I. Goodfellow, J. Pouget-Abadie, M. Mirza, B. Xu, D. Warde-Farley,
+S. Ozair, A. Courville, and Y. Bengio, “Generative adversarial nets,”
+Advances in Neural Information Processing Systems, vol. 27, 2014.
+[99] X. Pan, A. Tewari, T. Leimkühler, L. Liu, A. Meka, and C. Theobalt,
+“Drag your gan: Interactive point-based manipulation on the generative
+image manifold,” in ACM SIGGRAPH 2023 Conference Proceedings,
+2023, pp. 1–11.
+[100] D. P. Kingma and M. Welling, “Auto-encoding variational bayes,” arXiv
+preprint arXiv:1312.6114, 2013.
+[101] J. Ho, A. Jain, and P. Abbeel, “Denoising diffusion probabilistic
+models,” Advances in Neural Information Processing Systems, vol. 33,
+pp. 6840–6851, 2020.
+[102] P. Dhariwal and A. Nichol, “Diffusion models beat gans on image
+synthesis,” Advances in Neural Information Processing Systems, vol. 34,
+pp. 8780–8794, 2021.
+[103] R. Rombach, A. Blattmann, D. Lorenz, P. Esser, and B. Ommer, “Highresolution image synthesis with latent diffusion models,” in Proceedings
+of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2022, pp. 10 684–10 695.
+[104] W. X. Zhao, K. Zhou, J. Li, T. Tang, X. Wang, Y. Hou, Y. Min, B. Zhang,
+J. Zhang, Z. Dong et al., “A survey of large language models,” arXiv
+preprint arXiv:2303.18223, 2023.
+[105] L. Floridi and M. Chiriatti, “GPT-3: Its nature, scope, limits, and
+consequences,” Minds and Machines, vol. 30, pp. 681–694, 2020.
+[106] A. Chowdhery, S. Narang, J. Devlin, M. Bosma, G. Mishra, A. Roberts,
+P. Barham, H. W. Chung, C. Sutton, S. Gehrmann et al., “PaLM: Scaling
+language modeling with pathways,” arXiv preprint arXiv:2204.02311,
+2022.
+[107] H. Touvron, T. Lavril, G. Izacard, X. Martinet, M.-A. Lachaux,
+T. Lacroix, B. Rozière, N. Goyal, E. Hambro, F. Azhar et al.,
+“Llama: Open and efficient foundation language models,” arXiv preprint
+arXiv:2302.13971, 2023.
+[108] OpenAI, “GPT-4 technical report,” arXiv preprint arXiv:2303.08774,
+2023.
+[109] T. Brown, B. Mann, N. Ryder, M. Subbiah, J. D. Kaplan, P. Dhariwal,
+A. Neelakantan, P. Shyam, G. Sastry, A. Askell et al., “Language models are few-shot learners,” Advances in Neural Information Processing
+systems, vol. 33, pp. 1877–1901, 2020.
+[110] L. Ouyang, J. Wu, X. Jiang, D. Almeida, C. Wainwright, P. Mishkin,
+C. Zhang, S. Agarwal, K. Slama, A. Ray et al., “Training language
+models to follow instructions with human feedback,” Advances in
+Neural Information Processing Systems, vol. 35, pp. 27 730–27 744,
+2022.
+[111] J. Wei, M. Bosma, V. Y. Zhao, K. Guu, A. W. Yu, B. Lester, N. Du,
+A. M. Dai, and Q. V. Le, “Finetuned language models are zero-shot
+learners,” arXiv preprint arXiv:2109.01652, 2021.
+
+PREPRINT
+
+[112] J. Wei, X. Wang, D. Schuurmans, M. Bosma, F. Xia, E. Chi, Q. V. Le,
+D. Zhou et al., “Chain-of-thought prompting elicits reasoning in large
+language models,” Advances in Neural Information Processing Systems,
+vol. 35, pp. 24 824–24 837, 2022.
+[113] OpenAI, “Introducing ChatGPT,” https://openai.com/blog/chatgpt/,
+2023.
+[114] D. Zhu, J. Chen, X. Shen, X. Li, and M. Elhoseiny, “MiniGPT-4:
+Enhancing vision-language understanding with advanced large language
+models,” arXiv preprint arXiv:2304.10592, 2023.
+[115] E. Yurtsever, J. Lambert, A. Carballo, and K. Takeda, “A survey of
+autonomous driving: Common practices and emerging technologies,”
+IEEE Access, vol. 8, pp. 58 443–58 469, 2020.
+[116] L. Chen, P. Wu, K. Chitta, B. Jaeger, A. Geiger, and H. Li, “Endto-end autonomous driving: Challenges and frontiers,” arXiv preprint
+arXiv:2306.16927, 2023.
+[117] Z. Liu, H. Jiang, H. Tan, and F. Zhao, “An overview of the latest
+progress and core challenge of autonomous vehicle technologies,” in
+MATEC Web of Conferences, vol. 308. EDP Sciences, 2020.
+[118] F. Dou, J. Ye, G. Yuan, Q. Lu, W. Niu, H. Sun, L. Guan, G. Lu,
+G. Mai, N. Liu et al., “Towards artificial general intelligence (AGI)
+in the internet of things (IoT): Opportunities and challenges,” arXiv
+preprint arXiv:2309.07438, 2023.
+[119] Z. Xi, W. Chen, X. Guo, W. He, Y. Ding, B. Hong, M. Zhang, J. Wang,
+S. Jin, E. Zhou et al., “The rise and potential of large language model
+based agents: A survey,” arXiv preprint arXiv:2309.07864, 2023.
+[120] Z. Li, W. Wang, H. Li, E. Xie, C. Sima, T. Lu, Y. Qiao, and
+J. Dai, “BEVFormer: Learning bird’s-eye-view representation from
+multi-camera images via spatiotemporal transformers,” in European
+Conference on Computer Vision. Springer, 2022, pp. 1–18.
+[121] Z. Liu, H. Tang, A. Amini, X. Yang, H. Mao, D. L. Rus, and S. Han,
+“BevFusion: Multi-task multi-sensor fusion with unified bird’s-eye view
+representation,” in IEEE International Conference on Robotics and
+Automation. IEEE, 2023, pp. 2774–2781.
+[122] Y. Hou, Z. Ma, C. Liu, and C. C. Loy, “Learning lightweight lane
+detection cnns by self attention distillation,” in Proceedings of the
+IEEE/CVF International Conference on Computer vision, 2019, pp.
+1013–1021.
+[123] L. Chen, C. Sima, Y. Li, Z. Zheng, J. Xu, X. Geng, H. Li, C. He,
+J. Shi, Y. Qiao et al., “Persformer: 3D lane detection via perspective
+transformer and the openlane benchmark,” in European Conference on
+Computer Vision. Springer, 2022, pp. 550–567.
+[124] L. Kong, Y. Liu, X. Li, R. Chen, W. Zhang, J. Ren, L. Pan, K. Chen,
+and Z. Liu, “Robo3d: Towards robust and reliable 3D perception against
+corruptions,” in Proceedings of the IEEE/CVF International Conference
+on Computer Vision, 2023, pp. 19 994–20 006.
+[125] Y. Liu, R. Chen, X. Li, L. Kong, Y. Yang, Z. Xia, Y. Bai, X. Zhu,
+Y. Ma, Y. Li et al., “Uniseg: A unified multi-modal lidar segmentation
+network and the openpcseg codebase,” in Proceedings of the IEEE/CVF
+International Conference on Computer Vision, 2023, pp. 21 662–21 673.
+[126] J. Huang, G. Huang, Z. Zhu, Y. Ye, and D. Du, “BEVDet: Highperformance multi-camera 3D object detection in bird-eye-view,” arXiv
+preprint arXiv:2112.11790, 2021.
+[127] A. H. Lang, S. Vora, H. Caesar, L. Zhou, J. Yang, and O. Beijbom,
+“Pointpillars: Fast encoders for object detection from point clouds,”
+in Proceedings of the IEEE/CVF Conference on Computer Vision and
+Pattern Recognition, 2019, pp. 12 697–12 705.
+[128] J. Deng, S. Shi, P. Li, W. Zhou, Y. Zhang, and H. Li, “Voxel RCNN: Towards high performance voxel-based 3D object detection,”
+Proceedings of the AAAI Conference on Artificial Intelligence, vol. 35,
+no. 2, pp. 1201–1209, 2021.
+[129] X. Bai, Z. Hu, X. Zhu, Q. Huang, Y. Chen, H. Fu, and C.-L. Tai,
+“TransFusion: Robust lidar-camera fusion for 3D object detection
+with transformers,” in Proceedings of the IEEE/CVF Conference on
+Computer Vision and Pattern Recognition, 2022, pp. 1090–1099.
+[130] X. Li, T. Ma, Y. Hou, B. Shi, Y. Yang, Y. Liu, X. Wu, Q. Chen, Y. Li,
+Y. Qiao et al., “LoGoNet: Towards accurate 3D object detection with
+local-to-global cross-modal fusion,” in Proceedings of the IEEE/CVF
+Conference on Computer Vision and Pattern Recognition, 2023, pp.
+17 524–17 534.
+[131] Wayve, “Lingo-1: Exploring natural language for autonomous driving,”
+https://wayve.ai/thinking/lingo-natural-language-autonomous-driving/,
+2023.
+[132] Y. Ma, Y. Cao, J. Sun, M. Pavone, and C. Xiao, “Dolphins: Multimodal
+language model for driving,” arXiv preprint arXiv:2312.00438, 2023.
+[133] D. C. Gazis, R. Herman, and R. W. Rothery, “Nonlinear follow-theleader models of traffic flow,” Operations research, vol. 9, no. 4, pp.
+545–567, 1961.
+
+19
+
+[134] M. Treiber, A. Hennecke, and D. Helbing, “Congested traffic states in
+empirical observations and microscopic simulations,” Physical review
+E, vol. 62, no. 2, p. 1805, 2000.
+[135] A. Kesting, M. Treiber, and D. Helbing, “General lane-changing model
+mobil for car-following models,” Transportation Research Record, vol.
+1999, no. 1, pp. 86–94, 2007.
+[136] T. Hülnhagen, I. Dengler, A. Tamke, T. Dang, and G. Breuel, “Maneuver
+recognition using probabilistic finite-state machines and fuzzy logic,” in
+2010 ieee intelligent vehicles symposium. IEEE, 2010, pp. 65–70.
+[137] S.-H. Bae, S.-H. Joo, J.-W. Pyo, J.-S. Yoon, K. Lee, and T.-Y. Kuc,
+“Finite state machine based vehicle system for autonomous driving in
+urban environments,” in International Conference on Control, Automation and Systems. IEEE, 2020, pp. 1181–1186.
+[138] J.-A. Bolte, A. Bar, D. Lipinski, and T. Fingscheidt, “Towards corner
+case detection for autonomous driving,” in IEEE Intelligent vehicles
+symposium, 2019, pp. 438–445.
+[139] L. Ma, J. Xue, K. Kawabata, J. Zhu, C. Ma, and N. Zheng, “A fast
+RRT algorithm for motion planning of autonomous road vehicles,” in
+International IEEE Conference on Intelligent Transportation Systems.
+IEEE, 2014, pp. 1033–1038.
+[140] L. Wen, Z. Fu, P. Cai, D. Fu, S. Mao, and B. Shi, “TrafficMCTS: A
+closed-loop traffic flow generation framework with group-based monte
+carlo tree search,” arXiv preprint arXiv:2308.12797, 2023.
+[141] Y. Guo, Q. Zhang, J. Wang, and S. Liu, “Hierarchical reinforcement
+learning-based policy switching towards multi-scenarios autonomous
+driving,” in 2021 International Joint Conference on Neural Networks
+(IJCNN). IEEE, 2021, pp. 1–8.
+[142] T. Rupprecht and Y. Wang, “A survey for deep reinforcement learning in
+markovian cyber–physical systems: Common problems and solutions,”
+Neural Networks, vol. 153, pp. 13–36, 2022.
+[143] S. Arora and P. Doshi, “A survey of inverse reinforcement learning:
+Challenges, methods and progress,” Artificial Intelligence, vol. 297, p.
+103500, 2021.
+[144] D. Helbing and P. Molnar, “Social force model for pedestrian dynamics,” Physical review E, vol. 51, no. 5, p. 4282, 1995.
+[145] D. Yang, Ü. Özgüner, and K. Redmill, “Social force based microscopic
+modeling of vehicle-crowd interaction,” in 2018 IEEE Intelligent Vehicles Symposium (IV). IEEE, 2018, pp. 1537–1542.
+[146] J. Wang, J. Wu, and Y. Li, “The driving safety field based on driver–
+vehicle–road interactions,” IEEE Transactions on Intelligent Transportation Systems, vol. 16, no. 4, pp. 2203–2214, 2015.
+[147] J. Wang, J. Wu, X. Zheng, D. Ni, and K. Li, “Driving safety field
+theory modeling and its application in pre-collision warning system,”
+Transportation research part C: emerging technologies, vol. 72, pp.
+306–324, 2016.
+[148] Y. Liu, F. Wu, Z. Liu, K. Wang, F. Wang, and X. Qu, “Can language
+models be used for real-world urban-delivery route optimization?” The
+Innovation, vol. 4, no. 6, 2023.
+[149] C. Cui, Y. Ma, X. Cao, W. Ye, Y. Zhou, K. Liang, J. Chen, J. Lu,
+Z. Yang, K.-D. Liao et al., “A survey on multimodal large language
+models for autonomous driving,” arXiv preprint arXiv:2311.12320,
+2023.
+[150] D. A. Pomerleau, “Alvinn: An autonomous land vehicle in a neural
+network,” Advances in Neural Information Processing Systems, vol. 1,
+1988.
+[151] W. Schwarting, J. Alonso-Mora, and D. Rus, “Planning and decisionmaking for autonomous vehicles,” Annual Review of Control, Robotics,
+and Autonomous Systems, vol. 1, pp. 187–210, 2018.
+[152] Y. Ma, Z. Wang, H. Yang, and L. Yang, “Artificial intelligence applications in the development of autonomous vehicles: A survey,” IEEE/CAA
+Journal of Automatica Sinica, vol. 7, no. 2, pp. 315–329, 2020.
+[153] J. Daudelin, G. Jing, T. Tosun, M. Yim, H. Kress-Gazit, and M. Campbell, “An integrated system for perception-driven autonomy with modular robots,” Science Robotics, vol. 3, no. 23, p. eaat4983, 2018.
+[154] A. Sadat, S. Casas, M. Ren, X. Wu, P. Dhawan, and R. Urtasun,
+“Perceive, predict, and plan: Safe motion planning through interpretable
+semantic representations,” in Computer Vision–ECCV 2020: 16th European Conference, Glasgow, UK, August 23–28, 2020, Proceedings, Part
+XXIII 16. Springer, 2020, pp. 414–430.
+[155] A. Vahidi and A. Sciarretta, “Energy saving potentials of connected
+and automated vehicles,” Transportation Research Part C: Emerging
+Technologies, vol. 95, pp. 822–843, 2018.
+[156] Y. Wang, P. Cai, and G. Lu, “Cooperative autonomous traffic organization method for connected automated vehicles in multi-intersection road
+networks,” Transportation research part C: emerging technologies, vol.
+111, pp. 458–476, 2020.
+
+PREPRINT
+
+[157] P. S. Chib and P. Singh, “Recent advancements in end-to-end autonomous driving using deep learning: A survey,” IEEE Transactions
+on Intelligent Vehicles, 2023.
+[158] A. Geiger, P. Lenz, C. Stiller, and R. Urtasun, “Vision meets robotics:
+The kitti dataset,” The International Journal of Robotics Research,
+vol. 32, no. 11, pp. 1231–1237, 2013.
+[159] M. Cordts, M. Omran, S. Ramos, T. Rehfeld, M. Enzweiler, R. Benenson, U. Franke, S. Roth, and B. Schiele, “The cityscapes dataset
+for semantic urban scene understanding,” in Proceedings of the IEEE
+Conference on Computer Vision and Pattern Recognition, 2016, pp.
+3213–3223.
+[160] H. Xu, Y. Gao, F. Yu, and T. Darrell, “End-to-end learning of driving
+models from large-scale video datasets,” in Proceedings of the IEEE
+Conference on Computer Vision and Pattern Recognition, 2017, pp.
+2174–2182.
+[161] V. Ramanishka, Y.-T. Chen, T. Misu, and K. Saenko, “Toward driving
+scene understanding: A dataset for learning driver behavior and causal
+reasoning,” in Proceedings of the IEEE Conference on Computer Vision
+and Pattern Recognition, 2018, pp. 7699–7707.
+[162] P. Sun, H. Kretzschmar, X. Dotiwalla, A. Chouard, V. Patnaik, P. Tsui,
+J. Guo, Y. Zhou, Y. Chai, B. Caine et al., “Scalability in perception
+for autonomous driving: Waymo open dataset,” in Proceedings of the
+IEEE/CVF Conference on Computer Vision and Pattern Recognition,
+2020, pp. 2446–2454.
+[163] W. K. Fong, R. Mohan, J. V. Hurtado, L. Zhou, H. Caesar, O. Beijbom,
+and A. Valada, “Panoptic nuScenes: A large-scale benchmark for lidar
+panoptic segmentation and tracking,” IEEE Robotics and Automation
+Letters, vol. 7, no. 2, pp. 3795–3802, 2022.
+[164] D. Wu, W. Han, T. Wang, X. Dong, X. Zhang, and J. Shen, “Referring
+multi-object tracking,” in Proceedings of the IEEE/CVF Conference on
+Computer Vision and Pattern Recognition, 2023, pp. 14 633–14 642.
+[165] A. B. Vasudevan, D. Dai, and L. Van Gool, “Object referring in videos
+with language and human gaze,” in Proceedings of the IEEE Conference
+on Computer Vision and Pattern Recognition, 2018, pp. 4129–4138.
+[166] J. Kim, A. Rohrbach, T. Darrell, J. Canny, and Z. Akata, “Textual
+explanations for self-driving vehicles,” in Proceedings of the European
+conference on computer vision, 2018, pp. 563–578.
+[167] J. Kim, T. Misu, Y.-T. Chen, A. Tawari, and J. Canny, “Grounding
+human-to-vehicle advice for self-driving vehicles,” in Proceedings of
+the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2019, pp. 10 591–10 599.
+[168] T. Qian, J. Chen, L. Zhuo, Y. Jiao, and Y.-G. Jiang, “NuScenes-QA:
+A multi-modal visual question answering benchmark for autonomous
+driving scenario,” arXiv preprint arXiv:2305.14836, 2023.
+[169] D. Contributors, “Drivelm: Drive on language,” https://github.com/
+OpenDriveLab/DriveLM, 2023.
+[170] S. Alletto, A. Palazzi, F. Solera, S. Calderara, and R. Cucchiara,
+“Dr (eye) ve: a dataset for attention-based tasks with applications to
+autonomous and assisted driving,” in Proceedings of the ieee conference
+on computer vision and pattern recognition workshops, 2016, pp. 54–
+60.
+[171] J. Fang, D. Yan, J. Qiao, J. Xue, H. Wang, and S. Li, “DADA-2000:
+Can driving accident be predicted by driver attentionƒ analyzed by a
+benchmark,” in IEEE Intelligent Transportation Systems Conference.
+IEEE, 2019, pp. 4303–4309.
+[172] Y. Qiu, C. Busso, T. Misu, and K. Akash, “Incorporating gaze behavior
+using joint embedding with scene context for driver takeover detection,”
+in IEEE International Conference on Acoustics, Speech and Signal
+Processing. IEEE, 2022, pp. 4633–4637.
+[173] S. Malla, C. Choi, I. Dwivedi, J. H. Choi, and J. Li, “DRAMA: Joint risk
+localization and captioning in driving,” in Proceedings of the IEEE/CVF
+Winter Conference on Applications of Computer Vision, 2023, pp. 1043–
+1052.
+[174] A. Palazzi, D. Abati, F. Solera, R. Cucchiara et al., “Predicting the
+driver’s focus of attention: the DR (eye) VE project,” IEEE Transactions
+on Pattern Analysis and Machine Intelligence, vol. 41, no. 7, pp. 1720–
+1733, 2018.
+[175] J. Fang, D. Yan, J. Qiao, J. Xue, and H. Yu, “DADA: driver attention
+prediction in driving accident scenarios,” IEEE Transactions on Intelligent Transportation Systems, vol. 23, no. 6, pp. 4959–4971, 2022.
+[176] K. Papineni, S. Roukos, T. Ward, and W.-J. Zhu, “BLEU: a method
+for automatic evaluation of machine translation,” in Proceedings of the
+40th Annual Meeting of the Association for Computational Linguistics.
+Association for Computational Linguistics, 2002, pp. 311–318.
+[177] A. Lavie and A. Agarwal, “METEOR: An automatic metric for mt
+evaluation with improved correlation with human judgments,” in Proceedings of the ACL Workshop on Intrinsic and Extrinsic Evaluation
+
+20
+
+Measures for Machine Translation and/or Summarization. Association
+for Computational Linguistics, 2007, pp. 65–72.
+[178] C.-Y. Lin, “ROUGE: A package for automatic evaluation of summaries,” in Text Summarization Branches Out: Proceedings of the ACL04 Workshop, 2004, pp. 74–81.
+[179] R. Vedantam, C. L. Zitnick, and D. Parikh, “CIDEr: Consensus-based
+image description evaluation,” in Proceedings of the IEEE Conference
+on Computer Vision and Pattern Recognition (CVPR), 2015, pp. 4566–
+4575.
+[180] P. Anderson, X. He, C. Buehler, D. Teney, M. Johnson, S. Gould, and
+L. Zhang, “SPICE: Semantic propositional image caption evaluation,” in
+European Conference on Computer Vision (ECCV), 2016, pp. 382–398.
+[181] K. Pearson, “Note on regression and inheritance in the case of two
+parents,” Proceedings of the Royal Society of London, vol. 58, no. 347352, pp. 240–242, 1895.
+[182] S. Kullback and R. A. Leibler, “On information and sufficiency,” The
+Annals of Mathematical Statistics, vol. 22, no. 1, pp. 79–86, 1951.
+[183] J. R. Quinlan, “Induction of decision trees,” Machine Learning, vol. 1,
+no. 1, pp. 81–106, 1986.
+[184] A. Stocco, B. Pulfer, and P. Tonella, “Mind the gap! a study on
+the transferability of virtual vs physical-world testing of autonomous
+driving systems,” IEEE Transactions on Software Engineering, 2022.
+[185] C. Zhang, R. Guo, W. Zeng, Y. Xiong, B. Dai, R. Hu, M. Ren, and
+R. Urtasun, “Rethinking closed-loop training for autonomous driving,”
+in European Conference on Computer Vision. Springer, 2022, pp.
+264–282.
+[186] S. Feng, H. Sun, X. Yan, H. Zhu, Z. Zou, S. Shen, and H. X. Liu, “Dense
+reinforcement learning for safety validation of autonomous vehicles,”
+Nature, vol. 615, no. 7953, pp. 620–627, 2023.
+[187] L. Li, X. Wang, K. Wang, Y. Lin, J. Xin, L. Chen, L. Xu, B. Tian, Y. Ai,
+J. Wang et al., “Parallel testing of vehicle intelligence via virtual-real
+interaction,” Science robotics, vol. 4, no. 28, p. eaaw4106, 2019.
+[188] K. Othman, “Exploring the implications of autonomous vehicles: A
+comprehensive review,” Innovative Infrastructure Solutions, vol. 7,
+no. 2, p. 165, 2022.
+[189] A. Dosovitskiy, G. Ros, F. Codevilla, A. Lopez, and V. Koltun, “Carla:
+An open urban driving simulator,” in Conference on Robot Learning.
+PMLR, 2017, pp. 1–16.
+[190] P. A. Lopez, M. Behrisch, L. Bieker-Walz, J. Erdmann, Y.-P. Flötteröd,
+R. Hilbrich, L. Lücken, J. Rummel, P. Wagner, and E. Wießner, “Microscopic traffic simulation using sumo,” in International Conference
+on Intelligent Transportation Systems. IEEE, 2018, pp. 2575–2582.
+[191] L. Wen, D. Fu, S. Mao, P. Cai, M. Dou, and Y. Li, “LimSim: A
+long-term interactive multi-scenario traffic simulator,” arXiv preprint
+arXiv:2307.06648, 2023.
+[192] A. Zador, S. Escola, B. Richards, B. Ölveczky, Y. Bengio, K. Boahen, M. Botvinick, D. Chklovskii, A. Churchland, C. Clopath et al.,
+“Toward next-generation artificial intelligence: Catalyzing the neuroai
+revolution,” arXiv preprint arXiv:2210.08340, 2022.
+[193] X. Zhao, Y. Gao, S. Jin, Z. Xu, Z. Liu, W. Fan, and P. Liu, “Development of a cyber-physical-system perspective based simulation platform
+for optimizing connected automated vehicles dedicated lanes,” Expert
+Systems with Applications, vol. 213, p. 118972, 2023.
+[194] E. Leurent, “An environment for autonomous driving decision-making,”
+https://github.com/eleurent/highway-env, 2018.
+[195] H. Caesar, J. Kabzan, K. S. Tan, W. K. Fong, E. Wolff, A. Lang,
+L. Fletcher, O. Beijbom, and S. Omari, “nuplan: A closed-loop mlbased planning benchmark for autonomous vehicles,” arXiv preprint
+arXiv:2106.11810, 2021.
+[196] C. Gulino, J. Fu, W. Luo, G. Tucker, E. Bronstein, Y. Lu, J. Harb,
+X. Pan, Y. Wang, X. Chen, J. D. Co-Reyes, R. Agarwal, R. Roelofs,
+Y. Lu, N. Montali, P. Mougin, Z. Yang, B. White, A. Faust, R. McAllister, D. Anguelov, and B. Sapp, “Waymax: An accelerated, data-driven
+simulator for large-scale autonomous driving research,” in Proceedings
+of the Neural Information Processing Systems Track on Datasets and
+Benchmarks, 2023.
+[197] M. W. Sayers, “Vehicle models for rts applications,” Vehicle System
+Dynamics, vol. 32, no. 4-5, pp. 421–438, 1999.
+[198] Hexagon, “Virtual test drive: Complete tool-chain for driving simulation
+applications,” https://hexagon.com/products/virtual-test-drive.
+[199] Epic Games, “Unreal engine: The world’s most advanced real-time 3D
+creation tool for photoreal visuals and immersive experiences.” https:
+//www.unrealengine.com/.
+[200] Unity Technologies, “Unity engine: Unity’s real-time 3D development
+engine lets artists, designers, and developers collaborate to create amazing immersive and interactive experiences.” https://unity.com/products/
+unity-engine/.
+
+PREPRINT
+
+[201] Q. Li, Z. Peng, L. Feng, Q. Zhang, Z. Xue, and B. Zhou, “MetaDrive:
+Composing diverse driving scenarios for generalizable reinforcement
+learning,” IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 45, no. 3, pp. 3461–3475, 2022.
+[202] W. Li, C. Pan, R. Zhang, J. Ren, Y. Ma, J. Fang, F. Yan, Q. Geng,
+X. Huang, H. Gong et al., “AADS: Augmented autonomous driving
+simulation using data-driven algorithms,” Science Robotics, vol. 4,
+no. 28, p. eaaw0863, 2019.
+[203] Z. Yang, Y. Chai, D. Anguelov, Y. Zhou, P. Sun, D. Erhan, S. Rafferty,
+and H. Kretzschmar, “SurfelGAN: Synthesizing realistic sensor data for
+autonomous driving,” in Proceedings of the IEEE/CVF Conference on
+Computer Vision and Pattern Recognition, 2020, pp. 11 118–11 127.
+[204] B. Mildenhall, P. P. Srinivasan, M. Tancik, J. T. Barron, R. Ramamoorthi, and R. Ng, “NeRF: Representing scenes as neural radiance fields
+for view synthesis,” Communications of the ACM, vol. 65, no. 1, pp.
+99–106, 2021.
+[205] Z. Chen, C. Wang, Y.-C. Guo, and S.-H. Zhang, “StructNeRF: Neural
+radiance fields for indoor scenes with structural hints,” IEEE Transactions on Pattern Analysis and Machine Intelligence, 2023.
+[206] X. Wu, J. Xu, Z. Zhu, H. Bao, Q. Huang, J. Tompkin, and W. Xu, “Scalable neural indoor scene rendering,” ACM Transactions on Graphics,
+vol. 41, no. 4, 2022.
+[207] W. Chang, Y. Zhang, and Z. Xiong, “Depth estimation from indoor
+panoramas with neural scene representation,” in Proceedings of the
+IEEE/CVF Conference on Computer Vision and Pattern Recognition,
+2023, pp. 899–908.
+[208] Y. Wei, S. Liu, J. Zhou, and J. Lu, “Depth-guided optimization of neural
+radiance fields for indoor multi-view stereo,” IEEE Transactions on
+Pattern Analysis and Machine Intelligence, 2023.
+[209] M. Tancik, V. Casser, X. Yan, S. Pradhan, B. Mildenhall, P. P.
+Srinivasan, J. T. Barron, and H. Kretzschmar, “Block-NeRF: Scalable
+large scene neural view synthesis,” in Proceedings of the IEEE/CVF
+Conference on Computer Vision and Pattern Recognition, 2022, pp.
+8248–8258.
+[210] A. Tonderski, C. Lindström, G. Hess, W. Ljungbergh, L. Svensson, and
+C. Petersson, “NeuRAD: Neural rendering for autonomous driving,”
+arXiv preprint arXiv:2311.15260, 2023.
+[211] L. Yang, Z. Zhang, Y. Song, S. Hong, R. Xu, Y. Zhao, W. Zhang,
+B. Cui, and M.-H. Yang, “Diffusion models: A comprehensive survey
+of methods and applications,” ACM Computing Surveys, 2022.
+[212] G. Yan, Z. Liu, C. Wang, C. Shi, P. Wei, X. Cai, T. Ma, Z. Liu,
+Z. Zhong, Y. Liu et al., “OpenCalib: A multi-sensor calibration toolbox
+for autonomous driving,” Software Impacts, vol. 14, p. 100393, 2022.
+[213] C. Jiang, A. Cornman, C. Park, B. Sapp, Y. Zhou, D. Anguelov et al.,
+“MotionDiffuser: Controllable multi-agent motion prediction using diffusion,” in Proceedings of the IEEE/CVF Conference on Computer
+Vision and Pattern Recognition, 2023, pp. 9644–9653.
+[214] Z. Zhong, D. Rempe, D. Xu, Y. Chen, S. Veer, T. Che, B. Ray, and
+M. Pavone, “Guided conditional diffusion for controllable traffic simulation,” in IEEE International Conference on Robotics and Automation.
+IEEE, 2023, pp. 3560–3566.
+[215] X. Cai, W. Jiang, R. Xu, W. Zhao, J. Ma, S. Liu, and Y. Li, “Analyzing
+infrastructure lidar placement with realistic lidar simulation library,”
+in 2023 IEEE International Conference on Robotics and Automation
+(ICRA). IEEE, 2023, pp. 5581–5587.
+[216] A. Swerdlow, R. Xu, and B. Zhou, “Street-view image generation from
+a bird’s-eye view layout,” arXiv preprint arXiv:2301.04634, 2023.
+[217] K. Yang, E. Ma, J. Peng, Q. Guo, D. Lin, and K. Yu, “BEVControl:
+Accurately controlling street-view elements with multi-perspective consistency via bev sketch layout,” arXiv preprint arXiv:2308.01661, 2023.
+[218] R. Gao, K. Chen, E. Xie, L. Hong, Z. Li, D.-Y. Yeung, and Q. Xu,
+“MagicDrive: Street view generation with diverse 3D geometry control,” arXiv preprint arXiv:2310.02601, 2023.
+[219] X. Li, Y. Zhang, and X. Ye, “DrivingDiffusion: Layout-guided multiview driving scene video generation with latent diffusion model,” arXiv
+preprint arXiv:2310.07771, 2023.
+[220] J. Lu, Z. Huang, J. Zhang, Z. Yang, and L. Zhang, “WoVoGen: World
+volume-aware diffusion for controllable multi-camera driving scene
+generation,” arXiv preprint arXiv:2312.02934, 2023.
+[221] F. Jia, W. Mao, Y. Liu, Y. Zhao, Y. Wen, C. Zhang, X. Zhang, and
+T. Wang, “ADriver-I: A general world model for autonomous driving,”
+arXiv preprint arXiv:2311.13549, 2023.
+[222] D. Ha and J. Schmidhuber, “World models,” arXiv preprint
+arXiv:1803.10122, 2018.
+[223] A. Van Den Oord, O. Vinyals et al., “Neural discrete representation
+learning,” Advances in Neural Information Processing Systems, vol. 30,
+2017.
+
+21
+
+[224] W. Zheng, W. Chen, Y. Huang, B. Zhang, Y. Duan, and J. Lu,
+“OccWorld: Learning a 3D occupancy world model for autonomous
+driving,” arXiv preprint arXiv:2311.16038, 2023.
+[225] Z. Zhang, A. Liniger, D. Dai, F. Yu, and L. Van Gool, “Trafficbots:
+Towards world models for autonomous driving simulation and motion
+prediction,” arXiv preprint arXiv:2303.04116, 2023.
+[226] A. Martino, M. Iannelli, and C. Truong, “Knowledge injection to
+counter large language model (llm) hallucination,” in European Semantic Web Conference. Springer, 2023, pp. 182–185.
+[227] D. Lenat and G. Marcus, “Getting from generative ai to trustworthy AI:
+What llms might learn from Cyc,” arXiv preprint arXiv:2308.04445,
+2023.
+[228] G. Agrawal, T. Kumarage, Z. Alghami, and H. Liu, “Can knowledge
+graphs reduce hallucinations in LLMs?: A survey,” arXiv preprint
+arXiv:2311.07914, 2023.
+[229] L. Chen, O. Sinavski, J. Hünermann, A. Karnsund, A. J. Willmott,
+D. Birch, D. Maund, and J. Shotton, “Driving with llms: Fusing
+object-level vector modality for explainable autonomous driving,” arXiv
+preprint arXiv:2310.01957, 2023.
+[230] R. Pfeifer and F. Iida, “Embodied artificial intelligence: Trends and
+challenges,” in Embodied Artificial Intelligence: International Seminar,
+Dagstuhl Castle, Germany, July 7-11, 2003. Revised Papers. Springer,
+2004, pp. 1–26.
+[231] L. Smith and M. Gasser, “The development of embodied cognition: Six
+lessons from babies,” Artificial life, vol. 11, no. 1-2, pp. 13–29, 2005.
+[232] J. Duan, S. Yu, H. L. Tan, H. Zhu, and C. Tan, “A survey of embodied
+AI: From simulators to research tasks,” IEEE Transactions on Emerging
+Topics in Computational Intelligence, vol. 6, no. 2, pp. 230–244, 2022.
+[233] X. Zhu, Y. Chen, H. Tian, C. Tao, W. Su, C. Yang, G. Huang, B. Li,
+L. Lu, X. Wang et al., “Ghost in the Minecraft: Generally capable agents
+for open-world enviroments via large language models with text-based
+knowledge and memory,” arXiv preprint arXiv:2305.17144, 2023.
+[234] R. Law, K. J. Lin, H. Ye, and D. K. C. Fong, “Artificial intelligence
+research in hospitality: a state-of-the-art review and future directions,”
+International Journal of Contemporary Hospitality Management, 2023.
+[235] D. Driess, F. Xia, M. S. M. Sajjadi, C. Lynch, A. Chowdhery, B. Ichter,
+A. Wahid, J. Tompson, Q. Vuong, T. Yu, W. Huang, Y. Chebotar,
+P. Sermanet, D. Duckworth, S. Levine, V. Vanhoucke, K. Hausman,
+M. Toussaint, K. Greff, A. Zeng, I. Mordatch, and P. Florence,
+“PaLM-E: An embodied multimodal language model,” in arXiv preprint
+arXiv:2303.03378, 2023.
+[236] L. Wang, C. Ma, X. Feng, Z. Zhang, H. Yang, J. Zhang, Z. Chen,
+J. Tang, X. Chen, Y. Lin et al., “A survey on large language model
+based autonomous agents,” arXiv preprint arXiv:2308.11432, 2023.
+[237] J. A. Oravec, “The future of embodied AI: Containing and mitigating
+the dark and creepy sides of robotics, autonomous vehicles, and AI,”
+in Good Robot, Bad Robot: Dark and Creepy Sides of Robotics,
+Autonomous Vehicles, and AI. Springer, 2022, pp. 245–276.
+[238] A. Keysan, A. Look, E. Kosman, G. Gürsun, J. Wagner, Y. Yu, and
+B. Rakitsch, “Can you text what is happening? integrating pre-trained
+language encoders into trajectory prediction models for autonomous
+driving,” arXiv preprint arXiv:2309.05282, 2023.
+[239] V. Sanh, L. Debut, J. Chaumond, and T. Wolf, “DistilBERT, a distilled
+version of bert: smaller, faster, cheaper and lighter,” arXiv preprint
+arXiv:1910.01108, 2019.
+[240] C. Cui, Y. Ma, X. Cao, W. Ye, and Z. Wang, “Drive as you speak:
+Enabling human-like interaction with large language models in autonomous vehicles,” arXiv preprint arXiv:2309.10228, 2023.
+[241] H. Sha, Y. Mu, Y. Jiang, L. Chen, C. Xu, P. Luo, S. E. Li,
+M. Tomizuka, W. Zhan, and M. Ding, “LanguageMPC: Large language
+models as decision makers for autonomous driving,” arXiv preprint
+arXiv:2310.03026, 2023.
+[242] J. Li, D. Li, S. Savarese, and S. Hoi, “Blip-2: Bootstrapping languageimage pre-training with frozen image encoders and large language
+models,” arXiv preprint arXiv:2301.12597, 2023.
+[243] H. Liu, C. Li, Q. Wu, and Y. J. Lee, “Visual instruction tuning,” arXiv
+preprint arXiv:2304.08485, 2023.
+[244] S. Zhang, D. Fu, Z. Zhang, B. Yu, and P. Cai, “TrafficGPT: Viewing, processing and interacting with traffic foundation models,” arXiv
+preprint arXiv:2309.06719, 2023.
+[245] C. Cui, Y. Ma, X. Cao, W. Ye, and Z. Wang, “Receive, reason, and react:
+Drive as you say with large language models in autonomous vehicles,”
+arXiv preprint arXiv:2310.08034, 2023.
+[246] J. Mao, Y. Qian, H. Zhao, and Y. Wang, “GPT-Driver: Learning to drive
+with GPT,” arXiv preprint arXiv:2310.01415, 2023.
+[247] T.-H. Wang, A. Maalouf, W. Xiao, Y. Ban, A. Amini, G. Rosman,
+S. Karaman, and D. Rus, “Drive anywhere: Generalizable end-to-
+
+PREPRINT
+
+end autonomous driving with multi-modal foundation models,” arXiv
+preprint arXiv:2310.17642, 2023.
+[248] A. Dosovitskiy, L. Beyer, A. Kolesnikov, D. Weissenborn, X. Zhai,
+T. Unterthiner, M. Dehghani, M. Minderer, G. Heigold, S. Gelly et al.,
+“An image is worth 16x16 words: Transformers for image recognition
+at scale,” arXiv preprint arXiv:2010.11929, 2020.
+[249] J. Mao, J. Ye, Y. Qian, M. Pavone, and Y. Wang, “A language agent for
+autonomous driving,” arXiv preprint arXiv:2311.10813, 2023.
+[250] Anonymous, “3D dense captioning beyond nouns: A middleware
+for autonomous driving,” in Submitted to The Twelfth International
+Conference on Learning Representations, 2023, under review. [Online].
+Available: https://openreview.net/forum?id=8T7m27VC3S
+[251] A. Awadalla, I. Gao, J. Gardner, J. Hessel, Y. Hanafy, W. Zhu,
+K. Marathe, Y. Bitton, S. Gadre, S. Sagawa, J. Jitsev, S. Kornblith,
+P. W. Koh, G. Ilharco, M. Wortsman, and L. Schmidt, “OpenFlamingo:
+An open-source framework for training large autoregressive visionlanguage models,” arXiv preprint arXiv:2308.01390, 2023.
+[252] X. Jia, Y. Gao, L. Chen, J. Yan, P. L. Liu, and H. Li, “Driveadapter:
+Breaking the coupling barrier of perception and planning in end-to-end
+autonomous driving,” in Proceedings of the IEEE/CVF International
+Conference on Computer Vision, 2023, pp. 7953–7963.
+[253] L. Wen, X. Yang, D. Fu, X. Wang, P. Cai, X. Li, T. Ma, Y. Li,
+L. Xu, D. Shang et al., “On the road with GPT-4V (ision): Early
+explorations of visual-language model on autonomous driving,” arXiv
+preprint arXiv:2311.05332, 2023.
+[254] B. Peng, C. Li, P. He, M. Galley, and J. Gao, “Instruction tuning with
+GPT-4,” arXiv preprint arXiv:2304.03277, 2023.
+[255] J. Mai, J. Chen, B. Li, G. Qian, M. Elhoseiny, and B. Ghanem, “LLM
+as a robotic brain: Unifying egocentric memory and control,” arXiv
+preprint arXiv:2304.09349, 2023.
+[256] J. Li, X. Zhang, J. Li, Y. Liu, and J. Wang, “Building and optimization of
+3D semantic map based on lidar and camera fusion,” Neurocomputing,
+vol. 409, pp. 394–407, 2020.
+[257] J. S. Berrio, M. Shan, S. Worrall, and E. Nebot, “Camera-lidar integration: Probabilistic sensor fusion for semantic mapping,” IEEE
+Transactions on Intelligent Transportation Systems, vol. 23, no. 7, pp.
+7637–7652, 2021.
+[258] C. Premebida and U. Nunes, “Fusing lidar, camera and semantic
+information: A context-based approach for pedestrian detection,” The
+International Journal of Robotics Research, vol. 32, no. 3, pp. 371–
+384, 2013.
+[259] S. Wang, W. Li, W. Liu, X. Liu, and J. Zhu, “LiDAR2Map: In defense of
+lidar-based semantic map construction using online camera distillation,”
+in Proceedings of the IEEE/CVF Conference on Computer Vision and
+Pattern Recognition, 2023, pp. 5186–5195.
+[260] J. de Curtò, I. de Zarzà, and C. T. Calafate, “Semantic scene understanding with large language models on unmanned aerial vehicles,” Drones,
+vol. 7, no. 2, p. 114, 2023.
+
+22
+
+[261] S. Wu, H. Fei, L. Qu, W. Ji, and T.-S. Chua, “Next-GPT: Any-to-any
+multimodal llm,” arXiv preprint arXiv:2309.05519, 2023.
+[262] A. Elhafsi, R. Sinha, C. Agia, E. Schmerling, I. A. Nesnas, and
+M. Pavone, “Semantic anomaly detection with large language models,”
+Autonomous Robots, pp. 1–21, 2023.
+[263] X. Zhou, M. Liu, B. L. Zagar, E. Yurtsever, and A. C. Knoll, “Vision
+language models in autonomous driving and intelligent transportation
+systems,” arXiv preprint arXiv:2310.14414, 2023.
+[264] G. Wang, Y. Xie, Y. Jiang, A. Mandlekar, C. Xiao, Y. Zhu, L. Fan, and
+A. Anandkumar, “Voyager: An open-ended embodied agent with large
+language models,” arXiv preprint arXiv:2305.16291, 2023.
+[265] A. Zhao, D. Huang, Q. Xu, M. Lin, Y.-J. Liu, and G. Huang,
+“Expel: LLM agents are experiential learners,” arXiv preprint
+arXiv:2308.10144, 2023.
+[266] K. Zhang, F. Zhao, Y. Kang, and X. Liu, “Memory-augmented LLM
+personalization with short-and long-term memory coordination,” arXiv
+preprint arXiv:2309.11696, 2023.
+[267] S. Wang, Y. Zhu, Z. Li, Y. Wang, L. Li, and Z. He, “ChatGPT as your
+vehicle co-pilot: An initial attempt,” IEEE Transactions on Intelligent
+Vehicles, 2023.
+[268] N. Shinn, F. Cassano, A. Gopinath, K. R. Narasimhan, and S. Yao,
+“Reflexion: Language agents with verbal reinforcement learning,” in
+Thirty-seventh Conference on Neural Information Processing Systems,
+2023.
+[269] T. X. Olausson, J. P. Inala, C. Wang, J. Gao, and A. Solar-Lezama,
+“Demystifying GPT self-repair for code generation,” arXiv preprint
+arXiv:2306.09896, 2023.
+[270] B. Kerbl, G. Kopanas, T. Leimkühler, and G. Drettakis, “3D gaussian
+splatting for real-time radiance field rendering,” ACM Transactions on
+Graphics (ToG), vol. 42, no. 4, pp. 1–14, 2023.
+[271] OpenAI, “GPT-4V(ision) system card,” https://openai.com/research/
+gpt-4v-system-card, 2023.
+[272] F. Sammani, T. Mukherjee, and N. Deligiannis, “NLX-GPT: A model
+for natural language explanations in vision and vision-language tasks,”
+in Proceedings of the IEEE/CVF Conference on Computer Vision and
+Pattern Recognition, 2022, pp. 8322–8332.
+[273] P. Gao, J. Han, R. Zhang, Z. Lin, S. Geng, A. Zhou, W. Zhang, P. Lu,
+C. He, X. Yue, H. Li, and Y. Qiao, “LLaMA-Adapter V2: Parameterefficient visual instruction model,” arXiv preprint arXiv:2304.15010,
+2023.
+[274] W. Huang, C. Wang, R. Zhang, Y. Li, J. Wu, and L. Fei-Fei, “VoxPoser:
+Composable 3D value maps for robotic manipulation with language
+models,” arXiv preprint arXiv:2307.05973, 2023.
+[275] H. Ye, T. Liu, A. Zhang, W. Hua, and W. Jia, “Cognitive mirage:
+A review of hallucinations in large language models,” arXiv preprint
+arXiv:2309.06794, 2023.
+[276] V. Rawte, A. Sheth, and A. Das, “A survey of hallucination in large
+foundation models,” arXiv preprint arXiv:2309.05922, 2023.
+
+

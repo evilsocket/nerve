@@ -1,0 +1,519 @@
+arXiv:2312.04291v1 [physics.ao-ph] 7 Dec 2023
+
+Simulating the Air Quality Impact of Prescribed Fires
+Using a Graph Neural Network-Based PM2.5
+Emissions Forecasting System
+
+Kyleen Liao
+Saratoga High School
+CA, USA
+kyleenliao@gmail.com
+
+Jatan Buch
+Columbia University
+NY, USA
+jb4625@columbia.edu
+
+Kara Lamb
+Columbia University
+NY, USA
+kl3231@columbia.edu
+
+Pierre Gentine
+Columbia University
+NY, USA
+pg2328@columbia.edu
+
+Abstract
+The increasing size and severity of wildfires across western North America have
+generated dangerous levels of PM2.5 pollution in recent years. In a warming climate,
+expanding the use of prescribed fires is widely considered to be the most robust fire
+mitigation strategy. However, reliably forecasting the potential air quality impact
+from these prescribed fires, a critical ingredient in determining the fires’ location
+and time, at hourly to daily time scales remains a challenging problem. This paper
+proposes a novel integration of prescribed fire simulation with a spatio-temporal
+graph neural network-based PM2.5 forecasting model. The experiments in this
+work focus on determining the optimal time for implementing prescribed fires in
+California as well as quantifying the potential air quality trade-offs involved in
+conducting more prescribed fires outside the fire season.
+
+1
+
+Introduction
+
+Across many parts of the western United States (WUS), wildfire size, severity, and fire season length
+have increased due to climate change. Wildfires across the WUS have led to the largest daily mean
+PM2.5 (particulate matter < 2.5 microns) concentrations observed by ground-based sensors in recent
+years [1], and exposure to PM2.5 is responsible for 4.2 million premature deaths worldwide per year
+[2]. Within California, additional PM2.5 emissions from extreme wildfires over the past 8 years have
+reversed nearly two decades of decline in ambient PM2.5 concentrations [3].
+Prescribed fires, or controlled burns, have been widely accepted as an effective land management tool
+and could have the potential to reduce the resulting smoke from future wildfires [4]. Since air quality
+is a major public concern surrounding prescribed fires [5], land managers conducting these burns
+require access to robust, near real-time predictions of downwind air pollution in order to determine
+suitable locations and burn windows.
+This paper introduces a graph neural network (GNN) model that incorporates satellite observations
+of fire behavior in order to forecast PM2.5 emissions from ambient sources, observed fires, and
+simulated controlled burns. Our GNN-based forecasting system can aid land managers in minimizing
+the PM2.5 exposure of vulnerable populations during controlled burns and inform the public when
+proposing prescribed fires.
+37th Conference on Neural Information Processing Systems (NeurIPS 2023).
+
+2
+
+Related Work
+
+Previous works studying the effect of prescribed fires used chemical transport models (CTMs) like
+the Community Multiscale Air Quality (CMAQ) and Goddard Earth Observing System Atmospheric
+Chemistry (GEOS-Chem) models to calculate the PM2.5 impact of prescribed fires at different
+locations [4]. While CTMs can model the chemical processes in PM2.5 transport, generating accurate
+predictions requires a large volume of information because of the complex chemical interactions.
+Furthermore, the extensive calculations in CTMs make it challenging to explore a large range of
+parameters for simulating prescribed burns [6, 7, 8]. In air quality predictions, machine learning
+models have been shown to outperform CTMs in terms of accuracy and computational burden [9].
+While several past works use machine learning to forecast air quality [10, 11], ours is the first research
+paper to our knowledge that utilizes machine learning to predict the PM2.5 concentrations from
+simulated prescribed fires.
+Our research builds upon the GNN machine learning model from Wang et al. (2020) [11], which was
+used to forecast non-wildfire-influenced PM2.5 pollution in China. In contrast, this work focuses on
+simulating the effect of prescribed fires and predicting fire-influenced PM2.5 in California.
+
+3
+
+Methods
+
+3.1
+
+Dataset
+
+Our dataset consists of PM2.5 , meteorological, and fire data at an hourly resolution over 5 years
+(2017-2021). The PM2.5 concentration data, at a total of 112 air quality sensor locations in California,
+is collected from both the California Air Resources Board as well as the Environmental Protection
+Agency [12, 13]. The data for the 7 meteorological variables, which include u and v horizontal
+components of wind, total precipitation, and air temperature, are retrieved from the ERA5 Reanalysis
+database [14]. The full list of predictors is in Table 1. Though the meteorological variables may
+capture the diurnal PM2.5 cycles and seasonal patterns, the Julian date and hour of the day are also
+included as predictors in order to provide the model with additional context.
+The fire radiative power (FRP) provides information about the fire intensity. The FRP at each fire
+location is taken from the Visible Infrared Imaging Radiometer Suite (VIIRS) [15] instrument on
+board the Suomi satellites. In order to assess the impact of nearby fires at the location of a PM2.5
+monitor, we aggregate the FRP values of all active fires within radii of 25km, 50km, 100km, and
+500km. To emphasize the fires that would likely have a more substantial downwind effect on PM2.5
+concentrations, we use inverse distance weighting (IDW) and wind-based weighting in the FRP
+aggregation. This process is described in more detail in Appendix A. The number of fires within
+500km of a PM2.5 site is also included in the dataset. After compilation, the dataset’s missing values
+were imputed using the MissForrest algorithm [16].
+The prescribed fire data, retrieved from Cal Fire [17], is not represented as a variable in the training
+dataset, but instead used in Experiments 1 and 2 when simulating prescribed fires.
+
+Table 1: GNN Predictors
+Predictor Name
+
+Unit
+
+Source
+
+Planetary Boundary Layer Height (PBLH)
+u-component of wind
+v-component of wind
+2m Temperature
+Dewpoint temperature
+Surface pressure
+Total precipitation
+WIDW FRP within 25km, 50km, 100km, 500km
+Number of fires within 500km
+Julian date
+Time of day
+
+m
+m/s
+m/s
+K
+K
+Pa
+m
+MW
+1
+1
+1
+
+ERA5 Reanalysis
+ERA5 Reanalysis
+ERA5 Reanalysis
+ERA5 Reanalysis
+ERA5 Reanalysis
+ERA5 Reanalysis
+ERA5 Reanalysis
+VIIRS
+VIIRS
+N/A
+N/A
+
+2
+
+Table 2: Training/Validation/Testing Split
+
+3.2
+
+Training
+
+Validation
+
+Testing
+
+1/1/2017 - 12/31/2018
+
+1/1/2020 - 12/31/2020
+
+1/1/2021 - 12/31/2021
+
+Graph Neural Network (GNN)
+
+We trained a spatio-temporal graph neural network (GNN) model based on Wang et al. (2020) [11]
+to predict PM2.5 concentrations at an hourly temporal resolution. The GNN model is integrated
+with a recurrent neural network (RNN) component, such that the model is able to capture both the
+spatial and temporal propagation of PM2.5 . The model’s node features include the meteorological
+and fire-related variables, while the edge attributes include the wind direction and speed at the source
+node and the direction and distance between any two locations.
+As shown in Table 2, for the GNN model, two years are used for training and one year each for
+validation and testing. The year 2019 is excluded during training, validation, and testing because the
+2019 fire season was an outlier and was less damaging than the other years. Validating and testing
+the model on the years 2020 and 2021 respectively would help us gain a better understanding of the
+model’s performance during intense fires. Our model produces forecasts for a prediction window of
+48 hours into the future based on a historical window of 240 hours.
+3.3
+
+Prescribed Fire Simulations
+
+The main contribution of this work is the novel simulation of the effect of prescribed fires in
+conjunction with the GNN-based prediction of the resulting PM2.5 concentrations. This pipeline is
+illustrated in Figure 1. The prescribed fires are simulated by transposing historical controlled burns to
+target times, which are selected by matching the Cal Fire prescribed fire data with the VIIRS FRP
+data. The transposed prescribed fire FRP information is combined with the observed meteorological
+data at the target times and inputted into the GNN model, which produces the PM2.5 predictions.
+Using this pipeline, we perform two model experiments. Experiment 1 demonstrates how the GNN
+forecasting system can determine the optimal time to implement prescribed fires and focuses on
+the short-term pollution effect of prescribed fires. Experiment 2, on the other hand, focuses on
+quantifying the pollution impact of prescribed fires across months. In the rest of the section, we
+discuss each experiment in more detail:
+
+Figure 1: Prescribed Fire Simulation Pipeline
+
+3.3.1
+
+Experiment 1: Minimizing Prescribed Fire PM2.5 Impact
+
+To determine the optimal time to implement prescribed fires, we consider the immediate effect of
+prescribed fires. That is, we transpose the FRP values from actual prescribed fire events to target time
+points and add them to the observed FRP values at those points. As these FRP values are combined,
+they are aggregated using inverse distance and wind-based weighting, as outlined in Section 3.1 and
+Appendix A.
+In this experiment, we transpose a window of time containing prescribed fires (1/3/21 - 1/15/21) to
+target times throughout the year 2021 at 24-hour time steps to simulate the air quality impacts of
+controlled burns. This window contains ten prescribed fires with burned areas above 100 acres.
+3
+
+Table 3: Results of the GNN, LSTM, and MLP Models
+MAE
+RMSE
+
+GNN
+
+LSTM
+
+MLP
+
+5.23
+6.72
+
+5.73
+7.32
+
+6.24
+7.83
+
+Table 4: Results of PM2.5 Predictions Based On Simulated Prescribed Fires
+Mean (µg/m3 )
+Max (µg/m3 )
+
+3.3.2
+
+Jan
+
+Feb
+
+Mar
+
+Apr
+
+May
+
+Jun
+
+Jul
+
+Aug
+
+Sep
+
+Oct
+
+Nov
+
+Dec
+
+15.62
+36.49
+
+15.64
+39.06
+
+14.69
+39.10
+
+15.18
+38.76
+
+14.76
+40.85
+
+15.92
+42.04
+
+18.44
+47.25
+
+21.73
+60.13
+
+18.55
+43.44
+
+16.95
+45.61
+
+19.94
+40.54
+
+18.73
+45.32
+
+Experiment 2: Quantifying Prescribed Fire PM2.5 Trade-Off
+
+This experiment aims to quantify the pollution trade-off of implementing prescribed fires by simulating
+the effect of controlled burns in 2021 at the location of the Caldor fire. We employ two simulation
+techniques: one corresponding to the immediate effect of prescribed fires, and another related to
+simulating the longer-term effect of prescribed burning. For the former, we transpose historical
+prescribed fires near the location of the Caldor fire to the spring of 2021. In the latter case, we
+simulate the effect of controlled burns later in the year by excluding all FRP values within 25km of
+the Caldor fire between 8/14/21 and 10/21/21, implicitly assuming that a prescribed fire implemented
+earlier in the year (or even during the previous 1 to 2 fire seasons) could effectively mitigate a large
+fire in the same location a few months later. The PM2.5 predictions from this counterfactual scenario
+are compared to baseline predictions derived using observed meteorological and fire inputs from 2021
+without any prescribed fires around the Caldor fire locations. For more details, see Appendix B.
+
+4
+
+Results
+
+The GNN model resulted in the lowest mean absolute error (MAE) and root mean squared error
+(RMSE) when compared with the long-short term memory (LSTM) and multilayer perception (MLP)
+models, as shown in Table 3. As a reference for the error, very unhealthy and hazardous PM2.5 levels
+are ≥ 150.5 µg/m3 . Experiments 1 and 2 use the GNN and are the main focus of the results section.
+4.1
+
+Experiment 1: Minimizing Prescribed Fire PM2.5 Impact
+
+As shown in Table 4, the fall season, especially the month of August, was the least optimal time to
+implement prescribed fires since it resulted in the most significant PM2.5 concentrations. As August
+is during the peak wildfire season, implementing prescribed fires would only exacerbate the already
+hazardous air quality. August’s mean was 29.61% greater than the average mean of other months,
+and August’s maximum was 44.27% greater than the average maximum of other months. The mean
+and maximum calculations are described in Appendix C. On the other hand, March, which had the
+lowest mean value, seemed to be an optimal month to implement prescribed fires.
+4.2
+
+Experiment 2: Quantifying Prescribed Fire PM2.5 Trade-Off
+
+The results support that, though prescribed fires may increase PM2.5 in the short term, the prescribed
+fires reduce future PM2.5 resulting from wildfires. As shown in Table 5, the simulated prescribed
+burns led the mean of the PM2.5 predictions to be increased by an average of 0.31 µg/m3 and the
+maximum PM2.5 prediction to be increased by 3.07%. Details on the mean and maximum calculations
+are included in Appendix C. Table 5 also quantifies that the maximum of the predictions with the
+Caldor fire’s influence removed was 52.85% lower than the maximum of the baseline predictions.
+Thus, the magnitude of the immediate PM2.5 increase from the prescribed fire was significantly
+lower than the magnitude of the PM2.5 decrease experienced during the fire season. Furthermore,
+excluding the influence of the Caldor Fire reduced the number of days with an unhealthy daily average
+PM2.5 concentration from a mean of 3.54 days to 0.70 days. The reduction in PM2.5 pollution after
+excluding the Caldor fire influence is illustrated in Figure 2, where the PM2.5 monitoring sites are
+color-coded depending on the PM2.5 pollution’s US AQI level.
+4
+
+Table 5: Comparing the Predicted PM2.5 Effect of Simulated Prescribed Burns With Baseline PM2.5
+Predictions
+3/21/21 - 5/31/21
+Simulated
+Prescribed Burn
+Mean (µg/m3 )
+Max (µg/m3 )
+
+6.83
+55.78
+
+8/14/21 - 10/21/21
+
+Without Prescribed
+Burn (Baseline)
+
+Removed Caldor
+Fire
+
+With Caldor Fire
+(Baseline)
+
+6.52
+54.12
+
+10.49
+83.61
+
+16.24
+177.32
+
+(a) Removed Caldor Fire
+
+(b) With Caldor Fire (Baseline)
+
+Figure 2: Maximum PM2.5 predictions per site from 8/14/21 - 12/31/21 under condition (a) with
+prescribed burn at the Caldor Fire location during the spring and without Caldor Fire during the
+wildfire season and (b) without prescribed burn at the Caldor Fire location and with the Caldor Fire
+during the wildfire season
+
+5
+
+Conclusion and Future Work
+
+To our knowledge, this is the first research paper to apply machine learning for simulating the
+PM2.5 impact of prescribed fires, which is significant as machine learning is less computationally
+expensive than CTMs and requires lower expert curation of input variables. The primary contribution
+of this work is the prescribed fire simulation pipeline, which integrates prescribed fire simulations
+with GNN-based PM2.5 predictions. Future work will focus on improving the fire simulation by
+incorporating physics-based modeling in the GNN framework. Our pipeline provides land managers
+and the fire service with a useful tool to minimize the PM2.5 exposure of vulnerable populations,
+while also informing local communities of potential air quality impacts as well as beneficial trade-offs
+when implementing controlled burns.
+
+6
+
+Acknowledgements
+
+We acknowledge funding from NSF through the Learning the Earth with Artificial Intelligence and
+Physics (LEAP) Science and Technology Center (STC) (Award #2019625). Jatan Buch, Kara Lamb,
+and Pierre Gentine were also supported in part by the Zegar Family Foundation.
+
+5
+
+References
+[1] M. Burke, A. Driscoll, S. Heft-Neal, J. Xue, J. Burney, and M. Wara, “The changing risk and
+burden of wildfire in the United States,” Proceedings of the National Academy of Sciences,
+vol. 118, no. 2, 2021.
+[2] World Health Organization, “Ambient (outdoor) air pollution,” 2022.
+[3] M. Burke, M. Childs, B. de la Cuesta, et al., “The contribution of wildfire to PM2.5 trends in
+the USA,” Nature, 2023.
+[4] M. M. Kelp, M. C. Carroll, T. Liu, R. M. Yantosca, H. E. Hockenberry, and L. J. Mickley,
+“Prescribed burns as a tool to mitigate future wildfire smoke exposure: Lessons for states and
+rural environmental justice communities,” Earth’s Future, vol. 11, no. 6, 2023.
+[5] S. M. McCaffrey, “Prescribed fire: What influences public approval,” in Fire in eastern oak
+forests: delivering science to land managers, proceedings of a conference (M. B. Dickinson,
+ed.), (Columbus, OH), pp. 192–198, U.S. Department of Agriculture, Forest Service, Northern
+Research Station, 2006. Gen. Tech. Rep. NRS-P-1. Newtown Square, PA.
+[6] M. H. Askariyeh, H. Khreis, and S. Vallamsundar, Air pollution monitoring and modeling,
+p. 111–135. Elsevier, 2020.
+[7] D. Byun and K. L. Schere, “Review of the governing equations, computational algorithms
+and other components of the Models-3 Community Multiscale Air Quality (CMAQ) modeling
+system,” Applied Mechanics Reviews, vol. 59, p. 51–76, 2006.
+[8] N. Zaini, L. W. Ean, A. N. Ahmed, M. Abdul Malek, and M. F. Chow, “PM2.5 forecasting for
+an urban area based on deep learning and decomposition method,” Scientific Reports, vol. 12,
+no. 1, 2022.
+[9] Y. Rybarczyk and R. Zalakeviciute, “Machine learning approaches for outdoor air quality
+modelling: A systematic review,” Applied Sciences, 2018.
+[10] L. Li, J. Wang, M. Franklin, et al., “Improving air quality assessment using physics-inspired
+deep graph learning,” npj Climate and Atmospheric Science, vol. 6, p. 152, 2023.
+[11] S. Wang, Y. Li, J. Zhang, Q. Meng, L. Meng, and F. Gao, “PM2.5 -GNN: A domain knowledge
+enhanced graph neural network for PM2.5 forecasting,” in Proceedings of the 28th International
+Conference on Advances in Geographic Information Systems, 2020.
+[12] California Air Resources Board, “Air quality and meteorological information system.” https:
+//www.arb.ca.gov/aqmis2/aqmis2.php, 2023. Accessed June 7, 2023.
+[13] US Environmental Protection Agency, “Air quality system data mart.” https://www.epa.
+gov/outdoor-air-quality-data, 2023. Accessed June 7, 2023.
+[14] H. Hersbach, B. Bell, P. Berrisford, et al., “The ERA5 global reanalysis,” Quarterly Journal of
+the Royal Meteorological Society, vol. 146, pp. 1999–2049, 2020.
+[15] W. Schroeder, P. Oliva, L. Giglio, and I. A. Csiszar, “The new VIIRS 375 m active fire detection
+data product: Algorithm description and initial assessment,” Remote Sensing of Environment,
+vol. 143, pp. 85–96, 2014.
+[16] D. J. Stekhoven and P. Bühlmann, “Missforest—non-parametric missing value imputation for
+mixed-type data,” Bioinformatics, vol. 28, no. 1, pp. 112–118, 2011.
+[17] CalFire, “Prescribed burns.” https://data.ca.gov/dataset/prescribed-burns, 2023.
+Accessed June 20, 2023.
+
+6
+
+Figure 3: FRP Aggregation
+
+A
+
+Fire Radiative Power (FRP) Aggregation
+
+When creating the dataset, for each PM2.5 monitor location, aggregations are performed on radii of
+25km, 50km, 100km, and 500km to derive the wind and inverse-distance weighted (WIDW) FRP
+using the process described in Figure 3 and Equation 1,
+FWIDW =
+
+n
+X
+Fi |Vi | cos (|αi |)
+
+4πRi 2
+
+i=1
+
+(1)
+
+where n is the number of fire locations within a certain radius of the PM2.5 monitor site, F is the
+FRP value at the fire location, |V | is the magnitude of the wind speed at the fire location, α is the
+relative angle between the wind direction and the direction from the fire to the PM2.5 monitor, and R
+is the distance between the fire site and PM2.5 monitor.
+
+B
+
+Additional Details on Experiment 2 Methodology
+
+This experiment simulates the effect of three prescribed fires, which were all within 20km of the 2021
+Caldor fire, were active from 3/21 - 5/31 in 2018, 2019, and 2020 respectively, and burned around
+6,300 acres each. Since the Caldor fire burned around 221,835 acres, we assume that preventing a
+fire of that scale would require a larger controlled burn. Thus, the FRP values from the prescribed
+fires are both artificially increased by a factor of 100 and transposed together to 2021, emulating a
+large prescribed fire from 3/21/21 to 5/31/21. As described in Section 3.3.1, the prescribed fires are
+transposed by combining the FRP values of the prescribed fires with the observed FRP values at the
+target time point, and then by aggregating those values using inverse distance weighting and the wind
+information at the target time points.
+As mentioned in Section 3.3.2, for all time points after 5/31/21, the effect of prescribed burns later
+in the year are simulated by excluding all FRP values within 25km of the Caldor fire location. To
+further remove the Caldor fire influence, PM2.5 values from 2018 are used as inputs instead of the
+Caldor-influenced, observed PM2.5 values from 2021. The 2018 PM2.5 data is chosen because, in
+comparison to the other years, the 2018 fire season most closely resembles the 2021 fire activity
+without fires at the Caldor fire location.
+
+C
+
+Mean and Maximum Calculation Details
+
+For Experiment 1, the mean and maximum values are calculated by averaging the mean and maximum
+PM2.5 predictions of the locations whose PM2.5 observations were ≥ 50 µg/m3 during the window
+1/3/21 - 1/15/21. As the PM2.5 observations at those locations are elevated during 1/3/21 - 1/15/21,
+they are likely influenced by the fire events that were transposed across the year 2021.
+For Experiment 2, the mean and maximum values are calculated by averaging the mean and maximum
+PM2.5 predictions of the 13 PM2.5 monitor locations within 100km of the Caldor fire.
+7
+
+

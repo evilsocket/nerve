@@ -10,6 +10,7 @@ pub(crate) struct Document {
 
 impl Document {
     pub fn from_text_file(path: &Path) -> Result<Self> {
+        // TODO: compress data?
         let path = std::fs::canonicalize(path.display().to_string())?
             .display()
             .to_string();

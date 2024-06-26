@@ -1,0 +1,1978 @@
+Proxima: Near-storage Acceleration for Graph-based
+Approximate Nearest Neighbor Search in 3D NAND
+Weihong Xu†, Junwei Chen†, Po-Kai Hsu‡, Jaeyoung Kang†, Minxuan Zhou†, Sumukh Pinge†,
+Shimeng Yu‡, and Tajana Rosing†
+
+arXiv:2312.04257v1 [cs.AR] 7 Dec 2023
+
+University of California San Diego (UCSD)†
+Georgia Institute of Technology‡
+
+Abstract—Approximate nearest neighbor search (ANNS) plays
+an indispensable role in a wide variety of applications, including
+recommendation systems, information retrieval, and semantic
+search. Among the cutting-edge ANNS algorithms, graph-based
+approaches provide superior accuracy and scalability on massive
+datasets. However, the best-performing graph-based ANN search
+solutions incur tens of hundreds of memory footprints as well
+as costly distance computation, thus hindering their efficient
+deployment at scale. The 3D NAND flash is emerging as a
+promising device for data-intensive applications due to its high
+density and nonvolatility. In this work, we present the near-storage
+processing (NSP)-based ANNS solution Proxima, to accelerate
+graph-based ANNS with algorithm-hardware co-design in 3D
+NAND flash. Proxima significantly reduces the complexity of
+graph search by leveraging the distance approximation and
+early termination. On top of the algorithmic enhancement,
+we implement Proxima search algorithm in 3D NAND flash
+using the heterogeneous integration technique. To maximize 3D
+NAND’s bandwidth utilization, we present customized dataflow
+and optimized data allocation scheme. Our evaluation results
+show that: compared to graph ANNS on CPU and GPU, Proxima
+achieves a magnitude improvement in throughput or energy
+efficiency. Proxima yields 7× to 13× speedup over existing ASIC
+designs. Furthermore, Proxima achieves a good balance between
+accuracy, efficiency and storage density compared to previous
+NSP-based accelerators.
+
+I. I NTRODUCTION
+Nearest neighbor search (NNS) is a fundamental workload
+that plays an important role in a wide variety of applications,
+such as recommendation systems [17], [24], [53], media data
+retrieval [3], [46], and bioinformatics data management [7].
+The state-of-the-art NNS system adopts semantic-based search
+for unstructured data such as images, texts, videos, and speech.
+The feature vectors of product catalogs are first generated using
+neural embedding techniques that can effectively capture the
+semantics of objects. Then the recommendation results are
+returned by finding products whose embeddings are closest
+to the embedded search query. For example, the major eCommerce players, Amazon [45] and Alibaba [16] build
+semantic search engines to recommend products.
+While exhaustive search is the most accurate way to perform
+NNS, the ever-expanding data volume makes it impractical for
+meeting low-latency requirements at scale. This is because it
+requires an expensive distance computation in high-dimensional
+space and linear search time. To address this issue, modern NNS
+systems [19], [36] adopt approximate NNS (ANNS) schemes,
+which provide significantly lower query latency by approximat-
+
+ing NNS results. ANNS achieves high efficiency mainly by
+reducing search space, distance computation, and data access.
+This relied on the pre-built indices that heuristically guide the
+search process. Popular indexing methods include hashing [25],
+inverted file (IVF) [62], and vector compression [33]. Stateof-the-art ANNS tools with advanced indexing, such as
+Google’s ScaNN [23], Facebook’s Faiss [36], and Microsoft’s
+DiskANN [32], can deliver millisecond query latency even on
+large-scale datasets. Meanwhile, several hardware designs [42],
+[66] are presented to further push efficiency and performance
+beyond CPU and GPU.
+Although the aforementioned designs improve both computational and memory efficiency, they still suffer from
+significant accuracy degradation due to lossy compression
+and approximation. The experiments on FAISS [58] show
+that even the carefully optimized IVF-PQ [20] only achieves
+approximately 80% recall on datasets with 10 million items. In
+comparison, recent graph-based ANNS algorithms [19], [32],
+[50] demonstrate superior performance and complexity tradeoffs. HNSW [50] and DiskANN [32] achieve a recall rate of
+> 98% with promising throughput across various large datasets.
+As such, graph-based methods have not only been integrated
+into ANNS tools [15], [19], [32], [36], [50] but also deployed
+on large-scale commercial systems, such as Alibaba’s visual
+search engine [67].
+However, implementing graph-based ANNS efficiently poses
+great challenges due to two reasons: First, graph-based ANNS
+is notorious for massive memory footprint because both the
+raw data and the graph index need to be stored for the best
+accuracy. Advanced graph ANNS tools, such as HNSW [50],
+HM-ANN [57], and NSG [19], require 300-700GB memory to
+store the data structure for billion-scale datasets. Hence, it is
+challenging to store and process the large-scale graph index on
+CPU or GPU memory. Second, the query search over the graph
+is, in essence, a best-first (BF) graph traversal characterized
+by random data access. This nature entails low parallelism
+and expensive distance computation. Our profiling results in
+Section II-D show that the irregular data access during graph
+traversal incurs 80% to 95% cache miss rate. Additionally, the
+graph search requires thousands of distance computations for
+high-dimensional data. Data fetching and distance computation
+consume up to 80% of the total runtime.
+Several attempts have been made to efficiently boost graphbased ANNS. NSG [19] and GGNN [22] distribute the large
+
+graph index to multiple machines [19] or GPUs [22]. However,
+for graph-based ANNS workloads. We present various ASIC
+this approach dramatically increases the deployment cost
+designs to efficiently implement the proposed graph search
+while sacrificing energy efficiency due to the communication
+algorithm.
+overhead. SONG [68] optimizes the graph data organization • We introduce various types of data mapping optimizations
+for GPU to exploit GPU’s computation parallelism. They use
+for Proxima, which reduces query latency while providing
+hashing to fit large indexes into limited GPU memory, but
+scalable approaches to handle different dataset sizes. The
+significant performance degradation occurs in a high-recall
+experiments show that the proposed hot node repetition
+regime due to the hash approximation. Besides, several works
+achieves 3× latency reduction without additional hardware.
+have offloaded the memory-intensive graph index from DRAM • Proxima achieves up to 15× speedup and energy efficiency
+to slower but cheaper and denser memory devices. Emerging
+improvements compared to state-of-the-art hardware solunon-volatile memories, like solid state drives (SSDs) and
+tions [22], [42], [44].
+Optane [57], are the ideal devices to store the graph index.
+II. BACKGROUND AND M OTIVATIONS
+DiskANN [32] offloads the graph index from DRAM to SSD
+A.
+Approximate
+Nearest Neighbor Search
+whereas the host memory only caches frequently-accessed data.
+HM-ANN [57] builds a heterogeneous memory architecture that Exact k-NN Search. The k-nearest neighbor (k-NN) search
+combines DRAM and non-volatile Optane memory. However, retrieves k nearest neighbors, R from a dataset X =
+the main drawback of these solutions is that the data in storage {x1 , . . . , xN }, that have the smallest distances to the given
+needs to travel through multiple-level memory hierarchies for query q. The k-NN search for the D-dimension vector in
+Euclidean space xi , q ∈ RD is given by:
+computing, thus incurring costly data movement.
+R = arg min dist(q, x),
+(1)
+To reduce data movement cost, VStore [44] presents a
+R⊆X ,|R|=k
+near-storage accelerator, which yields an order of magnitude
+where dist(·, ·) denotes the distance between two given vectors,
+improvement in energy efficiency compared to previous CPU
+e.g., Euclidean, cosine, or inner product.
+and GPU baselines [19], [22], [68]. However, the graph
+Approximate
+k-NN Search. The exact k-NN search using
+search algorithms in HM-ANN [57] and VStore [44] are
+exhaustive
+search
+requires O(N ·D) complexity, thus is compuinefficient since both require thousands of expensive distance
+tationally
+inefficient
+as the data size N = |X | becomes million
+computations for high-dimensional data, which become the
+or
+billion-scale.
+This
+makes exact k-NN search impractical to
+bottleneck to obtaining higher efficiency. Additionally, existing
+implement
+in
+real-time
+systems. Instead of precisely retrieving
+near-memory/in-memory graph accelerators [52], [66] are not
+k
+NNs,
+state-of-the-art
+tools [23], [36], [50] relax the exact
+suitable for graph-based ANNS as they are primarily designed
+search
+conditions
+and
+instead
+retrieve the approximate k NNs
+for graph updating while the graph index for ANNS is fixed
+expressed
+as
+R̂.
+These
+approximate
+k-NN search algorithms
+during query search.
+effectively reduce the search complexity by only visiting a
+3D NAND flash [48] and near-data processing present a small portion of the dataset. The good trade-off between search
+unique opportunity to tackle the mentioned challenges for complexity and accuracy heavily depends on the pre-built data
+graph-based ANNS. The ultra-high density of 3D NAND flash index that guides the search process. Popular data indexing
+aligns well with the significant memory space requirements approaches adopted by existing large-scale NN search libraries
+of graph ANNS, which is highly advantageous for low-cost include IVF [62], graph [19], [32], [50], and hashing [25].
+implementation. Recent works [39], [48] have demonstrated that Evaluation Metrics. Recall, query latency, and throughput are
+the internal structure of 3D NAND flash offers high parallelism, the three key metrics to evaluate the ANNS performance. The
+which can be exploited by graph-based ANNS. Moreover, the recall measures the overlap between the approximate k-NN set
+non-volatile nature of 3D NAND flash allows for better data R̂ and the exact k-NN set is R, which is computed by:
+persistency and energy efficiency, which is crucial for the
+|R̂ ∩ R|
+deployment of graph ANNS in the data center.
+Recall(R̂, R) =
+.
+(2)
+k
+In this work, we present an algorithm-hardware co-design,
+Query latency measures the response latency of a given
+Proxima, to accelerate graph-based ANNS. We use high ANNS system, while throughput is measured in terms of query
+density 3D NAND flash as basic memory units and develop per second (QPS). Therefore, the design goal is to obtain high
+specialized hardware on top of 3D NAND using heterogeneous QPS and low latency while providing satisfactory recall.
+integration technology [61]. To summarize, our contributions B. Graph-based ANN Search
+are as follows:
+The experiments [58] using Facebook’s FAISS [36] show
+• We provide an in-depth profiling and analysis for graph-based
+IVF [62] and hashing [25] methods are memory-efficient but
+ANNS and identify its inefficiencies on CPUs and GPUs. the yield recall saturates around 80% on 10M and 100MBased on the analysis, we design the novel Proxima graph scale datasets. In comparison, graph-based methods [19], [32],
+search algorithm that improves throughput and efficiency by [50] demonstrate superior performance with polylogarithmic
+combining product quantization (PQ) and early termination. search and graph building complexity. The graph-based ANNS
+• We leverage the heterogeneous integration techniques to
+includes two phases: 1. graph building and 2. search. The graph
+devise Proxima, a NSP accelerator in 3D NAND tailored building generates a sparse proximity graph, G(V, E), as the
+
+Raw Data
+
+Built Graph
+
+Core
+Core
+
+Graph
+Building
+
+Core
+Core
+
+Core
+
+Core
+
+Core
+
+Core
+
+Core
+Core
+
+Core
+Tile
+Core
+
+Core
+Core
+
+Core
+Core
+
+Tile
+Query
+
+Query
+Search
+
+I/O
+Interface
+
+Search
+Engine
+
+H-Tree Buffer
+Memory Tile Controller
+
+Entry Point
+Visited Vertices
+kNN Results
+
+Traversal Path
+
+Fig. 1: Illustration of graph-based ANN search.
+
+3D NAND Array
+
+data index. Each data point xi ∀X is uniquely represented by
+HV Switch Page Buffer
+WL DEC
+vertex vi ∈ V over the graph. The edge e ∈ E represents the
+CMOS Wafer
+NAND Wafer
+neighborhood relationships for the connecting vertices.
+Although existing graph-based ANN search algorithms [19], Fig. 2: Proxima’s near storage architecture with 3D NAND
+[32], [50] impose diverged constraints during graph building, and heterogeneous integration techniques.
+most of them share a similar heuristic searching procedure. The (ISP) candidate [39], [48], [61], offering high density and
+search flow is a best-first traversal illustrated in Fig. 1. As a new bandwidth. However, ISP designs using 3D NAND flash
+query q comes, the search process starts from a pre-defined memory suffer from: 1. device and circuit non-idealities that
+Entry Point (vs ) and greedily traverses the graph to reach reduce computing accuracy, 2. variations in process, voltage
+the nearest neighbors of q. A candidate list L is maintained and temperature variations, and 3. device aging [27], [47]. To
+to store (distance, id) pairs of the best evaluated vertices, avoid this issue, near-storage processing (NSP) as an alternative
+which are sorted in ascending order of their distances to q. L could still provide an energy-efficient and low-latency solution
+has a predefined size L and is intialized with (dist(vs ,q), vs ). to accelerate large-scale data processing without offloading
+The search process iteratively ”evaluates” the first unevaluated massive data from the 3D NAND chip.
+candidate in L by visiting its neighborhood and computing the Heterogeneous Integration for NSP. Although NSP avoids
+distances between its neighbors and q. These neighbors are massive data transfers, the integration of processing elements
+inserted into L along with their distances. Then L is sorted and could be area costly. Heterogeneous integration [61] using
+only keeps the top L nearest candidate to q. This search process CMOS under Array (CUA) [10] and Cu-Cu bonding [2] can
+is repeated until all candidates in L have been evaluated. Then address the cost and area concerns associated with integrating
+the first k candidates in L are returned as an approximation processing elements onto a 3D NAND chip. As shown in Fig. 2,
+of k nearest neighbors to q. The candidate list size L can be CUA overlaps memory peripherals under the array, reducing
+used to control the search accuracy. In particular, with a higher the area of a single tier. The CMOS wafer and NAND wafer
+L, more vertices in the graph are evaluated before the search can be manufactured independently using different technology
+terminates. Therefore, the search returns more accurate results. nodes [2], [61]. After finishing the manufacturing of CMOS
+and NAND wafers, the high-density inter-chip Cu-Cu bonding
+C. 3D NAND-based Near-Storage Processing
+Near-storage Processing (NSP). As emerging algorithms connects the processing elements on the CMOS wafer to the 3D
+become increasingly IO-bounded, the growing demand for NAND wafer, providing seamless integration. As a result, NSP
+large-scale data processing presents significant challenges for with heterogeneous integration can provide a compact solution
+conventional von Neumann architectures, which require massive for large-scale data processing with improved performance.
+data transfers between the processor and off-chip memory. This approach opens new opportunities for the development
+Limited bandwidth and expensive data movement hinder of low-power, high-performance, and compact data processing
+the computing system scaling for data-intensive workloads, systems for various applications.
+causing the well-known ”memory wall” problem. To overcome D. Motivations
+this limitation, in/near-memory processing architectures based Profiling Graph-based ANNS. To understand the bottlenecks
+on emerging non-volatile memory (NVMs) [18], [63] and of graph ANNS algorithms, we profile the state-of-the-art graph
+volatile dynamic random access memory (DRAM) [35], [59] ANNS tools (NSG [19], HNSW [50], and DiskANN [32]) on
+have shown promise in building optimized accelerators for a 16-core CPU with 64GB memory. We choose three popular
+various big data applications. However, these devices may datasets, SIFT [34], GLOVE [56], and DEEP [5]. We identify
+not be suitable for larger planar array setups due to their the graph-based ANNS faces the following challenges:
+low on/off current ratio, high on-current, and relatively lower Challenges 1: Irregular Data Access. The graph ANN search
+density to support large datasets. Recently, 3D NAND flash is a best-first (BF) graph traversal process, which involves:
+memory has emerged as a promising in-storage processing 1. fetching D-dimensional data vectors and R NN indices,
+
+  
+  
+
+ + 1 6 :
+
+ ' L V N $ 1 1  3 4
+
+ 
+ 
+ 
+ 
+
+    
+ 
+ 
+ 
+ 
+  
+  
+  
+  
+  
+ & R P S X W D W L R Q  , Q W H Q V L W \   ) / 2 3  % \ W H 
+  D 
+
+ 3 H U F H Q W D J H    
+
+ 3 H U I R U P D Q F H   * ) / 2 3  V 
+
+  
+
+ 1 6 *
+
+   
+
+ ' ( ( 3
+
+ * / 2 9 (
+
+HNSW, Vamana, NSG, ...
+
+ 6 , ) 7
+
+Offline Graph
+Building
+
+Gap
+Encoding
+
+Query PQ Distance-based
+Search
+
+Reranking
+
+Raw Data
+
+  
+
+Compressed Graph
+
+  
+ / / &
+  0 L V V  5 D W H
+
+ ' L V W D Q F H
+  & R P S X W D W L R Q
+
+kNNs
+
+Increase List size
+
+  E 
+
+Fig. 3: Profiling results for graph ANNS tools: (a) Roofline
+model on AMD EPYC 7543 CPU. (b) LLC miss rate and
+distance computation overhead for HNSW [50].
+
+Dynamic List +
+Early Termination
+
+Fig. 4: Proxima graph search algorithms.
+32×4×3=384-b
+1
+2
+3
+4
+
+20
+47
+29
+65
+
+15
+36
+26
+31
+
+33
+40
+47
+52
+
+32×4+5×8=168-b
+1
+Sort 2
+3
+4
+
+15
+36
+26
+31
+
+20
+40
+29
+52
+
+33
+1 15
+47 Encode 2 36
+47
+3 26
+65
+4 31
+
+5
+4
+3
+21
+
+13
+7
+18
+13
+
+2. Calculating and comparing distance for the fetched data
+vectors. The roofline analysis in Fig. 3-(a) shows graph ANNS
+algorithms [19], [32], [50] exhibit low computational intensity
+(a) Gap Encoding for Adjacency List
+and fall into the memory-bound region. Moreover, graph
+Query
+q
+traversal is notorious for its random memory access behavior.
+Asymmetric
+PQ Codebook
+Distance Table
+1
+2
+8
+4
+Fig. 3-(b) depicts the average last-level cache (LLC) miss rate
+2
+2
+17
+8
+2
+6
+6
+2
+D
+for graph-based ANNS. Due to the random access pattern,
+C 0
+C 10 8 25
+5
+4
+1
+25
+5
+1
+7
+6
+3
+the LLC miss rate during search is as high as 80% to 90%,
+Raw Base x
+D
+M
+becoming the other bottleneck.
+3
+2
+5
+5
+4
+Base PQ Code
+D
+Challenges 2: Expensive Distance Computation. To guaran1
+0
+2
+PQ dist(q,x) =
+tee high recall, the graph-based ANNS rely on the accurate
+M
+17+5 = 22
+distance computation for high dimensional raw data. The
+(b) PQ Distance Approximation
+distance computation for D-dimensional data mostly consumes
+over 50% of total runtime on CPU as illustrated in Fig. 3-(b). Fig. 5: (a) Gap encoding and (b) product quantization (PQ)
+However, majority of the distance computations are redundant distance approximation in Proxima.
+and has no impact on the final outcome. Hence, how to reduce
+distance computations while providing satisfactory performance advanced CMOS logic on top of 3D NAND.
+is the key to accelerating graph ANN algorithms.
+III. PROXIMA G RAPH S EARCH
+Challenges 3: Large Memory Consumption. Graph-based
+According to Section II-D, ANNS graph search is dominated
+ANN algorithm requires storing two basic data types, including
+by costly distance computation and memory footprint. We
+the graph index and the raw data. The memory complexity to
+present the optimized Proxima graph search scheme to address
+store graph index in adjacency list format is O(bindex · N · R),
+these bottlenecks at the algorithm level.
+where N and R denote the data number and maximum vertex
+degree, respectively. bindex is the bit width for each vertex A. Overview
+Fig. 4 shows the overall flow of Proxima search optimization.
+index. For raw data, the required memory space is O(braw ·
+N · D), where D is the data dimension. The raw data size is Proxima graph search is general and can be applied to graphs
+fixed for a specific dataset while the graph index size depends generated by various graph building algorithms, such as
+on the graph building parameters. The graph index size for HNSW [50], DiskANN [32], and NSG [19]. Before query
+most datasets is even larger than the raw data size because search, the gap encoding in Proxima first compresses the built
+bindex is generally 32-b while R is 32 − 96. As a result, the graphs to reduce the index size. During query search, we
+graph index size is over 203GB while the raw data are 178GB propose three strategies, including product quantization (PQ)
+distance-based search, accurate distance-based reranking, and
+for billion-scale datasets.
+Solutions. In general, graph-based ANNS is a type of memory- dynamic list with early termination, to perform accurate and
+intensive workload. We perform algorithm and hardware co- low-complexity search.
+optimization to develop the near-storage accelerator that can B. PQ Distance-based Search
+Graph ANN search algorithms [19], [32], [50] incur hundreds
+efficiently handle datasets from various scales. Section III
+to
+thousands of distance computations, but most do not
+presents the Proxima graph search approach that improves
+contribute
+to the final results. A natural idea is to approximate
+the searching efficiency over existing works. To fully exploit
+them.
+Proxima
+traverses the graph using the approximate
+the potential of Proxima’s algorithm, we propose Proxima’s
+distance
+obtained
+by PQ [33].
+near-storage hardware architecture based on 3D NAND flash
+and heterogeneous integration [2] in Section IV. 3D NAND
+PQ splits vectors into M subdimensions and encodes each
+is a high-density and nonvolatile memory that can address vector x into a M · log2 C-bit code, where C is the number of
+the large memory footprint of graph-based ANNS. Meanwhile, centroids of each subdimension from k-means. Each subvector
+heterogeneous integration is a promising solution for developing of x is quantized into its k-means centroid and encoded with
+
+   
+  
+  
+  
+  
+ 
+
+ 6 , ) 7
+
+ 
+
+ ' ( ( 3
+
+ * / 2 9 (
+
+               
+ & D Q G L G D W H  / L V W  6 L ] H
+  D 
+
+ 0 H P R U \  7 U D I I L F    
+
+Data: Graph G(V, E); Query q; Entry point vs ; Repetition
+rate r; Search step Tstep ; Candidate list size L; PQ
+threshold beta.
+Result: k-NN results for query q.
+ˆ s , vs )};
+1 Candidate set L = {(dist
+2 Evaluated set E = {};
+3 while T ≤ L do
+ˆ ′ , v ′ ) = the first candidate in L with v ′ ∈
+4
+(dist
+/ E;
+5
+E = E ∪ {v ′ };
+6
+foreach n ∈ neighbors of v ′ do
+ˆ n = dist(q,
+ˆ
+7
+dist
+n) ;
+/* PQ Distance */
+ˆ n , n)};
+8
+L = L ∪ {(dist
+9
+end
+ˆ and keep top L candidates;
+10
+Sort L based on dist
+11
+if ∀a ∈ top T candidates of L, a ∈ E then
+12
+Rerank top T candidates in L ;
+13
+if early termination check(r) == True then
+14
+break ;
+/* Early Termination */
+15
+end
+16
+T = T + Tstep ;
+/* Dynamic List */
+17
+end
+18 end
+ˆ c < dist
+ˆ L[T ] ∗ beta do
+19 foreach c ∈ L and dist
+20
+Rerank c ;
+/* Reranking */
+21 end
+22 return Top-k reranked candidates
+
+ & R U U H F W  5 D W L R    
+
+Algorithm 1: Proxima Search Algorithm
+
+   
+  
+  
+  
+  
+ 
+
+ 1 1
+
+ 3 4  & R G H
+
+ 5 D Z  ' D W D
+
+           
+ 0 D [ L P X P  ' H J U H H  5
+  E 
+Fig. 6: (a) Search convergence trend for GLOVE, DEEP10M,
+SIFT. (b)Memory traffic breakdown using different degrees R.
+
+reranking strategy by introducing a new parameter beta (PQ
+error ratio) into Algorithm 1(line 19) and nesting the original
+search list of size T inside a larger list of size L. beta can be
+chosen through empirical evaluation. For example, by sampling
+base vertices as queries and constructing 32 bytes PQ code, we
+observe that 99 percent of PQ distances for the SIFT dataset are
+within 1.06 (beta) times of their accurate distances. Then, we
+ˆ L[T ] ∗ beta.
+rerank all vertices with PQ distances less than dist
+This is possible because we keep more vertices in the larger list
+of size L. We may need a few accurate distance computations,
+but we can improve the recall by up to 10% over DiskANN
+[32] at a low recall with negligible impact on QPS. (Fig. 11).
+
+D. Dynamic List and Early Termination
+We propose a Dynamic List and Early Termination strategy
+centroid index of log2 C bits. PQ approximates the distance to make use of the information during graph traversal, as shown
+in Algorithm 1. We observe that most queries converge (find
+ˆ between query q and x:
+dist
+their true k-NNs) at a small T (candidate list size). Increasing
+M
+X
+ˆ (q, x) =
+dist
+ADTi [ci ],
+(3) T further will not improve the recall of these queries, but only
+increase the computation cost. Fig. 6-(a) shows this trend for
+i=1
+where ADTi is the Asymmetric Distance Table computed as DiskANN [32]. We see a rapid increase of convergence ratio at
+we receive q, which holds distances between subvector qi of q small T ’s. For datasets like GLOVE having low recall even at
+and the C centroids of subdimension i; ci is the centroid index big T ’s, we will expect less queries to converge at a given T , but
+ˆ is computed the general trend is the same. Based on this, we design a novel
+of subvector xi of x. PQ approximate distance dist
+by summing the distance between each subvector of q and early termination technique that uses a dynamic list to iteratively
+the quantized subvector of x. Therefore, a total of M LUTs adjust T (line 16) during graph traversal. In each iteration,
+(Look Up Table) and additions are needed for each distance we compare the top-k new and old reranked candidates, and
+computation. Fig. 5-(b) depicts an example of computing the terminate the search if they are the same for r consecutive
+ADT and final PQ distance for D = 4, M = 2, C = 3. Note iterations (line 12-14); otherwise, we increase T by Tstep (line
+that Proxima only uses PQ during the search process. The 16) and continue. We control the early termination outcome
+graph index is built using existing algorithms [19], [32], [50] by setting r and Tstep . We store the computed distances to
+with full-precision coordinates to ensure correct structure.
+amortize the overhead of accurate distance computations in
+each iteration. We also keep L at a relatively large size L to
+C. Accurate Distance-based Reranking
+When the search ends, we obtain a list L of best-matched preserve the useful information at small T ’s. This also allows
+vertices found during graph traversal using PQ, but we still need us to apply the optimized reranking scheme in Section III-C.
+to rerank these vertices to return the actual top k results in L. We combine early termination with optimized reranking and
+Compared to the thousands of accurate distance computations found around 10% reduction in distance computations at the
+in traditional graph searching algorithms, the cost of reranking same recall for all 6 datasets in Table.I, compared to optimized
+reranking alone. This suggests that early termination can scale
+(typically around one hundred) is trivial.
+well
+to datasets of different sizes and distributions.
+Although PQ with reranking has been a common technique
+for graph-based ANN algorithms [32], [36], they have not E. Gap Encoding for Vertex Indices
+ˆ L[T ]
+taken full consideration of the inaccuracy of PQ. Let dist
+The graph ANNS algorithms store the NN index and raw
+be the distance of the most distant candidate in L, then vertices data. This leads to two problems: 1. Fetching vertex indices
+ˆ L[T ] but a PQ distance (NN indices) creates significant data access overhead during
+with an accurate distance less than dist
+ˆ
+greater than distL[T ] are discarded merely because of PQ’s search, accounting for 80% to 90% as shown in Fig. 6-(b). 2.
+inaccuracy. To address this issue, we propose an optimized The NN index has a comparable size as the raw data. Existing
+
+To ensure the architectural extensibility, the two-level spatial
+hierarchy in previous works [39], [61] is adopted to construct
+Core
+Core
+3D NAND tiles, where there are total Ntiles tiles and each tile
+Tile
+Tile
+includes Ncore cores. The tiles and cores at the same hierarchy
+are connected via the tile or core H-tree bus, respectively. Inside
+Core
+Core
+each core, there are Nsub blocks of 3D NAND subarrays with
+Tile
+Tile
+peripheral circuits. To boost data access during graph search,
+we
+customize the 3D NAND core by adding a BL MUX
+16-b
+Page Buffer
+Ctrl.
+I/O
+between BLs and page buffer. Meanwhile, a smaller array size
+Search Engine
+BL MUX
+is chosen for lower read latency. The details are presented in
+I/O Interface
+Section IV-C.
+Search Engine is manufactured on the CMOS wafer to
+3D NAND Subarray
+Query
+kNNs
+maximize the logic density. Then it is connected to the tile
+controller via H-tree bus and further connected to the memory
+Compressed
+Graph
+array through Cu-Cu bonding [2]. The search engine efficiently
+Fig. 7: Proxima accelerator in 3D NAND flash.
+implements Proxima graph search algorithm and is used for:
+1. scheduling and processing incoming queries, 2. fetching
+algorithms [19], [32], [50] use a uniform 32-b integer to present
+graph data from the 3D NAND cores. The 3D NAND flash
+the vertex index. But the uniform bit width for different graph
+core is the minimal unit that can be accessed by the search
+scales is redundant since ⌈log2 N ⌉-b is sufficient to present
+engine for data fetching. The design of search egine is given
+the vertex index for a dataset with size N . Proxima uses gap
+in Section IV-D.
+encoding [6] to save the space and data movement required
+by NN indices. Fig. 5-(a) illustrates an example for 4 indices B. Proxima Execution Flow
+The execution of Proxima accelerator is mainly composed
+and 3 NNs that are expressed by an adjacency list of 12
+of
+two steps: 1. graph data preloading and 2. query graph
+elements. The uncompressed 32-b adjacency list consumes
+search.
+Before graph search, the raw data, raw data’s PQ codes,
+384-b space. In comparison, gap encoding includes two steps:
+and
+NN
+indices need to be prestored into the corresponding
+first, sort the NN indices in each row in ascending order and
+physical
+addresses using the proposed data mapping scheme
+then convert the sorted indices into the difference values to
+shown
+in
+Section IV-E.
+its previous index except for the first one. In this case, the bit
+After the required data have been stored, Fig. 8 illustrates
+width is determined by the bits for the maximum difference
+value. Therefore, the required space is reduced to 168-b. Our the data flow inside the search engine during graph search.
+experiments show graphs of 1M to 100M datasets need 20-b The entire graph search consists of four steps: Step 1 is the
+to 26-b gap encoding, leading to at least 19% to 37% graph initial phase for new queries, where the PQ module computes
+index data compression. The compressed graph index also the asymmetric distance table (ADT) based on the query data.
+helps achieve faster graph traversal as the overhead of index The computed ADT is transmitted to the ADT memory in
+the target queue specified by the scheduler. In Step 2 , the
+fetching is reduced.
+candidate list in the queue pops the un-evaluated vertex and
+IV. PROXIMA ACCELERATOR
+the arbiter generates the corresponding address to fetch the
+Although Proxima search optimization effectively improves NN indices from 3D NAND cores (Line 4-6 in Algorithm 1).
+graph search, it is still limited by costly data movement The fetched NN indices first pass through the Bloom filter to
+between SSD, host memory, and cache. For better throughput update newly visited vertices and filter out those previously
+and efficiency, we architect the near-storage accelerator using computed vertices. The PQ codes of those unvisited vertices
+3D NAND and heterogeneous integration in this section to are then fetched and computed by the distance computation
+module (Line 6-8 in Algorithm 1).
+implement the Proxima graph search algorithm.
+In Step 3 , a sorting is needed to select the top L candidates
+A. Architecture Overview
+Fig. 7 illustrates the architecture of Proxima accelerator (Line 10 in Algorithm 1) after all the neighbors have been
+consisting of two main parts: 3D NAND Tiles and Search visited. The implemented Bitonic sorter is a shared sorter by
+Engine. Proxima is a standalone near-storage accelerator all search queues since it can provide sufficient throughput.
+(similar to [28], [44]) that can realize both data storage After the PQ distance-based search is finished, the top vertices
+and efficient ANNS function. This is achieved by utilizing in the candidate list memory will be reranked using their raw
+the advanced heterogeneous integration technique [2], which data (Line 12 in Algorithm 1). This is illustrated by Step 4
+connects the 3D NAND wafer and CMOS wafer for better in Fig. 8. Meanwhile, the candidate list also checks whether
+the early termination condition is satisfied.
+efficiency and storage capacity.
+3D NAND Tiles are implemented on the 3D NAND wafer C. 3D NAND Core Design
+and are used to store three types of graph data: 1. raw data,
+The generic 3D NAND flash chips [26], [37], [40] used
+2. raw data’s PQ codes, and 3. compressed graph NN indices. for commercial SSD are not suitable for graph ANNS. First,
+Tile
+
+Proxima Accelerator
+
+I/O Buffer
+
+WL Decoder
+
+Bitonic Sorter
+
+Search Queues
+
+Codebook
+Memory
+
+1
+
+Arbiter
+
+FP16 MACs
+
+Queue 1
+
+Scheduler
+
+Asymmetric
+Distance
+
+PQ Module
+
+Queue 2
+
+··· ···
+
+Global
+Bus
+
+Queue Nq
+
+Query Vector
+2 Compute distance
+Asymmetric
+Distance
+
+ADT
+Memory
+
+MAC
+
+1
+Raw Data
+
+Query Buffer
+
+Bloom Filter
+Candidate
+List
+3
+
+4
+
+Sort
+
+  
+  
+  
+ 
+
+ 5 H D G  / D W H Q F \   Q V 
+
+   
+  
+  
+  
+ 
+
+ $ U H D   P P   
+
+ $ U H D  ( I I L F L H Q F \    
+
+Fig. 8: Internal architecture of search engine.
+
+   
+   
+   
+   
+
+over 104 ns read latency. The previous work [55] shows the
+precharge and discharge processes take ≈ 90% of the page read
+latency. The long precharge and discharge time results from
+the large capacitance load created by hundreds of blocks and
+extensive page size. We customize the Proxima 3D NAND core
+to reduce the long read latency and increase data granularity.
+First, we reduce the number of BLs NBL as well as the number
+of blocks Nsub to decrease the capacitance load. Specifically,
+we use NBL = 36768, NSSL = 4, and Nblock = 64 to build
+each core. Dramatically decreasing page size also decreases
+the area efficiency because a large portion of NAND array is
+occupied by the peripheral circuits. To reduce the overhead of
+the peripheral page buffer, a BL MUX is implemented between
+the page buffer and 3D NAND blocks for reduced page buffer
+size and better data granularity. For each time, Proxima’s core
+only precharges a small portion of the BLs instead of the entire
+page. As a result, we use a 32:1 MUX to achieve 128B data
+granularity while Proxima core achieves read latency < 300ns.
+The other benefit of partial precharging is that it reduces the
+area overhead of the peripheral circuits in the page buffer by
+a factor of 32, thereby increasing the storage density.
+
+  . %
+  . %
+  . %
+   . %
+
+  . %
+  . %
+  . %
+   . %
+
+  . %
+  . %
+  . %
+   . %
+
+D. Search Engine Design
+The search engine for graph search consists of the following
+components:
+Fig. 9: The density, area, and read latency trade-offs for 96- Scheduler and Arbiter. The scheduler adopts the simple
+Round-Robin strategy with the first-come-first-serve policy
+layer 3D NAND flash.
+to allocate the new query to the ideal queue. The scheduler
+3D NAND chips in SSD are optimized for storage density, keeps track of all queues’ status in an Nq -b buffer. The arbiter
+thus they need large 3D NAND array sizes. As a result, the is used to allocate the data fetching request from queues to the
+long precharging and discharging time lead to long page read target 3D NAND core. To this end, the arbiter first translates
+latency, ranging from 15µs to 90µs [26], [37], [40]. This is the vertex information from the queue into the associated
+unfavorable for graph traversal which needs lots of random physical address. If the destination core is in the ideal status,
+data access and low processing latency. The second drawback the physical address is sent via H-tree bus. Otherwise, the data
+is that the large page size (8KB to 16KB) used by existing fetching request is temporarily stalled by the arbiter and waits
+3D NAND flashes is too coarse for graph traversal workloads for the next-round allocation.
+because the data reading operations of graph search (fetching Product Quantization (PQ) Module contains a codebook
+raw data or graph indices) only need <0.5KB from the storage memory and total 32 FP16 multiply and accumulate (MAC)
+each time. Hence, a finer data access granularity with lower units to compute the C×M ADT. The codebook memory stores
+latency is needed. Thirdly, for attaining higher storage density, the C × D PQ codebook trained by offline k-means. Since the
+most SSDs store multiple bits per cell (MLC). However, parameters C = 256, M = 32 are fixed for different datasets
+MLC incurs one to two orders of magnitudes error rates while the vector dimension D ranges from 96 to 128, we use
+higher than single-level cell (SLC) [29], [49]. Our experiments a 64kB SRAM as the codebook memory and a 16kB SRAM
+in Section V-E provide numerical data to demonstrate that as the ADT memory. The ADT computation with O(C · D)
+MLC without error correction (ECC) dramatically degrades complexity incurs latency with 8D (Angular distance) to 24D
+the ANNS accuracy. While commercial SSDs are generally (Euclidean distance) clock cycles.
+equipped with ECC modules to correct the potential bit errors
+Distance Computation Module inside each queue consists
+when reading data [60], adding ECC to Proxima is infeasible
+of one ADT memory, one query buffer, and one MAC unit. It
+due to the large area overhead of ECC [60] which may the
+supports two types of distance computations: the approximate
+deteriorate system efficiency and the ECC module to match
+PQ distance and accurate distance. For the PQ distance, the
+the high data rate over Cu-Cu bonding between the CMOS
+distance computation module uses the fetched 256-b PQ code
+and 3D NAND wafer.
+to look up the partial distances of M sub-vectors in the ADT
+We develop a simulator based on the 3D NAND simula- memory. Then it computes the accumulation (Eq. (3)) in M
+tor [39] to project the tradeoff between density, area, and read clock cycles. For accurate distance, the base data vectors are
+latency for 96-layer 3D NAND in Fig. 9, working as the design first fetched and computed against the query data cached in
+guidance for Proxima cores. The large page size could incur the query buffer, requiring D clock cycles in total.
+
+Queue works independently to process the incoming data from
+5
+4
+3
+2
+Graph Index
+the scheduler or the arbiter. The data from PQ module include
+Reordering
+4
+1
+the ADT and query vector, which are used to initialize the ADT
+2
+3
+6
+0
+memory and query buffer. The queue sends vertex information
+to the arbiter for fetching data stored in 3D NAND flash tiles.
+0
+6
+1
+5
+The read data (PQ codes, raw base vector, or NN indices) are
+Hot Node
+sent back the corresponding queue via the arbiter. One key
+Repetition
+design for high-performance graph search is the search queues.
+Proxima accelerator contains total Ncore = 512 cores which
+NN1
+...
+NNR
+PQ
+Normal data
+provide high internal data parallelism. Single queue is unable to
+NN1
+PQ1
+...
+NNR
+PQR
+PQ
+Hot data
+fully leverage this parallelism. To increase the core utilization
+as well as search throughput, Nq queues are implemented in
+(a)
+the search queue module of Fig. 8.
+Raw
+Data
+Normal/Hot Data
+Bloom Filter. Some vertices may be visited repeatedly during
+Core 0
+Core 2
+Core 4
+graph search. To save redundant computations, the indices of
+0 2 4 6
+0 4 0
+2 6 2
+visited vertices are saved and checked. Based on our simulation,
+the number of visited vertices increases linearly with the
+Core 1
+Core 3
+Core 5
+candidate list size |L|. At most 8000 vertices need to be saved
+1 3 5
+1 5 1
+3
+3
+for |L| = 250. We use the memory-efficient Bloom filter [68]
+to detect visited vertices. Bloom filter is a probabilistic data
+(b)
+structure [8] with a false positive of (1 − ekn/m )k , where k is
+Fig. 10: (a) Graph index reordering and hot nodes repetition.
+the number of hash functions, m is the size bit array size, and
+(b) Address mapping.
+n is the number of elements to be inserted. We implement a
+12kB SRAM with 8 lightweight SeaHashes [1] in the Bloom of directly mapping the irregular graph indices, we first reorder
+filter module to guarantee a false positive probability < 0.02%, the indices to increase their locality. As shown in Fig. 10-(a), the
+graph index reordering is based on vertices’ visiting frequency.
+providing negligible recall loss [68].
+Bitonic Sorter and Candidate List. During the graph traversal, The hotter (more frequent) vertices have smaller indices, which
+the candidate list in each search queue requires sorting to obtain means the entry point starts from 0. The calculation of vertices’
+the sorted candidate list. In the worst case, over 200 distances visiting frequency is based on the graph search trace from the
+need to be sorted. We use the parallel Bitonic sorter that randomly sampled base data. The graph index reordering is
+provides constant latency to avoid excessive sorting latency. helpful to increase the index locality.
+The Bitonic sorter is stage-pipelined and each cycle accepts Hot Nodes Repetition. After graph index reordering, the
+Nsorter inputs in parallel. The sorting latency for Nsorter hot vertices and their NNs will be located on the top of
+inputs is constant 2 log2 Nsorter clock cycles. Proxima only graph index. Proxima selects the hottest nodes which have
+implements one global Nsorter = 256-point Bitonic sorter that the smallest indices as the hot nodes. The hot nodes repetition
+satisfy the latency and throughput requirements of used list scheme ensures the graph search process for the most frequently
+size |L| and queues. The candidate list is a 2kB buffer to store accessed vertices can be significantly accelerated. As shown
+the candidate set L in Algorithm 1, including each candidate’s in Fig. 10-(a), each hot node’s NN index is followed by the
+distance and the corresponding vertex index. The candidate list corresponding PQ code. In this case, the NNs’ PQ codes and
+also stores the previous k-NN results from the last iteration to indices are stored together, so computing each vertex can be
+support the early termination in Section III-D.
+done in one shot, which means only one WL setup for 3D
+NAND is sufficient. The cost of hot nodes repetition scheme
+E. Data Mapping Strategy
+Before query graph search, the raw, graph, and PQ data is the additional bits for R PQ codes. The total bits for each
+need to be preloaded and mapped into the 3D NAND cores hot node are R × (bindex + bP Q ) + bP Q . We do not implement
+based on the data mapping scheme. The data mapping not only additional caches or faster buffers to store hot nodes. Instead,
+determines conversion between logical and physical addresses hot nodes
+but also affects the system’s performance. We consider three Data Allocation and Address Translation. Most graph search
+design factors for developing Proxima’s data mapping strategy: operations are related to PQ codes and graph indices, while
+1. The data mapping strategy needs to provide low-complexity access to raw data is needed for accurate distance computation
+address translation logic to the arbiter; 2. The data mapping during the reranking step. We let Proxima store the raw data
+strategy should be able to maximize the system’s query search individually in some 3D NAND cores while PQ codes and
+performance; 3. The data mapping strategy should be scalable to graph indices are stored together. As shown in Fig. 10-(b), we
+support different ANNS dataset scales. To this end, we propose use a core-level round-robin address mapping scheme, such that
+the data with consecutive indices are assigned to consecutive
+the following schemes to achieve efficient data mapping:
+Graph Index Reordering. The generated graph from ANNS cores. This scheme helps maximize memory utilization. Each
+tools [32], [50] has a highly random index distribution. Instead page uses the same bit length to store node vectors and
+
+# Query
+
+Dimension D
+
+SIFT [33]
+GLOVE [56]
+DEEP-10M [5]
+BIGANN-10M [34]
+DEEP-100M [5]
+BIGANN-100M [34]
+
+Euclidean
+Angular
+Inner Product
+Euclidean
+Inner Product
+Euclidean
+
+1M
+1M
+10M
+10M
+100M
+100M
+
+10K
+10K
+10K
+10K
+10K
+10K
+
+128
+100
+96
+128
+96
+128
+
+associated NN indices (nodes with degree< R are padded
+to R to align address). Fig. 10-(a) shows the coupled storage
+format of PQ codes and graph indices in each page of 3D
+NAND core. Each data frame for one vertex vi starts with R
+NNs’ graph indices and the end is the corresponding PQ code
+of vi . So R × bindex + bP Q bits are needed for each vertex.
+NBL
+Each page can store at most ⌊ R×bindex
++bP Q ⌋ frames. Likewise,
+each raw data consumes braw × D bits and each page can store
+NBL
+⌊ braw
+×D ⌋ raw data frames. Except for the raw, PQ, and graph
+index data, Proxima introduces another type of special data
+called hot nodes explained as follows.
+
+TABLE II: Area and power breakdown of Proxima accelerator.
+3D NAND Flash
+
+# Base
+
+Search Engine
+
+Distance
+
+ 4 X H U \  S H U  6 H F R Q G   4 3 6 
+
+TABLE I: Specifications of evaluated datasets.
+Dataset
+
+   
+
+Hardware Unit
+
+Configs.
+
+Area
+(mm2 )
+
+Dynamic
+Energy (pJ)
+
+Core
+3D NAND Blocks
+Core H-Tree Bus
+Tile
+Core
+Tile H-Tree Bus
+Total
+
+×1
+96-layer, 4 SSL, 36864 BL
+×1
+×1
+×32
+×1
+16 Tiles (432Gb)
+
+0.505
+0.505
+0.163
+16.16
+16.16
+1.309
+258.56
+
+4442.
+21.4
+198.6
+-
+
+Dynamic
+Pwr. (mW)
+1920.316
+0.274
+4.579
+1.793
+17.396
+5.822
+11.574
+486.090
+2423.802
+
+Static
+Pwr. (mW)
+2127.384
+0.684
+3.472
+4.153
+14.347
+14.345
+0.002
+0.021
+2141.752
+
+Hardware Unit
+
+Size
+
+Search Queues
+Candidate List
+Bloom Filter
+ADT Module
+PQ Module
+Codebook Mem.
+FP16-MACs
+Bitonic Sorter
+Total
+
+×256
+2kB×1
+12kB×1
+16kB×1
+×1
+64kB×1
+×32
+×1
+-
+
+ 6 L ] H    0
+
+Area
+(mm2 )
+9.012
+0.003
+0.014
+0.017
+0.082
+0.058
+0.024
+0.237
+9.331
+
+ 6 L ] H     0
+
+ 6 L ] H      0
+
+   
+
+V. E VALUATION
+   
+ 6 , ) 7
+ % , *
+ % , *
+A. Evaluation Methodology
+ * / 2 9 (
+ ' ( ( 3
+ ' ( ( 3
+Baselines. Proxima graph search is compared with three
+                                          
+graph-based ANNS baselines: HNSW [50] and DiskANN [32]
+    P D
+ 3 U R [ L
+ ' L V N $ 1 1     + 1 6 :
+ ) $ , 6 6  ,  9   )
+on CPU and GGNN [22] on GPU. We also consider the
+compression-based algorithm, IVF-PQ in FAISS [36], as the Fig. 11: Throughput (QPS) and recall comparison with
+non-graph baseline. We use the graph building parameters of HNSW [50], DiskANN [32], and FAISS-IVF [36] on CPU.
+ANN-Benchmarks [4]: the maximum out degree R = 64 with
+list size L = 150 for DiskANN and L = 500 for HNSW. The clock frequency is 1GHz and the design is scaled to 22nm.
+Proxima hardware is compared with three domain-specific The timing and energy parameters of the SRAM and buffers
+accelerators, ANNA [42] (IVF-PQ-based ASIC), VStore [44] are calculated using CACTI-3DD [13] at 22nm.
+(near-storage graph ANNS accelerator), and ICE [28].
+B. ANNS Algorithm Evaluation
+Benchmarks. Table I lists the used ANNS datasets on three Improvements over Graph Baselines. We evaluate Proxscales (1M, 10M and 100M). The 10M and 100M datasets ima graph search and compare it with DiskANN [32] and
+are subsets extracted from DEEP1B [5] and BIGANN1B [34], HNSW [50] on CPU. Fig. 11 shows throughput (QPS) and
+respectively. The software baselines are evaluated on AMD recall, where Proxima achieves comparable recall and throughEPYC 7543 CPU with 128GB DDR4-3200 memory and put across all datasets and up to 10% recall improvement
+NVIDIA A40 GPUs with 40GB GDDR6 memory to measure over DiskANN and HNSW at the same throughput on 1M
+their performance, energy consumption, and recall. 100M datasets. The improvements over HNSW come from using
+datasets for GGNN [22] are evaluated using two A40 GPUs. lightweight PQ distance approximations instead of expensive
+Proxima Software Implementation. We implement the accurate distances. Compared to DiskANN that also uses PQ,
+Proxima graph search algorithm using C++ upon DiskANN such improvements come from our implementation of the novel
+codebase [32]. The code is compiled with g++ compiler search strategy in Algorithm 1.
+with -O3 optimization. The data vectors are divided into 32
+Comparison with Non-graph Baseline. We also evaluate the
+subvectors and 256 centroids per subvector. The PQ threshold
+non-graph algorithm, FAISS-IVF [36], which uses PQ compresis beta = 1.06 illustrated in Section III-C, repetition rate r in
+sion. Although the memory footprint of FAISS-IVF is smaller,
+the range 1 to 15 and search step Tstep = 4 in Section III-D.
+lossy PQ compression introduces significant approximation
+Proxima Hardware. Proxima performance is estimated using
+error and causes the recall to saturate around 90% and 85% for
+an in-house simulator: The simulator’s back-end is built upon
+small and large datasets, respectively. Graph-based methods
+3D-FPIM [39] to compute the parasitics, energy, and latency
+consistently achieve better recall vs. throughput tradeoff over
+of 3D NAND based on the parameters of Samsung’s 96FAISS-IVF.
+layer NAND flash [64] and configurations in Table II, where
+the total storage capacity is 432Gb. The simulator’s front- C. Hardware Performance Comparison
+end is a modified version of NeuroSIM [14] which faithfully Proxima vs. CPU, GPU, and ASIC. We compare Proxima
+reflects the behavior of Proxima graph search. The front-end near-storage accelerator in 3D NAND with state-of-the-art CPU,
+accepts the trace generated from the software and calculates the GPU, and ASIC designs for ANNS. Fig. 12-(a) summarizes
+corresponding performance metrics. The ASIC search engine is the throughput comparison, which is conducted on two smallimplemented using Verilog HDL using TSMC 40nm technology. scale datasets (SIFT and GLOVE) and two large-scale 100M
+
+  
+  
+  
+  
+
+ * * 1 1  * 3 8
+
+ $ 1 1 $  $ 6 , &
+
+ 3 U R [ L P D
+
+ 
+ 
+ 
+
+ 6 , ) 7
+
+ * / 2 9 (
+
+ % , *    0  ' ( ( 3    0  % , *     0  ' ( ( 3     0
+
+ ( Q H U J \  ( I I L F L H Q F \
+
+(a) Throughput (QPS)
+ 
+
+  
+ 
+  
+ 
+  
+ 
+  
+ 
+  
+
+ 6 , ) 7
+
+ * / 2 9 (
+
+ % , *    0  ' ( ( 3    0  % , *     0  ' ( ( 3     0
+
+(b) Energy efficiency (QPS/W)
+
+Fig. 12: Throughput and energy efficiency comparison for
+HNSW [50], GGNN [22], ANNA [42], and Proxima.
+datasets (BIGANN-100M and DEEP-100M). GGNN [22] is a
+high-performance GPU tool optimized for graph-based ANNS
+while ANNA [42] is a PQ-IVF-based ASIC accelerator. We
+adopt HNSW [50] as the CPU baseline. Proxima achieves
+the highest throughput among all baselines while GPU-based
+GGNN is the 2nd fastest tool. Compared to ASIC design,
+ANNA [42], Proxima is 6.6× to 13× faster on 1M and 100M
+datasets. Compared to the CPU baseline, Proxima’s speedup
+is more significant for large-scale datasets or high-complexity
+datasets, such as GLOVE [56] that needs much more distance
+computations (6× to 8×) to achieve the same recall.
+We measure the energy efficiency for Proxima and the
+baselines mentioned in Fig. 12-(b). Energy efficiency is
+measured by QPS/W. Proxima has the highest energy efficiency
+in all datasets. ANNA’s energy efficiency is up to 17× inferior
+to Proxima because ANNA needs large on-chip SRAMs and
+frequent off-chip data transfer. The expensive data movement
+increases the energy consumption. Compared to CPU, Proxima
+is three orders of magnitude energy efficient because Proxima
+implemented near 3D NAND has much shorter data access
+latency and lower reading energy.
+Proxima vs. Existing ANNS Accelerators. Additionally, we
+compare Proxima with state-of-the-art ANNS accelerations
+in Table III, including CPU-based DiskANN-PQ [32], GPUbased GGNN [22], ASIC-based ANNA [42], and NSP-based
+VStore [44]. Proxima and VStore are the only two designs
+that can persist the graph data in 3D NAND flashes. No offchip communication is needed for the next-time power on. In
+comparison, GGNN and ANNA rely on off-chip or on-chip
+data communication, which incurs higher energy consumption.
+VStore relied on SSD internal interface like SimpleSSD to
+realize the data communication with processors, which delivers
+very low bandwidth (9.9GB/s). The low bandwidth severely
+limits scaling to large-scale graph ANNS applications. Compared to VStore, Proxima has more compact design, shorter
+memory latency, and 26× higher peak memory bandwidth
+due to the high-speed heterogeneous integration. GGNN with
+NVIDIA V100 GPU and HBM2 memory delivers the highest
+bandwidth. But its bit density is only 41% of Proxima. Overall,
+
+Proxima balances well between memory capacity, density, and
+bandwidth, which can be regarded as a promising solution for
+data-intensive graph ANNS workloads.
+Hardware Overhead. Table II summarizes the area and energy
+breakdown for Proxima near-storage accelerator. The area of
+the 3D NAND part is dominated by the memory tier determined
+by the size of the memory array. The areas of the peripheral
+circuits and H-Tree buses are factored out by incorporating
+the heterogeneous integration. The search engine area is also
+factored out by fitting the search engine on the top CMOS tier,
+The overall Proxima area is 258.56 mm2 , which is a compact
+solution for graph-based ANN. Proxima’ area size is 2.4×
+smaller than the A40 GPU’s 628mm2 die area.
+D. Effectiveness of Proxima Optimizations
+Gap Encoding and Early Termination. We analyze the
+memory traffic for different graph ANNS search algorithms in
+Fig. 14. HNSW [50] without using any distance approximations
+incurs the largest data movement overhead. DiskANN-PQ
+denotes DiskANN with product quantization [32]. DiskANNPQ reduces 12% to 40% total memory traffic because most
+raw data access is skipped using PQ. Gap encoding in Proxima
+further decreases the data access of NN indices, while early
+termination saves 10% to 25% redundant operations over
+DiskANN-PQ. As a result, Proxima achieves a reduction ratio
+of 1.9× to 2.4× over HNSW [50].
+Hot Nodes Repetition. The hot node repetition is an effective scheme to reduce the latency while improving the
+overall efficiency. Fig. 15 illustrates the runtime breakdown for hot node percentages from 0.0% to 7.0% on
+100M datasets. When hot node repetition is disabled,
+data access latency caused by the 3D NAND core and
+H-tree bus contributes to 80% of the overall latency.
+Adding 1% of hot
+ 
+ 3 4  ' L V W D Q F H   '  1 $ 1 '  % X V
+nodes (1M points for
+ % O R R P  ) L O W H U  2 W K H U V
+100M datasets) helps
+ 
+to reduces the over 
+all search latency
+by 2.2×. The gain
+ 
+  
+  
+  
+  
+  
+comes from: the in + R W  1 R G H  3 H U F H Q W D J H    
+creased data locality
+Fig. 15: Runtime breakdown for differof hot nodes helps to
+ent hot node percentages.
+reduce the required
+data access time to the 3D NAND cores as the one round
+of NN indices fetching and PQ distance computations (Line
+6-9 in Algorithm 1) can be finished within one page access.
+When the percentage of hot nodes further increases to 3%, the
+speedup is ≈ 3× compared to the performance without hot
+nodes. However, the benefits of adding hot nodes > 3% reach
+a plateau. We use 3% as the default value in Proxima.
+Improvements over other Graph ANNS Algorithms. Proxima accelerator is general to support various graph ANNS
+algorithms. We compare the performance of two variants of
+Proxima with two state-of-the-art works, HNSW [50] and
+DiskANN-PQ [32] . All these graph algorithms run on the
+proposed 3D NAND accelerator using the same hardware
+configurations in Table II. Fig. 13 shows the throughput, energy
+
+ 1 R U P D O L ] H G  / D W H Q F \
+
+ 7 K U R X J K S X W
+
+ + 1 6 :  & 3 8
+ 
+
+ 1 R U P D O L ] H G  9 D O X H
+
+ + 1 6 :
+
+ ' L V N $ 1 1  3 4
+
+ 3 U R [ L P D  Z   *  (
+
+ 3 U R [ L P D  Z   *  (  +
+
+ 
+ 
+ 
+ 
+ 
+ 
+
+ ' ( ( 3    0  ' ( ( 3     0  % , *    0  % , *     0  ' ( ( 3    0  ' ( ( 3     0  % , *    0  % , *     0  ' ( ( 3    0  ' ( ( 3     0  % , *    0  % , *     0
+  D   7 K U R X J K S X W
+  E   ( Q H U J \  H I I L F L H Q F \
+  F   4 X H U \  / D W H Q F \
+Fig. 13: Performance comparison for various graph ANNS algorithms ran on the proposed 3D NAND-based NSP accelerator:
+HNSW [50], DiskANN-PQ [32], and Proxima (G: gap encoding, E: early termination, H: hot nodes repetition).
+
+TABLE III: Comparison with existing CPU, GPU, ASIC, and NSP accelerators.
+Design
+
+DiskANN-PQ [32]
+
+GGNN [22]
+
+ANNA [42]
+
+VStore [44]
+
+Proxima
+
+Platform
+Including storage?
+Memory Type
+Memory Capacity
+Peak Bandwidth
+Memory Bit Density
+
+CPU
+No
+DRAM-DDR4-3200
+128GB
+102GB/s
+0.2Gb/mm2
+
+GPU
+No
+HBM2
+32GB
+900GB/s
+0.7Gb/mm2
+
+ASIC
+No
+DRAM
+64GB/s
+0.2Gb/mm2
+
+FPGA+SSD
+Yes
+DRAM+SSD
+32GB
+9.9GB/s (aggregated)
+4.2Gb/mm2
+
+3D NAND SLC
+Yes
+3D NAND
+54GB
+254GB/s
+1.7Gb/mm2
+
+ 5 H F D O O
+
+   
+
+  H   
+  H   
+
+  H   
+  H   
+
+  H   
+  H   
+
+  H   
+  H   
+
+  
+  
+  
+
+  
+
+    
+    
+    
+    
+    
+
+ & R U H  8 W L O L ] D W L R Q    
+
+ 
+ 
+ 
+ 
+ 
+
+ 1 R U P D O L ] H G  4 3 6  :
+
+ 1 R U P D O L ] H G  4 3 6
+
+Fig. 14: Memory traffic breakdown for HNSW [50], DiskANNPQ [32], and Proxima with gap encoding and early termination.
+   
+  
+  
+  
+ 
+
+          
+             
+ 4 X H X H  6 L ] H
+ 4 X H X H  6 L ] H
+Fig. 16: Performance and efficiency of Proxima using different
+queue sizes on 100M datasets.
+
+efficiency, query latency on 10M and 100M datasets. Proxima
+with gap encoding and early termination achieves moderate
+throughput and efficiency improvements over HNSW and
+DiskANN-PQ via software optimization. The early termination
+and gap encoding help to reduce both computational redundancy and data movement during search. HNSW yields the
+worst performance because it requires many accurate distance
+computations. After adopting the hot nodes repetition, Proxima
+delivers about 2× speedup, 3× energy efficiency improvement,
+and 3× latency reduction. The benefits mainly result from
+the better data locality due to graph index reordering and hot
+nodes repetition, which reduce the memory access during graph
+traversal.
+E. Scalability and Sensitivity Analysis
+Queue Size. The search queue design is the key to improving
+throughput and the utilization of the core and bandwidth. We
+vary the queue size Nq from 32 to 256 and simulate the
+
+ 6 , ) 7
+ * / 2 9 (  % , *    0  ' ( ( 3    0  % , *     0  ' ( ( 3     0
+Fig. 17: Impact of data errors in 3D NAND flash on the search
+recall across different datasets.
+
+normalized throughput, energy efficiency, and 3D NAND core
+utilization on 100-M datasets without using hot node repetition.
+Fig. 16 shows that increasing the queue size to 256 significantly
+improves the throughput by 3.8×. This is because more parallel
+search queues can handle more queries simultaneously, thereby
+increasing the achievable number of parallel memory requests.
+Increased memory requests increase core utilization from 17.9%
+to 68%. However, increasing queue size also decreases energy
+efficiency by almost 20% due to two factors: 1. The increased
+queues may conflict when two different queues access the
+same core, which slows down the query search. 2. More search
+queues dissipate more static power during graph search. We
+observe that further increasing the queue size beyond Nq = 256
+does not significantly speed up QPS while adding more power
+consumption to the system. This suggests that the queue has
+basically saturated the internal bandwidth of 3D NAND core.
+Therefore, it is not cost-effective to further increase the queue
+size. We choose Nq = 256 as the default queue size.
+3D NAND Error. Proxima uses SLC-based 3D NAND without
+any ECC modules to deliver the best. It is critical to evaluate
+and study whether the ECC-free design is able to tolerate
+the occurred errors. Typically, the raw bit error rate of SLC
+3D NAND is lower than 1e−5 [29], while larger than 1e−4
+for MLC 3D NAND [49] and TLC 3D NAND [54]. Fig. 17
+shows the simulation results of search recall degradation with
+the impact of bit errors. It shows that using SLC 3D NAND,
+Proxima can retain the recall rate without ECC because the
+
+recall degradation is less than 3% when the error rate increases
+to 1e−4 .
+VI. R ELATED W ORKS
+A. Large-scale ANN Algorithms
+Various approaches are proposed to address large-scale
+ANNS. Compression-based algorithms compress data based on
+space partitioning and clustering including IVF [62], product
+quantization [33], [51] and hash methods [11], [12]. The
+previous experiments [4], [9] show that the low memory
+comsumption of these compressioncomesed methods come
+at the cost of moderate accuracy degradation especially on
+large-scale datasets. Graph-based methods [19], [32] build
+an approximate graph and prune edges by proximity graph
+criteria [65]. Graph-based methods are fast, accurate and scaling
+well to large datasets. There are various types of emerging
+graph algorithms, such as Filtered-DiskANN [21] and OODDiskANN [30], optimizing the ANNS problem for specific
+cases. These works can benefit from Proxima design to enhance
+their performance because most existing graph methods share
+the same graph search strategy.
+B. Acceleration for Graph and Graph ANNS
+There exist various hardware accelerators that aim at addressing large-scale ANNS problems with high energy efficiency as
+well as low query latency. These works include VStore [44],
+ICE [28], ES4D [38], SSAM [41], and CXL-ANNS [31].
+Near-storage processing [31], [41], [43], [44] or in-storage
+processing [28], [31] is commonly utilized to achieve better
+system efficiency and high storage density on vairous types
+of memory devices. Proxima co-designs the graph search
+algorithm and the 3D NAND-based hardware, thereby having
+better memory density, energy efficiency, and bandwidth tradeoffs as compared to existing works.
+VII. C ONCLUSION
+This paper presents Proxima, an NSP-based accelerator for
+graph-based ANN search. Based on an analysis of existing
+ANN search tools, we characterize that the algorithm faces
+challenges in memory consumption, expensive distance computation, and irregular data access. Our solution significantly
+reduces the computational complexity with approximation
+and early termination of distance computation while showing
+comparable recall to competing tools. Furthermore, we devise
+a 3D NAND flash-based NSP accelerator that efficiently
+processes the optimized ANN search algorithm with strategies
+to maximize internal parallelism and bandwidth utilization.
+Compared to these state-of-the-art ANNS accelerator, Proxima
+achieves one to two orders of magnitudes speedup and energy
+efficiency improvements.
+R EFERENCES
+[1] “Crate seahash.” [Online]. Available: https://docs.rs/seahash/latest/
+seahash/
+[2] “Techinsights, YMTC 232L Xtacking3.0.” [Online]. Available: https:
+//www.techinsights.com/blog/ymtc-leading-pioneer-3d-nand
+[3] D. Aiger, E. Kokiopoulou, and E. Rivlin, “Random grids: Fast approximate nearest neighbors and range searching for image search,” in ICCV
+2013, 2013.
+
+[4] M. Aumüller, E. Bernhardsson, and A. Faithfull, “Ann-benchmarks:
+A benchmarking tool for approximate nearest neighbor algorithms,”
+Information Systems, vol. 87, p. 101374, 2020.
+[5] A. Babenko and V. Lempitsky, “Efficient indexing of billion-scale datasets
+of deep descriptors,” in Proceedings of the IEEE Conference on Computer
+Vision and Pattern Recognition, 2016, pp. 2055–2063.
+[6] M. Besta and T. Hoefler, “Survey and taxonomy of lossless graph
+compression and space-efficient graph representations,” arXiv preprint
+arXiv:1806.01799, 2018.
+[7] W. Bittremieux, K. Laukens, and W. S. Noble, “Extremely fast and
+accurate open modification spectral library searching of high-resolution
+mass spectra using feature hashing and graphics processing units,”
+Journal of Proteome Research, vol. 18, no. 10, pp. 3792–3799, Aug.
+2019. [Online]. Available: https://doi.org/10.1021/acs.jproteome.9b00291
+[8] B. H. Bloom, “Space/time trade-offs in hash coding with allowable
+errors,” Communications of the ACM, vol. 13, no. 7, pp. 422–426, 1970.
+[9] D. Cai, “A revisit of hashing algorithms for approximate nearest neighbor
+search,” IEEE Transactions on Knowledge and Data Engineering, vol. 33,
+no. 6, pp. 2337–2348, 2019.
+[10] C. Caillat, K. Beaman, A. Bicksler, E. Camozzi, T. Ghilardi, G. Huang,
+H. Liu, Y. Liu, D. Mao, S. Mujumdar, N. Righetti, M. Ulrich, C. Venkatasubramanian, X. Yang, A. Goda, S. Gowda, H. Mebrahtu, H. Sanda,
+Y. Yuwen, and R. Koval, “3dnand gidl-assisted body biasing for erase
+enabling cmos under array (cua) architecture,” in 2017 IEEE International
+Memory Workshop (IMW), 2017, pp. 1–4.
+[11] Y. Cao, S. Chen, J. Gui, H. Qi, Z. Li, and C. Liu, “Hash learning with
+variable quantization for large-scale retrieval,” IEEE Transactions on
+Circuits and Systems for Video Technology, vol. 32, no. 5, pp. 2624–2637,
+2021.
+[12] M. S. Charikar, “Similarity estimation techniques from rounding algorithms,” in Proceedings of the thiry-fourth annual ACM symposium on
+Theory of computing, 2002, pp. 380–388.
+[13] K. Chen, S. Li, N. Muralimanohar, J. H. Ahn, J. B. Brockman, and
+N. P. Jouppi, “Cacti-3dd: Architecture-level modeling for 3d die-stacked
+dram main memory,” in 2012 Design, Automation & Test in Europe
+Conference & Exhibition (DATE). IEEE, 2012, pp. 33–38.
+[14] P.-Y. Chen, X. Peng, and S. Yu, “Neurosim: A circuit-level macro
+model for benchmarking neuro-inspired architectures in online learning,”
+IEEE Transactions on Computer-Aided Design of Integrated Circuits
+and Systems, vol. 37, no. 12, pp. 3067–3080, 2018.
+[15] Q. Chen, H. Wang, M. Li, G. Ren, S. Li, J. Zhu, J. Li, C. Liu, L. Zhang,
+and J. Wang, SPTAG: A library for fast approximate nearest neighbor
+search, 2018. [Online]. Available: https://github.com/Microsoft/SPTAG
+[16] Q. Chen, H. Zhao, W. Li, P. Huang, and W. Ou, “Behavior sequence
+transformer for e-commerce recommendation in alibaba,” in Proceedings
+of the 1st International Workshop on Deep Learning Practice for HighDimensional Sparse Data, 2019, pp. 1–4.
+[17] R. Chen, B. Liu, H. Zhu, Y. Wang, Q. Li, B. Ma, Q. Hua, J. Jiang,
+Y. Xu, and H. Deng, “Approximate nearest neighbor search under
+neural similarity metric for large-scale recommendation,” arXiv preprint
+arXiv:2202.10226, 2022.
+[18] P. Chi, S. Li, C. Xu, T. Zhang, J. Zhao, Y. Liu, Y. Wang, and
+Y. Xie, “Prime: A novel processing-in-memory architecture for neural
+network computation in reram-based main memory,” in Proceedings
+of the 43rd International Symposium on Computer Architecture,
+ser. ISCA ’16. IEEE Press, 2016, p. 27–39. [Online]. Available:
+https://doi.org/10.1109/ISCA.2016.13
+[19] C. Fu, C. Xiang, C. Wang, and D. Cai, “Fast approximate nearest
+neighbor search with the navigating spreading-out graph,” Proceedings
+of the VLDB Endowment, vol. 12, no. 5, pp. 461–474, 2019.
+[20] T. Ge, K. He, Q. Ke, and J. Sun, “Optimized product quantization,” IEEE
+transactions on pattern analysis and machine intelligence, vol. 36, no. 4,
+pp. 744–755, 2013.
+[21] S. Gollapudi, N. Karia, V. Sivashankar, R. Krishnaswamy, N. Begwani,
+S. Raz, Y. Lin, Y. Zhang, N. Mahapatro, P. Srinivasan, A. Singh, and
+H. V. Simhadri, “Filtered-diskann: Graph algorithms for approximate
+nearest neighbor search with filters,” in Proceedings of the ACM Web
+Conference 2023, ser. WWW ’23. New York, NY, USA: Association
+for Computing Machinery, 2023, p. 3406–3416. [Online]. Available:
+https://doi.org/10.1145/3543507.3583552
+[22] F. Groh, L. Ruppert, P. Wieschollek, and H. Lensch, “Ggnn: Graph-based
+gpu nearest neighbor search,” IEEE Transactions on Big Data, 2022.
+[23] R. Guo, P. Sun, E. Lindgren, Q. Geng, D. Simcha, F. Chern, and S. Kumar,
+“Accelerating large-scale inference with anisotropic vector quantization,”
+
+in International Conference on Machine Learning. PMLR, 2020, pp.
+3887–3896.
+[24] Y. Guo, M. Imani, J. Kang, S. Salamat, J. Morris, B. Aksanli, Y. Kim,
+and T. Rosing, “Hyperrec: Efficient recommender systems with hyperdimensional computing,” in 2021 26th Asia and South Pacific Design
+Automation Conference (ASP-DAC). IEEE, 2021, pp. 384–389.
+[25] K. He, F. Wen, and J. Sun, “K-means hashing: An affinity-preserving
+quantization method for learning binary compact codes,” in Proceedings
+of the IEEE conference on computer vision and pattern recognition,
+2013, pp. 2938–2945.
+[26] T. Higuchi, T. Kodama, K. Kato, R. Fukuda, N. Tokiwa, M. Abe,
+T. Takagiwa, Y. Shimizu, J. Musha, and K. Sakurai, “30.4 a 1tb 3b/cell
+3d-flash memory in a 170+ word-line-layer technology,” in 2021 IEEE
+International Solid-State Circuits Conference (ISSCC), vol. 64. IEEE,
+2021, pp. 428–430.
+[27] P.-K. Hsu, P.-Y. Du, C. R. Lo, H.-T. Lue, W.-C. Chen, T.-H. Hsu, T.-H.
+Yeh, C.-C. Hsieh, M.-L. Wei, K.-C. Wang, and C.-Y. Lu, “An approach of
+3d nand flash based nonvolatile computing-in-memory (nvcim) accelerator
+for deep neural networks (dnns) with calibration and read disturb analysis,”
+in 2020 IEEE International Memory Workshop (IMW), 2020, pp. 1–4.
+[28] H.-W. Hu, W.-C. Wang, Y.-H. Chang, Y.-C. Lee, B.-R. Lin, H.-M. Wang,
+Y.-P. Lin, Y.-M. Huang, C.-Y. Lee, and T.-H. Su, “Ice: An intelligent
+cognition engine with 3d nand-based in-memory computing for vector
+similarity search acceleration,” in 2022 55th IEEE/ACM International
+Symposium on Microarchitecture (MICRO). IEEE, 2022, pp. 763–783.
+[29] A. Jagmohan, M. Franceschini, L. A. Lastras-Montaño, and J. Karidis,
+“Adaptive endurance coding for nand flash,” in 2010 IEEE Globecom
+Workshops, 2010, pp. 1841–1845.
+[30] S. Jaiswal, R. Krishnaswamy, A. Garg, H. V. Simhadri, and S. Agrawal,
+“Ood-diskann: Efficient and scalable graph anns for out-of-distribution
+queries,” 2022.
+[31] J. Jang, H. Choi, H. Bae, S. Lee, M. Kwon, and M. Jung, “{CXLANNS}:{Software-Hardware} collaborative memory disaggregation and
+computation for {Billion-Scale} approximate nearest neighbor search,”
+in 2023 USENIX Annual Technical Conference (USENIX ATC 23), 2023,
+pp. 585–600.
+[32] S. Jayaram Subramanya, F. Devvrit, H. V. Simhadri, R. Krishnawamy,
+and R. Kadekodi, “Diskann: Fast accurate billion-point nearest neighbor
+search on a single node,” Advances in Neural Information Processing
+Systems, vol. 32, 2019.
+[33] H. Jegou, M. Douze, and C. Schmid, “Product quantization for nearest
+neighbor search,” IEEE transactions on pattern analysis and machine
+intelligence, vol. 33, no. 1, pp. 117–128, 2010.
+[34] H. Jégou, R. Tavenard, M. Douze, and L. Amsaleg, “Searching in one
+billion vectors: re-rank with source coding,” in 2011 IEEE International
+Conference on Acoustics, Speech and Signal Processing (ICASSP). IEEE,
+2011, pp. 861–864.
+[35] L. Jiang, M. Kim, W. Wen, and D. Wang, “Xnor-pop: A processing-inmemory architecture for binary convolutional neural networks in wide-io2
+drams,” in 2017 IEEE/ACM International Symposium on Low Power
+Electronics and Design (ISLPED), 2017, pp. 1–6.
+[36] J. Johnson, M. Douze, and H. Jégou, “Billion-scale similarity search
+with GPUs,” IEEE Transactions on Big Data, vol. 7, no. 3, pp. 535–547,
+2019.
+[37] D. Kang, M. Kim, S. C. Jeon, W. Jung, J. Park, G. Choo, D.-k. Shim,
+A. Kavala, S.-B. Kim, and K.-M. Kang, “13.4 a 512gb 3-bit/cell 3d
+6 th-generation v-nand flash memory with 82mb/s write throughput
+and 1.2 gb/s interface,” in 2019 IEEE International Solid-State Circuits
+Conference-(ISSCC). IEEE, 2019, pp. 216–218.
+[38] J. Kim, J. Seo, J. Park, S.-W. Lee, H. Roh, and H. Cho, “Es4d:
+Accelerating exact similarity search for high-dimensional vectors via
+vector slicing and in-ssd computation,” in 2022 IEEE 40th International
+Conference on Computer Design (ICCD). IEEE, 2022, pp. 298–306.
+[39] H. Lee, M. Kim, D. Min, J. Kim, J. Back, H. Yoo, J.-H. Lee, and
+J. Kim, “3d-fpim: An extreme energy-efficient dnn acceleration system
+using 3d nand flash-based in-situ pim unit,” in 2022 55th IEEE/ACM
+International Symposium on Microarchitecture (MICRO). IEEE, 2022,
+pp. 1359–1376.
+[40] S. Lee, C. Kim, M. Kim, S.-m. Joe, J. Jang, S. Kim, K. Lee, J. Kim,
+J. Park, and H.-J. Lee, “A 1tb 4b/cell 64-stacked-wl 3d nand flash memory
+with 12mb/s program throughput,” in 2018 IEEE International Solid-State
+Circuits Conference-(ISSCC). IEEE, 2018, pp. 340–342.
+[41] V. T. Lee, A. Mazumdar, C. C. del Mundo, A. Alaghi, L. Ceze, and
+M. Oskin, “Application codesign of near-data processing for similarity
+
+search,” in 2018 IEEE International Parallel and Distributed Processing
+Symposium (IPDPS). IEEE, 2018, pp. 896–907.
+[42] Y. Lee, H. Choi, S. Min, H. Lee, S. Beak, D. Jeong, J. W. Lee, and T. J.
+Ham, “Anna: Specialized architecture for approximate nearest neighbor
+search,” in 2022 IEEE International Symposium on High-Performance
+Computer Architecture (HPCA). IEEE, 2022, pp. 169–183.
+[43] S. Liang, Y. Wang, Y. Lu, Z. Yang, H. Li, and X. Li, “Cognitive {SSD}:
+A deep learning engine for {In-Storage} data retrieval,” in 2019 USENIX
+Annual Technical Conference (USENIX ATC 19), 2019, pp. 395–410.
+[44] S. Liang, Y. Wang, Z. Yuan, C. Liu, H. Li, and X. Li, “Vstore: instorage graph based vector search accelerator,” in Proceedings of the
+59th ACM/IEEE Design Automation Conference, 2022, pp. 997–1002.
+[45] G. Linden, B. Smith, and J. York, “Amazon. com recommendations:
+Item-to-item collaborative filtering,” IEEE Internet computing, vol. 7,
+no. 1, pp. 76–80, 2003.
+[46] T. Liu, C. Rosenberg, and H. A. Rowley, “Clustering billions of images
+with large scale nearest neighbor search,” in 2007 IEEE Workshop on
+Applications of Computer Vision (WACV ’07), 2007, pp. 28–28.
+[47] H.-T. Lue, P.-K. Hsu, K.-C. Wang, and C.-Y. Lu, “Introduction of nonvolatile computing in memory (nvcim) by 3d nand flash for inference
+accelerator of deep neural network (dnn) and the read disturb reliability
+evaluation : (invited paper),” in 2020 IEEE International Reliability
+Physics Symposium (IRPS), 2020, pp. 1–6.
+[48] H.-T. Lue, P.-K. Hsu, M.-L. Wei, T.-H. Yeh, P.-Y. Du, W.-C. Chen, K.-C.
+Wang, and C.-Y. Lu, “Optimal design methods to transform 3d nand flash
+into a high-density, high-bandwidth and low-power nonvolatile computing
+in memory (nvcim) accelerator for deep-learning neural networks (dnn),”
+in 2019 IEEE International Electron Devices Meeting (IEDM), 2019, pp.
+38.1.1–38.1.4.
+[49] Y. Luo, S. Ghose, Y. Cai, E. F. Haratsch, and O. Mutlu, “Improving
+3d nand flash memory lifetime by tolerating early retention loss and
+process variation,” Proc. ACM Meas. Anal. Comput. Syst., vol. 2, no. 3,
+dec 2018. [Online]. Available: https://doi.org/10.1145/3224432
+[50] Y. A. Malkov and D. A. Yashunin, “Efficient and robust approximate
+nearest neighbor search using hierarchical navigable small world graphs,”
+IEEE transactions on pattern analysis and machine intelligence, vol. 42,
+no. 4, pp. 824–836, 2018.
+[51] S. Morozov and A. Babenko, “Unsupervised neural quantization for
+compressed-domain similarity search,” in Proceedings of the IEEE/CVF
+International Conference on Computer Vision, 2019, pp. 3036–3045.
+[52] L. Nai, R. Hadidi, J. Sim, H. Kim, P. Kumar, and H. Kim, “Graphpim:
+Enabling instruction-level pim offloading in graph computing frameworks,”
+in 2017 IEEE International symposium on high performance computer
+architecture (HPCA). IEEE, 2017, pp. 457–468.
+[53] X. Ning, C. Desrosiers, and G. Karypis, “A comprehensive survey of
+neighborhood-based recommendation methods,” Recommender systems
+handbook, pp. 37–76, 2015.
+[54] N. Papandreou, H. Pozidis, T. Parnell, N. Ioannou, R. Pletka, S. Tomic,
+P. Breen, G. Tressler, A. Fry, and T. Fisher, “Characterization and analysis
+of bit errors in 3d tlc nand flash memory,” in 2019 IEEE International
+Reliability Physics Symposium (IRPS), 2019, pp. 1–6.
+[55] J. Park, M. Kim, M. Chun, L. Orosa, J. Kim, and O. Mutlu, “Reducing
+solid-state drive read latency by optimizing read-retry,” in Proceedings
+of the 26th ACM International Conference on Architectural Support for
+Programming Languages and Operating Systems, 2021, pp. 702–716.
+[56] J. Pennington, R. Socher, and C. D. Manning, “Glove: Global vectors for
+word representation,” in Proceedings of the 2014 conference on empirical
+methods in natural language processing (EMNLP), 2014, pp. 1532–1543.
+[57] J. Ren, M. Zhang, and D. Li, “Hm-ann: Efficient billion-point nearest neighbor search on heterogeneous memory,” Advances in Neural
+Information Processing Systems, vol. 33, pp. 10 672–10 684, 2020.
+[58] F.
+Research,
+“Indexing
+1g
+vectors
+Wiki,”
+https://github.com/facebookresearch/faiss/wiki/Indexing-1G-vectors, apr
+1 2021.
+[59] V. Seshadri, D. Lee, T. Mullins, H. Hassan, A. Boroumand, J. Kim,
+M. A. Kozuch, O. Mutlu, P. B. Gibbons, and T. C. Mowry, “Ambit:
+In-memory accelerator for bulk bitwise operations using commodity
+dram technology,” in Proceedings of the 50th Annual IEEE/ACM
+International Symposium on Microarchitecture, ser. MICRO-50 ’17.
+New York, NY, USA: Association for Computing Machinery, 2017, p.
+273–287. [Online]. Available: https://doi.org/10.1145/3123939.3124544
+[60] W. Shao, J. Sha, and C. Zhang, “Dispersed array ldpc codes and decoder
+architecture for nand flash memory,” IEEE Transactions on Circuits and
+Systems II: Express Briefs, vol. 65, no. 8, pp. 1014–1018, 2017.
+
+[61] W. Shim and S. Yu, “System-technology codesign of 3-d nand flash-based
+compute-in-memory inference engine,” IEEE Journal on Exploratory
+Solid-State Computational Devices and Circuits, vol. 7, no. 1, pp. 61–69,
+2021.
+[62] J. Sivic and A. Zisserman, “Video google: A text retrieval approach
+to object matching in videos,” in Computer Vision, IEEE International
+Conference on, vol. 3. IEEE Computer Society, 2003, pp. 1470–1470.
+[63] L. Song, X. Qian, H. Li, and Y. Chen, “Pipelayer: A pipelined reram-based
+accelerator for deep learning,” in 2017 IEEE International Symposium on
+High Performance Computer Architecture (HPCA), 2017, pp. 541–552.
+[64] TechInsight, “Samsung k93kgd8u0m die.” [Online]. Available: https:
+//www.techinsights.com/products/mfr-1812-801
+[65] M. Wang, X. Xu, Q. Yue, and Y. Wang, “A comprehensive survey and
+experimental comparison of graph-based approximate nearest neighbor
+search,” arXiv preprint arXiv:2101.12631, 2021.
+[66] J. Zhang, S. Khoram, and J. Li, “Efficient large-scale approximate nearest
+neighbor search on opencl fpga,” in Proceedings of the IEEE Conference
+on Computer Vision and Pattern Recognition, 2018, pp. 4924–4932.
+[67] K. Zhao, P. Pan, Y. Zheng, Y. Zhang, C. Wang, Y. Zhang, Y. Xu, and
+R. Jin, “Large-scale visual search with binary distributed graph at alibaba,”
+in Proceedings of the 28th ACM International Conference on Information
+and Knowledge Management, 2019, pp. 2567–2575.
+[68] W. Zhao, S. Tan, and P. Li, “Song: Approximate nearest neighbor search
+on gpu,” in IEEE 36th International Conference on Data Engineering
+(ICDE). IEEE, 2020, pp. 1033–1044.
+
+

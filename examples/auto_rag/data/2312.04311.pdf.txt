@@ -1,0 +1,1557 @@
+Finding Interpretable Class-Specific Patterns through Efficient Neural Search
+Nils Philipp Walter1 , Jonas Fischer2 , Jilles Vreeken1
+1
+
+arXiv:2312.04311v1 [cs.LG] 7 Dec 2023
+
+2
+
+CISPA Helmholtz Center for Information Security,
+Harvard T.H. Chan School of Public Health, Department of Biostatistics
+nils.walter@cispa.de, jfischer@hsph.harvard.edu, vreeken@cispa.de
+
+Abstract
+Discovering patterns in data that best describe the differences
+between classes allows to hypothesize and reason about classspecific mechanisms. In molecular biology, for example, this
+bears promise of advancing the understanding of cellular processes differing between tissues or diseases, which could lead
+to novel treatments. To be useful in practice, methods that
+tackle the problem of finding such differential patterns have
+to be readily interpretable by domain experts, and scalable to
+the extremely high-dimensional data.
+In this work, we propose a novel, inherently interpretable binary neural network architecture D IFF NAPS that extracts differential patterns from data. D IFF NAPS is scalable to hundreds of thousands of features and robust to noise, thus overcoming the limitations of current state-of-the-art methods in
+large-scale applications such as in biology. We show on synthetic and real world data, including three biological applications, that, unlike its competitors, D IFF NAPS consistently
+yields accurate, succinct, and interpretable class descriptions.
+
+1
+
+Introduction
+
+Machine learning can be broadly categorized into predictive and discovery-based approaches. Predictive tasks, such
+as object detection, protein folding (Jumper et al. 2021) and
+fusion reactor control (Degrave et al. 2022), are aimed at
+maximizing performance. Mastering such a given task often requires learning deep and intricate models from which
+it is hard up to impossible to understand how it arrived at a
+decision. In data-driven discovery, the goal is to find interpretable relations, called patterns, in the data that best describe observed classes. That is, the focus is on interpretability rather than maximizing performance. Discovery-based
+approaches are in especially high demand in biology, where
+the complex gene-regulatory dynamics and their differences
+between tissues or across diseases remain unclear, but, when
+elucidated, can offer new avenues for treatment and prevention. Here, symbolic explanations are essential for domain
+experts, for example, patterns of gene expression that are
+associated with cancer subtypes, to be able to directly understand and act on these patterns.
+Although there exist massive amounts of highdimensional data, such as genetic human variation or
+gene expression data, most existing approaches are not applicable as they either do not scale or are limited to pair-wise
+
+interactions. Here, we suggest a novel neural network learning approach that follows the paradigm of neuro-symbolic
+learning: leverage the predictive power of, and efficient
+frameworks for neural networks, while constraining the
+models such that learned patterns are fully interpretable.
+In particular, we learn a modified NN architecture that in
+the forward pass leverages binary weights and activations
+to achieve symbolically interpretable intermediate features,
+while leveraging efficient continuous optimization during
+backpropagation (Fischer and Vreeken 2021).
+To learn patterns that differentiate classes, such as healthy
+and tumor tissue, we build an architecture that is comprised
+of both a binary autoencoder and a separate classification
+head, which we call D IFF NAPS. We propose a multi-task
+objective to jointly optimize reconstruction and classification, driving learned patterns to differentiate between classes
+through a bottleneck in the autoencoder (see Fig. 1). We additionally introduce regularizers that improve optimization
+and emphasize interpretability of learned patterns.
+We empirically evaluate D IFF NAPS on synthetic and realworld data, comparing against baseline approaches such as
+classification trees, but also recent proposals such as rule
+lists, statistical and compression-based pattern mining, and
+neuro-symbolic learning. We show that D IFF NAPS faithfully
+reconstructs patterns relevant for distinguishing between
+classes, is robust to noise, and easily scales to hundreds of
+thousands of features, which makes it unique among existing
+work. We consider three high-dimensional biological applications, including breast cancer genomics, on which D IFF NAPS finds meaningful patterns that hold promise for giving
+domain experts insight in the drivers of these diseases.
+
+2
+
+Related Work
+
+Finding class-specific descriptions is at the core of
+discovery-oriented approaches in machine learning and data
+mining. A text-book example—and still widely used in
+practice—is the decision tree, which yields an interpretable
+decision path leading to a classification.
+In data mining, emerging pattern mining (Dong and Li
+1999; Garcı́a-Vico et al. 2018) and subgroup discovery
+(Klösgen 1995; Atzmueller 2015) are classic methods that
+aim to discover the conditions under which the class labels assume an exceptional distribution. Emerging pattern
+mining seeks to find every such condition, which results
+
+Figure 1: Left: The architecture of D IFF NAPS consists of a binarized autoencoder and a classifier attached to the hidden layer.
+The neurons in the hidden layer encode patterns and are active if the corresponding pattern is present in the data. Right: The
+table shows the parameters of D IFF NAPS. In the forward pass, the continuous weights W E are stochastically binarized (WbE ),
+while the classifier weights W C are kept continuous. The bias b in the hidden layer is ceiled to bTd . To extract the differential
+patterns (bottom right) per class P 1 and P 2 , both matrices, W E and W C , are deterministically binarized using the thresholds,
+τE and τC . A pattern, encoded by a neuron, is given by the index set of all 1 in the corresponding row of the weight matrix
+W E . For the differential patterns, the binarized classifier weight matrix functions as a multiplexer to assign patterns to classes.
+in extremely many, highly redundant, and mostly spurious
+results. Subgroup discovery yields the top-k patterns with
+the strongest association with the target. While this circumvents the pattern explosion, the results are still redundant
+(Van Leeuwen and Knobbe 2012). In contrast, we are interested in succinct and non-redundant descriptions.
+Statistically significant pattern mining (Llinares-López
+et al. 2015; Pellegrina, Riondato, and Vandin 2019) aims to
+discover patterns that have statistically significantly different
+distributions between classes. These methods tend to suffer
+from the pattern explosion. That is, even on small data they
+often find tens of thousands redundant patterns, partially due
+to lack of multiple hypothesis test correction.
+Pattern set mining (Bringmann and Zimmermann 2007;
+Budhathoki and Vreeken 2015; Hedderich et al. 2022)
+solves this by asking for a non-redundant set of classspecific patterns that together describe the data well. These
+methods work well on small data, but as they are based on
+combinatorial-search heuristics that are (at least) quadratic
+in the number of features, they are mostly inapplicable to
+high-dimensional data.
+Rule-based classification (Lakkaraju, Bach, and Leskovec
+2016; Dash, Gunluk, and Wei 2018; Chen and Rudin 2018;
+Proença and van Leeuwen 2020; Hüllermeier, Fürnkranz,
+and Loza Mencia 2020; McTavish et al. 2022; Huynh,
+Fürnkranz, and Beck 2023; Lin et al. 2022) aims to find interpretable classification rules of the form if X1 = 1∧X5 =
+1 then Y = 0. While such results are interpretable, these
+methods primarily focus on prediction rather than description and, hence, miss out on important details. Additionally,
+most are based on combinatorial optimization which prevents them from scaling to high-dimensional datasets.
+Neuro-symbolic classification (Wang et al. 2020, 2021;
+Kusters et al. 2022; Dierckx, Veroneze, and Nijssen 2023)
+has been proposed to overcome these computational limitations. These approaches design neural architectures from
+
+which, after training, symbolic classification rules can be extracted. Their optimization aside, in spirit these methods are
+similar to traditional rule-based classifiers as they focus on
+classification accuracy rather than complete rule discovery.
+In contrast, D IFF NAPS combines data reconstruction with
+classification to discover the human-interpretable explanations relevant for the classes present in the dataset.
+
+3
+
+Method
+
+In this section, we introduce D IFF NAPS, a fully interpretable
+binary neural network-based approach for finding patterns
+that describe the differences between classes in (very) highdimensional data. We start by giving the intuition.
+
+3.1
+
+D IFF N APS in a Nutshell
+
+Given a binary dataset and corresponding class labels, we
+seek to find interpretable patterns, which succinctly and differentially describe the partitioning of the dataset induced
+by the labels. That is, we want to find patterns that are more
+prevalent in a class than in the rest of the data and, hence,
+allow us to discriminate between classes.
+To this end, we propose D IFF NAPS, a binary neuralnetwork architecture designed to find exactly such interpretable patterns. The architecture consists of a two-layer
+binary autoencoder, combined with a classification head (see
+Figure 1). The classification head is a fully connected layer,
+attached to the hidden layer of the autoencoder.
+During the forward pass, we interpret the continuous
+weights wij ∈ [0, 1] in the autoencoder as Bernoulli variables distributed as B(wij ) and binarize them stochastically.
+Each neuron performs a dot product between the binary
+weights and input. The neuron is active if the 1s in the input align with the 1s in the weight vector. Thus the weight
+vector can be interpreted as a pattern and hence we refer to
+the hidden layer as the pattern layer. Intuitively, the weights
+
+are optimized such that the autoencoder—the set of encoded
+patterns—reconstructs the data well.
+To find differential patterns, we need to reward those patterns that are specific for a class. We achieve this by adding a
+classification head, corresponding to a logistic regression on
+the pattern layer. That is, we seek to classify samples based
+on the presence and absence of patterns.
+To find a good set of patterns, the network is trained using
+a multi-task loss. The autoencoder is trained to minimize the
+reconstruction error, while the classification head is trained
+to minimize the classification error. As such, the network is
+driven towards the learning of relevant patterns in the data
+that are at the same time differential between classes.
+
+3.2
+
+D IFF N APS in Detail
+
+if a neuron is active, the pattern encoded in that neuron is
+used as a whole for the reconstruction. Consequentially, to
+achieve a low reconstruction loss, the patterns formed during
+optimization must succinctly describe the data.
+To reward differential patterns, we connect a classifier
+to the pattern layer with continuous weights W C that is
+tasked to predict the label of a sample based on the presence and absence of patterns. The classifier is linear, and,
+hence, highly interpretable. To extract differential patterns,
+we binarize weight matrices W E and W C by thresholding
+with τe and τc , respectively. As described above, the patterns
+in the pattern layer are given by the index set of all i’s such
+that WbE [i, j] = 1. The discretized classifier weights allow
+us to assign patterns to their respective classes. For a formal
+description of the pattern extraction, we refer to App. A.2.
+
+Next, we discuss D IFF NAPS in detail. We first introduce notation, and then, in turn, discuss the architecture, how to extract differential patterns, how to carry out the forward pass,
+the multitask loss, and how to backpropagate errors through
+D IFF NAPS.
+
+Forward Pass We denote the size of the hidden dimension of the autoencoder by h and the binary weights of the
+encoder as WbE ∈ {0, 1}h×m . We define a linear layer without bias as fW (x) = W x. For a binary input x ∈ {0, 1}m ,
+we compute the activations of the pattern layer as
+
+Notation We consider labeled binary datasets (X, Y ) ∈
+{0, 1}n×m × {1, ..., K}n of n samples, m features and K
+classes. We write Xi,j to refer to the value of the j-th feature
+of the i-th sample. We denote the partition of the dataset for
+class k by X k = {Xi | Yi = k}.
+A pattern p is a subset of feature indices p ⊆ {1...m}
+and represents feature co-occurrences. A row Xi contains a
+pattern p iff Xij = 1, ∀j ∈ p. The support supp(p) of a
+pattern p is the number of rows that contain p, and analogue
+supp k (p) is the support where additionally Yi = k. We have
+
+z = fE (x) = λE (fWbE (x)) .
+
+P(p | k) =
+
+supp k (p)
+nk
+
+and P(k | p) =
+
+supp k (p)
+,
+supp(p)
+
+where nk is the number of samples where Yi = k.
+We say a pattern pk is differential for class k if it both has
+a higher support in X k than in X \ X k , and the probability
+of class k is highest for records that contain pk . Formally, iff
+k = arg max P(pk | k ′ ) = arg max P(k ′ | pk ) .
+k′ ∈{1...K}
+
+k′ ∈{1...K}
+
+Our goal is to find a set P k of such patterns per class k.
+Architecture The architecture of D IFF NAPS consists of a
+binary autoencoder and a classification head attached to the
+hidden layer. We graphically depict it in Fig. 1.
+The encoding and decoding layers of the autoencoder
+share a set of continuous weights W E , which are learned
+during backpropagation. The forward pass uses a binarized
+version of this weight matrix WbE . A hidden neuron j represents a pattern, and a feature i is part of the pattern corresponding to neuron j, iff WbE [i, j] = 1. The activation function of the encoder λE is a binary step function centered at a
+learned bias term, which represents how many features need
+to be present for the neuron to ”fire”—i.e. for the pattern to
+be considered present in the sample. We refer to the hidden
+layer as the pattern layer.
+The decoding layer performs the transposed linear transformation of the encoding layer i.e. Wbd = (WbE )T . Hence,
+
+where λE : R → {0, 1} is the binary step function as defined by Fischer and Vreeken (2021). To steer the encoded
+patterns to be differential rather than merely descriptive, we
+attach a classifier to the pattern layer. This classifier has continuous weights W C ∈ [0, 1]K×h and computes a linear
+transformation followed by a softmax of the binary hidden
+activations ŷ = softmax(fW C (z)). That is, its output depends only on the presence or absence of patterns.
+To ensure interpretability, we use the transposed encoder
+weights as weights of the decoder WbD = (WbE )T ∈
+{0, 1}m×h . The reconstruction x̂ of the input x is given by
+x̂ = fD (x) = λD (fWbD (z)) ,
+where λD is the activation of the decoder as defined by Fischer and Vreeken (2021), clamping the input to the interval
+[0, 1] and rounding it to the closest integer.
+Objective Function Our objective function consists of
+four terms: one for the autoencoder, one for the classification, and two regularization terms. To optimize the classifier, we use the cross-entropy loss between the predicted logits ŷ and the one-hot encoding of the ground truth label y:
+PK
+lc (y, ŷ) = k=1 yk log(ŷk ). As binary tabular data tends to
+be sparse, i.e., the number of ones #1 and number of zeros
+#0 are highly unbalanced, we use a sparsity-aware reconstruction loss (Fischer and Vreeken 2021) that weighs the
+importance of reconstructing a 1 proportional to the sparsity
+of the data. For a sample x ∈ {0, 1}m and reconstruction
+x̂ ∈ {0, 1}m , the reconstruction loss is
+le (x, x̂) =
+
+m
+X
+
+((1 − xj )α + xj (1 − α))|xj − x̂j | ,
+
+j=1
+#1s
+where α = #1s+#0s
+is the sparsity of the data.
+Our overall goal is to find a succinct description of the
+classes in terms of class-specific patterns encoded by the
+
+neurons in the hidden layer. To promote such patterns, we
+adapt the L2 -regularizer to penalize long patterns i.e. rows
+with a lot of 1s. This adapted regularizer is given by
+
+2
+m
+h
+X
+X
+
+rs (W ) =
+Wi,j  .
+i=1
+
+j=1
+
+Instead of considering each weight individually, we sum the
+rows before squaring them. This penalizes a pattern as a
+whole by imposing a quadratic cost on the length of the pattern. Hence, the regularizer tilts the optimization to prefer
+shorter patterns. To further push the weights to a binary solution we employ a W-shaped regularizer (Bai, Wang, and
+Liberty 2019; Dalleiger and Vreeken 2022), defined as
+X
+rb (W ) =
+min{r(w), r(w − 1)} ,
+w∈W
+
+r(w) = κ∥w∥1 + λ∥w∥22 .
+This regularizer is based on the elastic-net regularizer and
+the hyperparameters κ and λ specify the trade-off between
+the ridge and lasso penalty. For κ = λ = 1, the regularizer
+is depicted in Figure 3 in the Appendix. Compared to rs ,
+the W-shape regularizer is applied element-wise to push the
+individual weights towards zero or one.
+In the forward pass, we apply stochastic quantization
+Wb [i, j] ∼ B(W [i, j]). If all W [i, j], for j = {1...m}, have
+the same value, a sample of a row is binomially distributed
+with p = W [i, j] and m trials. The expected value is then
+mW [i, j]. Considering a minimum of two features for a neuron to fire, this means that when all W [i, j] drop below 1/m
+the neuron is on expectation ‘dead’. To prevent regularizers from zeroing out a neuron by pushing Wij below this
+threshold, we offset the weights by −1/m before applying
+the regularizers. For the same reason, we set the gradients
+Ph
+for rs to zero if j=1 W [i, j] < 1 .
+Given the parameters of the network θ = {W E , W C } the
+loss function for a dataset (X, Y ) is given by
+n
+X
+le (yi , ŷi )+λc lc (xi , x̂i )+rs (W E )+rb (θ) ,
+L(X, Y ; θ) =
+i=1
+
+where λc is a parameter that weighs the classification loss.
+Backward Pass We minimize this loss function using gradient descent. For this, we need to compute the partial
+derivatives with respect to the weights of the network. To
+be able to pass gradients through step-functions, we use the
+straight-through-estimator (STE), which is commonly employed in binary neural networks (Bengio, Léonard, and
+Courville 2013). For a particular layer, gu denotes the upstream gradient. For the derivatives with respect to the autoencoder, we follow the approach of Fischer and Vreeken
+(2021). In particular, for encoding layer W E and input x
+∂fWbE
+
+:= gu x⊤ ,
+
+∂fWbE
+
+:= (W E )⊤ gu .
+dx
+The derivative through the activation function of the deD
+coder λD is given by ∂λ
+∂x := 1gu . For the activation function of the pattern layer, the STE above is inapplicable. In the
+∂W E
+
+case that features are wrongly reconstructed, the resulting
+loss would propagate negative gradients through the STE,
+even to inactive neurons. Hence, we adapt the gated STE,
+which gates the gradient depending on whether a neuron was
+active in the forward pass. The derivatives for bias b and input x are
+
+∂λE
+gu if λE (x) = 1
+,
+:=
+0
+if λE (x) = 0
+∂b
+
+∂λE
+gu
+if λE (x) = 1
+.
+:=
+max (0, gu ) if λE (x) = 0
+∂x
+In quantized neural networks, it has been observed that
+quantizing the classification layer has a negative impact on
+performance (Choi et al. 2018; Liu et al. 2018; Hubara et al.
+2017). Thus we do not quantize the weights of the classifier during training. Although the classifier is not quantized,
+the classifications are transparent and interpretable, since the
+classification head is similar to logistic regression and the
+weights are constrained to be in the interval [0, 1].
+Finally, after a round of backpropagation, all weights are
+clipped to the interval [0, 1]. This enables stochastic binarization for the autoencoder and the classifier for the next
+forward pass and to transparently interpret the contribution
+of a pattern to a certain class. We clamp the bias at a maximum of −1, such that at least two features have to be present
+for a neuron to become active.
+This concludes the formal description of D IFF NAPS.
+D IFF N APS in Practice To use D IFF NAPS in practice, we
+need to choose the number h of hidden neurons and set λc .
+For medium to high-dimensional data, setting the size of
+the hidden layer lower than the dimensionality of the data,
+m, creates an inductive bias towards differential patterns.
+Since to achieve both a low reconstruction loss and low classification loss, the patterns in the hidden layer have to be predictive, i.e., high P(k | pk ), and due to the bottleneck, the
+patterns must cover the partition well, i.e., high P(pk | k).
+For low dimensional data, choosing a small hidden layer
+results in an under-parameterized network that will underfit.
+Choosing a larger hidden layer, thus having more parameters, outweighs the benefits of the bottleneck.
+Parameter λc weighs the effect of the reconstruction and
+classification losses. The magnitude of the reconstruction
+loss varies strongly among different datasets. In practice, we
+increase λc until the classification error saturates.
+
+4
+
+Experiments
+
+We compare D IFF NAPS five state-of-the art methods on synthetic and real-world data. In particular, we compare to decision trees (C ART, Breiman 1984), significant pattern mining (SP U M AN T E Pellegrina, Riondato, and Vandin 2019),
+MDL-based label-descriptive (P REMISE, Hedderich et al.
+2022) and classification rule learning (C LASSY, Proença and
+van Leeuwen 2020), and neuro-symbolic classification rule
+learning (R LL, Wang et al. 2021).
+We additionally considered top-k subgroup discovery
+(Lemmerich and Becker 2018), difference description (Budhathoki and Vreeken 2015), falling rule lists (Chen and
+
+Rudin 2018; Lin et al. 2022), optimal sparse decision
+trees (McTavish et al. 2022), and class-specific BMF (Hess
+and Morik 2017), but found these do not scale to, or do not
+find patterns on non-trivial data.
+P REMISE and SP U M AN T E consider only binary classes.
+To allow fair comparison in a multiclass scenario, we run
+them in a one-versus-all for each class and merge the results.
+The hyperparameters for the predictive approaches are
+tuned based on accuracy on a hold-out set. For SP U M AN T E,
+we used the default parameters given by the authors. We fit
+the hyperparameters of D IFF NAPS based on our loss function. The experiments for the neural approaches, i.e. D IFF NAPS and R LL, are executed on GPUs. For more on the experimental setup, we refer to Appendix A.3.
+
+4.1
+
+Synthetic Data
+
+To evaluate all methods on data with known ground we first
+consider synthetic data. We measure success in terms of soft
+F1 (Hedderich et al. 2022), by which we avoid overly penalizing methods that recover only parts rather than exact
+matches of ground truth patterns. The formal definition can
+be found in Appendix A.4. Informally, the soft F1 score does
+not require strict equality between a discovered pattern pd
+and the corresponding ground truth pattern pg but uses a soft
+equality, i.e., the Jaccard distance of pd and pg .
+Data Generation In the experiments below we generate
+synthetic data as follows. We start with an empty data matrix of n rows and m features. We sample 10 patterns per
+class, uniformly at random (u.a.r.) across features, drawing
+their length from U(5, 15). We sample 20 common patterns
+u.a.r, but draw their length from U(0.01m, 0.025m) to maintain the density of the data. Per class, we generate equally
+many rows. Per row, we plant u.a.r. two common and three
+class-specific patterns. We then apply both additive noise by
+flipping ten 0s to 1s, as well as destructive noise by flipping
+1s due to a pattern to 0s with a probability of 2.5%. Finally,
+we assign the class label such that P(k | p ∈ Pk ) = 0.9. Unless specified otherwise, we report the average results over
+five independently drawn datasets.
+Scalability in m First, we consider how well D IFF NAPS
+scales to high dimensional data. We fix the number of
+classes K to 2, the number of rows n to 10 000, and vary
+m ∈ {100, 500, 1k, 5k, 10k, 15k, 20k, 25k, 50k, 100k}. To
+reduce the overlap across patterns in low-dim. data m <
+1000, we sample 5 patterns per class and no shared patterns.
+We run all methods and report their results in Fig. 2a,b.
+Except for P REMISE and SP U M AN T E, all terminate within
+24 hours. P REMISE runs out of time for m > 20k.
+SP U M AN T E runs out of memory for m < 1k and m > 10k.
+We see in Fig. 2a that C LASSY is one order of magnitude
+slower than D IFF NAPS, R LL, and C ART all of which perform on par in terms of runtime.
+Next, we inspect the average F1-scores, which we show
+in Fig. 2a. We see that C LASSY, R LL and C ART perform
+poorly, as they recover only small parts of the ground truth
+patterns, and that SP U M AN T E varies in performance due to
+having to sub-sample the data. P REMISE achieves scores of
+approx. 0.5 across all m. D IFF NAPS consistently recovers
+
+ground truth well across many orders of magnitudes of m.
+For very high dimensional data, performance slowly deteriorates but still outcompetes the state-of-the-art by a wide
+margin.
+Multi-class Next, we examine how well D IFF NAPS scales
+to a large number of classes. To this end, we generate data as above, varying the number of classes K ∈
+{2, 5, 10, 15, ..., 25, 50}, generating 1 000 rows per class,
+setting m = 5 000. We give the results in Fig. 2c. R LL,
+C LASSY, C ART, and SP U M AN T E fail to recover more than
+a small subset of the ground truth. In addition SP U M AN T E
+runs out of memory for more than 10 classes. P REMISE
+achieves scores of around 50% up to 20 classes, but fails
+to terminate for K ≥ 40, as running in a one-versus-all setting incurs high computational costs. In contrast, D IFF NAPS
+stably performs best in this setting.
+Robustness to Noise Finally, we evaluate how robust
+methods are to noise. Here, we set K = 2, m = 5 000,
+and n = 2 000. First, we consider additive noise by varying
+the number of randomly added 1s per row, from 0 to 100. In
+the interest of space, we postpone the Figure to App. Fig. 5.
+We find that SP U M AN T E rapidly fails to discover meaningful results, and runs out of memory for a = 100. In contrast,
+D IFF NAPS and P REMISE are robust across varying a, with
+D IFF NAPS outperforming its competitors by a wide margin.
+Second, we consider destructive noise by varying the
+probability of flipping a 1 to a 0, from 0% to 60%. We show
+the results in Fig. 2d. C ART, C LASSY, and R LL all obtain
+F1 scores of near-zero, SP U M AN T E performs slightly better on average but shows a large variance in the performance
+across repetitions. P REMISE is the best among competitors,
+but its performance declines rapidly even for small amounts
+of destructive noise. In contrast, D IFF NAPS is robust, its performance virtually unaffected up to 20% destructive noise,
+i.e., up to a signal-to-noise ratio of 6dB.
+
+4.2
+
+Real-World Data
+
+Next, we evaluate D IFF NAPS on five biological datasets. We
+consider phenotypical Cardio data (Ulianova 2017), a Disease diagnosis (Patil and Rathod 2020) dataset, two highdimensional binarized gene expression datasets for breast
+cancer, BRCA-N and BRCA-S, that we derived from The
+Cancer Genome Atlas (TCGA) (see App. A.5), and a human genetic variation data set (The 1000 Genomes Project
+Consortium 2015; Fischer and Vreeken 2020).
+We consider the same competitors as before, except R LL
+as it returns no patterns for any data but Cardio. To obtain
+results with SP U M AN T E we had to restrict it to 250 samples
+for Cardio, 4000 for Disease, 50 for both BRCA datasets. We
+could not find any setting to make it work on Genomes. We
+report running time for all methods in App. Tab. 2.
+Quantitative Results As the ground truth is unknown,
+we report the number of discovered patterns, their average
+length, and the area under the curve of what percentage of
+the data the patterns cover when we order them by probability of seeing a class given a pattern (see App. A.5). Intuitively, this corresponds to sensitivity (how much do we
+
+10−2
+102
+
+103
+104
+105
+Number of features |m|
+
+(a) Runtime (lower is better)
+
+C LASSY
+
+SP U M AN T E
+
+102
+
+P REMISE
+
+R LL
+
+1
+0.8
+0.6
+0.4
+0.2
+0
+
+SoftF1
+
+100
+
+C ART
+
+SoftF1
+
+102
+
+SoftF1
+
+time (min)
+
+D IFF NAPS
+
+1
+0.8
+0.6
+0.4
+0.2
+0
+103
+104
+105
+Number of features |m|
+
+10 20 30 40 50
+Number of classes K
+
+(b) F1-score (higher is better)
+
+(c) F1-score (higher is better)
+
+1
+0.8
+0.6
+0.4
+0.2
+0
+0
+
+0.2
+0.4
+Destructive noise
+
+0.6
+
+(d) F1-score (higher is better)
+
+Figure 2: Scalability. We show runtime (a) and F1-scores (b) when varying m, resp. F1-scores when varying the number of
+classes K (c) and varying the amount of destructive noise (d). Our method, D IFF NAPS can confidently handle a large number
+of features with a negligible increase in runtime, outperforms all state-of-the-art competitors significantly in terms of F1.
+D IFF NAPS (ours)
+
+C ART
+
+C LASSY
+
+P REMISE
+
+SP U M AN T E
+
+Dataset
+
+n
+
+m
+
+K
+
+#P
+
+|P |
+
+AUC
+
+#P
+
+|P |
+
+AUC
+
+#P
+
+|P |
+
+AUC
+
+#P
+
+|P |
+
+AUC
+
+#P
+
+|P |
+
+AUC
+
+Cardio
+Disease
+BRCA-N
+BRCA-S
+Genomes
+
+68k
+5k
+222
+187
+2.5k
+
+45
+131
+20k
+20k
+225k
+
+2
+41
+2
+4
+6
+
+14
+838
+146
+1k
+732
+
+2
+2
+9
+2
+7
+
+.56
+.84
+.91
+.86
+.77
+
+7k
+1
+1
+22
+127
+
+6
+2
+2
+2
+4
+
+.62
+.00
+.00
+.31
+.46
+
+10
+25
+3
+2
+7
+
+2
+2
+1
+1
+2
+
+.36
+.11
+.45
+.23
+.36
+
+28
+187
+–
+–
+–
+
+1
+3
+–
+–
+–
+
+.51
+.84
+–
+–
+–
+
+346
+2k
+4k
+0
+–
+
+4
+3
+3
+0
+–
+
+.56
+.39
+.95
+0
+–
+
+Table 1: Real world data We give the number of samples (n), features (m), and classes (K), and per method the number
+of discovered patterns (#P ), average length of discovered patterns (|P |) and area under the curve (AUC) of the sensitivityspecificity plot (see App. Fig. 6, Sec A.5). We aborted experiments taking longer than 24h or running out of memory (–).
+cover) versus specificity (how specific are patterns for that
+class). To filter spurious patterns we compute this measure
+over patterns for which at least 1/k + 0.1 of their probability mass is assigned to one class. For example, for the
+binary setting only those patterns that occur at least 60%
+in the class, where 50% would correspond to independence
+(random coin flip).
+We report basic statistics and results in Tab. 1. We observe
+that D IFF NAPS performs well across all datasets, obtaining
+AUC scores that are either best by a wide margin (Disease,
+BRCA-S, Genomes) or close second best (Cardio, BRCA-N).
+Consistent with our synthetic data study, our competitors
+yield mixed results; they do not scale to high dimensional
+data (P REMISE, SP U M AN T E), or return prohibitively many
+or unspecific patterns (SP U M AN T E, C ART, resp. C LASSY).
+Regarding the length of discovered patterns, we observe that those by D IFF NAPS reflect the complexity of the
+datasets: on Cardio and Disease, which contain complex,
+information rich features, it finds smaller patterns, while for
+the other datasets, that consist of low-level molecular information as features, it finds longer patterns to capture complex relationships. In contrast, C LASSY generally discovers only few, medium-length patterns across datasets, while
+C ART recovers more complex relationships that are, however, less descriptive of the classes as measured by the AUC.
+
+Qualitative Results Next, we analyse the results of D IFF NAPS in detail and show their relevance for biological re-
+
+search on the breast cancer datasets.1
+Differentiating Breast Cancer and Healthy Tissue Breast
+cancer (BRCA) is the most common cancer and the leading cause of death from cancer among women in the
+world (Lukasiewicz et al. 2021). The exact underlying gene
+regulatory dynamics are actively researched.
+We apply D IFF NAPS on BRCA-N and discover 146 differential patterns of gene co-expression for BRCA and adjacent normal tissue. To see if these capture relevant molecular
+differences, we run a statistical gene set over-representation
+analysis using KEGG (see App. A.5), a manually curated
+gold standard for molecular interactions, reactions, and relations (Kanehisa et al. 2017).
+We first do a pooled analysis over all genes identified by
+any discovered pattern for a class, i.e., the union of features
+in the respective patterns. We find that enriched pathways
+for tumor tissue correspond to known cancer drivers, such
+as MAPK and WNT signalling, while for the healthy tissue we find pathways linked to the regulation of lipolysis
+in adipocytes as well as PPAR signalling, both of which are
+known to be dysregulated in BRCA (Yang et al. 2018; Zhao
+1
+Human variation data, such as the Genomes dataset, is an ideal
+application for D IFF NAPS as it is a high-dimensional resource of
+binary data in which we can uncover potential genetic predispositions of individuals to diseases, thus allowing to advance early
+detection and treatment. However, in the available data, the target
+class is the population membership of the individual, which raises
+ethical concerns for detailed analysis. Sadly, no further meta-data
+is available to meaningfully split Genomes for differential analysis.
+
+et al. 2022). In short, D IFF NAPS discovers patterns that together describe complex, cancer-related functions.
+Investigating individual patterns, we find that while many
+identify general pathways like above, others are enriched for
+specific pathways, such as PPAR. This shows the discovered
+patterns reveal details that can potentially be used for discovering alternative treatment targets for these pathways.
+Differentiating Cancer Subtypes It is well known that breast
+cancer is not one single disease, e.g. the Luminal A, Luminal B, HER2+, and the Triple Negative subtypes all show
+distinct molecular behaviour, response to treatment, and patient survival. To investigate whether D IFF NAPS can elucidate differences between these subtypes, we run D IFF NAPS
+on BRCA-S, a balanced dataset of primary BRCA tissue with
+subtype label, and again analyse the discovered patterns using a gene set over-representation analysis in KEGG.
+Starting with a pooled analysis, we find significantly enriched pathways that capture specifics of classes. Luminal
+A, for example, is defined by a lack of HER2. For this
+subtype, D IFF NAPS discovers patterns that are enriched for
+(i.e. related to) dilated cardiomyopathy. This is a common
+side-effect in Trastuzumab treatment, a drug which targets
+and depletes HER2 in HER2 positive subtypes (Crone et al.
+2002). Luminal B is Estrogen receptor positive, meaning it
+expresses this receptor. For this subtype, we find patterns
+that are significantly enriched for sphingolipid metabolism.
+This is an important component for cell survival, proliferation, and promotion of cell migration and invasion in Estrogen receptor-positive BRCAs (Corsetto et al. 2023). These
+metabolites are also targets of treatment, and the discovered
+patterns could reveal insights leading to potential new therapeutic targets.
+Promising Novel Patterns On both BRCA datasets, we find
+highly class-specific patterns, with average log-odds of
+P(p | k) against P(p | ¬k) of ≈ 8 resp. ≈ 5. Encouragingly, the above analysis above showed that many of these
+patterns capture complex biological processes related with
+BRCA progression or tumorigenes. More exciting perhaps
+are those patterns for which the genes are not yet annotated
+in a pathway but are strongly associated with BRCA or its
+subtypes. We are looking forward to conducting an in-depth
+analysis with oncologists, relating these patterns with more
+fine-grained subtypes or treatment groups.
+
+5
+
+Discussion
+
+Experiments show that D IFF NAPS finds succinct sets of differential patterns, scales to hundreds of thousands of features, large number of classes, and is robust to noise.
+On synthetic data, we saw that existing methods fail to recover significant portions of the planted differential patterns.
+Rule-based methods only recovered small subsets of incomplete patterns. SP U M AN T E suffers from memory problems,
+and returns overly large, redundant results. P REMISE does
+account for redundancy, which results in better performance,
+but its combinatorial search does not scale well. R LL and
+C ART scale very well, but show poor performance on synthetic data. Surprisingly, none of the existing approaches are
+robust to destructive noise.
+
+On real world data, we find D IFF NAPS is the only approach that scales well and retrieves high-quality patterns.
+While other approaches show good performance on individual datasets, e.g. C ART on Cardio and P REMISE on Disease
+data, they fail to do so in general. We also note that C ART
+and SP U M AN T E tend to return thousands of patterns, which
+undermines the goal of human interpretation.
+D IFF NAPS fulfills the goal we set for this work and
+presents itself as a suitable candidate to take on the challenge of high-dimensional pattern mining in applications
+like genomics. As encouraging its ability in retrieving classdescriptive patterns at scale is, there is of course no free
+lunch. For example, on low-dimensional data of up to a hundred features, D IFF NAPS has a harder time differentiating
+classes and individual patterns and performs ‘only’ on par
+with other approaches. For such low-dimensional regimes,
+employing methods with guarantees, that are usually infeasible for large-scale data is still preferential.
+Similar to most existing work, D IFF NAPS considers only
+conjunctions of features as patterns. In many applications,
+relations can be more complex, such as mutually exclusive
+features. It would make for engaging future work to study
+extensions of D IFF NAPS to capture such relations. In a case
+study on breast cancer datasets, we show that D IFF NAPS
+discovers patterns that capture class-relevant biological processes. The results are not only encouraging, but also contain
+many patterns for which the genes are not yet annotated to
+a pathway or process, or the function of individual genes
+is still unknown. These results offer an exciting opportunity to investigate novel links between genes and diseases
+in follow-up studies with domain experts.
+
+6
+
+Conclusion
+
+We studied the problem of discovering differential patterns,
+i.e., patterns that succinctly describe and differentiate between the classes present in the data. Existing methods
+are often limited to binary classes, do not scale to highdimensional data, or retrieve uninformative pattern sets.
+To tackle this problem, we proposed a novel neural network architecture D IFF NAPS consisting of a binary autoencoder and a classification head. With a flat, binary architecture, the learned intermediate layer captures symbolic patterns. For the optimization, we proposed a multi-task objective to jointly optimize the reconstruction and classification,
+thus driving learning of patterns that both reconstruct the
+data well and differentiate between classes.
+On synthetic and real-world data, including biological
+case studies on breast cancer, we show that D IFF NAPS
+strikes a unique balance among existing work, scales to
+high-dimensional data, is robust to noise, and accurately retrieves differential patterns that are highly interpretable.
+
+Acknowledgements
+The BRCA datasets were derived from data made available
+by the TCGA Research Network.2
+2
+
+https://www.cancer.gov/tcga
+
+References
+Atzmueller, M. 2015. Subgroup discovery. Wiley Interdisciplinary Reviews: Data Mining and Knowledge Discovery,
+5(1): 35–49.
+Bai, Y.; Wang, Y.-X.; and Liberty, E. 2019. Quantized Neural Networks via Proximal Operators. In Proceedings of
+the International Conference on Learning Representations
+(ICLR). OpenReview.
+Bengio, Y.; Léonard, N.; and Courville, A. 2013. Estimating or propagating gradients through stochastic neurons for
+conditional computation. arXiv preprint arXiv:1308.3432.
+Breiman, L. 1984. Classification and regression trees. Routledge.
+Bringmann, B.; and Zimmermann, A. 2007. The Chosen Few: On identifying valuable patterns. In Proceedings
+of the 7th IEEE International Conference on Data Mining
+(ICDM), Omaha, NE, 63–72.
+Budhathoki, K.; and Vreeken, J. 2015. The Difference and
+the Norm – Characterising Similarities and Differences between Databases. In Proceedings of the European Conference on Machine Learning and Principles and Practice of
+Knowledge Discovery in Databases (ECML PKDD), Porto,
+Portugal. Springer.
+Chen, C.; and Rudin, C. 2018. An optimization approach
+to learning falling rule lists. In Proceedings of the International Conference on Artificial Intelligence and Statistics
+(AISTATS), 604–612. PMLR.
+Chen, E. Y.; Tan, C. M.; Kou, Y.; Duan, Q.; Wang, Z.;
+Meirelles, G. V.; Clark, N. R.; and Ma’ayan, A. 2013. Enrichr: interactive and collaborative HTML5 gene list enrichment analysis tool. BMC Bioinformatics, 14: 128.
+Choi, J.; Chuang, P. I.-J.; Wang, Z.; Venkataramani, S.;
+Srinivasan, V.; and Gopalakrishnan, K. 2018. Bridging
+the accuracy gap for 2-bit quantized neural networks (qnn).
+arXiv preprint arXiv:1807.06964.
+Corsetto, P. A.; Zava, S.; Rizzo, A. M.; and Colombo, I.
+2023. The Critical Impact of Sphingolipid Metabolism in
+Breast Cancer Progression and Drug Response. Int J Mol
+Sci, 24(3).
+Crone, S. A.; Zhao, Y. Y.; Fan, L.; Gu, Y.; Minamisawa, S.;
+Liu, Y.; Peterson, K. L.; Chen, J.; Kahn, R.; Condorelli, G.;
+Ross, J.; Chien, K. R.; and Lee, K. F. 2002. ErbB2 is essential in the prevention of dilated cardiomyopathy. Nat Med,
+8(5): 459–465.
+Dalleiger, S.; and Vreeken, J. 2022. Efficiently factorizing
+boolean matrices using proximal gradient descent. Proceedings of the Annual Conference on Neural Information Processing Systems (NeurIPS), 35: 4736–4748.
+Dash, S.; Gunluk, O.; and Wei, D. 2018. Boolean decision rules via column generation. In Proceedings of the Annual Conference on Neural Information Processing Systems
+(NeurIPS).
+Degrave, J.; Felici, F.; Buchli, J.; Neunert, M.; Tracey, B.;
+Carpanese, F.; Ewalds, T.; Hafner, R.; Abdolmaleki, A.;
+de Las Casas, D.; Donner, C.; Fritz, L.; Galperti, C.; Huber, A.; Keeling, J.; Tsimpoukelli, M.; Kay, J.; Merle, A.;
+
+Moret, J. M.; Noury, S.; Pesamosca, F.; Pfau, D.; Sauter, O.;
+Sommariva, C.; Coda, S.; Duval, B.; Fasoli, A.; Kohli, P.;
+Kavukcuoglu, K.; Hassabis, D.; and Riedmiller, M. 2022.
+Magnetic control of tokamak plasmas through deep reinforcement learning. Nature, 602(7897): 414–419.
+Dierckx, L.; Veroneze, R.; and Nijssen, S. 2023. RL-Net:
+Interpretable Rule Learning with Neural Networks. In Proceedings of the Pacific-Asia Conference on Knowledge Discovery and Data Mining, 95–107. Springer.
+Dong, G.; and Li, J. 1999. Efficient mining of emerging patterns: Discovering trends and differences. In Proceedings of
+the ACM International Conference on Knowledge Discovery
+and Data Mining (SIGKDD).
+Fischer, J.; and Vreeken, J. 2020. Discovering Succinct Pattern Sets Expressing Co-Occurrence and Mutual Exclusivity. In Proceedings of the ACM International Conference
+on Knowledge Discovery and Data Mining (SIGKDD), 813–
+823.
+Fischer, J.; and Vreeken, J. 2021. Differentiable pattern set
+mining. In Proceedings of the ACM International Conference on Knowledge Discovery and Data Mining (SIGKDD),
+383–392.
+Garcı́a-Vico, A.; Carmona, C. J.; Martı́n, D.; Garcı́aBorroto, M.; and del Jesus, M. J. 2018. An overview of
+emerging pattern mining in supervised descriptive rule discovery: taxonomy, empirical study, trends, and prospects.
+Wiley Interdisciplinary Reviews: Data Mining and Knowledge Discovery, 8(1): e1231.
+Hedderich, M. A.; Fischer, J.; Klakow, D.; and Vreeken,
+J. 2022. Label-descriptive patterns and their application
+to characterizing classification errors. In Proceedings of
+the International Conference on Machine Learning (ICML),
+8691–8707. PMLR.
+Hess, S.; and Morik, K. 2017. C-salt: Mining class-specific
+alterations in boolean matrix factorization. In Proceedings
+of the European Conference on Machine Learning and Principles and Practice of Knowledge Discovery in Databases
+(ECML PKDD), 547–563. Springer.
+Hubara, I.; Courbariaux, M.; Soudry, D.; El-Yaniv, R.; and
+Bengio, Y. 2017. Quantized neural networks: Training neural networks with low precision weights and activations.
+Journal of Machine Learning Research, 18(1): 6869–6898.
+Hüllermeier, E.; Fürnkranz, J.; and Loza Mencia, E. 2020.
+Conformal rule-based multi-label classification. In Proceedings of Advances in Artificial Intelligence (KI), 290–296.
+Springer.
+Huynh, V. Q. P.; Fürnkranz, J.; and Beck, F. 2023. Efficient
+learning of large sets of locally optimal classification rules.
+Machine Learning, 112(2): 571–610.
+Jumper, J.; Evans, R.; Pritzel, A.; Green, T.; Figurnov, M.;
+Ronneberger, O.; Tunyasuvunakool, K.; Bates, R.; Žı́dek,
+A.; Potapenko, A.; Bridgland, A.; Meyer, C.; Kohl, S. A. A.;
+Ballard, A. J.; Cowie, A.; Romera-Paredes, B.; Nikolov,
+S.; Jain, R.; Adler, J.; Back, T.; Petersen, S.; Reiman, D.;
+Clancy, E.; Zielinski, M.; Steinegger, M.; Pacholska, M.;
+Berghammer, T.; Bodenstein, S.; Silver, D.; Vinyals, O.; Senior, A. W.; Kavukcuoglu, K.; Kohli, P.; and Hassabis, D.
+
+2021. Highly accurate protein structure prediction with AlphaFold. Nature, 596(7873): 583–589.
+Kanehisa, M.; Furumichi, M.; Tanabe, M.; Sato, Y.; and
+Morishima, K. 2017. KEGG: new perspectives on genomes,
+pathways, diseases and drugs. Nucleic Acids Res, 45(D1):
+D353–D361.
+Klösgen, W. 1995. Explora: A Multipattern and Multistrategy Discovery Assistant. In Proceedings of the ACM International Conference on Knowledge Discovery and Data
+Mining (SIGKDD).
+Kusters, R.; Kim, Y.; Collery, M.; Marie, C. d. S.; and Gupta,
+S. 2022. Differentiable Rule Induction with Learned Relational Features. In Proceedings of the International Workshop on Neural-Symbolic Learning and Reasoning.
+Lakkaraju, H.; Bach, S. H.; and Leskovec, J. 2016. Interpretable decision sets: A joint framework for description and
+prediction. In Proceedings of the ACM International Conference on Knowledge Discovery and Data Mining (SIGKDD),
+1675–1684.
+Lemmerich, F.; and Becker, M. 2018. pysubgroup: Easyto-use subgroup discovery in python. In Proceedings of the
+European Conference on Machine Learning and Principles
+and Practice of Knowledge Discovery in Databases (ECML
+PKDD), 658–662.
+Lin, J.; Zhong, C.; Hu, D.; Rudin, C.; and Seltzer, M. 2022.
+Generalized and Scalable Optimal Sparse Decision Trees.
+arXiv:2006.08690.
+Liu, Z.; Wu, B.; Luo, W.; Yang, X.; Liu, W.; and Cheng,
+K.-T. 2018. Bi-real net: Enhancing the performance of 1bit cnns with improved representational capability and advanced training algorithm. In Proceedings of the European
+Conference on Computer Vision (ECCV), 722–737.
+Llinares-López, F.; Sugiyama, M.; Papaxanthos, L.; and
+Borgwardt, K. 2015. Fast and memory-efficient significant
+pattern mining via permutation testing. In Proceedings of
+the ACM International Conference on Knowledge Discovery and Data Mining (SIGKDD), 725–734.
+Lukasiewicz, S.; Czeczelewski, M.; Forma, A.; Baj, J.;
+Sitarz, R.; and Stanislawek, A. 2021. Breast CancerEpidemiology, Risk Factors, Classification, Prognostic
+Markers, and Current Treatment Strategies-An Updated Review. Cancers (Basel), 13(17).
+McTavish, H.; Zhong, C.; Achermann, R.; Karimalis, I.;
+Chen, J.; Rudin, C.; and Seltzer, M. I. 2022. Fast Sparse Decision Tree Optimization via Reference Ensembles. In Proceedings of the AAAI Conference on Artificial Intelligence
+(AAAI).
+Patil, P.; and Rathod, P. 2020. Disease Symptom Prediction. https://www.kaggle.com/datasets/itachi9604/diseasesymptom-description-dataset.
+Pellegrina, L.; Riondato, M.; and Vandin, F. 2019.
+SPuManTE: Significant pattern mining with unconditional
+testing. In Proceedings of the ACM International Conference on Knowledge Discovery and Data Mining (SIGKDD),
+1528–1538.
+
+Proença, H. M.; and van Leeuwen, M. 2020. Interpretable
+multiclass classification by MDL-based rule lists. Information Sciences, 512: 1372–1393.
+The 1000 Genomes Project Consortium. 2015. A global reference for human genetic variation. Nature, 526(7571): 68–
+74.
+Ulianova, S. 2017.
+Cardiovascular Disease dataset.
+https://www.kaggle.com/datasets/sulianova/cardiovasculardisease-dataset.
+Van Leeuwen, M.; and Knobbe, A. 2012. Diverse subgroup
+set discovery. Data Mining and Knowledge Discovery, 25:
+208–242.
+Wang, Z.; Zhang, W.; Liu, N.; and Wang, J. 2021. Scalable
+rule-based representation learning for interpretable classification. In Proceedings of the Annual Conference on Neural
+Information Processing Systems (NeurIPS), 30479–30491.
+Wang, Z.; Zhang, W.; Ning, L.; and Wang, J. 2020. Transparent classification with multilayer logical perceptrons and
+random binarization. In Proceedings of the AAAI Conference on Artificial Intelligence (AAAI), 6331–6339.
+Wilks, C.; Zheng, S. C.; Chen, F. Y.; Charles, R.; Solomon,
+B.; Ling, J. P.; Imada, E. L.; Zhang, D.; Joseph, L.; Leek,
+J. T.; Jaffe, A. E.; Nellore, A.; Collado-Torres, L.; Hansen,
+K. D.; and Langmead, B. 2021. recount3: summaries and
+queries for large-scale RNA-seq expression and splicing.
+Genome Biol, 22(1): 323.
+Yang, D.; Li, Y.; Xing, L.; Tan, Y.; Sun, J.; Zeng, B.; Xiang, T.; Tan, J.; Ren, G.; and Wang, Y. 2018. Utilization
+of adipocyte-derived lipids and enhanced intracellular trafficking of fatty acids contribute to breast cancer progression.
+Cell Commun Signal, 16(1): 32.
+Zhao, B.; Xin, Z.; Ren, P.; and Wu, H. 2022. The Role of
+PPARs in Breast Cancer. Cells, 12(1).
+
+A
+A.1
+
+Appendix
+
+and R LL, were run on machines with NVIDIA DGX A100
+and AMD Rome 7742 CPUs. The others were run on Intel
+Xeon(R) Gold 6244 machines with 256GB RAM. Individual
+experiments were stopped after 24 hours or if they exceeded
+256GB of RAM.
+
+Clamping Function
+
+The clamping function used in section 3.2 is given by
+
+a if x < a,
+clamp(x, a, b) = x if a ≤ x ≤ b,
+
+b if b < x .
+The W -shaped regualrizer is plotted in Fig. 3 for λ = κ = 1.
+After each epoch, λ and κ are increased using an exponential
+scheduler (Dalleiger and Vreeken 2022).
+2
+
+rb (x)
+
+1.5
+1
+0.5
+0
+−1
+
+−0.5
+
+0
+
+0.5
+w
+
+1
+
+1.5
+
+2
+
+Figure 3: W -shaped regularizer. To push the weights towards a binary solution during optimization, which allows
+a better quantization, we employ the W -shaped regularizer
+discussed in the main paper (here, λ = κ = 1).
+
+A.2
+
+A.4
+
+Synthetic Data
+
+Formal Definition of Soft F1 Score To avoid overpenalization of methods that only recover sub-parts of the
+individual patterns, we adopt the soft F1 score from Hedderich et al. (2022). Instead of using a strict equality for
+computing recall and precision, we resort to using Jaccard
+distance. Formally, we define the soft F1 score as
+
+Method Details
+
+Extracting Differential Patterns The differential patterns are extracted in two steps: First, we extract all patterns
+encoded in the pattern layer. Next, we assign the extracted
+patterns to the corresponding differential pattern sets P k .
+Given the trained continuous weights of the autoencoder
+W E ∈ [0, 1]h×m and weights of the classifier W C ∈
+[0, 1]K×h , we start by extracting all patterns P encoded in
+the pattern layer. For this, we binarize the weight of the autoencoder with a fixed threshold τe . The pattern pi encoded
+in the i-th neuron is given by pi = {j | W E [i, j] > τe , j ∈
+{1...m}}, for i ∈ {1, ..., h}. The overall pattern set is given
+by P = {pi | pi ̸= ∅, i ∈ {1, ..., h}}. Next, we assign
+the differential patterns to the classes, for which we use a
+threshold τc to binarize the weights of the classifier. The differential patterns P k for class k ∈ {1, ..., K} are given by
+P k = {pi | W C [k, i] > τc , pi ∈ P } .
+Informally, a pattern pi is assigned to the differential pattern set Pk , if it is connected to the output for the classification of class k. In practice, the thresholds can be chosen
+by grid search and choosing the pair (τte , τtc ), for which the
+discretized network achieves the lowest reconstruction and
+classification error.
+
+A.3
+
+Hyperparameter Optimization Hyperparameters are optimized as follows. For D IFF NAPS, we fine-tune reconstruction loss and classification accuracy on a hold-out set. For
+C ART, we set the maximal depth to 20 to facilitate reasonable pattern sizes while not harming performance, and optimize Gini impurity. For SP U M AN T E, we mine the top 1
+million patterns using a significance threshold α = 0.05, a
+correction term γ = 0.01, and set the sampling rate to 25%
+to keep it from running out of memory. For C LASSY, we
+use a beam width of 200 and a maximum search depth of
+20, which provides a good tradeoff between pattern-length
+and computational burden. For R LL, we optimized the number of hidden layers, the number of neurons in the hidden
+layer, the learning rate, and weight decay based on the performance on a hold-out set.
+
+SoftPrec (Pd , Pg ) =
+
+1 X
+|pd ∩ pg |
+,
+max
+pg ∈Pg |pd ∪ pg |
+|Pd |
+pd ∈Pd
+
+SoftRec (Pd , Pg ) =
+
+1 X
+|pd ∩ pg |
+max
+,
+pd ∈Pd |pd ∪ pg |
+|Pg |
+pg ∈Pg
+
+SoftF1 (Pd , Pg ) =
+
+2 ∗ SoftPrec ∗ SoftRec
+,
+SoftPrec + SoftRec
+
+where we denote the sets of ground truth resp. discovered
+patterns by Pg and Pd .
+Additional Results Here, we report additional statistics
+and results for the experiment on synthetic data. In Fig. 4a
+and Fig. 4b, we report the precision and recall for the scalability in m (Sec. 4.1). D IFF NAPS performs equally well with
+regard to precision and recall. In contrast, our competitors
+achieve a significantly higher recall than precision. This is
+especially prevalent for P REMISE and C ART, which explains
+the overall low F1-score in Fig. 2b.
+In Fig. 5, we report the F1-score for varying numbers
+of random additive features a ∈ {0, 10, 20, ..., 90, 100}.
+On average, D IFF NAPS outperforms all competitors, while
+P REMISE has an overall smaller variance. SP U M AN T E suffers from large variance and degrades after 50 random features and runs out of memory a = 100.
+
+Experimental Details
+
+Hardware for Experiments We implemented D IFF NAPS
+in PyTorch, and use the publicly available implementations
+of other methods. Those that leverage a GPU, i.e. D IFF NAPS
+
+A.5
+
+Real data
+
+Computing AUCs As we do not have the ground truth for
+real world data, we resort to evaluating the area under the
+
+Runtime
+Dataset
+
+Rows
+
+Columns
+
+k
+
+D IFF NAPS (ours)
+
+C ART
+
+C LASSY
+
+P REMISE
+
+SP U M AN T E
+
+Cardio
+Disease
+BRCA-N
+BRCA-S
+Genomes
+
+68k
+5k
+222
+187
+2.5k
+
+45
+131
+20k
+20k
+225k
+
+2
+41
+2m
+4m
+6
+
+1m33s
+1m40s
+18s
+58s
+8m59s
+
+1s
+1s
+1s
+1s
+28s
+
+15s
+14s
+33m40s
+26m08s
+8h20m
+
+10s
+8s
+–
+–
+–
+
+43s
+48s
+3h45m
+2h31m
+–
+
+Table 2: Runtime real world data. We specify the time taken to compute the results. We abort experiments that ran out of
+memory or took longer than 24h (–).
+T REE
+
+C LASSY
+
+SP UMAN T E
+
+P REMISE
+
+RRL
+
+D IFF NAPS
+
+1
+
+1
+
+0.8
+
+0.8
+Soft-F1
+
+SoftPrec
+
+D IFF NAPS
+
+0.6
+0.4
+0.2
+
+T REE
+
+C LASSY
+
+SP UMAN T E
+
+P REMISE
+
+RRL
+
+0.6
+0.4
+0.2
+
+0
+102
+
+103
+
+104
+
+105
+
+0
+
+10 20 30 40 50 60 70 80 90 100
+a
+
+Number of features |m|
+
+(a) Soft-Precision, better ↑
+
+Figure 5: Results for additive noise We report the soft F1
+score on synthetic data with different amounts of random
+additive features a ∈ {0, 10, 20, ..., 90, 100}.
+
+SoftRec
+
+1
+0.8
+0.6
+0.4
+
+P is then given by
+
+0.2
+0
+102
+
+103
+
+104
+
+105
+
+Number of features |m|
+
+(b) Soft-Recall, better ↑
+
+Figure 4: Additional results for Scalability. We provide the
+soft precision score (a) and soft recall score (b) on the synthetic data with an increasing number of features.
+
+cov(P, X) =
+
+[
+
+cov(p, X) .
+
+p∈P
+
+With Pqk , we denote the set of patterns such that such that
+P(k | pk ) > p and is not spurious. Then for a threshold p,
+the corresponding value on the y-axis yp is computed as
+K
+
+yp =
+
+1 X | cov(Pqk , X k )|
+.
+K
+|X k |
+k=1
+
+curve of what percentage of the data the patterns cover when
+we order them by the probability of seeing a class given a
+pattern. This can be roughly translated into sensitivity (how
+much of the dataset do we cover) versus specificity (how
+specific is the pattern for that class). To filter spurious patterns, we only consider patterns with a predictive probability
+1
+K +0.1 (i.e., at least slightly more likely than chance). More
+k (pk )
+formally on the x-axis we plot P(k | pk ) = supp
+supp(pk ) . If a
+pattern pk is very specific to a class k, then P(k | pk ) = 1
+and if it is unspecific P(k | pk ) = 0
+On the y-axis, we plot how much of the dataset is covered
+(explained) given all the patterns that pass the threshold p
+1
+and have a predictive probability K
++ 0.1 . The coverage
+cov(p, X) of a pattern p for a dataset X is defined as
+cov(p, X) = {Xi | p ⊂ Xi } .
+With a slight abuse of notation, the coverage of a pattern set
+
+That is, per class k, we compute how much of the corresponding partition is covered and take the mean of those individual coverages.
+Sensitivity-Specificity Curves Figure 6 shows the
+sensitivity-specificity curves for the AUCs in (Table 1).
+Processing of BRCA Data We obtained re-aligned bulk
+RNA-seq data of TCGA BRCA samples through recount3 (Wilks et al. 2021). We first filtering samples into
+primary tumor and adjacent normal tissue samples and keeping only protein-coding genes with non-zero expression in at
+least one sample. We then remove duplicate samples of individuals, keeping the one with highest sequencing depth.
+Gene expression counts were log-TPM transformed.
+To binarize the expression data, for each gene, we set samples that have expression larger than the upper quartile to 1,
+all others to 0. If the upper quartile is 0, we set all non-zero
+samples to 1.
+For the normal vs tumor data (BRCA-N), as many of the
+competitors are sensitive to class-imbalance, we kept only
+
+C ART
+
+C LASSY
+
+SP U M AN T E
+
+P REMISE
+
+1
+
+1
+
+0.8
+
+0.8
+
+0.6
+0.4
+
+0.6
+0.4
+
+0.6
+0.4
+
+Coverage
+
+1
+0.8
+
+Coverage
+
+1
+0.8
+
+Coverage
+
+1
+0.8
+
+Coverage
+
+Coverage
+
+D IFF NAPS
+
+0.6
+0.4
+
+0.2
+
+0.2
+
+0.2
+
+0.2
+
+0
+
+0
+
+0
+
+0
+
+0.6
+0.4
+0.2
+0
+
+0 0.2 0.4 0.6 0.8 1
+
+0 0.2 0.4 0.6 0.8 1
+
+0 0.2 0.4 0.6 0.8 1
+
+0 0.2 0.4 0.6 0.8 1
+
+0 0.2 0.4 0.6 0.8 1
+
+Specificity
+
+Specificity
+
+Specificity
+
+Specificity
+
+Specificity
+
+(c) BRCA-N
+
+(d) BRCA-S
+
+(e) Genomes
+
+(a) Cardio
+
+(b) Disease
+
+Figure 6: Real world data. Here, we plot the specificity-coverage curves used to compute the AUCs reported in Tab. 1. The
+curves are computed as explained in Sec. A.5.
+the matching samples, i.e., where individuals where both adjacent normal as well as primary tumor tissue was available.
+For the BRCA subtype data (BRCA-S), we followed the
+same simple binarization scheme, and kept at most 50 samples per subtype to keep the data roughly balanced, sampling
+at random without replacement. The four subtypes—luminal
+A, luminal B, HER2+, and triple negative—where defined
+based on annotated receptor status of the Estrogen recpetor
+(ER), the Progesterone receptor (PR), and the human epidermal growth factor receptor 2 (HER2) available from the recount data. In particular, we define luminal A as (ER+, PR+,
+HER2-), luminal B as (ER+, PR-, HER2-), HER2+ as obvious, and triple negative as (ER-, PR-, HER2-). We removed
+all samples that do not belong to any of these subtypes or
+where receptor status was not available.
+Analysis of BRCA Patterns To analyze pattern sets discovered by D IFF NAPS qualitatively in terms of whether they
+represent reasonable biological functions specific to a label,
+we compute gene set over-representation statistics for gene
+relationships annotated in the Kyoto Encyclopedia of Genes
+and Genomes (KEGG). KEGG serves as a gold standard
+for known biological pathways and relationships, including
+hand-drawn and manually curated cellular pathways. A gene
+set over-representation analysis tests whether an overlap of
+a given gene set (e.g., a pattern or union of patterns) with an
+annotated pathway is more likely than chance, where the null
+overlap statistic is computed using a background gene set
+(here: the set of genes in the dataset). We use the ENRICH R
+software package for the gene set over-representation analysis and report results as significant with a p-value cutoff
+of .05 (Chen et al. 2013). For an overall assessment we
+consider pathways that are found for the union of genes
+across all patterns for a class. We also enriched pathways
+for each pattern individually, many of the patterns, however,
+were too small to be considered for enrichment or contained
+genes for which no annotation is available in KEGG. To
+obtain an estimate of the average log-odds ratios of likelihood of a pattern
+setP describing a class, we compute
+
+P
+P (p|l)
+1
+ln
+p∈P
+|P |
+P (p|¬k) , where ln is the natural logarithm
+and we do not compute those terms where P (p | ¬k) = 0,
+which leaves us with a lower bound of the log-odds.
+
+
