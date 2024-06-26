@@ -95,24 +95,27 @@ impl VectorStore for NaiveVectorStore {
         let mut results = vec![];
 
         #[cfg(feature = "rayon")]
-        let mut distances: Vec<(&String, f64)> = self
-            .embeddings
-            .par_iter()
-            .map(|(doc_name, doc_embedding)| {
-                (doc_name, metrics::cosine(&query_vector, doc_embedding))
-            })
-            .collect();
+        let distances: Vec<(&String, f64)> = {
+            let mut distances: Vec<(&String, f64)> = self
+                .embeddings
+                .par_iter()
+                .map(|(doc_name, doc_embedding)| {
+                    (doc_name, metrics::cosine(&query_vector, doc_embedding))
+                })
+                .collect();
+            distances.par_sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+            distances
+        };
 
         #[cfg(not(feature = "rayon"))]
-        let mut distances = {
+        let distances = {
             let mut distances = vec![];
             for (doc_name, doc_embedding) in &self.embeddings {
                 distances.push((doc_name, metrics::cosine(&query_vector, doc_embedding)));
             }
+            distances.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
             distances
         };
-
-        distances.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
 
         for (doc_name, score) in distances {
             let document = self.documents.get(doc_name).unwrap();
