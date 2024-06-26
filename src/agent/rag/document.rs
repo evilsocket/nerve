@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use anyhow::Result;
 
@@ -9,7 +9,7 @@ pub(crate) struct Document {
 }
 
 impl Document {
-    pub fn from_text_file(path: &PathBuf) -> Result<Self> {
+    pub fn from_text_file(path: &Path) -> Result<Self> {
         let path = std::fs::canonicalize(path.display().to_string())?
             .display()
             .to_string();
