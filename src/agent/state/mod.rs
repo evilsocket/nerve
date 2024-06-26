@@ -223,51 +223,6 @@ impl State {
         None
     }
 
-    /*
-       pub async fn execute(&mut self, invocation: Invocation) -> Result<()> {
-           let action = match self.get_action(&invocation.action) {
-               Some(action) => action,
-               None => {
-                   self.metrics.errors.unknown_actions += 1;
-                   // tell the model that the action name is wrong
-                   self.add_error_to_history(
-                       invocation.clone(),
-                       format!("'{}' is not a valid action name", invocation.action),
-                   );
-                   return Ok(());
-               }
-           };
-
-           // validate prerequisites
-           if let Err(e) = self.validate(&invocation, action) {
-               self.metrics.errors.invalid_actions += 1;
-               self.add_error_to_history(invocation.clone(), e.to_string());
-               // not a core error, just inform the model and return
-               return Ok(());
-           }
-
-           // execute the action
-
-           // TODO: add timeout logic to invocations
-           let inv = invocation.clone();
-           let shared_state = get_state_fn();
-
-           let ret = action
-               .run(shared_state, invocation.attributes, invocation.payload)
-               .await;
-           if let Err(error) = ret {
-               self.metrics.errors.errored_actions += 1;
-               // tell the model about the error
-               self.add_error_to_history(inv, error.to_string());
-           } else {
-               self.metrics.success_actions += 1;
-               // tell the model about the output
-               self.add_success_to_history(inv, ret.unwrap());
-           }
-
-           Ok(())
-       }
-    */
     pub fn on_complete(&mut self, impossible: bool, reason: Option<String>) -> Result<()> {
         // TODO: unify logging logic
         if impossible {
