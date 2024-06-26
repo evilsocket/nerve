@@ -1,6 +1,6 @@
 This agent is an example of autonomous [RAG](https://blogs.nvidia.com/blog/what-is-retrieval-augmented-generation/). 
 
-A set of text files are imported into the RAG and the model is asked a question about a piece of knowledge that is only present in one of the documents. The model will use the rag action space to retrieve it autonomously.
+A set of text files are imported into the RAG and the model is asked a question about a piece of knowledge that is only present in one of them. The model will use the rag action space to retrieve it autonomously.
 
 Using RAG requires an additional `-E/--embedder` argument to define the model used for the embeddings:
 
@@ -24,6 +24,8 @@ task: define a Darmepinter
 [rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/made-up-animals.txt' (82 bytes) ... time=126.579125ms embedding_size=384
 [rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/mouse.txt' (389 bytes) ... time=58.670083ms embedding_size=384
 [rag] indexing document '/Users/evilsocket/lab/nerve/examples/auto_rag/data/tiger.txt' (405 bytes) ... time=98.503583ms embedding_size=384
+...
+...
 
 [rag] What is a Darmepinter? (top 1)
 
