@@ -3,7 +3,12 @@ using:
 
 # enable rag
 rag:
-  path: ./data
+  # documents to import
+  source_path: ./docs
+  # rag persistent data path
+  data_path: ./data
+  # uncomment to enable chunking
+  # chunk_size: 1023
 
 system_prompt: > 
   You are an useful assistant that can search for information to provide truthful and concise answers to the user questions.

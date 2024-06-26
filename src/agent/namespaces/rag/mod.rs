@@ -34,7 +34,7 @@ impl Action for Search {
         let query = payload.unwrap();
         let start = Instant::now();
         // TODO: make top_k configurable?
-        let docs = state.lock().await.rag_query(&query, 1).await?;
+        let mut docs = state.lock().await.rag_query(&query, 1).await?;
 
         if !docs.is_empty() {
             println!("\n  {} results in {:?}", docs.len(), start.elapsed());
@@ -45,8 +45,8 @@ impl Action for Search {
 
             Ok(Some(format!(
                 "Here is some supporting information:\n\n{}",
-                docs.iter()
-                    .map(|(doc, _)| doc.get_data().to_string())
+                docs.iter_mut()
+                    .map(|(doc, _)| doc.get_data().unwrap().to_string())
                     .collect::<Vec<String>>()
                     .join("\n")
             )))

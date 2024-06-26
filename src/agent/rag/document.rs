@@ -2,15 +2,16 @@ use std::path::Path;
 
 use anyhow::Result;
 
-// #[cfg(feature = "rayon")]
-// use rayon::prelude::*;
+use colored::Colorize;
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
 
-// const CHUNK_SIZE: usize = 1024;
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct Document {
     path: String,
-    data: String,
+    ident: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    data: Option<String>,
 }
 
 impl Document {
@@ -18,49 +19,48 @@ impl Document {
         let path = std::fs::canonicalize(path.display().to_string())?
             .display()
             .to_string();
-        let data = std::fs::read_to_string(&path)?;
-        Ok(Self { path, data })
+        let data = Some(std::fs::read_to_string(&path)?);
+        let ident = sha256::digest(data.as_ref().unwrap());
+        Ok(Self { path, data, ident })
+    }
+
+    pub fn get_ident(&self) -> &str {
+        &self.ident
     }
 
     pub fn get_path(&self) -> &str {
         &self.path
     }
 
-    pub fn get_data(&self) -> &str {
-        &self.data
+    pub fn get_data(&mut self) -> Result<&str> {
+        if self.data.is_none() {
+            println!("[{}] lazy loading {}", "rag".bold(), &self.path);
+            self.data = Some(std::fs::read_to_string(&self.path)?);
+        }
+
+        Ok(self.data.as_ref().unwrap())
     }
 
-    pub fn get_byte_size(&self) -> usize {
-        self.data.as_bytes().len()
+    pub fn drop_data(&mut self) {
+        self.data = None;
     }
 
-    /*
-    pub fn as_chunks(self) -> Vec<Document> {
-        #[cfg(feature = "rayon")]
-        return self
-            .data
+    pub fn get_byte_size(&mut self) -> Result<usize> {
+        Ok(self.get_data()?.as_bytes().len())
+    }
+
+    pub fn chunks(mut self, chunk_size: usize) -> Result<Vec<Document>> {
+        return Ok(self
+            .get_data()?
             .chars()
             .collect::<Vec<char>>()
-            .par_chunks(CHUNK_SIZE)
+            .par_chunks(chunk_size)
             .enumerate()
-            .map(|(idx, c)| Document {
+            .map(|(idx, chunk)| Document {
+                ident: format!("{}@{}", self.ident, idx),
                 path: format!("{}@{}", self.path, idx),
-                data: c.iter().collect::<String>(),
+                data: Some(chunk.iter().collect::<String>()),
             })
-            .collect();
-
-        #[cfg(not(feature = "rayon"))]
-        return self
-            .data
-            .chars()
-            .collect::<Vec<char>>()
-            .chunks(CHUNK_SIZE)
-            .enumerate()
-            .map(|(idx, c)| Document {
-                path: format!("{}@{}", self.path, idx),
-                data: c.iter().collect::<String>(),
-            })
-            .collect();
+            .collect());
     }
-     */
 }

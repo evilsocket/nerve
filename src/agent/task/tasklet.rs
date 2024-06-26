@@ -339,12 +339,19 @@ impl Tasklet {
         // parse any variable
         self.prompt = Some(interpolate_variables(self.prompt.as_ref().unwrap().trim())?);
 
-        // fix rag path
+        // fix paths
         if let Some(rag) = self.rag.as_mut() {
-            let rag_path = PathBuf::from(&rag.path);
-            if rag_path.is_relative() {
-                rag.path = PathBuf::from(&self.folder)
-                    .join(rag_path)
+            let src_path = PathBuf::from(&rag.source_path);
+            if src_path.is_relative() {
+                rag.source_path =
+                    std::fs::canonicalize(PathBuf::from(&self.folder).join(src_path))?
+                        .display()
+                        .to_string();
+            }
+
+            let data_path = PathBuf::from(&rag.data_path);
+            if data_path.is_relative() {
+                rag.data_path = std::fs::canonicalize(PathBuf::from(&self.folder).join(data_path))?
                     .display()
                     .to_string();
             }

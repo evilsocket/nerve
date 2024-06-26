@@ -12,9 +12,11 @@ pub(crate) mod naive;
 
 pub type Embeddings = Vec<f64>;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Configuration {
-    pub path: String,
+    pub source_path: String,
+    pub data_path: String,
+    pub chunk_size: Option<usize>,
 }
 
 #[async_trait]
@@ -24,7 +26,7 @@ pub trait VectorStore: Send {
     where
         Self: Sized;
 
-    async fn add(&mut self, document: Document) -> Result<()>;
+    async fn add(&mut self, document: Document) -> Result<bool>;
     async fn retrieve(&self, query: &str, top_k: usize) -> Result<Vec<(Document, f64)>>;
 }
 

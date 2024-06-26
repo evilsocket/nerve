@@ -39,19 +39,19 @@ simple-home-dir = "0.3.5"
 tokio = "1.38.0"
 xml-rs = "0.8.20"
 duration-string = { version = "0.4.0", optional = true }
-rayon = { version = "1.10.0", optional = true }
+rayon = "1.10.0"
 glob = "0.3.1"
 human_bytes = "0.4.3"
 memory-stats = "1.1.0"
+sha256 = "1.5.0"
 
 [features]
-default = ["ollama", "groq", "openai", "fireworks", "rayon"]
+default = ["ollama", "groq", "openai", "fireworks"]
 
 ollama = ["dep:ollama-rs"]
 groq = ["dep:groq-api-rs", "dep:duration-string"]
 openai = ["dep:openai_api_rust"]
 fireworks = ["dep:openai_api_rust"]
-rayon = ["dep:rayon"]
 
 [profile.release]
 lto = true        # Enable link-time optimization
