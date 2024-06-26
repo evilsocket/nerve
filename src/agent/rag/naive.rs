@@ -26,6 +26,25 @@ impl Store {
             embeddings,
         }
     }
+
+    fn from_data_path(path: &str) -> Result<Self> {
+        let path = PathBuf::from(path).join("rag.bin");
+        if path.exists() {
+            let raw = std::fs::read(&path)?;
+            Ok(bitcode::deserialize(&raw)?)
+        } else {
+            Ok(Store::new())
+        }
+    }
+
+    fn to_data_path(&self, path: &str) -> Result<()> {
+        let path = PathBuf::from(path).join("rag.bin");
+        let raw = bitcode::serialize(&self)?;
+
+        std::fs::write(path, raw)?;
+
+        Ok(())
+    }
 }
 
 pub struct NaiveVectorStore {
@@ -36,14 +55,7 @@ pub struct NaiveVectorStore {
 
 impl NaiveVectorStore {
     fn from_data_path(embedder: Box<dyn Client>, config: Configuration) -> Result<Self> {
-        let path = PathBuf::from(&config.data_path).join("rag.yml");
-        let store = if path.exists() {
-            let raw = std::fs::read_to_string(&path)?;
-            serde_yaml::from_str(&raw)?
-        } else {
-            Store::new()
-        };
-
+        let store = Store::from_data_path(&config.data_path)?;
         Ok(Self {
             config,
             embedder,
@@ -89,15 +101,6 @@ impl NaiveVectorStore {
 
         Ok(())
     }
-
-    fn persist(&mut self) -> Result<()> {
-        let raw = serde_yaml::to_string(&self.store)?;
-        let path = PathBuf::from(&self.config.data_path).join("rag.yml");
-
-        std::fs::write(path, raw)?;
-
-        Ok(())
-    }
 }
 
 #[async_trait]
@@ -140,7 +143,7 @@ impl VectorStore for NaiveVectorStore {
         self.store.documents.insert(doc_id.to_string(), document);
         self.store.embeddings.insert(doc_id, embeddings);
 
-        self.persist()?;
+        self.store.to_data_path(&self.config.data_path)?;
 
         println!(" time={:?} embedding_size={}", start.elapsed(), size);
 
