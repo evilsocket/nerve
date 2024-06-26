@@ -5,7 +5,11 @@ A set of text files are imported into the RAG and the model is asked a question 
 Using RAG requires an -E/--embedder argument to define the model used for the embeddings:
 
 ```sh
-nerve -G "fireworks://llama-v3-70b-instruct" -E "ollama://all-minilm@bahamut.local:11434" -T auto_rag -P "define a Darmepinter"
+nerve \
+  -G "fireworks://llama-v3-70b-instruct" \ # the model used for the agent
+  -E "ollama://all-minilm@bahamut.local:11434" \ # the model used for the rag embeddings
+  -T auto_rag \
+  -P "define a Darmepinter"
 ```
 
 Example output:
