@@ -8,8 +8,10 @@ use glob::glob;
 use super::{Document, Embeddings, VectorStore};
 use crate::agent::{generator::Client, rag::metrics};
 
+// TODO: integrate other more efficient vector databases.
+
 pub struct NaiveVectorStore {
-    generator: Box<dyn Client>,
+    embedder: Box<dyn Client>,
     documents: HashMap<String, Document>,
     embeddings: HashMap<String, Embeddings>,
 }
@@ -49,7 +51,7 @@ impl VectorStore for NaiveVectorStore {
         Ok(Self {
             documents,
             embeddings,
-            generator,
+            embedder,
         })
     }
 
@@ -73,7 +75,7 @@ impl VectorStore for NaiveVectorStore {
 
         let start = Instant::now();
         let doc_name = document.name.to_string();
-        let embeddings = self.generator.embeddings(&document.data).await?;
+        let embeddings = self.embedder.embeddings(&document.data).await?;
 
         self.documents.insert(doc_name.to_string(), document);
         self.embeddings.insert(doc_name, embeddings);
@@ -86,7 +88,7 @@ impl VectorStore for NaiveVectorStore {
     async fn retrieve(&self, query: &str, top_k: usize) -> Result<Vec<(Document, f64)>> {
         println!("[{}] {} (top {})", "rag".bold(), query, top_k);
 
-        let query_vector = self.generator.embeddings(query).await?;
+        let query_vector = self.embedder.embeddings(query).await?;
         let mut distances = vec![];
         let mut results = vec![];
 
