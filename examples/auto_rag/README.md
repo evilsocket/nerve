@@ -7,7 +7,7 @@ Using RAG requires an additional `-E/--embedder` argument to define the model us
 ```sh
 nerve \
   -G "fireworks://llama-v3-70b-instruct" \ # the model used for the agent
-  -E "ollama://all-minilm@bahamut.local:11434" \ # the model used for the rag embeddings
+  -E "ollama://all-minilm@localhost:11434" \ # the model used for the rag embeddings
   -T auto_rag \
   -P "define a Darmepinter"
 ```
