@@ -42,6 +42,7 @@ impl VectorStore for NaiveVectorStore {
             .to_string();
         let expr = format!("{}/**/*.txt", path);
 
+        // TODO: parallelize this
         for path in (glob(&expr)?).flatten() {
             let doc = Document::from_text_file(&path)?;
             if let Err(err) = store.add(doc).await {

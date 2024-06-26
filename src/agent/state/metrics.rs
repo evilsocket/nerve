@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use colored::Colorize;
+use memory_stats::memory_stats;
 
 #[derive(Debug, Clone, Default)]
 pub struct ErrorMetrics {
@@ -54,7 +55,7 @@ impl Display for Metrics {
         if self.errors.has_action_errors() {
             write!(
                 f,
-                "actions(valid:{} ok:{} errored:{} unknown:{} invalid:{})",
+                "actions(valid:{} ok:{} errored:{} unknown:{} invalid:{}) ",
                 self.valid_actions,
                 self.success_actions,
                 self.errors.errored_actions,
@@ -62,7 +63,15 @@ impl Display for Metrics {
                 self.errors.invalid_actions
             )?;
         } else if self.valid_actions > 0 {
-            write!(f, "actions:{}", self.valid_actions,)?;
+            write!(f, "actions:{} ", self.valid_actions,)?;
+        }
+
+        if let Some(usage) = memory_stats() {
+            write!(
+                f,
+                "mem:{}",
+                human_bytes::human_bytes(usage.physical_mem as f64)
+            )?;
         }
 
         Ok(())
