@@ -41,6 +41,8 @@ xml-rs = "0.8.20"
 duration-string = { version = "0.4.0", optional = true }
 rayon = { version = "1.10.0", optional = true }
 glob = "0.3.1"
+human_bytes = "0.4.3"
+memory-stats = "1.1.0"
 
 [features]
 default = ["ollama", "groq", "openai", "fireworks", "rayon"]
