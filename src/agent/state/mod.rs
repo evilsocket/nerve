@@ -7,7 +7,7 @@ use metrics::Metrics;
 use super::{
     generator::{Client, Message},
     namespaces::{self, Namespace},
-    rag::{naive::NaiveVectorStore, Document, VectorStore},
+    rag::{Document, VectorStore},
     task::Task,
     Invocation,
 };
@@ -84,12 +84,11 @@ impl State {
 
         // add RAG namespace
         let rag: Option<Box<dyn VectorStore>> = if let Some(config) = task.get_rag_config() {
-            let v_store: NaiveVectorStore =
-                NaiveVectorStore::from_indexed_path(embedder, &config.path).await?;
+            let v_store = super::rag::factory("naive", embedder, config).await?;
 
             namespaces.push(namespaces::NAMESPACES.get("rag").unwrap()());
 
-            Some(Box::new(v_store))
+            Some(v_store)
         } else {
             None
         };

@@ -8,23 +8,39 @@ use async_trait::async_trait;
 use colored::Colorize;
 use glob::glob;
 
-use super::{Document, Embeddings, VectorStore};
+use super::{Configuration, Document, Embeddings, VectorStore};
 use crate::agent::{generator::Client, rag::metrics};
 
 // TODO: integrate other more efficient vector databases.
 
 pub struct NaiveVectorStore {
+    config: Configuration,
     embedder: Box<dyn Client>,
     documents: HashMap<String, Document>,
     embeddings: HashMap<String, Embeddings>,
 }
 
-impl NaiveVectorStore {
-    // TODO: add persistency
-    pub async fn from_indexed_path(generator: Box<dyn Client>, path: &str) -> Result<Self> {
-        let path = std::fs::canonicalize(path)?.display().to_string();
+#[async_trait]
+impl VectorStore for NaiveVectorStore {
+    #[allow(clippy::borrowed_box)]
+    async fn new(embedder: Box<dyn Client>, config: Configuration) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        // TODO: add persistency
+        let documents = HashMap::new();
+        let embeddings = HashMap::new();
+        let mut store = Self {
+            config,
+            documents,
+            embeddings,
+            embedder,
+        };
+
+        let path = std::fs::canonicalize(&store.config.path)?
+            .display()
+            .to_string();
         let expr = format!("{}/**/*.txt", path);
-        let mut store = NaiveVectorStore::new_with_generator(generator)?;
 
         for path in (glob(&expr)?).flatten() {
             let doc_name = path.display();
@@ -38,24 +54,6 @@ impl NaiveVectorStore {
         }
 
         Ok(store)
-    }
-}
-
-#[async_trait]
-impl VectorStore for NaiveVectorStore {
-    #[allow(clippy::borrowed_box)]
-    fn new_with_generator(embedder: Box<dyn Client>) -> Result<Self>
-    where
-        Self: Sized,
-    {
-        let documents = HashMap::new();
-        let embeddings = HashMap::new();
-
-        Ok(Self {
-            documents,
-            embeddings,
-            embedder,
-        })
     }
 
     async fn add(&mut self, document: Document) -> Result<()> {
