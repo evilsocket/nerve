@@ -2,7 +2,7 @@ This agent is an example of autonomous [RAG](https://blogs.nvidia.com/blog/what-
 
 A set of text files are imported into the RAG and the model is asked a question about a piece of knowledge that is only present in one of the documents. The model will use the rag action space to retrieve it autonomously.
 
-Using RAG requires an -E/--embedder argument to define the model used for the embeddings:
+Using RAG requires an additional `-E/--embedder` argument to define the model used for the embeddings:
 
 ```sh
 nerve \
