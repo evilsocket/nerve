@@ -77,11 +77,12 @@ impl VectorStore for NaiveVectorStore {
         let start = Instant::now();
         let doc_name = document.name.to_string();
         let embeddings = self.embedder.embeddings(&document.data).await?;
+        let size = embeddings.len();
 
         self.documents.insert(doc_name.to_string(), document);
         self.embeddings.insert(doc_name, embeddings);
 
-        println!(" done in {:?}", start.elapsed());
+        println!(" time={:?} embedding_size={}", start.elapsed(), size);
 
         Ok(())
     }
