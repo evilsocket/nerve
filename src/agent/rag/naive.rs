@@ -41,7 +41,7 @@ impl NaiveVectorStore {
 #[async_trait]
 impl VectorStore for NaiveVectorStore {
     #[allow(clippy::borrowed_box)]
-    fn new_with_generator(generator: Box<dyn Client>) -> Result<Self>
+    fn new_with_generator(embedder: Box<dyn Client>) -> Result<Self>
     where
         Self: Sized,
     {
