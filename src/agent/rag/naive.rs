@@ -45,9 +45,11 @@ impl VectorStore for NaiveVectorStore {
 
         for path in (glob(&expr)?).flatten() {
             let doc = Document::from_text_file(&path)?;
+            // for chunk in doc.as_chunks() {
             if let Err(err) = store.add(doc).await {
                 eprintln!("ERROR storing {}: {}", path.display(), err);
             }
+            // }
         }
 
         print!(
@@ -70,7 +72,6 @@ impl VectorStore for NaiveVectorStore {
             ));
         }
 
-        // TODO: add chunking
         print!(
             "[{}] indexing document '{}' ({} bytes) ...",
             "rag".bold(),
