@@ -66,10 +66,8 @@ impl VectorStore for NaiveVectorStore {
         let doc_path = document.get_path().to_string();
 
         if self.documents.contains_key(&doc_path) {
-            return Err(anyhow!(
-                "document with name '{}' already indexed",
-                &doc_path
-            ));
+            println!("document with name '{}' already indexed", &doc_path);
+            return Ok(());
         }
 
         print!(
