@@ -26,7 +26,7 @@ While Nerve was inspired by other projects such as Autogen and Rigging, its main
 
 ## LLM Support
 
-Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com) or [OpenAI](https://openai.com/index/openai-api/) APIs. You can specify which provider and which model to use via the `-G` (or `--generator`) argument:
+Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/) and [Fireworks](https://fireworks.ai/) APIs. You can specify which provider and which model to use via the `-G` (or `--generator`) argument:
 
 For **Ollama**:
 
@@ -44,6 +44,12 @@ For **OpenAI**:
 
 ```sh
 OPENAI_API_KEY=you-api-key nerve -G "openai://gpt-4" ...
+```
+
+For **Fireworks**:
+
+```sh
+LLM_FIREWORKS_KEY=you-api-key nerve -G "fireworks://llama-v3-70b-instruct" ...
 ```
 
 ## Example

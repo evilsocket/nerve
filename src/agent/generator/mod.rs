@@ -9,6 +9,8 @@ use regex::Regex;
 
 use super::{rag::Embeddings, Invocation};
 
+#[cfg(feature = "fireworks")]
+mod fireworks;
 #[cfg(feature = "groq")]
 mod groq;
 #[cfg(feature = "ollama")]
@@ -127,6 +129,13 @@ pub fn factory(
         )?)),
         #[cfg(feature = "openai")]
         "openai" => Ok(Box::new(openai::OpenAIClient::new(
+            url,
+            port,
+            model_name,
+            context_window,
+        )?)),
+        #[cfg(feature = "fireworks")]
+        "fireworks" => Ok(Box::new(fireworks::FireworksClient::new(
             url,
             port,
             model_name,
