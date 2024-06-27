@@ -46,7 +46,7 @@ memory-stats = "1.1.0"
 sha256 = "1.5.0"
 bitcode = { version = "0.6.0", features = ["serde"] }
 intertrait = "0.2.2"
-mini-rag = "0.1.0"
+mini-rag = "0.2.1"
 
 [features]
 default = ["ollama", "groq", "openai", "fireworks"]

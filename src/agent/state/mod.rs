@@ -27,7 +27,7 @@ pub struct State {
     // list of executed actions
     history: History,
     // optional rag engine
-    rag: Option<Box<dyn mini_rag::VectorStore>>,
+    rag: Option<mini_rag::VectorStore>,
     // set to true when task is complete
     complete: bool,
     // runtime metrics
@@ -82,16 +82,18 @@ impl State {
         }
 
         // add RAG namespace
-        let rag: Option<Box<dyn mini_rag::VectorStore>> =
-            if let Some(config) = task.get_rag_config() {
-                let v_store = mini_rag::factory("naive", embedder, config).await?;
+        let rag: Option<mini_rag::VectorStore> = if let Some(config) = task.get_rag_config() {
+            let mut v_store = mini_rag::VectorStore::new(embedder, config)?;
 
-                namespaces.push(namespaces::NAMESPACES.get("rag").unwrap()());
+            // import new documents if needed
+            v_store.import_new_documents().await?;
 
-                Some(v_store)
-            } else {
-                None
-            };
+            namespaces.push(namespaces::NAMESPACES.get("rag").unwrap()());
+
+            Some(v_store)
+        } else {
+            None
+        };
 
         // add task defined actions
         namespaces.append(&mut task.get_functions());
@@ -148,7 +150,7 @@ impl State {
         &mut self,
         query: &str,
         top_k: usize,
-    ) -> Result<Vec<(mini_rag::document::Document, f64)>> {
+    ) -> Result<Vec<(mini_rag::Document, f64)>> {
         if let Some(rag) = &self.rag {
             rag.retrieve(query, top_k).await
         } else {
