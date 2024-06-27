@@ -4,7 +4,7 @@ use openai_api_rust::chat::*;
 use openai_api_rust::embeddings::EmbeddingsApi;
 use openai_api_rust::*;
 
-use super::{Client, Embeddings, Message, Options};
+use super::{Client, Message, Options};
 
 pub struct OpenAIClient {
     model: String,
@@ -80,8 +80,11 @@ impl Client for OpenAIClient {
 
         Ok(message.content.to_string())
     }
+}
 
-    async fn embeddings(&self, text: &str) -> Result<Embeddings> {
+#[async_trait]
+impl mini_rag::Embedder for OpenAIClient {
+    async fn embed(&self, text: &str) -> Result<mini_rag::Embeddings> {
         let body = embeddings::EmbeddingsBody {
             model: self.model.to_string(),
             input: vec![text.to_string()],
@@ -90,7 +93,7 @@ impl Client for OpenAIClient {
         let resp = self.client.embeddings_create(&body);
         if let Err(error) = resp {
             return if self.check_rate_limit(&error.to_string()).await {
-                self.embeddings(text).await
+                self.embed(text).await
             } else {
                 Err(anyhow!(error))
             };
@@ -99,7 +102,7 @@ impl Client for OpenAIClient {
         let embeddings = resp.unwrap().data;
         let embedding = embeddings.as_ref().unwrap().first().unwrap();
 
-        Ok(Embeddings::from(
+        Ok(mini_rag::Embeddings::from(
             embedding.embedding.as_ref().unwrap_or(&vec![]).clone(),
         ))
     }

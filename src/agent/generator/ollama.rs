@@ -8,7 +8,7 @@ use ollama_rs::{
     Ollama,
 };
 
-use super::{Client, Embeddings, Message, Options};
+use super::{Client, Message, Options};
 
 pub struct OllamaClient {
     model: String,
@@ -86,13 +86,16 @@ impl Client for OllamaClient {
             Ok("".to_string())
         }
     }
+}
 
-    async fn embeddings(&self, text: &str) -> Result<Embeddings> {
+#[async_trait]
+impl mini_rag::Embedder for OllamaClient {
+    async fn embed(&self, text: &str) -> Result<mini_rag::Embeddings> {
         let resp = self
             .client
             .generate_embeddings(self.model.to_string(), text.to_string(), None)
             .await?;
 
-        Ok(Embeddings::from(resp.embeddings))
+        Ok(mini_rag::Embeddings::from(resp.embeddings))
     }
 }

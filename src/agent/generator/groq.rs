@@ -6,7 +6,7 @@ use regex::Regex;
 
 use crate::agent::generator::Message;
 
-use super::{Client, Embeddings, Options};
+use super::{Client, Options};
 
 lazy_static! {
     static ref RETRY_TIME_PARSER: Regex =
@@ -123,8 +123,11 @@ impl Client for GroqClient {
 
         Ok(choice.message.content.to_string())
     }
+}
 
-    async fn embeddings(&self, _text: &str) -> Result<Embeddings> {
+#[async_trait]
+impl mini_rag::Embedder for GroqClient {
+    async fn embed(&self, _text: &str) -> Result<mini_rag::Embeddings> {
         // TODO: extend the rust client to do this
         todo!("groq embeddings generation not yet implemented")
     }

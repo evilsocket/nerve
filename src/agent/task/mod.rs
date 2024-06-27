@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 
-use super::{namespaces::Namespace, rag};
+use super::namespaces::Namespace;
 
 pub(crate) mod tasklet;
 pub(crate) mod variables;
@@ -18,7 +18,7 @@ pub trait Task: std::fmt::Debug + Send + Sync {
         None
     }
 
-    fn get_rag_config(&self) -> Option<rag::Configuration> {
+    fn get_rag_config(&self) -> Option<mini_rag::Configuration> {
         None
     }
 

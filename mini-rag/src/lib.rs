@@ -1,16 +1,23 @@
+#[macro_use]
+extern crate anyhow;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use naive::NaiveVectorStore;
 use serde::{Deserialize, Serialize};
 
-use super::generator::Client;
 pub(crate) use document::Document;
 
-pub(crate) mod document;
-mod metrics;
-pub(crate) mod naive;
+pub mod document;
+pub mod metrics;
+pub mod naive;
 
 pub type Embeddings = Vec<f64>;
+
+#[async_trait]
+pub trait Embedder: Send + Sync {
+    async fn embed(&self, text: &str) -> Result<Embeddings>;
+}
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Configuration {
@@ -22,7 +29,7 @@ pub struct Configuration {
 #[async_trait]
 pub trait VectorStore: Send {
     #[allow(clippy::borrowed_box)]
-    async fn new(embedder: Box<dyn Client>, config: Configuration) -> Result<Self>
+    async fn new(embedder: Box<dyn Embedder>, config: Configuration) -> Result<Self>
     where
         Self: Sized;
 
@@ -32,11 +39,11 @@ pub trait VectorStore: Send {
 
 pub async fn factory(
     flavor: &str,
-    embedder: Box<dyn Client>,
+    embedder: Box<dyn Embedder>,
     config: Configuration,
 ) -> Result<Box<dyn VectorStore>> {
     match flavor {
         "naive" => Ok(Box::new(NaiveVectorStore::new(embedder, config).await?)),
-        _ => Err(anyhow!("rag flavor '{flavor} not supported yet")),
+        _ => Err(anyhow!("flavor '{flavor} not supported yet")),
     }
 }

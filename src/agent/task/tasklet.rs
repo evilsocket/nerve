@@ -15,7 +15,6 @@ use super::{variables::interpolate_variables, Task};
 use crate::{
     agent::{
         namespaces::{Action, Namespace},
-        rag,
         state::SharedState,
         task::variables::{parse_pre_defined_values, parse_variable_expr},
     },
@@ -248,7 +247,7 @@ pub struct Tasklet {
     #[serde(deserialize_with = "string_trim")]
     system_prompt: String,
     pub prompt: Option<String>,
-    pub rag: Option<rag::Configuration>,
+    pub rag: Option<mini_rag::Configuration>,
     timeout: Option<String>,
     using: Option<Vec<String>>,
     guidance: Option<Vec<String>>,
@@ -377,7 +376,7 @@ impl Task for Tasklet {
         None
     }
 
-    fn get_rag_config(&self) -> Option<rag::Configuration> {
+    fn get_rag_config(&self) -> Option<mini_rag::Configuration> {
         self.rag.clone()
     }
 

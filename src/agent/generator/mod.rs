@@ -7,7 +7,7 @@ use duration_string::DurationString;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use super::{rag::Embeddings, Invocation};
+use super::Invocation;
 
 #[cfg(feature = "fireworks")]
 mod fireworks;
@@ -60,13 +60,12 @@ impl Display for Message {
 }
 
 #[async_trait]
-pub trait Client: Send + Sync {
+pub trait Client: mini_rag::Embedder + Send + Sync {
     fn new(url: &str, port: u16, model_name: &str, context_window: u32) -> Result<Self>
     where
         Self: Sized;
 
     async fn chat(&self, options: &Options) -> Result<String>;
-    async fn embeddings(&self, text: &str) -> Result<Embeddings>;
 
     async fn check_rate_limit(&self, error: &str) -> bool {
         // if rate limit exceeded, parse the retry time and retry
@@ -110,6 +109,44 @@ pub trait Client: Send + Sync {
     }
 }
 
+// ugly workaround because rust doesn't support trait upcasting coercion yet
+
+macro_rules! factory_body {
+    ($name:expr, $url:expr, $port:expr, $model_name:expr, $context_window:expr) => {
+        match $name {
+            #[cfg(feature = "ollama")]
+            "ollama" => Ok(Box::new(ollama::OllamaClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            #[cfg(feature = "openai")]
+            "openai" => Ok(Box::new(openai::OpenAIClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            #[cfg(feature = "fireworks")]
+            "fireworks" => Ok(Box::new(fireworks::FireworksClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            #[cfg(feature = "groq")]
+            "groq" => Ok(Box::new(groq::GroqClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            _ => Err(anyhow!("generator '{}' not supported yet", $name)),
+        }
+    };
+}
+
 pub fn factory(
     name: &str,
     url: &str,
@@ -117,35 +154,15 @@ pub fn factory(
     model_name: &str,
     context_window: u32,
 ) -> Result<Box<dyn Client>> {
-    match name {
-        #[cfg(feature = "ollama")]
-        "ollama" => Ok(Box::new(ollama::OllamaClient::new(
-            url,
-            port,
-            model_name,
-            context_window,
-        )?)),
-        #[cfg(feature = "openai")]
-        "openai" => Ok(Box::new(openai::OpenAIClient::new(
-            url,
-            port,
-            model_name,
-            context_window,
-        )?)),
-        #[cfg(feature = "fireworks")]
-        "fireworks" => Ok(Box::new(fireworks::FireworksClient::new(
-            url,
-            port,
-            model_name,
-            context_window,
-        )?)),
-        #[cfg(feature = "groq")]
-        "groq" => Ok(Box::new(groq::GroqClient::new(
-            url,
-            port,
-            model_name,
-            context_window,
-        )?)),
-        _ => Err(anyhow!("generator '{name} not supported yet")),
-    }
+    factory_body!(name, url, port, model_name, context_window)
+}
+
+pub fn factory_embedder(
+    name: &str,
+    url: &str,
+    port: u16,
+    model_name: &str,
+    context_window: u32,
+) -> Result<Box<dyn mini_rag::Embedder>> {
+    factory_body!(name, url, port, model_name, context_window)
 }

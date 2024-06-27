@@ -4,13 +4,13 @@ use anyhow::Result;
 use colored::Colorize;
 
 use generator::{Client, Options};
+use mini_rag::Embedder;
 use namespaces::Action;
 use state::{SharedState, State};
 use task::Task;
 
 pub mod generator;
 pub mod namespaces;
-pub mod rag;
 pub mod serialization;
 pub mod state;
 pub mod task;
@@ -63,7 +63,7 @@ pub struct Agent {
 impl Agent {
     pub async fn new(
         generator: Box<dyn Client>,
-        embedder: Box<dyn Client>,
+        embedder: Box<dyn Embedder>,
         task: Box<dyn Task>,
         options: AgentOptions,
     ) -> Result<Self> {

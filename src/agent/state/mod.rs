@@ -5,9 +5,8 @@ use colored::Colorize;
 use metrics::Metrics;
 
 use super::{
-    generator::{Client, Message},
+    generator::Message,
     namespaces::{self, Namespace},
-    rag::{Document, VectorStore},
     task::Task,
     Invocation,
 };
@@ -28,7 +27,7 @@ pub struct State {
     // list of executed actions
     history: History,
     // optional rag engine
-    rag: Option<Box<dyn VectorStore>>,
+    rag: Option<Box<dyn mini_rag::VectorStore>>,
     // set to true when task is complete
     complete: bool,
     // runtime metrics
@@ -40,7 +39,7 @@ pub type SharedState = Arc<tokio::sync::Mutex<State>>;
 impl State {
     pub async fn new(
         task: Box<dyn Task>,
-        embedder: Box<dyn Client>,
+        embedder: Box<dyn mini_rag::Embedder>,
         max_iterations: usize,
     ) -> Result<Self> {
         let complete = false;
@@ -83,15 +82,16 @@ impl State {
         }
 
         // add RAG namespace
-        let rag: Option<Box<dyn VectorStore>> = if let Some(config) = task.get_rag_config() {
-            let v_store = super::rag::factory("naive", embedder, config).await?;
+        let rag: Option<Box<dyn mini_rag::VectorStore>> =
+            if let Some(config) = task.get_rag_config() {
+                let v_store = mini_rag::factory("naive", embedder, config).await?;
 
-            namespaces.push(namespaces::NAMESPACES.get("rag").unwrap()());
+                namespaces.push(namespaces::NAMESPACES.get("rag").unwrap()());
 
-            Some(v_store)
-        } else {
-            None
-        };
+                Some(v_store)
+            } else {
+                None
+            };
 
         // add task defined actions
         namespaces.append(&mut task.get_functions());
@@ -144,7 +144,11 @@ impl State {
         }
     }
 
-    pub async fn rag_query(&mut self, query: &str, top_k: usize) -> Result<Vec<(Document, f64)>> {
+    pub async fn rag_query(
+        &mut self,
+        query: &str,
+        top_k: usize,
+    ) -> Result<Vec<(mini_rag::document::Document, f64)>> {
         if let Some(rag) = &self.rag {
             rag.retrieve(query, top_k).await
         } else {

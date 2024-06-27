@@ -8,8 +8,9 @@ use colored::Colorize;
 use glob::glob;
 use serde::{Deserialize, Serialize};
 
+use crate::{metrics, Embedder};
+
 use super::{Configuration, Document, Embeddings, VectorStore};
-use crate::agent::{generator::Client, rag::metrics};
 
 #[derive(Serialize, Deserialize)]
 struct Store {
@@ -49,12 +50,12 @@ impl Store {
 
 pub struct NaiveVectorStore {
     config: Configuration,
-    embedder: Box<dyn Client>,
+    embedder: Box<dyn Embedder>,
     store: Store,
 }
 
 impl NaiveVectorStore {
-    fn from_data_path(embedder: Box<dyn Client>, config: Configuration) -> Result<Self> {
+    fn from_data_path(embedder: Box<dyn Embedder>, config: Configuration) -> Result<Self> {
         let store = Store::from_data_path(&config.data_path)?;
         Ok(Self {
             config,
@@ -106,7 +107,7 @@ impl NaiveVectorStore {
 #[async_trait]
 impl VectorStore for NaiveVectorStore {
     #[allow(clippy::borrowed_box)]
-    async fn new(embedder: Box<dyn Client>, config: Configuration) -> Result<Self>
+    async fn new(embedder: Box<dyn Embedder>, config: Configuration) -> Result<Self>
     where
         Self: Sized,
     {
@@ -134,7 +135,7 @@ impl VectorStore for NaiveVectorStore {
         );
 
         let start = Instant::now();
-        let embeddings: Vec<f64> = self.embedder.embeddings(document.get_data()?).await?;
+        let embeddings: Vec<f64> = self.embedder.embed(document.get_data()?).await?;
         let size = embeddings.len();
 
         // get rid of the contents once indexed
@@ -153,7 +154,7 @@ impl VectorStore for NaiveVectorStore {
     async fn retrieve(&self, query: &str, top_k: usize) -> Result<Vec<(Document, f64)>> {
         println!("[{}] {} (top {})", "rag".bold(), query, top_k);
 
-        let query_vector = self.embedder.embeddings(query).await?;
+        let query_vector = self.embedder.embed(query).await?;
         let mut results = vec![];
 
         let distances: Vec<(&String, f64)> = {
