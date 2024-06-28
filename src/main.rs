@@ -7,8 +7,8 @@ use clap::Parser;
 
 mod agent;
 mod cli;
-mod listener;
 mod setup;
+mod ui;
 
 const APP_NAME: &str = env!("CARGO_BIN_NAME");
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -37,8 +37,8 @@ async fn main() -> Result<()> {
 
     let (mut agent, events_rx) = setup::setup_agent(&args).await?;
 
-    // spawn the events listener
-    tokio::spawn(listener::events_listener(args, events_rx));
+    // spawn the events consumer
+    tokio::spawn(ui::text::consume_events(args, events_rx));
 
     // keep going until the task is complete or a fatal error is reached
     while !agent.is_done().await {
