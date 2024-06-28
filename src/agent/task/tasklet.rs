@@ -194,10 +194,8 @@ impl Action for TaskletAction {
 
             if !err.is_empty() {
                 Err(anyhow!(err))
-            } else if output.status.success() {
-                Ok(Some(out))
             } else {
-                Err(anyhow!(err))
+                Ok(Some(out))
             }
         } else {
             let err = output.err().unwrap().to_string();
