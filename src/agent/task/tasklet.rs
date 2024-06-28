@@ -67,11 +67,7 @@ impl Action for TaskletAction {
             if let Ok(tm) = timeout.parse::<DurationString>() {
                 return Some(*tm);
             } else {
-                eprintln!(
-                    "{}: can't parse '{}' as duration string",
-                    "WARNING".yellow(),
-                    timeout
-                );
+                log::error!("can't parse '{}' as duration string", timeout);
             }
         }
         None
@@ -118,11 +114,10 @@ impl Action for TaskletAction {
         }
 
         if let Some(payload) = &payload {
-            // println!("# {}", payload.bold());
             cmd.arg(payload);
         }
 
-        println!(
+        log::info!(
             "{}{}{}",
             self.name.bold(),
             if payload.is_some() {
@@ -146,7 +141,7 @@ impl Action for TaskletAction {
             },
         );
 
-        // println!("! {:?}", &cmd);
+        log::debug!("! {:?}", &cmd);
 
         let output = cmd.output();
         if let Ok(output) = output {
@@ -154,13 +149,13 @@ impl Action for TaskletAction {
             let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
             if !err.is_empty() {
-                println!(
-                    "\n{}\n",
+                log::error!(
+                    "{}",
                     if err.len() > self.max_shown_output {
                         format!(
                             "{}\n{}",
                             &err[0..self.max_shown_output].red(),
-                            "<truncated>".yellow()
+                            "... truncated ...".yellow()
                         )
                     } else {
                         err.red().to_string()
@@ -169,24 +164,28 @@ impl Action for TaskletAction {
             }
 
             if !out.is_empty() {
-                println!(
-                    "\n{}\n",
-                    if out.len() > self.max_shown_output {
-                        let end = out
-                            .char_indices()
-                            .map(|(i, _)| i)
-                            .nth(self.max_shown_output)
-                            .unwrap();
-                        let ascii = &out[0..end];
-                        format!("{}\n{}", ascii, "<truncated>".yellow())
-                    } else {
-                        out.to_string()
-                    }
-                );
+                let lines = if out.len() > self.max_shown_output {
+                    let end = out
+                        .char_indices()
+                        .map(|(i, _)| i)
+                        .nth(self.max_shown_output)
+                        .unwrap();
+                    let ascii = &out[0..end];
+                    format!("{}\n{}", ascii, "... truncated ...")
+                } else {
+                    out.to_string()
+                }
+                .split('\n')
+                .map(|s| s.dimmed().to_string())
+                .collect::<Vec<String>>();
+
+                for line in lines {
+                    log::info!("{}", line);
+                }
             }
 
             let exit_code = output.status.code().unwrap_or(0);
-            // println!("exit_code={}", exit_code);
+            log::debug!("exit_code={}", exit_code);
             if exit_code == STATE_COMPLETE_EXIT_CODE {
                 state.lock().await.on_complete(false, Some(out))?;
                 return Ok(Some("task complete".to_string()));
@@ -199,8 +198,7 @@ impl Action for TaskletAction {
             }
         } else {
             let err = output.err().unwrap().to_string();
-            println!("ERROR: {}", &err);
-
+            log::error!("{}", &err);
             Err(anyhow!(err))
         }
     }
@@ -316,7 +314,7 @@ impl Tasklet {
                 canon.file_stem().unwrap().to_str().unwrap().to_owned()
             };
 
-            // println!("tasklet = {:?}", &tasklet);
+            log::debug!("tasklet = {:?}", &tasklet);
 
             Ok(tasklet)
         }
@@ -364,11 +362,7 @@ impl Task for Tasklet {
             if let Ok(tm) = timeout.parse::<DurationString>() {
                 return Some(*tm);
             } else {
-                eprintln!(
-                    "{}: can't parse '{}' as duration string",
-                    "WARNING".yellow(),
-                    timeout
-                );
+                log::error!("can't parse '{}' as duration string", timeout);
             }
         }
         None

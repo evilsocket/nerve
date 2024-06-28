@@ -2,10 +2,10 @@ use std::{fmt::Display, time::Duration};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use colored::Colorize;
 use duration_string::DurationString;
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 
 use super::Invocation;
 
@@ -24,7 +24,7 @@ lazy_static! {
     static ref CONN_RESET_PARSER: Regex = Regex::new(r"(?m)^.+onnection reset by peer.*").unwrap();
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Options {
     pub system_prompt: String,
     pub prompt: String,
@@ -41,7 +41,7 @@ impl Options {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Message {
     Agent(String, Option<Invocation>),
     Feedback(String, Option<Invocation>),
@@ -86,9 +86,8 @@ pub trait Client: mini_rag::Embedder + Send + Sync {
                 }
 
                 if let Ok(retry_time) = retry_time_str.parse::<DurationString>() {
-                    println!(
-                        "{}: rate limit reached for this model, retrying in {} ...\n",
-                        "WARNING".bold().yellow(),
+                    log::warn!(
+                        "rate limit reached for this model, retrying in {} ...",
                         retry_time,
                     );
 
@@ -99,16 +98,15 @@ pub trait Client: mini_rag::Embedder + Send + Sync {
 
                     return true;
                 } else {
-                    eprintln!("can't parse '{}'", &retry_time_str);
+                    log::error!("can't parse '{}'", &retry_time_str);
                 }
             } else {
-                eprintln!("cap len wrong");
+                log::error!("cap len wrong");
             }
         } else if CONN_RESET_PARSER.captures_iter(error).next().is_some() {
             let retry_time = Duration::from_secs(5);
-            println!(
-                "{}: connection reset by peer, retrying in {:?} ...\n",
-                "WARNING".bold().yellow(),
+            log::warn!(
+                "connection reset by peer, retrying in {:?} ...",
                 &retry_time,
             );
 

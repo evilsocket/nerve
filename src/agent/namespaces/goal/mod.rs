@@ -33,7 +33,7 @@ impl Action for UpdateGoal {
             .lock()
             .await
             .get_storage_mut("goal")?
-            .set_current(payload.as_ref().unwrap(), true);
+            .set_current(payload.as_ref().unwrap());
         Ok(Some("goal updated".to_string()))
     }
 }

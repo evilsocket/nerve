@@ -2,7 +2,12 @@ use anyhow::Result;
 use colored::Colorize;
 
 use crate::{
-    agent::{generator, task::tasklet::Tasklet, Agent},
+    agent::{
+        events::{self, create_channel},
+        generator,
+        task::tasklet::Tasklet,
+        Agent,
+    },
     cli, APP_NAME, APP_VERSION,
 };
 
@@ -37,7 +42,7 @@ fn setup_models(
     Ok((gen_options, generator, embedder))
 }
 
-pub(crate) async fn setup_agent(args: &cli::Args) -> Result<Agent> {
+pub(crate) async fn setup_agent(args: &cli::Args) -> Result<(Agent, events::Receiver)> {
     // create generator and embedder
     let (gen_options, generator, embedder) = setup_models(args)?;
 
@@ -52,7 +57,7 @@ pub(crate) async fn setup_agent(args: &cli::Args) -> Result<Agent> {
     let tasklet_name = tasklet.name.clone();
 
     println!(
-        "{} v{} 🧠 {}{} > {}",
+        "{} v{} 🧠 {}{} > {}\n",
         APP_NAME,
         APP_VERSION,
         gen_options.model_name.bold(),
@@ -70,12 +75,11 @@ pub(crate) async fn setup_agent(args: &cli::Args) -> Result<Agent> {
 
     tasklet.prepare(&args.prompt)?;
 
-    println!("task: {}\n", tasklet.prompt.as_ref().unwrap().green());
-
     let task = Box::new(tasklet);
+    let (tx, rx) = create_channel();
 
-    // create the agent given the generator, embedder, task and a set of options
-    let agent = Agent::new(generator, embedder, task, args.to_agent_options()).await?;
+    // create the agent
+    let agent = Agent::new(tx, generator, embedder, task, args.max_iterations).await?;
 
-    Ok(agent)
+    Ok((agent, rx))
 }

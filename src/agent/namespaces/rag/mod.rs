@@ -2,7 +2,6 @@ use std::{collections::HashMap, time::Instant};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use colored::Colorize;
 
 use crate::agent::state::SharedState;
 
@@ -37,11 +36,12 @@ impl Action for Search {
         let mut docs = state.lock().await.rag_query(&query, 1).await?;
 
         if !docs.is_empty() {
-            println!("\n  {} results in {:?}", docs.len(), start.elapsed());
-            for (doc, score) in &docs {
-                println!("       * {} ({})", doc.get_path(), score);
-            }
-            println!();
+            log::info!(
+                "rag search for '{}': {} results in {:?}",
+                query,
+                docs.len(),
+                start.elapsed()
+            );
 
             Ok(Some(format!(
                 "Here is some supporting information:\n\n{}",
@@ -51,9 +51,8 @@ impl Action for Search {
                     .join("\n")
             )))
         } else {
-            println!(
-                "[{}] no results for '{query}' in {:?}",
-                "rag".bold(),
+            log::info!(
+                "search: no results for query '{query}' in {:?}",
                 start.elapsed()
             );
             Ok(Some("no documents for this query".to_string()))

@@ -7,7 +7,6 @@ use chrono::{DateTime, Local};
 use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOTH, S_IXUSR};
 
 use anyhow::Result;
-use colored::Colorize;
 
 use super::{Action, Namespace};
 use crate::agent::state::SharedState;
@@ -102,20 +101,12 @@ impl Action for ReadFolder {
                         full_path.display()
                     );
                 } else {
-                    eprintln!("ERROR: {:?}", path);
+                    log::error!("{:?}", path);
                 }
             }
 
-            println!(
-                "<{}> {} -> {} bytes",
-                self.name().bold(),
-                folder.yellow(),
-                output.len()
-            );
-
             Ok(Some(output))
         } else {
-            eprintln!("<{}> {} -> {:?}", self.name().bold(), folder.red(), &ret);
             Err(anyhow!("can't read {}: {:?}", folder, ret))
         }
     }
@@ -145,24 +136,11 @@ impl Action for ReadFile {
         payload: Option<String>,
     ) -> Result<Option<String>> {
         let filepath = payload.unwrap();
-        let ret = std::fs::read_to_string(&filepath);
+        let ret = std::fs::read_to_string(filepath);
         if let Ok(contents) = ret {
-            println!(
-                "<{}> {} -> {} bytes",
-                self.name().bold(),
-                filepath.yellow(),
-                contents.len()
-            );
             Ok(Some(contents))
         } else {
             let err = ret.err().unwrap();
-            println!(
-                "<{}> {} -> {:?}",
-                self.name().bold(),
-                filepath.yellow(),
-                &err
-            );
-
             Err(anyhow!(err))
         }
     }

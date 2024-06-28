@@ -1,9 +1,9 @@
 use std::fmt::Display;
 
-use colored::Colorize;
 use memory_stats::memory_stats;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ErrorMetrics {
     pub empty_responses: usize,
     pub unparsed_responses: usize,
@@ -23,7 +23,7 @@ impl ErrorMetrics {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Metrics {
     pub max_steps: usize,
     pub current_step: usize,
@@ -35,7 +35,7 @@ pub struct Metrics {
 
 impl Display for Metrics {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}] steps:", "statistics".bold().blue())?;
+        write!(f, "step:")?;
         if self.max_steps > 0 {
             write!(f, "{}/{} ", self.current_step, self.max_steps)?;
         } else {

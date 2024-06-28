@@ -1,12 +1,13 @@
 #[macro_use]
 extern crate anyhow;
 
+use agent::events::Event;
 use anyhow::Result;
 use clap::Parser;
-use colored::Colorize;
 
 mod agent;
 mod cli;
+mod listener;
 mod setup;
 
 const APP_NAME: &str = env!("CARGO_BIN_NAME");
@@ -15,8 +16,8 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[tokio::main]
 async fn main() -> Result<()> {
     // TODO: save/restore session
-
     let args = cli::Args::parse();
+    let with_stats = args.stats;
 
     if args.generate_doc {
         // generate action namespaces documentation and exit
@@ -24,20 +25,33 @@ async fn main() -> Result<()> {
         std::process::exit(0);
     }
 
-    let mut agent = setup::setup_agent(&args).await?;
+    if std::env::var_os("RUST_LOG").is_none() {
+        // set `RUST_LOG=debug` to see debug logs
+        std::env::set_var("RUST_LOG", "info,openai_api_rust=warn");
+    }
+
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format_module_path(false)
+        .format_target(false)
+        .init();
+
+    let (mut agent, events_rx) = setup::setup_agent(&args).await?;
+
+    // spawn the events listener
+    tokio::spawn(listener::events_listener(args, events_rx));
 
     // keep going until the task is complete or a fatal error is reached
     while !agent.is_done().await {
         // next step
         if let Err(error) = agent.step().await {
-            println!("{}", error.to_string().bold().red());
+            log::error!("{}", error.to_string());
             return Err(error);
         }
     }
 
     // report final metrics on exit
-    if args.stats {
-        println!("\n{}", agent.get_metrics().await);
+    if with_stats {
+        agent.on_event(Event::MetricsUpdate(agent.get_metrics().await))?;
     }
 
     Ok(())

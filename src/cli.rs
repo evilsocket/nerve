@@ -5,8 +5,6 @@ use clap::Parser;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::agent::AgentOptions;
-
 lazy_static! {
     pub static ref PUBLIC_GENERATOR_PARSER: Regex = Regex::new(r"(?m)^(.+)://(.+)$").unwrap();
     pub static ref LOCAL_GENERATOR_PARSER: Regex =
@@ -66,15 +64,6 @@ pub(crate) struct Args {
 }
 
 impl Args {
-    pub fn to_agent_options(&self) -> AgentOptions {
-        AgentOptions {
-            max_iterations: self.max_iterations,
-            save_to: self.save_to.clone(),
-            full_dump: self.full_dump,
-            with_stats: self.stats,
-        }
-    }
-
     fn parse_connection_string(&self, raw: &str, what: &str) -> Result<GeneratorOptions> {
         let raw = raw.trim().trim_matches(|c| c == '"' || c == '\'');
         if raw.is_empty() {
@@ -153,7 +142,9 @@ impl Args {
 }
 
 pub(crate) fn get_user_input(prompt: &str) -> String {
-    print!("{}", prompt);
+    log::warn!("user prompt input required");
+
+    print!("\n{}", prompt);
     let _ = io::stdout().flush();
 
     let mut input = String::new();

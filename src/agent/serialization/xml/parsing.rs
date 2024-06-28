@@ -107,7 +107,7 @@ fn try_parse_block(ptr: &str) -> Parsed {
     loop {
         let event = parser.next();
         if let Ok(event) = event {
-            // println!("{:?}", &event);
+            log::debug!("{:?}", &event);
             match event {
                 xml::reader::XmlEvent::StartDocument {
                     version: _,
@@ -136,12 +136,12 @@ fn try_parse_block(ptr: &str) -> Parsed {
                     if let Ok(inv) = ret {
                         parsed.invocations.push(inv);
                     } else {
-                        eprintln!("WARNING: {:?}", ret.err().unwrap());
+                        log::error!("{:?}", ret.err().unwrap());
                     }
                     break;
                 }
                 _ => {
-                    eprintln!("WARNING: unexpected xml element: {:?}", event);
+                    log::error!("unexpected xml element: {:?}", event);
                 }
             }
         } else {

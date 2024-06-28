@@ -1,25 +1,34 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::Result;
-use colored::Colorize;
-
-use generator::{Client, Options};
 use mini_rag::Embedder;
+use serde::{Deserialize, Serialize};
+
+use events::Event;
+use generator::{Client, Options};
 use namespaces::Action;
+use serialization::xml::serialize;
 use state::{SharedState, State};
 use task::Task;
 
+pub mod events;
 pub mod generator;
 pub mod namespaces;
 pub mod serialization;
 pub mod state;
 pub mod task;
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Invocation {
     pub action: String,
     pub attributes: Option<HashMap<String, String>>,
     pub payload: Option<String>,
+}
+
+impl std::fmt::Display for Invocation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", serialize::invocation(self))
+    }
 }
 
 impl std::hash::Hash for Invocation {
@@ -44,39 +53,32 @@ impl Invocation {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct AgentOptions {
-    pub max_iterations: usize,
-    pub save_to: Option<String>,
-    pub full_dump: bool,
-    pub with_stats: bool,
-}
-
 pub struct Agent {
+    events_chan: events::Sender,
     generator: Box<dyn Client>,
     state: SharedState,
-    options: AgentOptions,
     max_history: u16,
     task_timeout: Option<Duration>,
 }
 
 impl Agent {
     pub async fn new(
+        events_chan: events::Sender,
         generator: Box<dyn Client>,
         embedder: Box<dyn Embedder>,
         task: Box<dyn Task>,
-        options: AgentOptions,
+        max_iterations: usize,
     ) -> Result<Self> {
         let max_history = task.max_history_visibility();
         let task_timeout = task.get_timeout();
         let state = Arc::new(tokio::sync::Mutex::new(
-            State::new(task, embedder, options.max_iterations).await?,
+            State::new(events_chan.clone(), task, embedder, max_iterations).await?,
         ));
 
         Ok(Self {
+            events_chan,
             generator,
             state,
-            options,
             max_history,
             task_timeout,
         })
@@ -147,66 +149,38 @@ impl Agent {
         self.state.lock().await.is_complete()
     }
 
-    async fn save_if_needed(&self, options: &Options, refresh: bool) -> Result<()> {
-        if let Some(prompt_path) = &self.options.save_to {
-            let mut opts = options.clone();
-            if refresh {
-                opts.system_prompt =
-                    serialization::state_to_system_prompt(&*self.state.lock().await)?;
-                opts.history = self
-                    .state
-                    .lock()
-                    .await
-                    .to_chat_history(self.max_history as usize)?;
-            }
-
-            let data = if self.options.full_dump {
-                format!(
-                    "[SYSTEM PROMPT]\n\n{}\n\n[PROMPT]\n\n{}\n\n[CHAT]\n\n{}",
-                    &options.system_prompt,
-                    &options.prompt,
-                    options
-                        .history
-                        .iter()
-                        .map(|m| m.to_string())
-                        .collect::<Vec<String>>()
-                        .join("\n")
-                )
-            } else {
-                opts.system_prompt.to_string()
-            };
-
-            std::fs::write(prompt_path, data)?;
+    async fn on_state_update(&self, options: &Options, refresh: bool) -> Result<()> {
+        let mut opts = options.clone();
+        if refresh {
+            opts.system_prompt = serialization::state_to_system_prompt(&*self.state.lock().await)?;
+            opts.history = self
+                .state
+                .lock()
+                .await
+                .to_chat_history(self.max_history as usize)?;
         }
 
-        Ok(())
+        self.on_event(events::Event::StateUpdate(opts))
     }
 
     async fn on_empty_response(&self) {
-        println!(
-            "{}: agent did not provide valid instructions: empty response",
-            "WARNING".bold().red(),
-        );
-
         let mut mut_state = self.state.lock().await;
         mut_state.metrics.errors.empty_responses += 1;
         mut_state
             .add_unparsed_response_to_history("", "Do not return an empty responses.".to_string());
+
+        self.on_event(events::Event::EmptyResponse).unwrap();
     }
 
     async fn on_invalid_response(&self, response: &str) {
-        println!(
-            "{}: agent did not provide valid instructions: \n\n{}\n\n",
-            "WARNING".bold().red(),
-            response.dimmed()
-        );
-
         let mut mut_state = self.state.lock().await;
         mut_state.metrics.errors.unparsed_responses += 1;
         mut_state.add_unparsed_response_to_history(
         response,
         "I could not parse any valid actions from your response, please correct it according to the instructions.".to_string(),
     );
+        self.on_event(events::Event::InvalidResponse(response.to_string()))
+            .unwrap();
     }
 
     async fn on_valid_response(&self) {
@@ -220,9 +194,14 @@ impl Agent {
         let name = invocation.action.clone();
 
         mut_state.add_error_to_history(
-            invocation,
-            error.unwrap_or(format!("'{name}' is not a valid action name")),
+            invocation.clone(),
+            error
+                .clone()
+                .unwrap_or(format!("'{name}' is not a valid action name")),
         );
+
+        self.on_event(events::Event::InvalidAction { invocation, error })
+            .unwrap();
     }
 
     async fn on_valid_action(&self) {
@@ -230,29 +209,51 @@ impl Agent {
     }
 
     async fn on_timed_out_action(&self, invocation: Invocation, start: &std::time::Instant) {
-        println!(
-            "{}: action '{}' timed out after {:?}",
-            "WARNING".bold().yellow(),
-            &invocation.action,
-            start.elapsed()
-        );
         let mut mut_state = self.state.lock().await;
         mut_state.metrics.errors.timedout_actions += 1;
         // tell the model about the timeout
-        mut_state.add_error_to_history(invocation, "action timed out".to_string());
+        mut_state.add_error_to_history(invocation.clone(), "action timed out".to_string());
+
+        self.events_chan
+            .send(events::Event::ActionTimeout {
+                invocation,
+                elapsed: start.elapsed(),
+            })
+            .unwrap();
     }
 
-    async fn on_executed_action(&self, invocation: Invocation, ret: Result<Option<String>>) {
+    async fn on_executed_action(
+        &self,
+        invocation: Invocation,
+        ret: Result<Option<String>>,
+        start: &std::time::Instant,
+    ) {
         let mut mut_state = self.state.lock().await;
-        if let Err(error) = ret {
+        let mut error = None;
+        let mut result = None;
+
+        if let Err(err) = ret {
             mut_state.metrics.errors.errored_actions += 1;
             // tell the model about the error
-            mut_state.add_error_to_history(invocation, error.to_string());
+            mut_state.add_error_to_history(invocation.clone(), err.to_string());
+
+            error = Some(err.to_string());
         } else {
+            let ret = ret.unwrap();
             mut_state.metrics.success_actions += 1;
             // tell the model about the output
-            mut_state.add_success_to_history(invocation, ret.unwrap());
+            mut_state.add_success_to_history(invocation.clone(), ret.clone());
+
+            result = ret;
         }
+
+        self.on_event(events::Event::ActionExecuted {
+            invocation,
+            result,
+            error,
+            elapsed: start.elapsed(),
+        })
+        .unwrap();
     }
 
     pub async fn get_metrics(&self) -> state::metrics::Metrics {
@@ -264,9 +265,7 @@ impl Agent {
 
         mut_state.on_step()?;
 
-        if self.options.with_stats {
-            println!("\n{}\n", &mut_state.metrics);
-        }
+        self.on_event(events::Event::MetricsUpdate(mut_state.metrics.clone()))?;
 
         let system_prompt = serialization::state_to_system_prompt(&mut_state)?;
         let prompt = mut_state.to_prompt()?;
@@ -276,10 +275,14 @@ impl Agent {
         Ok(options)
     }
 
+    pub fn on_event(&self, event: Event) -> Result<()> {
+        self.events_chan.send(event).map_err(|e| anyhow!(e))
+    }
+
     pub async fn step(&mut self) -> Result<()> {
         let options = self.prepare_step().await?;
 
-        self.save_if_needed(&options, false).await?;
+        self.on_state_update(&options, false).await?;
 
         // run model inference
         let response = self.generator.chat(&options).await?.trim().to_string();
@@ -323,8 +326,6 @@ impl Agent {
                         Duration::from_secs(60 * 60 * 24 * 30)
                     };
 
-                    // println!("{} timeout={:?}", action.name(), &timeout);
-
                     // execute with timeout
                     let start = std::time::Instant::now();
                     let ret = tokio::time::timeout(
@@ -340,12 +341,12 @@ impl Agent {
                     if ret.is_err() {
                         self.on_timed_out_action(inv, &start).await;
                     } else {
-                        self.on_executed_action(inv, ret.unwrap()).await;
+                        self.on_executed_action(inv, ret.unwrap(), &start).await;
                     }
                 }
             }
 
-            self.save_if_needed(&options, true).await?;
+            self.on_state_update(&options, true).await?;
 
             // break the loop if we're done
             if self.state.lock().await.is_complete() {

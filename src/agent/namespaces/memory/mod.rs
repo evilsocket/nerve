@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use colored::Colorize;
 
 use super::{Action, Namespace, StorageDescriptor};
 use crate::agent::state::SharedState;
@@ -125,10 +124,8 @@ impl Action for RecallMemory {
         let key = attrs.get("key").unwrap();
 
         if let Some(memory) = state.lock().await.get_storage("memories")?.get_tagged(key) {
-            println!("<{}> recalling {}", "memories".bold(), key);
             Ok(Some(memory))
         } else {
-            eprintln!("<{}> memory {} does not exist", "memories".bold(), key);
             Err(anyhow!("memory '{}' not found", key))
         }
     }

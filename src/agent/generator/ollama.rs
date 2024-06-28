@@ -82,7 +82,7 @@ impl Client for OllamaClient {
         if let Some(msg) = res.message {
             Ok(msg.content)
         } else {
-            println!("WARNING: model returned an empty message.");
+            log::warn!("model returned an empty message.");
             Ok("".to_string())
         }
     }

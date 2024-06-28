@@ -1,10 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Result;
-use colored::Colorize;
 use metrics::Metrics;
 
 use super::{
+    events::Event,
     generator::Message,
     namespaces::{self, Namespace},
     task::Task,
@@ -30,6 +30,8 @@ pub struct State {
     rag: Option<mini_rag::VectorStore>,
     // set to true when task is complete
     complete: bool,
+    // events channel
+    events_tx: super::events::Sender,
     // runtime metrics
     pub metrics: Metrics,
 }
@@ -38,6 +40,7 @@ pub type SharedState = Arc<tokio::sync::Mutex<State>>;
 
 impl State {
     pub async fn new(
+        events_tx: super::events::Sender,
         task: Box<dyn Task>,
         embedder: Box<dyn mini_rag::Embedder>,
         max_iterations: usize,
@@ -106,19 +109,17 @@ impl State {
                     if !storages.contains_key(&storage.name) {
                         storages.insert(
                             storage.name.to_string(),
-                            Storage::new(&storage.name, storage.type_),
+                            Storage::new(&storage.name, storage.type_, events_tx.clone()),
                         );
                     }
                 }
             }
         }
 
-        // println!("storages={:?}", &storages);
-
         // if the goal namespace is enabled, set the current goal
         if let Some(goal) = storages.get_mut("goal") {
             let prompt = task.to_prompt()?;
-            goal.set_current(&prompt, false);
+            goal.set_current(&prompt);
         }
 
         let metrics = Metrics {
@@ -134,6 +135,7 @@ impl State {
             complete,
             metrics,
             rag,
+            events_tx,
         })
     }
 
@@ -175,7 +177,6 @@ impl State {
         if let Some(storage) = self.storages.get(name) {
             Ok(storage)
         } else {
-            println!("WARNING: requested storage '{name}' not found.");
             Err(anyhow!("storage {name} not found"))
         }
     }
@@ -184,7 +185,6 @@ impl State {
         if let Some(storage) = self.storages.get_mut(name) {
             Ok(storage)
         } else {
-            println!("WARNING: requested storage '{name}' not found.");
             Err(anyhow!("storage {name} not found"))
         }
     }
@@ -207,7 +207,6 @@ impl State {
     }
 
     pub fn add_error_to_history(&mut self, invocation: Invocation, error: String) {
-        // eprintln!("[{}] -> {}", &invocation.action, error.red());
         self.history.push(Execution::with_error(invocation, error));
     }
 
@@ -229,30 +228,11 @@ impl State {
     }
 
     pub fn on_complete(&mut self, impossible: bool, reason: Option<String>) -> Result<()> {
-        // TODO: unify logging logic
-        if impossible {
-            println!(
-                "\n{}: '{}'",
-                "task is impossible".bold().red(),
-                if let Some(r) = &reason {
-                    r
-                } else {
-                    "no reason provided"
-                }
-            );
-        } else {
-            println!(
-                "\n{}: '{}'",
-                "task complete".bold().green(),
-                if let Some(r) = &reason {
-                    r
-                } else {
-                    "no reason provided"
-                }
-            );
-        }
-
         self.complete = true;
-        Ok(())
+        self.on_event(Event::TaskComplete { impossible, reason })
+    }
+
+    pub fn on_event(&self, event: Event) -> Result<()> {
+        self.events_tx.send(event).map_err(|e| anyhow!(e))
     }
 }
