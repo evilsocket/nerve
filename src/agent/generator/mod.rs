@@ -21,6 +21,7 @@ mod openai;
 lazy_static! {
     static ref RETRY_TIME_PARSER: Regex =
         Regex::new(r"(?m)^.+try again in (.+)\. Visit.*").unwrap();
+    static ref CONN_RESET_PARSER: Regex = Regex::new(r"(?m)^.+onnection reset by peer.*").unwrap();
 }
 
 #[derive(Clone, Debug)]
@@ -103,6 +104,17 @@ pub trait Client: mini_rag::Embedder + Send + Sync {
             } else {
                 eprintln!("cap len wrong");
             }
+        } else if CONN_RESET_PARSER.captures_iter(error).next().is_some() {
+            let retry_time = Duration::from_secs(5);
+            println!(
+                "{}: connection reset by peer, retrying in {:?} ...\n",
+                "WARNING".bold().yellow(),
+                &retry_time,
+            );
+
+            tokio::time::sleep(retry_time).await;
+
+            return true;
         }
 
         return false;
