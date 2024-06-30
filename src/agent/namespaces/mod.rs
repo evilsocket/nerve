@@ -15,6 +15,7 @@ pub(crate) mod memory;
 pub(crate) mod planning;
 pub(crate) mod rag;
 pub(crate) mod task;
+pub(crate) mod time;
 
 lazy_static! {
     // Available namespaces.
@@ -22,6 +23,7 @@ lazy_static! {
         let mut map = IndexMap::new();
 
         map.insert("memory".to_string(), memory::get_namespace as fn() -> Namespace);
+        map.insert("time".to_string(), time::get_namespace as fn() -> Namespace);
         map.insert("goal".to_string(), goal::get_namespace as fn() -> Namespace);
         map.insert("planning".to_string(), planning::get_namespace as fn() -> Namespace);
         map.insert("task".to_string(), task::get_namespace as fn() -> Namespace);
@@ -61,6 +63,12 @@ impl StorageDescriptor {
     pub fn completion(name: &str) -> Self {
         let name = name.to_string();
         let type_ = StorageType::Completion;
+        Self { name, type_ }
+    }
+
+    pub fn time(name: &str) -> Self {
+        let name = name.to_string();
+        let type_ = StorageType::Time;
         Self { name, type_ }
     }
 }

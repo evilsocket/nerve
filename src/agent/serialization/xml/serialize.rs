@@ -50,6 +50,14 @@ pub(crate) fn storage(storage: &Storage) -> String {
     }
 
     match storage.get_type() {
+        StorageType::Time => {
+            let started_at = storage.get_started_at();
+
+            format!(
+                "## Current date: {}\n",
+                chrono::Local::now().format("%m %B %Y %H:%M")
+            ) + &format!("## Time since start: {:?}\n", started_at.elapsed())
+        }
         StorageType::Tagged => {
             let mut xml: String = format!("<{}>\n", storage.get_name());
 

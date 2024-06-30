@@ -10,6 +10,8 @@ using:
   - task
   # the agent can create an action plan for the task
   - planning
+  #  give the agent a sense of time
+  - time
 
 # agent background story
 system_prompt: > 

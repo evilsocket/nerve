@@ -1,4 +1,4 @@
-use std::{ops::Deref /* , time::SystemTime*/};
+use std::{ops::Deref, time::Instant /* , time::SystemTime*/};
 
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
@@ -7,17 +7,18 @@ use crate::agent::events::{Event, Sender};
 
 #[derive(Debug)]
 pub struct Entry {
-    //pub time: SystemTime,
+    pub time: Instant,
     pub complete: bool, // for Completion storage
     pub data: String,
 }
 
 impl Entry {
     pub fn new(data: String) -> Self {
-        //let time = SystemTime::now();
+        let time: Instant = Instant::now();
         let complete = false;
         Self {
-            /* time ,*/ data,
+            time,
+            data,
             complete,
         }
     }
@@ -34,21 +35,25 @@ pub enum StorageType {
     CurrentPrevious,
     // a list of tasks that can be set as complete
     Completion,
+    // current time
+    Time,
 }
 
 impl StorageType {
     pub fn as_u8(&self) -> u8 {
         match self {
-            StorageType::CurrentPrevious => 0,
-            StorageType::Completion => 1,
-            StorageType::Untagged => 2,
-            StorageType::Tagged => 3,
+            StorageType::Time => 0,
+            StorageType::CurrentPrevious => 1,
+            StorageType::Completion => 2,
+            StorageType::Untagged => 3,
+            StorageType::Tagged => 4,
         }
     }
 }
 
 pub(crate) const CURRENT_TAG: &str = "__current";
 pub(crate) const PREVIOUS_TAG: &str = "__previous";
+pub(crate) const STARTED_AT_TAG: &str = "__started_at";
 
 #[derive(Debug)]
 pub struct Storage {
@@ -70,7 +75,12 @@ impl Deref for Storage {
 impl Storage {
     pub fn new(name: &str, type_: StorageType, events_tx: Sender) -> Self {
         let name = name.to_string();
-        let inner = IndexMap::new();
+        let mut inner = IndexMap::new();
+
+        if matches!(type_, StorageType::Time) {
+            inner.insert(STARTED_AT_TAG.to_string(), Entry::new(String::new()));
+        }
+
         Self {
             name,
             type_,
@@ -89,6 +99,11 @@ impl Storage {
 
     fn on_event(&self, event: Event) {
         self.events_tx.send(event).unwrap();
+    }
+
+    pub fn get_started_at(&self) -> Instant {
+        assert!(matches!(self.type_, StorageType::Time));
+        self.inner.get(STARTED_AT_TAG).unwrap().time
     }
 
     pub fn add_tagged(&mut self, key: &str, data: &str) {
