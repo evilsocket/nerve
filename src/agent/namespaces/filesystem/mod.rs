@@ -105,6 +105,8 @@ impl Action for ReadFolder {
                 }
             }
 
+            log::info!("read-folder '{folder}' -> {} bytes", output.len());
+
             Ok(Some(output))
         } else {
             Err(anyhow!("can't read {}: {:?}", folder, ret))
@@ -136,8 +138,9 @@ impl Action for ReadFile {
         payload: Option<String>,
     ) -> Result<Option<String>> {
         let filepath = payload.unwrap();
-        let ret = std::fs::read_to_string(filepath);
+        let ret = std::fs::read_to_string(&filepath);
         if let Ok(contents) = ret {
+            log::info!("read-file '{filepath}' -> {} bytes", contents.len());
             Ok(Some(contents))
         } else {
             let err = ret.err().unwrap();
