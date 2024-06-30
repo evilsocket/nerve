@@ -17,6 +17,8 @@ async fn main() -> Result<()> {
     // TODO: save/restore session
     let args = cli::Args::parse();
 
+    // TODO: handle max tokens
+
     if args.generate_doc {
         // generate action namespaces documentation and exit
         println!("{}", agent::serialization::available_actions());
