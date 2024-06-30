@@ -356,4 +356,11 @@ impl Agent {
 
         Ok(())
     }
+
+    pub async fn on_end(&mut self) -> Result<()> {
+        // report final metrics on exit
+        let last_metrics = self.get_metrics().await;
+
+        self.on_event(Event::MetricsUpdate(last_metrics))
+    }
 }

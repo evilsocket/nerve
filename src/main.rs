@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate anyhow;
 
-use agent::events::Event;
 use anyhow::Result;
 use clap::Parser;
 
@@ -17,7 +16,6 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 async fn main() -> Result<()> {
     // TODO: save/restore session
     let args = cli::Args::parse();
-    let with_stats = args.stats;
 
     if args.generate_doc {
         // generate action namespaces documentation and exit
@@ -49,10 +47,5 @@ async fn main() -> Result<()> {
         }
     }
 
-    // report final metrics on exit
-    if with_stats {
-        agent.on_event(Event::MetricsUpdate(agent.get_metrics().await))?;
-    }
-
-    Ok(())
+    agent.on_end().await
 }

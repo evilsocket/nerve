@@ -58,9 +58,6 @@ pub(crate) struct Args {
     /// Print the documentation of the available action namespaces.
     #[arg(long)]
     pub generate_doc: bool,
-    /// Report runtime statistics.
-    #[arg(long)]
-    pub stats: bool,
 }
 
 impl Args {
