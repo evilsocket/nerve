@@ -49,12 +49,9 @@ pub(crate) struct Args {
     /// Maximum number of steps to complete the task or 0 for no limit.
     #[arg(long, default_value_t = 0)]
     pub max_iterations: usize,
-    /// At every step, save the dynamic system prompt contents to this file.
+    /// At every step, save the current system prompt and state data to this file.
     #[arg(long)]
     pub save_to: Option<String>,
-    /// Dump the system prompt and the entire chat history to file.
-    #[arg(long)]
-    pub full_dump: bool,
     /// Print the documentation of the available action namespaces.
     #[arg(long)]
     pub generate_doc: bool,

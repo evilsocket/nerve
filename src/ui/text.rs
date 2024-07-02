@@ -13,20 +13,16 @@ pub(crate) async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
             }
             Event::StateUpdate(opts) => {
                 if let Some(prompt_path) = &args.save_to {
-                    let data = if args.full_dump {
-                        format!(
-                            "[SYSTEM PROMPT]\n\n{}\n\n[PROMPT]\n\n{}\n\n[CHAT]\n\n{}",
-                            &opts.system_prompt,
-                            &opts.prompt,
-                            opts.history
-                                .iter()
-                                .map(|m| m.to_string())
-                                .collect::<Vec<String>>()
-                                .join("\n")
-                        )
-                    } else {
-                        opts.system_prompt.to_string()
-                    };
+                    let data = format!(
+                        "[SYSTEM PROMPT]\n\n{}\n\n[PROMPT]\n\n{}\n\n[CHAT]\n\n{}",
+                        &opts.system_prompt,
+                        &opts.prompt,
+                        opts.history
+                            .iter()
+                            .map(|m| m.to_string())
+                            .collect::<Vec<String>>()
+                            .join("\n")
+                    );
 
                     if let Err(e) = std::fs::write(prompt_path, data) {
                         log::error!("error writing {}: {:?}", prompt_path, e);

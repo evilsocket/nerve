@@ -128,10 +128,10 @@ You can find more tasklet examples in the `examples` folder, feel free to send a
 
 The main idea is giving the model a set of functions to perform operations and add more context to its own system prompt, in a structured way. Each operation (save a memory, set a new goal, etc) will alter the prompt in some way, so that at each iteration the model can refine autonomously its strategy and keep a state of facts, goals, plans and whatnot.
 
-If you want to observe this (basically the debug mode of Nerve), run your tasklet by adding the following additional arguments:
+If you want to observe this (basically the debug mode of Nerve), run your tasklet by adding the following additional argument:
 
 ```sh
-nerve -G ... -T whatever-tasklet --save-to state.txt --full-dump
+nerve -G ... -T whatever-tasklet --save-to state.txt
 ```
 
 The agent save to disk its internal state at each iteration for you to observe.
