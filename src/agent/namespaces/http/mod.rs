@@ -146,6 +146,7 @@ impl Action for Request {
         let attrs = attrs.unwrap();
         let method = reqwest::Method::from_str(attrs.get("method").unwrap())?;
         let parsed = Self::create_url_from(&state, payload.clone()).await?;
+        let query_str = parsed.query().unwrap_or("").to_string();
 
         let mut client = reqwest::Client::new().request(method.clone(), parsed.clone());
         let lock = state.lock().await;
@@ -153,6 +154,13 @@ impl Action for Request {
 
         for (key, value) in headers.iter() {
             client = client.header(key, &value.data);
+        }
+
+        // if there're parameters and we're not in GET, set them as the body
+        if !query_str.is_empty() {
+            if !matches!(method, reqwest::Method::GET) {
+                client = client.body(query_str);
+            }
         }
 
         log::info!(
