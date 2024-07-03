@@ -182,6 +182,7 @@ impl Action for Request {
                 resp += &format!("{}: {}\n", key, val.to_str().unwrap());
             }
 
+            // TODO: handle the response type properly
             resp += "\n\n";
             resp += &res.text().await?;
 
