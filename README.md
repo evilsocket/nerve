@@ -69,6 +69,8 @@ using:
   - task
   # the agent can create an action plan for the task
   - planning
+  #  give the agent a sense of time
+  - time
 
 # agent background story
 system_prompt: > 
@@ -76,8 +78,8 @@ system_prompt: >
   You are acting as a useful assistant that perform complex tasks by executing a series of shell commands.
 
 # agent specific goal, leave empty to ask the user
-prompt: >
-  find which process is using the most RAM
+#prompt: >
+#  find which process is using the most RAM
 
 # optional rules to add to the basic ones
 guidance:
@@ -85,6 +87,9 @@ guidance:
   - Prefer using full paths to files and directories.
   - Use the /tmp directory for any file write operations.
   - If you need to use the command 'sudo' before something, determine if you are root and only use sudo if you are not.
+
+# optional global action timeout
+timeout: 120s
 
 # the agent toolbox
 functions:
@@ -96,11 +101,13 @@ functions:
         description: "To execute a bash command on the remote host via SSH:"
         # provides an example payload to the model
         example_payload: whoami
+        # optional action timeout
+        timeout: 30s
         # each action is mapped to a custom command
         # strings starting with $ have to be provided by the user
         # here the command is executed via ssh with a timeout of 15 seconds
         # IMPORTANT: this assumes the user can connect via ssh key and no password.
-        tool: gtimeout -v $SSH_TIMEOUT||15 /usr/bin/ssh $SSH_USER_HOST_STRING
+        tool: ssh $SSH_USER_HOST_STRING
 ```
 
 In this example we created an agent with the default functionalities that is also capable of executing any ssh command on a given host by using the "tool" we described to it.
