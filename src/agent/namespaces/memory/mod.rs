@@ -19,7 +19,7 @@ impl Action for SaveMemory {
         include_str!("save.prompt")
     }
 
-    fn attributes(&self) -> Option<HashMap<String, String>> {
+    fn example_attributes(&self) -> Option<HashMap<String, String>> {
         let mut attributes = HashMap::new();
 
         attributes.insert("key".to_string(), "my-note".to_string());
@@ -63,7 +63,7 @@ impl Action for DeleteMemory {
         include_str!("delete.prompt")
     }
 
-    fn attributes(&self) -> Option<HashMap<String, String>> {
+    fn example_attributes(&self) -> Option<HashMap<String, String>> {
         let mut attributes = HashMap::new();
 
         attributes.insert("key".to_string(), "my-note".to_string());
@@ -106,7 +106,7 @@ impl Action for RecallMemory {
         include_str!("recall.prompt")
     }
 
-    fn attributes(&self) -> Option<HashMap<String, String>> {
+    fn example_attributes(&self) -> Option<HashMap<String, String>> {
         let mut attributes = HashMap::new();
 
         attributes.insert("key".to_string(), "my-note".to_string());

@@ -58,7 +58,7 @@ impl Action for TaskletAction {
         self.example_payload.as_deref()
     }
 
-    fn attributes(&self) -> Option<HashMap<String, String>> {
+    fn example_attributes(&self) -> Option<HashMap<String, String>> {
         self.args.clone()
     }
 

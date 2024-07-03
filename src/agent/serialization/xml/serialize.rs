@@ -28,7 +28,7 @@ pub(crate) fn invocation(inv: &Invocation) -> String {
 pub(crate) fn action(action: &Box<dyn Action>) -> String {
     let mut xml = format!("<{}", action.name());
 
-    if let Some(attrs) = action.attributes() {
+    if let Some(attrs) = action.example_attributes() {
         for (name, example_value) in &attrs {
             xml += &format!(" {}=\"{}\"", name, example_value);
         }

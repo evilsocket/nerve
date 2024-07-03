@@ -3,6 +3,8 @@ use std::{collections::HashMap, sync::Arc};
 use anyhow::Result;
 use metrics::Metrics;
 
+use crate::agent::task::variables::parse_variable_expr;
+
 use super::{
     events::Event,
     generator::Message,
@@ -20,6 +22,8 @@ pub(crate) mod storage;
 pub struct State {
     // the task
     task: Box<dyn Task>,
+    // predefined variables
+    variables: HashMap<String, String>,
     // model memories, goals and other storages
     storages: HashMap<String, Storage>,
     // available actions and execution history
@@ -46,6 +50,7 @@ impl State {
         max_iterations: usize,
     ) -> Result<Self> {
         let complete = false;
+        let mut variables = HashMap::new();
         let mut storages = HashMap::new();
         let history = History::new();
 
@@ -84,6 +89,20 @@ impl State {
             }
         }
 
+        for namespace in &namespaces {
+            for action in &namespace.actions {
+                // check if the action requires some variable
+                if let Some(required_vars) = action.required_variables() {
+                    log::debug!("action {} requires {:?}", action.name(), &required_vars);
+                    for var_name in required_vars {
+                        let var_expr = format!("${var_name}");
+                        let (var_name, var_value) = parse_variable_expr(&var_expr)?;
+                        variables.insert(var_name, var_value);
+                    }
+                }
+            }
+        }
+
         // add RAG namespace
         let rag: Option<mini_rag::VectorStore> = if let Some(config) = task.get_rag_config() {
             let mut v_store = mini_rag::VectorStore::new(embedder, config)?;
@@ -104,13 +123,22 @@ impl State {
         // if any namespace requires a specific storage, create it
         for namespace in &namespaces {
             if let Some(ns_storages) = &namespace.storages {
-                for storage in ns_storages {
+                for storage_descriptor in ns_storages {
                     // not created yet
-                    if !storages.contains_key(&storage.name) {
-                        storages.insert(
-                            storage.name.to_string(),
-                            Storage::new(&storage.name, storage.type_, events_tx.clone()),
+                    if !storages.contains_key(&storage_descriptor.name) {
+                        let mut new_storage = Storage::new(
+                            &storage_descriptor.name,
+                            storage_descriptor.type_,
+                            events_tx.clone(),
                         );
+
+                        if let Some(pre) = &storage_descriptor.predefined {
+                            for (key, value) in pre {
+                                new_storage.add_data(key, value);
+                            }
+                        }
+
+                        storages.insert(storage_descriptor.name.to_string(), new_storage);
                     }
                 }
             }
@@ -129,6 +157,7 @@ impl State {
 
         Ok(Self {
             task,
+            variables,
             storages,
             history,
             namespaces,
@@ -167,6 +196,10 @@ impl State {
     #[allow(clippy::borrowed_box)]
     pub fn get_task(&self) -> &Box<dyn Task> {
         &self.task
+    }
+
+    pub fn get_variable(&self, name: &str) -> Option<&String> {
+        self.variables.get(name)
     }
 
     pub fn get_storages(&self) -> Vec<&Storage> {

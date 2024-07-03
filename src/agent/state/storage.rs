@@ -51,6 +51,12 @@ impl StorageType {
     }
 }
 
+impl Default for StorageType {
+    fn default() -> Self {
+        Self::Untagged
+    }
+}
+
 pub(crate) const CURRENT_TAG: &str = "__current";
 pub(crate) const PREVIOUS_TAG: &str = "__previous";
 pub(crate) const STARTED_AT_TAG: &str = "__started_at";
@@ -104,6 +110,18 @@ impl Storage {
     pub fn get_started_at(&self) -> Instant {
         assert!(matches!(self.type_, StorageType::Time));
         self.inner.get(STARTED_AT_TAG).unwrap().time
+    }
+
+    pub fn add_data(&mut self, key: &str, data: &str) {
+        self.inner
+            .insert(key.to_string(), Entry::new(data.to_string()));
+        self.on_event(Event::StorageUpdate {
+            storage_name: self.name.to_string(),
+            storage_type: self.type_,
+            key: key.to_string(),
+            prev: None,
+            new: Some(data.to_string()),
+        });
     }
 
     pub fn add_tagged(&mut self, key: &str, data: &str) {

@@ -7,10 +7,11 @@ use lazy_static::lazy_static;
 
 use super::state::{storage::StorageType, SharedState};
 
-// TODO: add more namespaces of actions: take screenshot (multimodal), networking, move mouse, ui interactions, etc
+// TODO: add more namespaces of actions: take screenshot (multimodal), move mouse, ui interactions, etc
 
 pub(crate) mod filesystem;
 pub(crate) mod goal;
+pub(crate) mod http;
 pub(crate) mod memory;
 pub(crate) mod planning;
 pub(crate) mod rag;
@@ -29,15 +30,17 @@ lazy_static! {
         map.insert("task".to_string(), task::get_namespace as fn() -> Namespace);
         map.insert("filesystem".to_string(), filesystem::get_namespace as fn() -> Namespace);
         map.insert("rag".to_string(), rag::get_namespace as fn() -> Namespace);
+        map.insert("http".to_string(), http::get_namespace as fn() -> Namespace);
 
         map
     };
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct StorageDescriptor {
     pub name: String,
     pub type_: StorageType,
+    pub predefined: Option<HashMap<String, String>>,
 }
 
 #[allow(dead_code)]
@@ -45,31 +48,61 @@ impl StorageDescriptor {
     pub fn tagged(name: &str) -> Self {
         let name = name.to_string();
         let type_ = StorageType::Tagged;
-        Self { name, type_ }
+        let predefined = None;
+        Self {
+            name,
+            type_,
+            predefined,
+        }
     }
 
     pub fn untagged(name: &str) -> Self {
         let name = name.to_string();
         let type_ = StorageType::Untagged;
-        Self { name, type_ }
+        let predefined = None;
+        Self {
+            name,
+            type_,
+            predefined,
+        }
     }
 
     pub fn previous_current(name: &str) -> Self {
         let name = name.to_string();
         let type_ = StorageType::CurrentPrevious;
-        Self { name, type_ }
+        let predefined = None;
+        Self {
+            name,
+            type_,
+            predefined,
+        }
     }
 
     pub fn completion(name: &str) -> Self {
         let name = name.to_string();
         let type_ = StorageType::Completion;
-        Self { name, type_ }
+        let predefined = None;
+        Self {
+            name,
+            type_,
+            predefined,
+        }
     }
 
     pub fn time(name: &str) -> Self {
         let name = name.to_string();
         let type_ = StorageType::Time;
-        Self { name, type_ }
+        let predefined = None;
+        Self {
+            name,
+            type_,
+            predefined,
+        }
+    }
+
+    pub fn predefine(mut self, what: HashMap<String, String>) -> Self {
+        self.predefined = Some(what);
+        self
     }
 }
 
@@ -120,17 +153,6 @@ impl Namespace {
 pub(crate) trait Action: std::fmt::Debug + Sync + Send + ActionClone {
     fn name(&self) -> &str;
 
-    fn timeout(&self) -> Option<Duration> {
-        None
-    }
-
-    fn attributes(&self) -> Option<HashMap<String, String>> {
-        None
-    }
-    fn example_payload(&self) -> Option<&str> {
-        None
-    }
-
     fn description(&self) -> &str;
 
     async fn run(
@@ -139,6 +161,26 @@ pub(crate) trait Action: std::fmt::Debug + Sync + Send + ActionClone {
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>>;
+
+    // optional execution timeout
+    fn timeout(&self) -> Option<Duration> {
+        None
+    }
+
+    // optional example attributes
+    fn example_attributes(&self) -> Option<HashMap<String, String>> {
+        None
+    }
+
+    // optional example payload
+    fn example_payload(&self) -> Option<&str> {
+        None
+    }
+
+    // optional variables used by this action
+    fn required_variables(&self) -> Option<Vec<String>> {
+        None
+    }
 }
 
 // https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object

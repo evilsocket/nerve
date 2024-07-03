@@ -88,7 +88,7 @@ impl Agent {
     pub fn validate(&self, invocation: &Invocation, action: &Box<dyn Action>) -> Result<()> {
         // validate prerequisites
         let payload_required = action.example_payload().is_some();
-        let attrs_required = action.attributes().is_some();
+        let attrs_required = action.example_attributes().is_some();
         let has_payload = invocation.payload.is_some();
         let has_attributes = invocation.attributes.is_some();
 
@@ -118,7 +118,7 @@ impl Agent {
         if attrs_required {
             // validate each required attribute
             let required_attrs: Vec<String> = action
-                .attributes()
+                .example_attributes()
                 .unwrap()
                 .keys()
                 .map(|s| s.to_owned())
