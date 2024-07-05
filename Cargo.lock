@@ -1013,9 +1013,9 @@ checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
 name = "mini-rag"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c352137db900aafef20d87aaf54e96beffeb28faa3d984b7be8f349da50e3e32"
+checksum = "a239ebc1a5537ed64ed4fbef9ee2a1de052e24d5ba540bd4ca148d7e5d41738b"
 dependencies = [
  "anyhow",
  "async-trait",
