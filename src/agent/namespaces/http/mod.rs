@@ -191,6 +191,8 @@ impl Action for Request {
         let parsed = Self::create_url_from(&state, payload.clone()).await?;
         let query_str = parsed.query().unwrap_or("").to_string();
 
+        // TODO: handle cookie/session persistency
+
         let mut client = reqwest::Client::new().request(method.clone(), parsed.clone());
         let lock = state.lock().await;
         let headers = lock.get_storage("http-headers")?;
