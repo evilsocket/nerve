@@ -86,8 +86,12 @@ impl Action for SetHeader {
 struct Request {}
 
 impl Request {
-    async fn create_target_url_from(state: &SharedState, payload: Option<String>) -> Result<Url> {
-        let req_page = payload.unwrap();
+    async fn create_target_url_from(state: &SharedState, attrs: &HashMap<String, String>, payload: Option<String>) -> Result<Url> {
+        let req_page = if let Some(action) = attrs.get("action") {
+            action.clone()
+        } else {
+            payload.unwrap()
+        };
         let lock = state.lock().await;
         let mut http_target = if let Some(val) = lock.get_variable("HTTP_TARGET") {
             val.to_owned()
@@ -189,7 +193,7 @@ impl Action for Request {
         // create a parsed Url from the attributes, payload and HTTP_TARGET variable
         let attrs = attrs.unwrap();
         let method = reqwest::Method::from_str(attrs.get("method").unwrap())?;
-        let target_url = Self::create_target_url_from(&state, payload.clone()).await?;
+        let target_url = Self::create_target_url_from(&state, &attrs, payload.clone()).await?;
         let query_str = target_url.query().unwrap_or("").to_string();
 
         // TODO: handle cookie/session persistency
@@ -208,6 +212,13 @@ impl Action for Request {
                 "application/x-www-form-urlencoded",
             );
             request = request.body(query_str);
+        }
+
+        // Handle payloads for POST, DELETE, PATCH, PUT
+        if let Some(body_payload) = payload {
+            if matches!(method, reqwest::Method::POST | reqwest::Method::DELETE | reqwest::Method::PATCH | reqwest::Method::PUT) {
+                request = request.body(body_payload);
+            }
         }
 
         log::info!(
