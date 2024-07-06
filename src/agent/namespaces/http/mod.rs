@@ -105,6 +105,49 @@ impl Request {
             .join(&req_page)
             .map_err(|e| anyhow!("can't join {req_page} to {http_target}: {e}"))
     }
+
+    async fn handle_success_response(res: reqwest::Response) -> Result<(String, String)> {
+        let reason = res.status().canonical_reason().unwrap();
+        let mut resp = format!("{} {}\n", res.status().as_u16(), &reason);
+
+        for (key, val) in res.headers() {
+            resp += &format!("{}: {}\n", key, val.to_str()?);
+        }
+
+        resp += "\n\n";
+
+        // handle the response according to its content-type
+        let content_type = res.headers().get("content-type");
+        if let Some(content_type) = content_type {
+            let content_type = content_type.to_str()?;
+            if content_type == "application/octet-stream" {
+                // download the first few bytes to determine if it's binary or text
+                let partial_content = res.bytes().await?;
+                let is_binary = partial_content
+                    .iter()
+                    .any(|&byte| byte == 0 || (byte < 32 && byte != 9 && byte != 10 && byte != 13));
+                if is_binary {
+                    log::warn!(
+                        "ignoring binary data with http content type: application/octet-stream"
+                    );
+                    resp += "<BINARY DATA>";
+                } else {
+                    resp += std::str::from_utf8(&partial_content).unwrap_or("");
+                }
+            } else if content_type.starts_with("application/") || content_type.starts_with("text/")
+            {
+                resp += &res.text().await?;
+            } else {
+                log::warn!("ignoring non-textual http content type: {}", content_type);
+                resp += "<BINARY DATA>";
+            }
+        } else {
+            log::warn!("no content type specified in the http response");
+            resp += "<BINARY DATA>";
+        }
+
+        Ok((reason.to_string(), resp))
+    }
 }
 
 #[async_trait]
@@ -147,81 +190,47 @@ impl Action for Request {
         let method = reqwest::Method::from_str(attrs.get("method").unwrap())?;
         let parsed = Self::create_url_from(&state, payload.clone()).await?;
         let query_str = parsed.query().unwrap_or("").to_string();
-    
+
         let mut client = reqwest::Client::new().request(method.clone(), parsed.clone());
         let lock = state.lock().await;
         let headers = lock.get_storage("http-headers")?;
-    
+
         for (key, value) in headers.iter() {
             client = client.header(key, &value.data);
         }
-    
+
         // if there're parameters and we're not in GET, set them as the body
-        if !query_str.is_empty() {
-            if !matches!(method, reqwest::Method::GET) {
-                client = client.body(query_str);
-            }
+        if !query_str.is_empty() && !matches!(method, reqwest::Method::GET) {
+            client = client.body(query_str);
         }
-    
+
         log::info!(
             "{}.{} {} ...",
             "http".bold(),
             method.to_string().yellow(),
             parsed.to_string(),
         );
-    
+
         let start = Instant::now();
         let res = client.send().await?;
         let elaps = start.elapsed();
-    
+
         return if res.status().is_success() {
-            let reason = res.status().canonical_reason().unwrap();
-            let mut resp = format!("{} {}\n", res.status().as_u16(), &reason);
-    
-            for (key, val) in res.headers() {
-                resp += &format!("{}: {}\n", key, val.to_str().unwrap());
-            }
-    
-            // Handle the response type properly
-            resp += "\n\n";
-            match res.headers().get("content-type") {
-                Some(content_type) if content_type.to_str().unwrap().starts_with("application/") || content_type.to_str().unwrap().starts_with("text/") => {
-                    if content_type.to_str().unwrap() == "application/octet-stream" {
-                        // Download the first few bytes to determine if it's binary or text
-                        let partial_content = res.bytes().await?;
-                        let is_binary = partial_content.iter().any(|&byte| byte == 0 || (byte < 32 && byte != 9 && byte != 10 && byte != 13));
-                        
-                        if is_binary {
-                            log::warn!("Ignoring binary data with content type: application/octet-stream");
-                        } else {
-                            resp += std::str::from_utf8(&partial_content).unwrap_or("");
-                        }
-                    } else {
-                        resp += &res.text().await?;
-                    }
-                },
-                Some(content_type) => {
-                    log::warn!("Ignoring non-textual content type: {}", content_type.to_str().unwrap());
-                },
-                None => {
-                    log::warn!("No content type specified in the response");
-                }
-            }
-    
+            let (reason, resp) = Self::handle_success_response(res).await?;
             log::info!(
                 "   {} {} -> {} bytes",
                 reason.green(),
                 format!("({:?})", elaps).dimmed(),
                 resp.len()
             );
-    
+
             Ok(Some(resp))
         } else {
             let reason = res.status().canonical_reason().unwrap();
             let resp = format!("{} {}", res.status().as_u16(), &reason);
-    
+
             log::error!("   {} {}", reason.red(), format!("({:?})", elaps).dimmed(),);
-    
+
             Err(anyhow!(resp))
         };
     }
