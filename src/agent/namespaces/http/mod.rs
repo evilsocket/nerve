@@ -193,7 +193,7 @@ impl Action for Request {
         // create a parsed Url from the attributes, payload and HTTP_TARGET variable
         let attrs = attrs.unwrap();
         let method = reqwest::Method::from_str(attrs.get("method").unwrap())?;
-        let target_url = Self::create_target_url_from(&state, payload.clone()).await?;
+        let target_url = Self::create_target_url_from(&state, &attrs, payload.clone()).await?;
         let query_str = target_url.query().unwrap_or("").to_string();
 
         // TODO: handle cookie/session persistency
