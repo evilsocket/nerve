@@ -86,7 +86,7 @@ impl Action for SetHeader {
 struct Request {}
 
 impl Request {
-    async fn create_url_from(state: &SharedState, payload: Option<String>) -> Result<Url> {
+    async fn create_target_url_from(state: &SharedState, payload: Option<String>) -> Result<Url> {
         let req_page = payload.unwrap();
         let lock = state.lock().await;
         let mut http_target = if let Some(val) = lock.get_variable("HTTP_TARGET") {
@@ -186,35 +186,40 @@ impl Action for Request {
         attrs: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
+        // create a parsed Url from the attributes, payload and HTTP_TARGET variable
         let attrs = attrs.unwrap();
         let method = reqwest::Method::from_str(attrs.get("method").unwrap())?;
-        let parsed = Self::create_url_from(&state, payload.clone()).await?;
-        let query_str = parsed.query().unwrap_or("").to_string();
+        let target_url = Self::create_target_url_from(&state, payload.clone()).await?;
+        let query_str = target_url.query().unwrap_or("").to_string();
 
         // TODO: handle cookie/session persistency
 
-        let mut client = reqwest::Client::new().request(method.clone(), parsed.clone());
-        let lock = state.lock().await;
-        let headers = lock.get_storage("http-headers")?;
+        let mut request = reqwest::Client::new().request(method.clone(), target_url.clone());
 
-        for (key, value) in headers.iter() {
-            client = client.header(key, &value.data);
+        // add defined headers
+        for (key, value) in state.lock().await.get_storage("http-headers")?.iter() {
+            request = request.header(key, &value.data);
         }
 
         // if there're parameters and we're not in GET, set them as the body
         if !query_str.is_empty() && !matches!(method, reqwest::Method::GET) {
-            client = client.body(query_str);
+            request = request.header(
+                reqwest::header::CONTENT_TYPE,
+                "application/x-www-form-urlencoded",
+            );
+            request = request.body(query_str);
         }
 
         log::info!(
             "{}.{} {} ...",
             "http".bold(),
             method.to_string().yellow(),
-            parsed.to_string(),
+            target_url.to_string(),
         );
 
+        // perform the request
         let start = Instant::now();
-        let res = client.send().await?;
+        let res = request.send().await?;
         let elaps = start.elapsed();
 
         return if res.status().is_success() {
