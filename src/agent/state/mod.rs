@@ -202,6 +202,11 @@ impl State {
         self.variables.get(name)
     }
 
+    #[allow(dead_code)]
+    pub fn set_variable(&mut self, name: String, value: String) {
+        self.variables.insert(name, value);
+    }
+
     pub fn get_storages(&self) -> Vec<&Storage> {
         self.storages.values().collect()
     }
