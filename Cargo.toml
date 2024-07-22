@@ -35,7 +35,7 @@ regex = "1.10.5"
 serde = { version = "1.0.203", features = ["derive", "serde_derive"] }
 serde_trim = "1.1.0"
 serde_yaml = "0.9.34"
-simple-home-dir = "0.3.5"
+simple-home-dir = "0.4.0"
 tokio = "1.38.0"
 xml-rs = "0.8.20"
 duration-string = { version = "0.4.0", optional = true }
@@ -53,6 +53,7 @@ reqwest = { version = "0.12.5", default-features = false, features = [
     "rustls-tls",
 ] }
 url = "2.5.2"
+reqwest_cookie_store = "0.8.0"
 
 [features]
 default = ["ollama", "groq", "openai", "fireworks"]

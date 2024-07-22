@@ -1,12 +1,16 @@
 use std::{
     collections::HashMap,
+    fs::OpenOptions,
     str::FromStr,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
 use anyhow::Result;
 use async_trait::async_trait;
 use colored::Colorize;
+use lazy_static::lazy_static;
+use reqwest_cookie_store::CookieStoreMutex;
 use url::Url;
 
 use crate::agent::state::SharedState;
@@ -14,6 +18,28 @@ use crate::agent::state::SharedState;
 use super::{Action, Namespace, StorageDescriptor};
 
 const DEFAULT_HTTP_SCHEMA: &str = "https";
+
+lazy_static! {
+    static ref COOKIE_STORE: Arc<CookieStoreMutex> = {
+        let cookies_file = crate::agent::data_path("http")
+            .unwrap()
+            .join("cookies.json");
+
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&cookies_file)
+            .map(std::io::BufReader::new)
+            .unwrap_or_else(|_| panic!("can't open {}", cookies_file.display()));
+
+        let cookie_store = reqwest_cookie_store::CookieStore::load_json(file)
+            .unwrap_or_else(|_| panic!("can't load {}", cookies_file.display()));
+
+        Arc::new(reqwest_cookie_store::CookieStoreMutex::new(cookie_store))
+    };
+}
 
 #[derive(Debug, Default, Clone)]
 struct ClearHeaders {}
@@ -153,9 +179,14 @@ impl Request {
 
     fn create_request(method: &str, target_url: Url) -> Result<reqwest::RequestBuilder> {
         let method = reqwest::Method::from_str(method)?;
-        let mut request = reqwest::Client::new().request(method.clone(), target_url.clone());
-        let query_str = target_url.query().unwrap_or("").to_string();
 
+        let mut request = reqwest::Client::builder()
+            .cookie_provider(COOKIE_STORE.clone())
+            .build()?
+            .request(method.clone(), target_url.clone());
+
+        // get query string if any
+        let query_str = target_url.query().unwrap_or("").to_string();
         // if there're parameters and we're not in GET, set them as the body
         if !query_str.is_empty() && !matches!(method, reqwest::Method::GET) {
             request = request.header(
@@ -211,8 +242,6 @@ impl Action for Request {
         let target_url = Self::create_target_url_from(&state, payload.clone()).await?;
         let target_url_str = target_url.to_string();
         let mut request = Self::create_request(method, target_url)?;
-
-        // TODO: handle cookie/session persistency
 
         // add defined headers
         for (key, value) in state.lock().await.get_storage("http-headers")?.iter() {

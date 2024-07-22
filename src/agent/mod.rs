@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use mini_rag::Embedder;
@@ -17,6 +17,21 @@ pub mod namespaces;
 pub mod serialization;
 pub mod state;
 pub mod task;
+
+pub fn data_path(path: &str) -> Result<PathBuf> {
+    let user_home = match simple_home_dir::home_dir() {
+        Some(path) => path,
+        None => return Err(anyhow!("can't get user home folder")),
+    };
+
+    let inner_path = user_home.join(".nerve").join(path);
+    if !inner_path.exists() {
+        log::info!("creating {} ...", inner_path.display());
+        std::fs::create_dir_all(&inner_path)?;
+    }
+
+    Ok(inner_path)
+}
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Invocation {

@@ -9,7 +9,6 @@ use colored::Colorize;
 use duration_string::DurationString;
 use serde::Deserialize;
 use serde_trim::*;
-use simple_home_dir::home_dir;
 
 use super::{variables::interpolate_variables, Task};
 use crate::{
@@ -251,25 +250,22 @@ pub struct Tasklet {
 }
 
 impl Tasklet {
-    pub fn from_path(path: &str, defines: &Vec<String>) -> Result<Self> {
+    pub fn from_path(tasklet_path: &str, defines: &Vec<String>) -> Result<Self> {
         parse_pre_defined_values(defines)?;
 
-        let mut ppath = PathBuf::from_str(path)?;
-
+        let mut tasklet_path = PathBuf::from_str(tasklet_path)?;
         // try to look it up in ~/.nerve/tasklets
-        if !ppath.exists() {
-            let in_home = home_dir()
-                .unwrap()
-                .join(PathBuf::from_str(".nerve/tasklets")?.join(&ppath));
+        if !tasklet_path.exists() {
+            let in_home = crate::agent::data_path("tasklets")?.join(&tasklet_path);
             if in_home.exists() {
-                ppath = in_home;
+                tasklet_path = in_home;
             }
         }
 
-        if ppath.is_dir() {
-            Self::from_folder(ppath.to_str().unwrap())
+        if tasklet_path.is_dir() {
+            Self::from_folder(tasklet_path.to_str().unwrap())
         } else {
-            Self::from_yaml_file(ppath.to_str().unwrap())
+            Self::from_yaml_file(tasklet_path.to_str().unwrap())
         }
     }
 
