@@ -12,7 +12,6 @@
 </p>
 
 <p align="center">
-  <a href="https://crates.io/crates/nerve-ai"><img alt="Crate" src="https://img.shields.io/crates/v/nerve-ai.svg"></a>
   <a href="https://github.com/evilsocket/nerve/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/evilsocket/nerve.svg?style=flat-square"></a>
   <a href="https://hub.docker.com/r/evilsocket/nerve"><img alt="Docker Hub" src="https://img.shields.io/docker/v/evilsocket/nerve?logo=docker"></a>
   <a href="https://rust-reportcard.xuri.me/report/github.com/evilsocket/nerve"><img alt="Rust Report" src="https://rust-reportcard.xuri.me/badge/github.com/evilsocket/nerve"></a>
@@ -156,15 +155,9 @@ nerve -G ... -T whatever-tasklet --save-to state.txt
 
 The agent save to disk its internal state at each iteration for you to observe.
 
-## Installing from Crates.io
+## About Crates.io
 
-Nerve is published as a binary crate on [crates.io](https://crates.io/crates/nerve-ai), if you have [Cargo installed](https://rustup.rs/) you can:
-
-```sh
-cargo install nerve-ai
-```
-
-This will compile its sources and install the binary in `$HOME/.cargo/bin/nerve`.
+Since v0.2.0 **Nerve is not on crates.io anymore** due to the [lack of support of local crates](https://users.rust-lang.org/t/is-it-possible-to-publish-crates-with-path-specified/91497).
 
 ## Installing from DockerHub
 
