@@ -15,22 +15,23 @@ name = "nerve"
 path = "src/main.rs"
 
 [dependencies]
-ollama-rs = { version = "0.1.9", features = [
+ollama-rs = { path = "./crates/ollama-rs", features = [
     "rustls",
     "tokio",
     "chat-history",
 ], default-features = false, optional = true }
+openai_api_rust = { path = "./crates/openai_api_rust", optional = true }
+groq-api-rs = { path = "./crates/groq-api-rs", optional = true }
+
 anyhow = "1.0.86"
 async-trait = "0.1.80"
 chrono = "0.4.38"
 clap = { version = "4.5.6", features = ["derive"] }
 colored = "2.1.0"
-groq-api-rs = { version = "0.1.0", optional = true }
 indexmap = "2.2.6"
 itertools = "0.13.0"
 lazy_static = "1.4.0"
 libc = "0.2.155"
-openai_api_rust = { version = "0.1.9", optional = true }
 regex = "1.10.5"
 serde = { version = "1.0.203", features = ["derive", "serde_derive"] }
 serde_trim = "1.1.0"
@@ -54,6 +55,7 @@ reqwest = { version = "0.12.5", default-features = false, features = [
 ] }
 url = "2.5.2"
 reqwest_cookie_store = "0.8.0"
+serde_json = "1.0.120"
 
 [features]
 default = ["ollama", "groq", "openai", "fireworks"]

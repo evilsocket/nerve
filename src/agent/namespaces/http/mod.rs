@@ -342,7 +342,7 @@ mod tests {
         let task = Box::new(TestTask {});
         let embedder = Box::new(TestEmbedder {});
 
-        let mut state = State::new(tx, task, embedder, 10).await?;
+        let mut state = State::new(tx, task, embedder, 10, false).await?;
 
         for (name, value) in vars {
             state.set_variable(name, value);

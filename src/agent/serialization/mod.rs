@@ -64,7 +64,14 @@ pub(crate) fn state_to_system_prompt(state: &State) -> Result<String> {
         .map(|s| format!("- {}", s))
         .collect::<Vec<String>>()
         .join("\n");
-    let available_actions = state_available_actions(state)?;
+
+    let available_actions = if state.tools_support {
+        // model supports tool calls, no need to add actions to the system prompt
+        "".to_string()
+    } else {
+        // model does not support tool calls, we need to provide the actions in its system prompt
+        include_str!("actions.prompt").to_owned() + "\n" + &state_available_actions(state)?
+    };
 
     let iterations = if state.metrics.max_steps > 0 {
         format!(

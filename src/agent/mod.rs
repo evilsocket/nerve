@@ -84,10 +84,27 @@ impl Agent {
         task: Box<dyn Task>,
         max_iterations: usize,
     ) -> Result<Self> {
+        // check if the model supports tools calling natively
+        let tools_support = generator.check_tools_support().await?;
+        if tools_support {
+            log::info!("model supports tools calling natively.");
+        } else {
+            log::info!(
+                "model does not support tools calling natively, using Nerve custom system prompt"
+            );
+        }
+
         let max_history = task.max_history_visibility();
         let task_timeout = task.get_timeout();
         let state = Arc::new(tokio::sync::Mutex::new(
-            State::new(events_chan.clone(), task, embedder, max_iterations).await?,
+            State::new(
+                events_chan.clone(),
+                task,
+                embedder,
+                max_iterations,
+                tools_support,
+            )
+            .await?,
         ));
 
         Ok(Self {
@@ -300,10 +317,14 @@ impl Agent {
         self.on_state_update(&options, false).await?;
 
         // run model inference
-        let response = self.generator.chat(&options).await?.trim().to_string();
+        let (response, tool_calls) = self.generator.chat(self.state.clone(), &options).await?;
 
         // parse the model response into invocations
-        let invocations = serialization::xml::parsing::try_parse(&response)?;
+        let invocations = if tool_calls.is_empty() {
+            serialization::xml::parsing::try_parse(response.trim())?
+        } else {
+            tool_calls
+        };
 
         // nothing parsed, report the problem to the model
         if invocations.is_empty() {

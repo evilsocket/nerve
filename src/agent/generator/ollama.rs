@@ -1,12 +1,22 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use ollama_rs::{
     generation::{
-        chat::{request::ChatMessageRequest, ChatMessage},
+        chat::{
+            request::{
+                ChatMessageRequest, Tool, ToolFunction, ToolFunctionParameterProperty,
+                ToolFunctionParameters,
+            },
+            ChatMessage,
+        },
         options::GenerationOptions,
     },
     Ollama,
 };
+
+use crate::agent::{state::SharedState, Invocation};
 
 use super::{Client, Message, Options};
 
@@ -41,15 +51,49 @@ impl Client for OllamaClient {
         })
     }
 
-    async fn chat(&self, options: &Options) -> anyhow::Result<String> {
-        /*
-        pub struct GenerationRequest {
-            ...
-            TODO: images for multimodal (see todo for screenshot action)
-            pub images: Vec<Image>,
-            ...
+    async fn check_tools_support(&self) -> Result<bool> {
+        let chat_history = vec![
+            ChatMessage::system("You are an helpful assistant.".to_string()),
+            ChatMessage::user("Call the test function.".to_string()),
+        ];
+
+        let mut request = ChatMessageRequest::new(self.model.to_string(), chat_history)
+            // Do not provide model options other than the context window size so that we'll use whatever was
+            // specified in the modelfile.
+            .options(self.options.clone())
+            // Set tools ( https://ollama.com/blog/tool-support )
+            .tools(vec![Tool {
+                the_type: "function".to_string(),
+                function: ToolFunction {
+                    name: "test".to_string(),
+                    description: "This is a test function.".to_string(),
+                    parameters: ToolFunctionParameters {
+                        the_type: "object".to_string(),
+                        required: vec![],
+                        properties: HashMap::new(),
+                    },
+                },
+            }]);
+
+        request.model_name.clone_from(&self.model);
+
+        if let Err(err) = self.client.send_chat_messages(request).await {
+            if err.to_string().contains("does not support tools") {
+                Ok(false)
+            } else {
+                Err(anyhow!(err))
+            }
+        } else {
+            Ok(true)
         }
-        */
+    }
+
+    async fn chat(
+        &self,
+        state: SharedState,
+        options: &Options,
+    ) -> anyhow::Result<(String, Vec<Invocation>)> {
+        // TODO: images for multimodal (see todo for screenshot action)
 
         // build chat history:
         //    - system prompt
@@ -70,20 +114,111 @@ impl Client for OllamaClient {
             });
         }
 
-        // Do not provide model options other than the context window size so that we'll use whatever was
-        // specified in the modelfile.
+        // Generate tools vector.
+        let mut tools = vec![];
+
+        if state.lock().await.tools_support {
+            for group in state.lock().await.get_namespaces() {
+                for action in &group.actions {
+                    let mut required = vec![];
+                    let mut properties = HashMap::new();
+
+                    if action.example_payload().is_some() {
+                        required.push("payload".to_string());
+                        properties.insert(
+                            "payload".to_string(),
+                            ToolFunctionParameterProperty {
+                                the_type: "string".to_string(),
+                                description: "Main function argument.".to_string(),
+                                an_enum: None,
+                            },
+                        );
+                    }
+
+                    if let Some(attrs) = action.example_attributes() {
+                        for name in attrs.keys() {
+                            required.push(name.to_string());
+                            properties.insert(
+                                name.to_string(),
+                                ToolFunctionParameterProperty {
+                                    the_type: "string".to_string(),
+                                    description: name.to_string(),
+                                    an_enum: None,
+                                },
+                            );
+                        }
+                    }
+
+                    let function = ToolFunction {
+                        name: action.name().to_string(),
+                        description: action.description().to_string(),
+                        parameters: ToolFunctionParameters {
+                            the_type: "object".to_string(),
+                            required,
+                            properties,
+                        },
+                    };
+
+                    tools.push(Tool {
+                        the_type: "function".to_string(),
+                        function,
+                    });
+                }
+            }
+
+            log::debug!("ollama.tools={:?}", &tools);
+        }
+
         let mut request = ChatMessageRequest::new(self.model.to_string(), chat_history)
-            .options(self.options.clone());
+            // Do not provide model options other than the context window size so that we'll use whatever was
+            // specified in the modelfile.
+            .options(self.options.clone())
+            // Set tools ( https://ollama.com/blog/tool-support )
+            .tools(tools);
 
         request.model_name.clone_from(&self.model);
 
         let res = self.client.send_chat_messages(request).await?;
 
         if let Some(msg) = res.message {
-            Ok(msg.content)
+            let content = msg.content.to_owned();
+            let mut invocations = vec![];
+
+            if let Some(tool_calls) = msg.tool_calls.as_ref() {
+                for call in tool_calls {
+                    let mut attributes = HashMap::new();
+                    let mut payload = None;
+
+                    if let Some(args) = call.function.arguments.as_ref() {
+                        for (name, value) in args {
+                            let str_val = value.to_string().trim_matches('"').to_string();
+                            if name == "payload" {
+                                payload = Some(str_val);
+                            } else {
+                                attributes.insert(name.to_string(), str_val);
+                            }
+                        }
+                    }
+
+                    let inv = Invocation {
+                        action: call.function.name.to_string(),
+                        attributes: if attributes.is_empty() {
+                            None
+                        } else {
+                            Some(attributes)
+                        },
+                        payload,
+                    };
+
+                    invocations.push(inv);
+                }
+            }
+
+            log::debug!("ollama.invocations = {:?}", &invocations);
+            Ok((content, invocations))
         } else {
             log::warn!("model returned an empty message.");
-            Ok("".to_string())
+            Ok(("".to_string(), vec![]))
         }
     }
 }

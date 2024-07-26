@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use super::Invocation;
+use super::{state::SharedState, Invocation};
 
 #[cfg(feature = "fireworks")]
 mod fireworks;
@@ -66,7 +66,15 @@ pub trait Client: mini_rag::Embedder + Send + Sync {
     where
         Self: Sized;
 
-    async fn chat(&self, options: &Options) -> Result<String>;
+    async fn chat(
+        &self,
+        state: SharedState,
+        options: &Options,
+    ) -> Result<(String, Vec<Invocation>)>;
+
+    async fn check_tools_support(&self) -> Result<bool> {
+        Ok(false)
+    }
 
     async fn check_rate_limit(&self, error: &str) -> bool {
         // if rate limit exceeded, parse the retry time and retry

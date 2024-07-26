@@ -1,0 +1,18 @@
+[package]
+name = "openai_api_rust"
+version = "0.1.9"
+authors = ["i@gt.email","craig@mayhew.io"]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/openai-rs/openai-api"
+description = "A very simple Rust library for OpenAI API, free from complex async operations and redundant dependencies."
+keywords = ["openai_api", "openai", "openai-api"]
+categories = ["api-bindings"]
+
+[dependencies]
+ureq = { version = "^2.6", features = ["json"] }
+serde = { version = "^1.0", features = ["derive"] }
+serde_json = "^1.0"
+log = "^0.4"
+mime = "^0.3.16"
+rand = "0.8.5"

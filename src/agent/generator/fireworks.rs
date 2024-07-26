@@ -1,14 +1,12 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use openai_api_rust::chat::*;
-use openai_api_rust::embeddings::EmbeddingsApi;
-use openai_api_rust::*;
 
-use super::{Client, Message, Options};
+use crate::agent::{state::SharedState, Invocation};
+
+use super::{openai::OpenAIClient, Client, Options};
 
 pub struct FireworksClient {
-    model: String,
-    client: OpenAI,
+    client: OpenAIClient,
 }
 
 #[async_trait]
@@ -17,95 +15,27 @@ impl Client for FireworksClient {
     where
         Self: Sized,
     {
-        // LLM_FIREWORKS_KEY
+        let client = OpenAIClient::custom(
+            &format!("accounts/fireworks/models/{}", model_name),
+            "LLM_FIREWORKS_KEY",
+            "https://api.fireworks.ai/inference/v1/",
+        )?;
 
-        let api_key = std::env::var("LLM_FIREWORKS_KEY")
-            .map_err(|_| anyhow!("Missing LLM_FIREWORKS_KEY".to_string()))?;
-        let auth = Auth::new(&api_key);
-        let client = OpenAI::new(auth, "https://api.fireworks.ai/inference/v1/");
-        let model = format!("accounts/fireworks/models/{}", model_name);
-
-        Ok(Self { model, client })
+        Ok(Self { client })
     }
 
-    async fn chat(&self, options: &Options) -> anyhow::Result<String> {
-        let mut chat_history = vec![
-            openai_api_rust::Message {
-                role: Role::System,
-                content: options.system_prompt.trim().to_string(),
-            },
-            openai_api_rust::Message {
-                role: Role::User,
-                content: options.prompt.trim().to_string(),
-            },
-        ];
-
-        for m in &options.history {
-            chat_history.push(match m {
-                Message::Agent(data, _) => openai_api_rust::Message {
-                    role: Role::Assistant,
-                    content: data.trim().to_string(),
-                },
-                Message::Feedback(data, _) => openai_api_rust::Message {
-                    role: Role::User,
-                    content: data.trim().to_string(),
-                },
-            });
-        }
-
-        let body = ChatBody {
-            model: self.model.to_string(),
-            max_tokens: None,
-            temperature: None,
-            top_p: None,
-            n: None,
-            stream: Some(false),
-            stop: None,
-            presence_penalty: None,
-            frequency_penalty: None,
-            logit_bias: None,
-            user: None,
-            messages: chat_history,
-        };
-        let resp = self.client.chat_completion_create(&body);
-
-        if let Err(error) = resp {
-            return if self.check_rate_limit(&error.to_string()).await {
-                self.chat(options).await
-            } else {
-                Err(anyhow!(error))
-            };
-        }
-
-        let choice = resp.unwrap().choices;
-        let message = &choice[0].message.as_ref().unwrap();
-
-        Ok(message.content.to_string())
+    async fn chat(
+        &self,
+        state: SharedState,
+        options: &Options,
+    ) -> anyhow::Result<(String, Vec<Invocation>)> {
+        self.client.chat(state, options).await
     }
 }
 
 #[async_trait]
 impl mini_rag::Embedder for FireworksClient {
     async fn embed(&self, text: &str) -> Result<mini_rag::Embeddings> {
-        let body = embeddings::EmbeddingsBody {
-            model: self.model.to_string(),
-            input: vec![text.to_string()],
-            user: None,
-        };
-        let resp = self.client.embeddings_create(&body);
-        if let Err(error) = resp {
-            return if self.check_rate_limit(&error.to_string()).await {
-                self.embed(text).await
-            } else {
-                Err(anyhow!(error))
-            };
-        }
-
-        let embeddings = resp.unwrap().data;
-        let embedding = embeddings.as_ref().unwrap().first().unwrap();
-
-        Ok(mini_rag::Embeddings::from(
-            embedding.embedding.as_ref().unwrap_or(&vec![]).clone(),
-        ))
+        self.client.embed(text).await
     }
 }

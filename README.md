@@ -35,7 +35,11 @@ While Nerve was inspired by other projects such as Autogen and Rigging, its main
 
 ## LLM Support
 
-Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/) and [Fireworks](https://fireworks.ai/) APIs. You can specify which provider and which model to use via the `-G` (or `--generator`) argument:
+Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/) and [Fireworks](https://fireworks.ai/) APIs. 
+
+**The tool will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers older models to perform function calling anyway.**
+
+You can specify which provider and which model to use via the `-G` (or `--generator`) argument:
 
 For **Ollama**:
 
