@@ -8,7 +8,7 @@ use regex::Regex;
 lazy_static! {
     pub static ref PUBLIC_GENERATOR_PARSER: Regex = Regex::new(r"(?m)^(.+)://(.+)$").unwrap();
     pub static ref LOCAL_GENERATOR_PARSER: Regex =
-        Regex::new(r"(?m)^(.+)://(.+)@(.+):(\d+)$").unwrap();
+        Regex::new(r"(?m)^(.+)://(.+)@([^:]+):?(\d+)?$").unwrap();
 }
 
 #[derive(Default)]
@@ -21,7 +21,7 @@ pub(crate) struct GeneratorOptions {
 }
 
 /// Get things done with LLMs.
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Default)]
 #[command(version, about, long_about = None)]
 pub(crate) struct Args {
     /// Generator string as <type>://<model name>@<host>:<port>
@@ -96,7 +96,11 @@ impl Args {
                 .unwrap()
                 .as_str()
                 .clone_into(&mut generator.host);
-            generator.port = caps.get(4).unwrap().as_str().parse::<u16>().unwrap();
+            generator.port = if let Some(port) = caps.get(4) {
+                port.as_str().parse::<u16>().unwrap()
+            } else {
+                0
+            };
         } else {
             let caps = if let Some(caps) = PUBLIC_GENERATOR_PARSER.captures_iter(raw).next() {
                 caps
@@ -148,4 +152,50 @@ pub(crate) fn get_user_input(prompt: &str) -> String {
     }
     println!();
     input.trim().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Args;
+
+    #[test]
+    fn test_wont_parse_invalid_generator() {
+        let mut args = Args::default();
+        args.generator = "not a valid generator".to_string();
+        let ret = args.to_generator_options();
+        assert!(ret.is_err());
+    }
+
+    #[test]
+    fn test_parse_local_generator_full() {
+        let mut args = Args::default();
+        args.generator = "ollama://llama3@localhost:11434".to_string();
+        let ret = args.to_generator_options().unwrap();
+        assert_eq!(ret.type_name, "ollama");
+        assert_eq!(ret.model_name, "llama3");
+        assert_eq!(ret.host, "localhost");
+        assert_eq!(ret.port, 11434);
+    }
+
+    #[test]
+    fn test_parse_local_generator_without_port() {
+        let mut args = Args::default();
+        args.generator = "ollama://llama3@localhost".to_string();
+        let ret = args.to_generator_options().unwrap();
+        assert_eq!(ret.type_name, "ollama");
+        assert_eq!(ret.model_name, "llama3");
+        assert_eq!(ret.host, "localhost");
+        assert_eq!(ret.port, 0);
+    }
+
+    #[test]
+    fn test_parse_public_generator() {
+        let mut args = Args::default();
+        args.generator = "groq://llama3".to_string();
+        let ret = args.to_generator_options().unwrap();
+        assert_eq!(ret.type_name, "groq");
+        assert_eq!(ret.model_name, "llama3");
+        assert_eq!(ret.host, "");
+        assert_eq!(ret.port, 0);
+    }
 }

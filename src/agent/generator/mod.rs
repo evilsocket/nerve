@@ -13,6 +13,8 @@ use super::{state::SharedState, Invocation};
 mod fireworks;
 #[cfg(feature = "groq")]
 mod groq;
+#[cfg(feature = "hf")]
+mod huggingface;
 #[cfg(feature = "ollama")]
 mod ollama;
 #[cfg(feature = "openai")]
@@ -148,6 +150,12 @@ macro_rules! factory_body {
             )?)),
             #[cfg(feature = "fireworks")]
             "fireworks" => Ok(Box::new(fireworks::FireworksClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            "hf" => Ok(Box::new(huggingface::HuggingfaceMessageClient::new(
                 $url,
                 $port,
                 $model_name,

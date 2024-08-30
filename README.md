@@ -34,7 +34,7 @@ While Nerve was inspired by other projects such as Autogen and Rigging, its main
 
 ## LLM Support
 
-Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/) and [Fireworks](https://fireworks.ai/) APIs. 
+Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/), [Fireworks](https://fireworks.ai/) and [Huggingface](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) APIs. 
 
 **The tool will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers older models to perform function calling anyway.**
 
@@ -62,6 +62,14 @@ For **Fireworks**:
 
 ```sh
 LLM_FIREWORKS_KEY=you-api-key nerve -G "fireworks://llama-v3-70b-instruct" ...
+```
+
+For **Huggingface**:
+
+Refer to [this document](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) for how to configure a custom Huggingface endpoint.
+
+```sh
+HF_API_TOKEN=you-api-key nerve -G "hf://tgi@your-custom-endpoint.aws.endpoints.huggingface.cloud" ...
 ```
 
 ## Example
