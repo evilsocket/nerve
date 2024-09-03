@@ -15,7 +15,17 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[tokio::main]
 async fn main() -> Result<()> {
     // TODO: save/restore session
-    let args = cli::Args::parse();
+    let mut args = cli::Args::parse();
+
+    // set generator url if env variable is set
+    if let Ok(env_generator) = std::env::var("NERVE_GENERATOR") {
+        args.generator = env_generator;
+    }
+
+    // set tasklet if env variable is set
+    if let Ok(env_tasklet) = std::env::var("NERVE_TASKLET") {
+        args.tasklet = Some(env_tasklet);
+    }
 
     // TODO: handle max tokens
 

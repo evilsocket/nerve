@@ -140,8 +140,6 @@ impl Args {
 }
 
 pub(crate) fn get_user_input(prompt: &str) -> String {
-    log::warn!("user prompt input required");
-
     print!("\n{}", prompt);
     let _ = io::stdout().flush();
 

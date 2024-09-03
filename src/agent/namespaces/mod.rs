@@ -15,6 +15,7 @@ pub(crate) mod http;
 pub(crate) mod memory;
 pub(crate) mod planning;
 pub(crate) mod rag;
+pub(crate) mod shell;
 pub(crate) mod task;
 pub(crate) mod time;
 
@@ -31,6 +32,7 @@ lazy_static! {
         map.insert("filesystem".to_string(), filesystem::get_namespace as fn() -> Namespace);
         map.insert("rag".to_string(), rag::get_namespace as fn() -> Namespace);
         map.insert("http".to_string(), http::get_namespace as fn() -> Namespace);
+        map.insert("shell".to_string(), shell::get_namespace as fn() -> Namespace);
 
         map
     };
@@ -180,6 +182,11 @@ pub(crate) trait Action: std::fmt::Debug + Sync + Send + ActionClone {
     // optional variables used by this action
     fn required_variables(&self) -> Option<Vec<String>> {
         None
+    }
+
+    // optional method to indicate if this action requires user confirmation before execution
+    fn requires_user_confirmation(&self) -> bool {
+        false
     }
 }
 

@@ -11,6 +11,8 @@ use serialization::xml::serialize;
 use state::{SharedState, State};
 use task::Task;
 
+use crate::cli;
+
 pub mod events;
 pub mod generator;
 pub mod namespaces;
@@ -65,6 +67,22 @@ impl Invocation {
             attributes,
             payload,
         }
+    }
+
+    pub fn as_function_call_string(&self) -> String {
+        let mut parts = vec![];
+
+        if let Some(payload) = &self.payload {
+            parts.push(payload.to_owned());
+        }
+
+        if let Some(attributes) = &self.attributes {
+            for (name, value) in attributes {
+                parts.push(format!("{}={}", name, value))
+            }
+        }
+
+        return format!("{}({})", &self.action, parts.join(", "));
     }
 }
 
@@ -362,22 +380,52 @@ impl Agent {
                         Duration::from_secs(60 * 60 * 24 * 30)
                     };
 
-                    // execute with timeout
-                    let start = std::time::Instant::now();
-                    let ret = tokio::time::timeout(
-                        timeout,
-                        action.run(
-                            self.state.clone(),
-                            inv.attributes.to_owned(),
-                            inv.payload.to_owned(),
-                        ),
-                    )
-                    .await;
+                    let mut execute = true;
 
-                    if ret.is_err() {
-                        self.on_timed_out_action(inv, &start).await;
-                    } else {
-                        self.on_executed_action(inv, ret.unwrap(), &start).await;
+                    if action.requires_user_confirmation() {
+                        log::warn!("user confirmation required");
+
+                        let start = std::time::Instant::now();
+                        let mut inp = "nope".to_string();
+                        while inp != "" && inp != "n" && inp != "y" {
+                            inp = cli::get_user_input(&format!(
+                                "{} [Yn] ",
+                                inv.as_function_call_string()
+                            ))
+                            .to_ascii_lowercase();
+                        }
+
+                        if inp == "n" {
+                            log::warn!("invocation rejected by user");
+                            self.on_executed_action(
+                                inv.clone(),
+                                Err(anyhow!("rejected by user".to_owned())),
+                                &start,
+                            )
+                            .await;
+
+                            execute = false;
+                        }
+                    }
+
+                    if execute {
+                        // execute with timeout
+                        let start = std::time::Instant::now();
+                        let ret = tokio::time::timeout(
+                            timeout,
+                            action.run(
+                                self.state.clone(),
+                                inv.attributes.to_owned(),
+                                inv.payload.to_owned(),
+                            ),
+                        )
+                        .await;
+
+                        if ret.is_err() {
+                            self.on_timed_out_action(inv, &start).await;
+                        } else {
+                            self.on_executed_action(inv, ret.unwrap(), &start).await;
+                        }
                     }
                 }
             }
