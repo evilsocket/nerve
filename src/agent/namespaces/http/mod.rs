@@ -47,7 +47,7 @@ struct ClearHeaders {}
 #[async_trait]
 impl Action for ClearHeaders {
     fn name(&self) -> &str {
-        "http-clear-headers"
+        "http_clear_headers"
     }
 
     fn description(&self) -> &str {
@@ -71,7 +71,7 @@ struct SetHeader {}
 #[async_trait]
 impl Action for SetHeader {
     fn name(&self) -> &str {
-        "http-set-header"
+        "http_set_header"
     }
 
     fn description(&self) -> &str {
@@ -203,7 +203,7 @@ impl Request {
 #[async_trait]
 impl Action for Request {
     fn name(&self) -> &str {
-        "http-request"
+        "http_request"
     }
 
     fn description(&self) -> &str {

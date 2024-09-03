@@ -12,7 +12,7 @@ struct UpdateGoal {}
 #[async_trait]
 impl Action for UpdateGoal {
     fn name(&self) -> &str {
-        "update-goal"
+        "update_goal"
     }
 
     fn description(&self) -> &str {

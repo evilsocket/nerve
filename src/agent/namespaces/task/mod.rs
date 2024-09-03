@@ -12,7 +12,7 @@ struct Complete {}
 #[async_trait]
 impl Action for Complete {
     fn name(&self) -> &str {
-        "task-complete"
+        "task_complete"
     }
 
     fn description(&self) -> &str {
@@ -40,7 +40,7 @@ struct Impossible {}
 #[async_trait]
 impl Action for Impossible {
     fn name(&self) -> &str {
-        "task-impossible"
+        "task_impossible"
     }
 
     fn description(&self) -> &str {

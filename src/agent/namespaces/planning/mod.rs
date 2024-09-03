@@ -12,7 +12,7 @@ struct AddStep {}
 #[async_trait]
 impl Action for AddStep {
     fn name(&self) -> &str {
-        "add-plan-step"
+        "add_plan_step"
     }
 
     fn description(&self) -> &str {
@@ -44,7 +44,7 @@ struct DeleteStep {}
 #[async_trait]
 impl Action for DeleteStep {
     fn name(&self) -> &str {
-        "delete-plan-step"
+        "delete_plan_step"
     }
 
     fn description(&self) -> &str {
@@ -76,7 +76,7 @@ struct SetComplete {}
 #[async_trait]
 impl Action for SetComplete {
     fn name(&self) -> &str {
-        "set-step-completed"
+        "set_step_completed"
     }
 
     fn description(&self) -> &str {
@@ -114,7 +114,7 @@ struct SetIncomplete {}
 #[async_trait]
 impl Action for SetIncomplete {
     fn name(&self) -> &str {
-        "set-step-incomplete"
+        "set_step_incomplete"
     }
 
     fn description(&self) -> &str {
@@ -152,7 +152,7 @@ struct Clear {}
 #[async_trait]
 impl Action for Clear {
     fn name(&self) -> &str {
-        "clear-plan"
+        "clear_plan"
     }
 
     fn description(&self) -> &str {

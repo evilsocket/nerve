@@ -61,7 +61,7 @@ struct ReadFolder {}
 #[async_trait]
 impl Action for ReadFolder {
     fn name(&self) -> &str {
-        "read-folder"
+        "read_folder"
     }
 
     fn description(&self) -> &str {
@@ -120,7 +120,7 @@ struct ReadFile {}
 #[async_trait]
 impl Action for ReadFile {
     fn name(&self) -> &str {
-        "read-file"
+        "read_file"
     }
 
     fn description(&self) -> &str {

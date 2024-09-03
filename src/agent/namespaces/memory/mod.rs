@@ -12,7 +12,7 @@ struct SaveMemory {}
 #[async_trait]
 impl Action for SaveMemory {
     fn name(&self) -> &str {
-        "save-memory"
+        "save_memory"
     }
 
     fn description(&self) -> &str {
@@ -56,7 +56,7 @@ struct DeleteMemory {}
 #[async_trait]
 impl Action for DeleteMemory {
     fn name(&self) -> &str {
-        "delete-memory"
+        "delete_memory"
     }
 
     fn description(&self) -> &str {
@@ -99,7 +99,7 @@ struct RecallMemory {}
 #[async_trait]
 impl Action for RecallMemory {
     fn name(&self) -> &str {
-        "recall-memory"
+        "recall_memory"
     }
 
     fn description(&self) -> &str {
