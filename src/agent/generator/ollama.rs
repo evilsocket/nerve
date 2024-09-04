@@ -166,7 +166,7 @@ impl Client for OllamaClient {
                 }
             }
 
-            log::debug!("ollama.tools={:?}", &tools);
+            log::trace!("ollama.tools={:?}", &tools);
         }
 
         let mut request = ChatMessageRequest::new(self.model.to_string(), chat_history)
@@ -185,6 +185,8 @@ impl Client for OllamaClient {
             let mut invocations = vec![];
 
             if let Some(tool_calls) = msg.tool_calls.as_ref() {
+                log::debug!("ollama.tool.calls = {:?}", tool_calls);
+
                 for call in tool_calls {
                     let mut attributes = HashMap::new();
                     let mut payload = None;

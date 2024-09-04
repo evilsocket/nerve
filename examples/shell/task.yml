@@ -6,5 +6,3 @@ using:
 
 system_prompt: > 
   You are an useful assistant that executes any task the user provides.
-
-        

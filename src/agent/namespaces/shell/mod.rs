@@ -37,6 +37,8 @@ impl Action for Shell {
         payload: Option<String>,
     ) -> Result<Option<String>> {
         let command = payload.unwrap();
+        log::debug!("{}", &command);
+
         // TODO: make the shell configurable
         let output = Command::new("/bin/sh")
             .arg("-c")
@@ -44,20 +46,19 @@ impl Action for Shell {
             .output()
             .await?;
 
-        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-        println!("{}", &stdout);
+        let mut result = String::from_utf8_lossy(&output.stdout).to_string();
+        println!("{}", &result);
 
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
         if !stderr.is_empty() {
-            eprintln!("{}", stderr);
+            eprintln!("{}", &stderr);
+            result += &format!("\nSTDERR: {}\n", stderr);
         }
 
-        let result = format!(
-            "Exit Code: {}\n\nStdout:\n{}\n\nStderr:\n{}",
-            output.status.code().unwrap_or(-1),
-            stdout,
-            stderr
-        );
+        let exit_code = output.status.code().unwrap_or(-1);
+        if exit_code != 0 {
+            result += &format!("\nEXIT CODE: {}", exit_code);
+        }
 
         log::debug!("{}", &result);
 
