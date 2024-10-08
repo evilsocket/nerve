@@ -1,6 +1,5 @@
 # use all the default namespaces and filesystem access
 using:
-  - '*'
   - filesystem
 
 system_prompt: > 

@@ -61,7 +61,7 @@ struct ReadFolder {}
 #[async_trait]
 impl Action for ReadFolder {
     fn name(&self) -> &str {
-        "read_folder"
+        "list_folder_contents"
     }
 
     fn description(&self) -> &str {
@@ -86,26 +86,31 @@ impl Action for ReadFolder {
 
             for path in paths {
                 if let Ok(entry) = path {
-                    let full_path = entry.path().canonicalize().unwrap();
-                    let metadata = entry.metadata().unwrap();
-                    let size = metadata.len();
-                    let modified: DateTime<Local> = DateTime::from(metadata.modified().unwrap());
-                    let mode = metadata.permissions().mode();
+                    let full = entry.path().canonicalize();
+                    if let Ok(full_path) = full {
+                        let metadata = entry.metadata().unwrap();
+                        let size = metadata.len();
+                        let modified: DateTime<Local> =
+                            DateTime::from(metadata.modified().unwrap());
+                        let mode = metadata.permissions().mode();
 
-                    output += &format!(
-                        "{} {:>5} {} [{}] {}\n",
-                        parse_permissions(mode),
-                        size,
-                        modified.format("%_d %b %H:%M"),
-                        parse_type(metadata.file_type()),
-                        full_path.display()
-                    );
+                        output += &format!(
+                            "{} {:>5} {} [{}] {}\n",
+                            parse_permissions(mode),
+                            size,
+                            modified.format("%_d %b %H:%M"),
+                            parse_type(metadata.file_type()),
+                            full_path.display()
+                        );
+                    } else {
+                        log::error!("can't canonicalize {:?}: {:?}", entry, full.err());
+                    }
                 } else {
                     log::error!("{:?}", path);
                 }
             }
 
-            log::info!("read-folder '{folder}' -> {} bytes", output.len());
+            log::info!("list-folder-contents '{folder}' -> {} bytes", output.len());
 
             Ok(Some(output))
         } else {
