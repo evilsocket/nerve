@@ -20,7 +20,7 @@ fn setup_models(
     Box<dyn mini_rag::Embedder>,
 )> {
     // create generator
-    let gen_options = args.to_generator_options()?;
+    let gen_options = generator::Options::parse(&args.generator, args.context_window)?;
     let generator = generator::factory(
         &gen_options.type_name,
         &gen_options.host,
@@ -30,7 +30,7 @@ fn setup_models(
     )?;
 
     // create embedder
-    let emb_options = args.to_embedder_options()?;
+    let emb_options = generator::Options::parse(&args.embedder, args.context_window)?;
     let embedder = generator::factory_embedder(
         &emb_options.type_name,
         &emb_options.host,

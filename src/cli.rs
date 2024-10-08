@@ -1,9 +1,6 @@
 use std::io::{self, Write};
 
-use anyhow::Result;
 use clap::Parser;
-
-use crate::agent::generator;
 
 /// Get things done with LLMs.
 #[derive(Parser, Debug, Default)]
@@ -40,16 +37,6 @@ pub(crate) struct Args {
     /// Print the documentation of the available action namespaces.
     #[arg(long)]
     pub generate_doc: bool,
-}
-
-impl Args {
-    pub fn to_generator_options(&self) -> Result<generator::Options> {
-        generator::Options::parse(&self.generator, self.context_window)
-    }
-
-    pub fn to_embedder_options(&self) -> Result<generator::Options> {
-        generator::Options::parse(&self.embedder, self.context_window)
-    }
 }
 
 pub(crate) fn get_user_input(prompt: &str) -> String {
