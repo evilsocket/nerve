@@ -15,7 +15,7 @@ use crate::{
 fn setup_models(
     args: &cli::Args,
 ) -> Result<(
-    cli::GeneratorOptions,
+    generator::Options,
     Box<dyn generator::Client>,
     Box<dyn mini_rag::Embedder>,
 )> {

@@ -5,7 +5,7 @@ mod channel;
 pub(crate) use channel::*;
 
 use super::{
-    generator::Options,
+    generator::ChatOptions,
     state::{metrics::Metrics, storage::StorageType},
     Invocation,
 };
@@ -20,7 +20,7 @@ pub(crate) enum Event {
         prev: Option<String>,
         new: Option<String>,
     },
-    StateUpdate(Options),
+    StateUpdate(ChatOptions),
     EmptyResponse,
     InvalidResponse(String),
     InvalidAction {

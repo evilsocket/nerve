@@ -2,23 +2,8 @@ use std::io::{self, Write};
 
 use anyhow::Result;
 use clap::Parser;
-use lazy_static::lazy_static;
-use regex::Regex;
 
-lazy_static! {
-    pub static ref PUBLIC_GENERATOR_PARSER: Regex = Regex::new(r"(?m)^(.+)://(.+)$").unwrap();
-    pub static ref LOCAL_GENERATOR_PARSER: Regex =
-        Regex::new(r"(?m)^(.+)://(.+)@([^:]+):?(\d+)?$").unwrap();
-}
-
-#[derive(Default)]
-pub(crate) struct GeneratorOptions {
-    pub type_name: String,
-    pub model_name: String,
-    pub context_window: u32,
-    pub host: String,
-    pub port: u16,
-}
+use crate::agent::generator;
 
 /// Get things done with LLMs.
 #[derive(Parser, Debug, Default)]
@@ -58,84 +43,12 @@ pub(crate) struct Args {
 }
 
 impl Args {
-    fn parse_connection_string(&self, raw: &str, what: &str) -> Result<GeneratorOptions> {
-        let raw = raw.trim().trim_matches(|c| c == '"' || c == '\'');
-        if raw.is_empty() {
-            return Err(anyhow!("{what} string can't be empty"));
-        }
-
-        let mut generator = GeneratorOptions {
-            context_window: self.context_window,
-            ..Default::default()
-        };
-
-        if raw.contains('@') {
-            let caps = if let Some(caps) = LOCAL_GENERATOR_PARSER.captures_iter(raw).next() {
-                caps
-            } else {
-                return Err(anyhow!("can't parse '{raw}' {what} string"));
-            };
-
-            if caps.len() != 5 {
-                return Err(anyhow!(
-                    "can't parse {raw} {what} string ({} captures instead of 5): {:?}",
-                    caps.len(),
-                    caps,
-                ));
-            }
-
-            caps.get(1)
-                .unwrap()
-                .as_str()
-                .clone_into(&mut generator.type_name);
-            caps.get(2)
-                .unwrap()
-                .as_str()
-                .clone_into(&mut generator.model_name);
-            caps.get(3)
-                .unwrap()
-                .as_str()
-                .clone_into(&mut generator.host);
-            generator.port = if let Some(port) = caps.get(4) {
-                port.as_str().parse::<u16>().unwrap()
-            } else {
-                0
-            };
-        } else {
-            let caps = if let Some(caps) = PUBLIC_GENERATOR_PARSER.captures_iter(raw).next() {
-                caps
-            } else {
-                return Err(anyhow!(
-                    "can't parse {raw} {what} string, invalid expression"
-                ));
-            };
-
-            if caps.len() != 3 {
-                return Err(anyhow!(
-                    "can't parse {raw} {what} string, expected 3 captures, got {}",
-                    caps.len()
-                ));
-            }
-
-            caps.get(1)
-                .unwrap()
-                .as_str()
-                .clone_into(&mut generator.type_name);
-            caps.get(2)
-                .unwrap()
-                .as_str()
-                .clone_into(&mut generator.model_name);
-        }
-
-        Ok(generator)
+    pub fn to_generator_options(&self) -> Result<generator::Options> {
+        generator::Options::parse(&self.generator, self.context_window)
     }
 
-    pub fn to_generator_options(&self) -> Result<GeneratorOptions> {
-        self.parse_connection_string(&self.generator, "generator")
-    }
-
-    pub fn to_embedder_options(&self) -> Result<GeneratorOptions> {
-        self.parse_connection_string(&self.embedder, "embedder")
+    pub fn to_embedder_options(&self) -> Result<generator::Options> {
+        generator::Options::parse(&self.embedder, self.context_window)
     }
 }
 
@@ -150,50 +63,4 @@ pub(crate) fn get_user_input(prompt: &str) -> String {
     }
     println!();
     input.trim().to_string()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::Args;
-
-    #[test]
-    fn test_wont_parse_invalid_generator() {
-        let mut args = Args::default();
-        args.generator = "not a valid generator".to_string();
-        let ret = args.to_generator_options();
-        assert!(ret.is_err());
-    }
-
-    #[test]
-    fn test_parse_local_generator_full() {
-        let mut args = Args::default();
-        args.generator = "ollama://llama3@localhost:11434".to_string();
-        let ret = args.to_generator_options().unwrap();
-        assert_eq!(ret.type_name, "ollama");
-        assert_eq!(ret.model_name, "llama3");
-        assert_eq!(ret.host, "localhost");
-        assert_eq!(ret.port, 11434);
-    }
-
-    #[test]
-    fn test_parse_local_generator_without_port() {
-        let mut args = Args::default();
-        args.generator = "ollama://llama3@localhost".to_string();
-        let ret = args.to_generator_options().unwrap();
-        assert_eq!(ret.type_name, "ollama");
-        assert_eq!(ret.model_name, "llama3");
-        assert_eq!(ret.host, "localhost");
-        assert_eq!(ret.port, 0);
-    }
-
-    #[test]
-    fn test_parse_public_generator() {
-        let mut args = Args::default();
-        args.generator = "groq://llama3".to_string();
-        let ret = args.to_generator_options().unwrap();
-        assert_eq!(ret.type_name, "groq");
-        assert_eq!(ret.model_name, "llama3");
-        assert_eq!(ret.host, "");
-        assert_eq!(ret.port, 0);
-    }
 }

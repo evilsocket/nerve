@@ -18,7 +18,7 @@ use ollama_rs::{
 
 use crate::agent::{state::SharedState, Invocation};
 
-use super::{Client, Message, Options};
+use super::{ChatOptions, Client, Message};
 
 pub struct OllamaClient {
     model: String,
@@ -91,7 +91,7 @@ impl Client for OllamaClient {
     async fn chat(
         &self,
         state: SharedState,
-        options: &Options,
+        options: &ChatOptions,
     ) -> anyhow::Result<(String, Vec<Invocation>)> {
         // TODO: images for multimodal (see todo for screenshot action)
 

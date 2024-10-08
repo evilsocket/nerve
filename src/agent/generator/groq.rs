@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::agent::{generator::Message, state::SharedState, Invocation};
 
-use super::{Client, Options};
+use super::{Client, ChatOptions};
 
 lazy_static! {
     static ref RETRY_TIME_PARSER: Regex =
@@ -108,7 +108,7 @@ impl Client for GroqClient {
     async fn chat(
         &self,
         state: SharedState,
-        options: &Options,
+        options: &ChatOptions,
     ) -> anyhow::Result<(String, Vec<Invocation>)> {
         let mut chat_history = vec![
             groq_api_rs::completion::message::Message::SystemMessage {

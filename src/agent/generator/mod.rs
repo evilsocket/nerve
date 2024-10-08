@@ -20,6 +20,10 @@ mod ollama;
 #[cfg(feature = "openai")]
 mod openai;
 
+mod options;
+
+pub use options::*;
+
 lazy_static! {
     static ref RETRY_TIME_PARSER: Regex =
         Regex::new(r"(?m)^.+try again in (.+)\. Visit.*").unwrap();
@@ -27,13 +31,13 @@ lazy_static! {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Options {
+pub struct ChatOptions {
     pub system_prompt: String,
     pub prompt: String,
     pub history: Vec<Message>,
 }
 
-impl Options {
+impl ChatOptions {
     pub fn new(system_prompt: String, prompt: String, history: Vec<Message>) -> Self {
         Self {
             system_prompt,
@@ -71,7 +75,7 @@ pub trait Client: mini_rag::Embedder + Send + Sync {
     async fn chat(
         &self,
         state: SharedState,
-        options: &Options,
+        options: &ChatOptions,
     ) -> Result<(String, Vec<Invocation>)>;
 
     async fn check_tools_support(&self) -> Result<bool> {

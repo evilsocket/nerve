@@ -5,7 +5,7 @@ use mini_rag::Embedder;
 use serde::{Deserialize, Serialize};
 
 use events::Event;
-use generator::{Client, Options};
+use generator::{Client, ChatOptions};
 use namespaces::Action;
 use serialization::xml::serialize;
 use state::{SharedState, State};
@@ -199,7 +199,7 @@ impl Agent {
         self.state.lock().await.is_complete()
     }
 
-    async fn on_state_update(&self, options: &Options, refresh: bool) -> Result<()> {
+    async fn on_state_update(&self, options: &ChatOptions, refresh: bool) -> Result<()> {
         let mut opts = options.clone();
         if refresh {
             opts.system_prompt = serialization::state_to_system_prompt(&*self.state.lock().await)?;
@@ -310,7 +310,7 @@ impl Agent {
         self.state.lock().await.metrics.clone()
     }
 
-    async fn prepare_step(&mut self) -> Result<Options> {
+    async fn prepare_step(&mut self) -> Result<ChatOptions> {
         let mut mut_state = self.state.lock().await;
 
         mut_state.on_step()?;
@@ -320,7 +320,7 @@ impl Agent {
         let system_prompt = serialization::state_to_system_prompt(&mut_state)?;
         let prompt = mut_state.to_prompt()?;
         let history = mut_state.to_chat_history(self.max_history as usize)?;
-        let options = Options::new(system_prompt, prompt, history);
+        let options = ChatOptions::new(system_prompt, prompt, history);
 
         Ok(options)
     }

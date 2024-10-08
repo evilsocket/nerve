@@ -3,7 +3,7 @@ use async_trait::async_trait;
 
 use crate::agent::{state::SharedState, Invocation};
 
-use super::{openai::OpenAIClient, Client, Options};
+use super::{openai::OpenAIClient, Client, ChatOptions};
 
 pub struct FireworksClient {
     client: OpenAIClient,
@@ -27,7 +27,7 @@ impl Client for FireworksClient {
     async fn chat(
         &self,
         state: SharedState,
-        options: &Options,
+        options: &ChatOptions,
     ) -> anyhow::Result<(String, Vec<Invocation>)> {
         self.client.chat(state, options).await
     }

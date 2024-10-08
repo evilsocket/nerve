@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::agent::{state::SharedState, Invocation};
 
-use super::{Client, Message, Options};
+use super::{Client, Message, ChatOptions};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenAiToolFunctionParameterProperty {
@@ -113,7 +113,7 @@ impl Client for OpenAIClient {
     async fn chat(
         &self,
         state: SharedState,
-        options: &Options,
+        options: &ChatOptions,
     ) -> anyhow::Result<(String, Vec<Invocation>)> {
         let mut chat_history = vec![
             openai_api_rust::Message {
