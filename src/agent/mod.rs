@@ -5,7 +5,7 @@ use mini_rag::Embedder;
 use serde::{Deserialize, Serialize};
 
 use events::Event;
-use generator::{Client, ChatOptions};
+use generator::{ChatOptions, Client};
 use namespaces::Action;
 use serialization::xml::serialize;
 use state::{SharedState, State};
@@ -82,7 +82,7 @@ impl Invocation {
             }
         }
 
-        return format!("{}({})", &self.action, parts.join(", "));
+        format!("{}({})", &self.action, parts.join(", "))
     }
 }
 
@@ -387,7 +387,7 @@ impl Agent {
 
                         let start = std::time::Instant::now();
                         let mut inp = "nope".to_string();
-                        while inp != "" && inp != "n" && inp != "y" {
+                        while !inp.is_empty() && inp != "n" && inp != "y" {
                             inp = cli::get_user_input(&format!(
                                 "{} [Yn] ",
                                 inv.as_function_call_string()

@@ -93,6 +93,7 @@ impl Action for DeleteMemory {
     }
 }
 
+/*
 #[derive(Debug, Default, Clone)]
 struct RecallMemory {}
 
@@ -130,7 +131,7 @@ impl Action for RecallMemory {
         }
     }
 }
-
+ */
 pub(crate) fn get_namespace() -> Namespace {
     Namespace::new_default(
         "Memory".to_string(),

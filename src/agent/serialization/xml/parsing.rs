@@ -58,7 +58,7 @@ fn preprocess_block(ptr: &str) -> String {
         // not a closing tag
         if ptr.as_bytes()[1] != b'/' {
             // determine tag name
-            let tag_name = &ptr[1..ptr.find(|c| c == ' ' || c == '>').unwrap()];
+            let tag_name = &ptr[1..ptr.find([' ', '>']).unwrap()];
             let payload_start_idx = ptr.find('>').unwrap();
             // if not a short <tag/>
             if !tag_name.ends_with('/') {
