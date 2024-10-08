@@ -12,7 +12,7 @@ pub type Result<T> = std::result::Result<T, OllamaError>;
 #[derive(Deserialize)]
 pub struct OllamaError {
     #[serde(rename = "error")]
-    pub(crate) message: String,
+    pub message: String,
 }
 
 impl Display for OllamaError {

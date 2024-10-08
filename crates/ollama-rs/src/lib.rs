@@ -67,10 +67,10 @@ impl IntoUrlSealed for String {
 
 #[derive(Debug, Clone)]
 pub struct Ollama {
-    pub(crate) url: Url,
-    pub(crate) reqwest_client: reqwest::Client,
+    pub url: Url,
+    pub reqwest_client: reqwest::Client,
     #[cfg(feature = "chat-history")]
-    pub(crate) messages_history: Option<WrappedMessageHistory>,
+    pub messages_history: Option<WrappedMessageHistory>,
 }
 
 impl Ollama {

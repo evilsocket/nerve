@@ -1,0 +1,55 @@
+[package]
+publish = false
+name = "nerve-core"
+version = "0.2.0"
+edition = "2021"
+
+[dependencies]
+ollama-rs = { path = "../crates/ollama-rs", features = [
+    "rustls",
+    "tokio",
+    "chat-history",
+], default-features = false, optional = true }
+openai_api_rust = { path = "../crates/openai_api_rust", optional = true }
+groq-api-rs = { path = "../crates/groq-api-rs", optional = true }
+
+anyhow = "1.0.86"
+async-trait = "0.1.80"
+chrono = "0.4.38"
+colored = "2.1.0"
+indexmap = "2.2.6"
+itertools = "0.13.0"
+lazy_static = "1.4.0"
+libc = "0.2.155"
+regex = "1.10.5"
+serde = { version = "1.0.203", features = ["derive", "serde_derive"] }
+serde_trim = "1.1.0"
+serde_yaml = "0.9.34"
+simple-home-dir = "0.4.0"
+tokio = "1.38.0"
+xml-rs = "0.8.20"
+duration-string = { version = "0.4.0", optional = true }
+rayon = "1.10.0"
+glob = "0.3.1"
+human_bytes = "0.4.3"
+memory-stats = "1.1.0"
+sha256 = "1.5.0"
+bitcode = { version = "0.6.0", features = ["serde"] }
+intertrait = "0.2.2"
+mini-rag = "0.2.3"
+log = "0.4.22"
+reqwest = { version = "0.12.5", default-features = false, features = [
+    "rustls-tls",
+] }
+url = "2.5.2"
+reqwest_cookie_store = "0.8.0"
+serde_json = "1.0.120"
+
+[features]
+default = ["ollama", "groq", "openai", "fireworks", "hf"]
+
+ollama = ["dep:ollama-rs"]
+groq = ["dep:groq-api-rs", "dep:duration-string"]
+openai = ["dep:openai_api_rust"]
+fireworks = ["dep:openai_api_rust"]
+hf = ["dep:openai_api_rust"]

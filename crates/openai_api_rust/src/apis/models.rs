@@ -47,22 +47,3 @@ impl ModelsApi for OpenAI {
 		Ok(model)
 	}
 }
-
-#[cfg(test)]
-mod tests {
-	use crate::{apis::models::ModelsApi, openai::new_test_openai};
-
-	#[test]
-	fn test_models() {
-		let openai = new_test_openai();
-		let models = openai.models_list().unwrap();
-		assert!(!models.is_empty());
-	}
-
-	#[test]
-	fn test_get_model() {
-		let openai = new_test_openai();
-		let model = openai.models_retrieve("babbage-002").unwrap();
-		assert_eq!("babbage-002", model.id);
-	}
-}

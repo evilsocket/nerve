@@ -292,8 +292,8 @@ impl RequestBuilder {
         self
     }
 
-    pub(crate) fn with_messages(mut self, msgs: Vec<Message>) -> anyhow::Result<Self> {
-        anyhow::ensure!(msgs.len() > 0, "message cannot be empty");
+    pub fn with_messages(mut self, msgs: Vec<Message>) -> anyhow::Result<Self> {
+        anyhow::ensure!(!msgs.is_empty(), "message cannot be empty");
         self.messages = msgs;
         Ok(self)
     }

@@ -48,7 +48,7 @@ pub struct ChatMessageRequest {
     pub template: Option<String>,
     pub format: Option<FormatType>,
     pub tools: Vec<Tool>,
-    pub(crate) stream: bool,
+    pub stream: bool,
 }
 
 impl ChatMessageRequest {

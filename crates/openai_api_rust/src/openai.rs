@@ -30,7 +30,7 @@ impl Auth {
 pub struct OpenAI {
 	pub auth: Auth,
 	pub api_url: String,
-	pub(crate) agent: Agent,
+	pub agent: Agent,
 }
 
 impl Clone for OpenAI {

@@ -6,3 +6,4 @@
 /examples/fuzzer/test_binary/test_binary
 /examples/test
 .DS_Store
+/nerve-cli/target

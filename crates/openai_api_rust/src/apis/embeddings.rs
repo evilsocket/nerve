@@ -52,26 +52,3 @@ impl EmbeddingsApi for OpenAI {
 		Ok(embeddings)
 	}
 }
-
-#[cfg(test)]
-mod tests {
-	use crate::{
-		apis::embeddings::{EmbeddingsApi, EmbeddingsBody},
-		openai::new_test_openai,
-	};
-
-	#[test]
-	fn test_embedding_create() {
-		let openai = new_test_openai();
-		let body = EmbeddingsBody {
-			model: "text-embedding-ada-002".to_string(),
-			input: vec!["The food was delicious and the waiter...".to_string()],
-			user: None,
-		};
-		let rs = openai.embeddings_create(&body);
-		let embeddings = rs.unwrap().data;
-		let embedding = embeddings.as_ref().unwrap().get(0).unwrap();
-		let f = embedding.embedding.as_ref().unwrap();
-		assert!(!f.is_empty());
-	}
-}

@@ -120,7 +120,6 @@ pub struct ResponseFormat {
 #[cfg(test)]
 mod request_test {
     use crate::completion::request::*;
-    use anyhow::Context;
 
     #[test]
     fn init_request() -> anyhow::Result<()> {

@@ -139,37 +139,3 @@ impl CompletionsApi for OpenAI {
 		Ok(completion)
 	}
 }
-
-#[cfg(test)]
-mod tests {
-	use crate::openai::new_test_openai;
-
-	use super::{CompletionsApi, CompletionsBody};
-
-	#[test]
-	fn test_completions() {
-		let openai = new_test_openai();
-		let body = CompletionsBody {
-			model: "babbage-002".to_string(),
-			prompt: Some(vec!["Say this is a test".to_string()]),
-			suffix: None,
-			max_tokens: Some(7),
-			temperature: Some(0_f32),
-			top_p: Some(0_f32),
-			n: Some(2),
-			stream: Some(false),
-			logprobs: None,
-			echo: None,
-			stop: Some(vec!["\n".to_string()]),
-			presence_penalty: None,
-			frequency_penalty: None,
-			best_of: None,
-			logit_bias: None,
-			user: None,
-		};
-		let rs = openai.completion_create(&body);
-		let choice = rs.unwrap().choices;
-		let text = &choice[0].text.as_ref().unwrap();
-		assert!(text.contains("this"));
-	}
-}

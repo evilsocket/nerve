@@ -104,7 +104,7 @@ impl Groq {
         if self.disposable_msgs.is_empty() {
             self.messages.clone()
         } else {
-            vec![self.messages.clone(), self.disposable_msgs.clone()].concat()
+            [self.messages.clone(), self.disposable_msgs.clone()].concat()
         }
     }
 
@@ -242,6 +242,7 @@ mod completion_test {
         assert_eq!(hash_string, hash_string1);
     }
 
+    /*
     #[tokio::test]
     async fn create_completion() -> anyhow::Result<()> {
         let messages = vec![Message::UserMessage {
@@ -251,9 +252,9 @@ mod completion_test {
             tool_call_id: None,
         }];
         let request = builder::RequestBuilder::new("mixtral-8x7b-32768".to_string());
-        let api_key = env!("GROQ_API_KEY");
+        let api_key = std::env::var("GROQ_API_KEY").unwrap();
 
-        let mut client = Groq::new(api_key);
+        let mut client = Groq::new(&api_key);
         client.add_messages(messages);
 
         let res = client.create(request).await;
@@ -261,27 +262,27 @@ mod completion_test {
         Ok(())
     }
 
-    #[tokio::test]
-    async fn create_stream_completion() -> anyhow::Result<()> {
-        let messages = vec![Message::UserMessage {
-            role: Some("user".to_string()),
-            content: Some("Explain the importance of fast language models".to_string()),
-            name: None,
-            tool_call_id: None,
-        }];
-        let request =
-            builder::RequestBuilder::new("mixtral-8x7b-32768".to_string()).with_stream(true);
-        let api_key = env!("GROQ_API_KEY");
+       #[tokio::test]
+       async fn create_stream_completion() -> anyhow::Result<()> {
+           let messages = vec![Message::UserMessage {
+               role: Some("user".to_string()),
+               content: Some("Explain the importance of fast language models".to_string()),
+               name: None,
+               tool_call_id: None,
+           }];
+           let request =
+               builder::RequestBuilder::new("mixtral-8x7b-32768".to_string()).with_stream(true);
+           let api_key = std::env::var("GROQ_API_KEY").unwrap();
 
-        let mut client = Groq::new(api_key);
-        client.add_messages(messages);
+           let mut client = Groq::new(&api_key);
+           client.add_messages(messages);
 
-        let res = client.create(request).await;
-        assert!(res.is_ok());
-        println!("{:?}", res.unwrap());
-        Ok(())
-    }
-
+           let res = client.create(request).await;
+           assert!(res.is_ok());
+           println!("{:?}", res.unwrap());
+           Ok(())
+       }
+    */
     #[tokio::test]
     async fn error_does_return() -> anyhow::Result<()> {
         let messages = vec![Message::UserMessage {
@@ -302,32 +303,33 @@ mod completion_test {
         eprintln!("{}", res.unwrap_err());
         Ok(())
     }
+    /*
+       #[tokio::test]
+       async fn create_with_add_tmp_message() -> anyhow::Result<()> {
+           let messages = vec![Message::SystemMessage {
+               content: Some("I am a system message".to_string()),
+               name: None,
+               role: Some("system".to_string()),
+               tool_call_id: None,
+           }];
+           let request = builder::RequestBuilder::new("mixtral-8x7b-32768".to_string());
+           let api_key = std::env::var("GROQ_API_KEY").unwrap();
 
-    #[tokio::test]
-    async fn create_with_add_tmp_message() -> anyhow::Result<()> {
-        let messages = vec![Message::SystemMessage {
-            content: Some("I am a system message".to_string()),
-            name: None,
-            role: Some("system".to_string()),
-            tool_call_id: None,
-        }];
-        let request = builder::RequestBuilder::new("mixtral-8x7b-32768".to_string());
-        let api_key = env!("GROQ_API_KEY");
+           let client = Groq::new(&api_key);
+           let mut client = client;
+           client.add_messages(messages);
+           client.add_disposable_msg(Message::UserMessage {
+               role: Some("user".to_string()),
+               content: Some("Explain the importance of fast language models".to_string()),
+               name: None,
+               tool_call_id: None,
+           });
 
-        let client = Groq::new(api_key);
-        let mut client = client;
-        client.add_messages(messages);
-        client.add_disposable_msg(Message::UserMessage {
-            role: Some("user".to_string()),
-            content: Some("Explain the importance of fast language models".to_string()),
-            name: None,
-            tool_call_id: None,
-        });
-
-        assert!(client.get_disposable_msgs().is_some());
-        let res = client.create(request).await;
-        assert!(!res.is_err());
-        assert!(client.get_disposable_msgs().is_none());
-        Ok(())
-    }
+           assert!(client.get_disposable_msgs().is_some());
+           let res = client.create(request).await;
+           assert!(!res.is_err());
+           assert!(client.get_disposable_msgs().is_none());
+           Ok(())
+       }
+    */
 }

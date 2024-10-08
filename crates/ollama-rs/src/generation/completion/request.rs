@@ -21,7 +21,7 @@ pub struct GenerationRequest {
     pub context: Option<GenerationContext>,
     pub format: Option<FormatType>,
     pub keep_alive: Option<KeepAlive>,
-    pub(crate) stream: bool,
+    pub stream: bool,
 }
 
 impl GenerationRequest {

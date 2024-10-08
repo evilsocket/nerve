@@ -1,0 +1,16 @@
+[package]
+publish = false
+name = "nerve"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+clap = { version = "4.5.6", features = ["derive"] }
+log = "0.4.22"
+env_logger = "0.11.3"
+tokio = "1.38.0"
+colored = "2.1.0"
+mini-rag = "0.2.3"
+
+nerve-core = { path = "../nerve-core" }

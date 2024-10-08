@@ -7,8 +7,8 @@ use crate::{
 
 #[derive(Debug, Clone, Default)]
 pub struct MessagesHistory {
-    pub(crate) messages_by_id: HashMap<String, Vec<ChatMessage>>,
-    pub(crate) messages_number_limit: u16,
+    pub messages_by_id: HashMap<String, Vec<ChatMessage>>,
+    pub messages_number_limit: u16,
 }
 
 pub type WrappedMessageHistory = std::sync::Arc<std::sync::RwLock<MessagesHistory>>;
