@@ -157,7 +157,7 @@ fn try_parse_block(ptr: &str) -> Parsed {
     parsed
 }
 
-pub fn try_parse(raw: &str) -> Result<Vec<Invocation>> {
+pub(crate) fn try_parse(raw: &str) -> Result<Vec<Invocation>> {
     let mut ptr = raw;
     let mut parsed = vec![];
 

@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::agent::{generator::Message, Invocation};
+use crate::agent::{generator::Message, serialization, Invocation};
 
 #[derive(Debug, Clone, Default)]
 pub struct Execution {
@@ -41,14 +41,14 @@ impl Execution {
         }
     }
 
-    pub fn to_messages(&self) -> Vec<Message> {
+    pub fn to_messages(&self, serializer: &serialization::Strategy) -> Vec<Message> {
         let mut messages = vec![];
 
         if let Some(response) = self.response.as_ref() {
             messages.push(Message::Agent(response.to_string(), None));
         } else if let Some(invocation) = self.invocation.as_ref() {
             messages.push(Message::Agent(
-                crate::agent::serialization::xml::serialize::invocation(invocation),
+                serializer.serialize_invocation(invocation),
                 Some(invocation.clone()),
             ));
         }
@@ -76,7 +76,11 @@ impl History {
         Self(vec![])
     }
 
-    pub fn to_chat_history(&self, max: usize) -> Result<Vec<Message>> {
+    pub fn to_chat_history(
+        &self,
+        serializer: &serialization::Strategy,
+        max: usize,
+    ) -> Result<Vec<Message>> {
         let mut history = vec![];
         let latest = if self.0.len() > max {
             self.0[self.0.len() - max..].to_vec()
@@ -85,7 +89,7 @@ impl History {
         };
 
         for entry in latest {
-            history.extend(entry.to_messages());
+            history.extend(entry.to_messages(serializer));
         }
 
         Ok(history)

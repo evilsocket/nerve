@@ -58,16 +58,25 @@ pub async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
                 elapsed,
             } => {
                 if let Some(err) = error {
-                    log::error!("{}: {}", invocation, err);
+                    log::error!(
+                        "{}: {}",
+                        args.serialization.serialize_invocation(&invocation),
+                        err
+                    );
                 } else if let Some(res) = result {
                     log::debug!(
                         "{} -> {} bytes in {:?}",
-                        invocation,
+                        args.serialization.serialize_invocation(&invocation),
                         res.as_bytes().len(),
                         elapsed
                     );
                 } else {
-                    log::debug!("{} {} in {:?}", invocation, "no output".dimmed(), elapsed);
+                    log::debug!(
+                        "{} {} in {:?}",
+                        args.serialization.serialize_invocation(&invocation),
+                        "no output".dimmed(),
+                        elapsed
+                    );
                 }
             }
             Event::TaskComplete { impossible, reason } => {

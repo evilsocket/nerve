@@ -78,7 +78,16 @@ pub async fn setup_agent(args: &cli::Args) -> Result<(Agent, events::Receiver)> 
     let (tx, rx) = create_channel();
 
     // create the agent
-    let agent = Agent::new(tx, generator, embedder, task, args.max_iterations).await?;
+    let agent = Agent::new(
+        tx,
+        generator,
+        embedder,
+        task,
+        args.serialization.clone(),
+        args.force_format,
+        args.max_iterations,
+    )
+    .await?;
 
     Ok((agent, rx))
 }

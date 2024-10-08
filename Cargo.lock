@@ -1311,6 +1311,7 @@ dependencies = [
  "async-trait",
  "bitcode",
  "chrono",
+ "clap",
  "colored",
  "duration-string",
  "glob",

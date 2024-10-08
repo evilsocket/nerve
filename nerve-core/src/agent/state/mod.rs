@@ -9,6 +9,7 @@ use super::{
     events::Event,
     generator::Message,
     namespaces::{self, Namespace},
+    serialization,
     task::Task,
     Invocation,
 };
@@ -39,7 +40,7 @@ pub struct State {
     // runtime metrics
     pub metrics: Metrics,
     // model support stool
-    pub tools_support: bool,
+    pub native_tools_support: bool,
 }
 
 pub type SharedState = Arc<tokio::sync::Mutex<State>>;
@@ -50,7 +51,7 @@ impl State {
         task: Box<dyn Task>,
         embedder: Box<dyn mini_rag::Embedder>,
         max_iterations: usize,
-        tools_support: bool,
+        native_tools_support: bool,
     ) -> Result<Self> {
         let complete = false;
         let mut variables = HashMap::new();
@@ -168,7 +169,7 @@ impl State {
             metrics,
             rag,
             events_tx,
-            tools_support,
+            native_tools_support,
         })
     }
 
@@ -193,8 +194,12 @@ impl State {
         }
     }
 
-    pub fn to_chat_history(&self, max: usize) -> Result<Vec<Message>> {
-        self.history.to_chat_history(max)
+    pub fn to_chat_history(
+        &self,
+        serializer: &serialization::Strategy,
+        max: usize,
+    ) -> Result<Vec<Message>> {
+        self.history.to_chat_history(serializer, max)
     }
 
     #[allow(clippy::borrowed_box)]

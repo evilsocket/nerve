@@ -1,4 +1,5 @@
 use clap::Parser;
+use nerve_core::agent::serialization::Strategy;
 
 /// Get things done with LLMs.
 #[derive(Parser, Debug, Default)]
@@ -14,6 +15,12 @@ pub struct Args {
         default_value = "ollama://all-minilm@localhost:11434"
     )]
     pub embedder: String,
+    /// Serialization strategy.
+    #[arg(short = 'S', long, default_value_t, value_enum)]
+    pub serialization: Strategy,
+    /// Force specified serialization format even if the model supports native tools calling.
+    #[arg(long)]
+    pub force_format: bool,
     /// Tasklet file.
     #[arg(short = 'T', long)]
     pub tasklet: Option<String>,

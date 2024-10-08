@@ -51,7 +51,7 @@ impl Client for OllamaClient {
         })
     }
 
-    async fn check_tools_support(&self) -> Result<bool> {
+    async fn check_native_tools_support(&self) -> Result<bool> {
         let chat_history = vec![
             ChatMessage::system("You are an helpful assistant.".to_string()),
             ChatMessage::user("Call the test function.".to_string()),
@@ -117,7 +117,7 @@ impl Client for OllamaClient {
         // Generate tools vector.
         let mut tools = vec![];
 
-        if state.lock().await.tools_support {
+        if state.lock().await.native_tools_support {
             for group in state.lock().await.get_namespaces() {
                 for action in &group.actions {
                     let mut required = vec![];

@@ -54,7 +54,7 @@ impl Client for OpenAIClient {
         Self::custom(model_name, "OPENAI_API_KEY", "https://api.openai.com/v1/")
     }
 
-    async fn check_tools_support(&self) -> Result<bool> {
+    async fn check_native_tools_support(&self) -> Result<bool> {
         let chat_history = vec![
             openai_api_rust::Message {
                 role: Role::System,
@@ -144,7 +144,7 @@ impl Client for OpenAIClient {
         }
 
         let mut tools = vec![];
-        if state.lock().await.tools_support {
+        if state.lock().await.native_tools_support {
             for group in state.lock().await.get_namespaces() {
                 for action in &group.actions {
                     let mut required = vec![];

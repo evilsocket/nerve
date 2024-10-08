@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
 
     if args.generate_doc {
         // generate action namespaces documentation and exit
-        println!("{}", agent::serialization::available_actions());
+        println!("{}", agent::serialization::Strategy::available_actions());
         std::process::exit(0);
     }
 

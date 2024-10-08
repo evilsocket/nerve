@@ -78,7 +78,7 @@ pub trait Client: mini_rag::Embedder + Send + Sync {
         options: &ChatOptions,
     ) -> Result<(String, Vec<Invocation>)>;
 
-    async fn check_tools_support(&self) -> Result<bool> {
+    async fn check_native_tools_support(&self) -> Result<bool> {
         Ok(false)
     }
 

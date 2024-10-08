@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 use events::Event;
 use generator::{ChatOptions, Client};
 use namespaces::Action;
-use serialization::xml::serialize;
 use state::{SharedState, State};
 use task::Task;
 
@@ -57,12 +56,6 @@ pub struct Invocation {
     pub action: String,
     pub attributes: Option<HashMap<String, String>>,
     pub payload: Option<String>,
-}
-
-impl std::fmt::Display for Invocation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", serialize::invocation(self))
-    }
 }
 
 impl std::hash::Hash for Invocation {
@@ -109,6 +102,9 @@ pub struct Agent {
     state: SharedState,
     max_history: u16,
     task_timeout: Option<Duration>,
+
+    serializer: serialization::Strategy,
+    force_strategy: bool,
 }
 
 impl Agent {
@@ -117,17 +113,26 @@ impl Agent {
         generator: Box<dyn Client>,
         embedder: Box<dyn Embedder>,
         task: Box<dyn Task>,
+        serializer: serialization::Strategy,
+        force_strategy: bool,
         max_iterations: usize,
     ) -> Result<Self> {
-        // check if the model supports tools calling natively
-        let tools_support = generator.check_tools_support().await?;
-        if tools_support {
-            log::info!("model supports tools calling natively.");
+        let use_native_tools_support = if force_strategy {
+            log::info!("using {:?} serialization strategy", &serializer);
+            false
         } else {
-            log::info!(
-                "model does not support tools calling natively, using Nerve custom system prompt"
-            );
-        }
+            // check if the model supports tools calling natively
+            match generator.check_native_tools_support().await? {
+                true => {
+                    log::info!("model supports tools calling natively.");
+                    true
+                }
+                false => {
+                    log::info!("model does not support tools calling natively, using Nerve custom system prompt");
+                    false
+                }
+            }
+        };
 
         let max_history = task.max_history_visibility();
         let task_timeout = task.get_timeout();
@@ -137,7 +142,7 @@ impl Agent {
                 task,
                 embedder,
                 max_iterations,
-                tools_support,
+                use_native_tools_support,
             )
             .await?,
         ));
@@ -148,6 +153,8 @@ impl Agent {
             state,
             max_history,
             task_timeout,
+            force_strategy,
+            serializer,
         })
     }
 
@@ -161,25 +168,19 @@ impl Agent {
 
         if payload_required && !has_payload {
             // payload required and not specified
-            return Err(anyhow!(
-                "no xml content specified for '{}'",
-                invocation.action
-            ));
+            return Err(anyhow!("no content specified for '{}'", invocation.action));
         } else if attrs_required && !has_attributes {
             // attributes required and not specified at all
             return Err(anyhow!(
-                "no xml attributes specified for '{}'",
+                "no attributes specified for '{}'",
                 invocation.action
             ));
         } else if !payload_required && has_payload {
             // payload not required but specified
-            return Err(anyhow!("no xml content needed for '{}'", invocation.action));
+            return Err(anyhow!("no content needed for '{}'", invocation.action));
         } else if !attrs_required && has_attributes {
             // attributes not required but specified
-            return Err(anyhow!(
-                "no xml attributes needed for '{}'",
-                invocation.action
-            ));
+            return Err(anyhow!("no attributes needed for '{}'", invocation.action));
         }
 
         if attrs_required {
@@ -201,7 +202,7 @@ impl Agent {
             for required in required_attrs {
                 if !passed_attrs.contains(&required) {
                     return Err(anyhow!(
-                        "no '{}' xml attribute specified for '{}'",
+                        "no '{}' attribute specified for '{}'",
                         required,
                         invocation.action
                     ));
@@ -219,12 +220,14 @@ impl Agent {
     async fn on_state_update(&self, options: &ChatOptions, refresh: bool) -> Result<()> {
         let mut opts = options.clone();
         if refresh {
-            opts.system_prompt = serialization::state_to_system_prompt(&*self.state.lock().await)?;
+            opts.system_prompt = self
+                .serializer
+                .system_prompt_for_state(&*self.state.lock().await)?;
             opts.history = self
                 .state
                 .lock()
                 .await
-                .to_chat_history(self.max_history as usize)?;
+                .to_chat_history(&self.serializer, self.max_history as usize)?;
         }
 
         self.on_event(events::Event::StateUpdate(opts))
@@ -334,9 +337,9 @@ impl Agent {
 
         self.on_event(events::Event::MetricsUpdate(mut_state.metrics.clone()))?;
 
-        let system_prompt = serialization::state_to_system_prompt(&mut_state)?;
+        let system_prompt = self.serializer.system_prompt_for_state(&mut_state)?;
         let prompt = mut_state.to_prompt()?;
-        let history = mut_state.to_chat_history(self.max_history as usize)?;
+        let history = mut_state.to_chat_history(&self.serializer, self.max_history as usize)?;
         let options = ChatOptions::new(system_prompt, prompt, history);
 
         Ok(options)
@@ -355,9 +358,12 @@ impl Agent {
         let (response, tool_calls) = self.generator.chat(self.state.clone(), &options).await?;
 
         // parse the model response into invocations
-        let invocations = if tool_calls.is_empty() {
-            serialization::xml::parsing::try_parse(response.trim())?
+        let invocations = if tool_calls.is_empty() || self.force_strategy {
+            // use our own parsing strategy
+            self.serializer.try_parse(response.trim())?
         } else {
+            // the model supports function calling natively
+
             tool_calls
         };
 

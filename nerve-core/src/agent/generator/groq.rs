@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::agent::{generator::Message, state::SharedState, Invocation};
 
-use super::{Client, ChatOptions};
+use super::{ChatOptions, Client};
 
 lazy_static! {
     static ref RETRY_TIME_PARSER: Regex =
@@ -54,7 +54,7 @@ impl Client for GroqClient {
         Ok(Self { model, api_key })
     }
 
-    async fn check_tools_support(&self) -> Result<bool> {
+    async fn check_native_tools_support(&self) -> Result<bool> {
         let chat_history = vec![
             groq_api_rs::completion::message::Message::SystemMessage {
                 role: Some("system".to_string()),
@@ -170,7 +170,7 @@ impl Client for GroqClient {
 
         let mut request = builder::RequestBuilder::new(self.model.clone()).with_stream(false);
 
-        if state.lock().await.tools_support {
+        if state.lock().await.native_tools_support {
             let mut tools = vec![];
 
             for group in state.lock().await.get_namespaces() {
