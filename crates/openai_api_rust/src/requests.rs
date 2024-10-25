@@ -17,7 +17,7 @@ pub trait Requests {
 
 impl Requests for OpenAI {
 	fn post(&self, sub_url: &str, body: Json) -> ApiResult<Json> {
-		info!("===> 🚀\n\tPost api: {sub_url}, body: {body}");
+		debug!("===> 🚀\n\tPost api: {sub_url}, body: {body}");
 
 		let response = self
 			.agent
@@ -31,7 +31,7 @@ impl Requests for OpenAI {
 	}
 
 	fn get(&self, sub_url: &str) -> ApiResult<Json> {
-		info!("===> 🚀\n\tGet api: {sub_url}");
+		debug!("===> 🚀\n\tGet api: {sub_url}");
 
 		let response = self
 			.agent
@@ -45,7 +45,7 @@ impl Requests for OpenAI {
 	}
 
 	fn post_multipart(&self, sub_url: &str, mut multipart: Multipart) -> ApiResult<Json> {
-		info!("===> 🚀\n\tPost multipart api: {sub_url}, multipart: {:?}", multipart);
+		debug!("===> 🚀\n\tPost multipart api: {sub_url}, multipart: {:?}", multipart);
 
 		let form_data = multipart.prepare().unwrap();
 
