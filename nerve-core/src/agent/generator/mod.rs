@@ -15,6 +15,8 @@ mod fireworks;
 mod groq;
 #[cfg(feature = "hf")]
 mod huggingface;
+#[cfg(feature = "novita")]
+mod novita;
 #[cfg(feature = "ollama")]
 mod ollama;
 #[cfg(feature = "openai")]
@@ -159,6 +161,7 @@ macro_rules! factory_body {
                 $model_name,
                 $context_window,
             )?)),
+            #[cfg(feature = "hf")]
             "hf" => Ok(Box::new(huggingface::HuggingfaceMessageClient::new(
                 $url,
                 $port,
@@ -167,6 +170,13 @@ macro_rules! factory_body {
             )?)),
             #[cfg(feature = "groq")]
             "groq" => Ok(Box::new(groq::GroqClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            #[cfg(feature = "novita")]
+            "novita" => Ok(Box::new(novita::NovitaClient::new(
                 $url,
                 $port,
                 $model_name,

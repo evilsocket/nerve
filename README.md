@@ -34,7 +34,7 @@ While Nerve was inspired by other projects such as Autogen and Rigging, its main
 
 ## LLM Support
 
-Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/), [Fireworks](https://fireworks.ai/) and [Huggingface](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) APIs. 
+Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/), [Fireworks](https://fireworks.ai/), [Huggingface](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) and [NovitaAI](https://novita.ai/model-api/product/llm-api?utm_source=github_nerve&utm_medium=github_readme&utm_campaign=link) APIs. 
 
 **The tool will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers older models to perform function calling anyway.**
 
@@ -71,6 +71,15 @@ Refer to [this document](https://huggingface.co/blog/tgi-messages-api#using-infe
 ```sh
 HF_API_TOKEN=you-api-key nerve -G "hf://tgi@your-custom-endpoint.aws.endpoints.huggingface.cloud" ...
 ```
+
+For **Novita**:
+
+```sh
+NOVITA_API_KEY=you-api-key nerve -G "novita://meta-llama/llama-3.1-70b-instruct" ...
+```
+
+You can check your API keys [here](https://novita.ai/settings?utm_source=github_nerve&utm_medium=github_readme&utm_campaign=link#key-management), and check all our models [here](https://novita.ai/model-api/product/llm-api?utm_source=github_nerve&utm_medium=github_readme&utm_campaign=link).
+
 
 ## Example
 
