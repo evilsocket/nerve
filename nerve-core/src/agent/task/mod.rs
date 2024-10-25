@@ -4,6 +4,7 @@ use anyhow::Result;
 
 use super::namespaces::Namespace;
 
+pub mod robopages;
 pub mod tasklet;
 pub mod variables;
 

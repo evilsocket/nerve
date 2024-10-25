@@ -4,7 +4,10 @@ use colored::Colorize;
 use nerve_core::agent::{
     events::{self, create_channel},
     generator,
-    task::tasklet::Tasklet,
+    task::{
+        robopages,
+        tasklet::{FunctionGroup, Tasklet},
+    },
     Agent,
 };
 
@@ -73,6 +76,15 @@ pub async fn setup_agent(args: &cli::Args) -> Result<(Agent, events::Receiver)> 
     );
 
     tasklet.prepare(&args.prompt)?;
+
+    if let Some(server_address) = &args.robopages {
+        tasklet.set_robopages(
+            server_address,
+            robopages::Client::new(server_address.to_owned())
+                .get_functions()
+                .await?,
+        );
+    }
 
     let task = Box::new(tasklet);
     let (tx, rx) = create_channel();

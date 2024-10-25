@@ -151,6 +151,24 @@ nerve -G "ollama://llama3@localhost:11434" \
 
 You can find more tasklet examples in the `examples` folder, feel free to send a PR if you create a new cool one! :D
 
+### Robopages
+
+Nerve can use functions from a [robopages server](https://github.com/dreadnode/robopages-cli). In order to do so, you'll need to pass its address to the tool via the `-R`/`--robopages` argument:
+
+```sh
+nerve -G "openai@gpt-4o" \
+  -T /path/to/tasklet \
+  -R "localhost:8000"
+```
+
+To import only a subset of tools:
+
+```sh
+nerve -G "openai@gpt-4o" \
+  -T /path/to/tasklet \
+  -R "localhost:8000/cybersecurity/reverse-engineering"
+```
+
 ### How does it work?
 
 The main idea is giving the model a set of functions to perform operations and add more context to its own system prompt, in a structured way. Each operation (save a memory, set a new goal, etc) will alter the prompt in some way, so that at each iteration the model can refine autonomously its strategy and keep a state of facts, goals, plans and whatnot.

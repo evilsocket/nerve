@@ -38,7 +38,7 @@ bitcode = { version = "0.6.0", features = ["serde"] }
 intertrait = "0.2.2"
 mini-rag = "0.2.3"
 log = "0.4.22"
-reqwest = { version = "0.12.5", default-features = false, features = [
+reqwest = { version = "0.12.8", default-features = false, features = [
     "rustls-tls",
 ] }
 url = "2.5.2"

@@ -12,6 +12,7 @@ use serde_trim::*;
 
 use super::{variables::interpolate_variables, Task};
 use crate::agent::get_user_input;
+use crate::agent::task::robopages;
 use crate::agent::{
     namespaces::{Action, Namespace},
     state::SharedState,
@@ -28,6 +29,9 @@ fn default_max_shown_output() -> usize {
 pub struct TaskletAction {
     #[serde(skip_deserializing, skip_serializing)]
     working_directory: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    robopages_server_address: Option<String>,
+
     #[serde(default = "default_max_shown_output")]
     max_shown_output: usize,
     #[serde(deserialize_with = "string_trim")]
@@ -76,6 +80,15 @@ impl Action for TaskletAction {
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
+        // run via robopages server
+        if let Some(server_address) = &self.robopages_server_address {
+            let result = robopages::Client::new(server_address.clone())
+                .execute(&self.name, attributes.unwrap_or_default())
+                .await?;
+            return Ok(Some(result));
+        }
+
+        // run as local tool
         let parts: Vec<String> = self
             .tool
             .split_whitespace()
@@ -202,7 +215,7 @@ impl Action for TaskletAction {
 }
 
 #[derive(Default, Deserialize, Debug, Clone)]
-struct FunctionGroup {
+pub struct FunctionGroup {
     #[serde(deserialize_with = "string_trim")]
     pub name: String,
     pub description: Option<String>,
@@ -210,11 +223,16 @@ struct FunctionGroup {
 }
 
 impl FunctionGroup {
-    fn compile(&self, working_directory: &str) -> Result<Namespace> {
+    fn compile(
+        &self,
+        working_directory: &str,
+        robopages_server_address: Option<String>,
+    ) -> Result<Namespace> {
         let mut actions: Vec<Box<dyn Action>> = vec![];
         for tasklet_action in &self.actions {
             let mut action = tasklet_action.clone();
             action.working_directory = working_directory.to_string();
+            action.robopages_server_address = robopages_server_address.clone();
             actions.push(Box::new(action));
         }
 
@@ -245,6 +263,11 @@ pub struct Tasklet {
     using: Option<Vec<String>>,
     guidance: Option<Vec<String>>,
     functions: Option<Vec<FunctionGroup>>,
+
+    #[serde(skip_deserializing, skip_serializing)]
+    robopages: Vec<FunctionGroup>,
+    #[serde(skip_deserializing, skip_serializing)]
+    robopages_server_address: Option<String>,
 }
 
 impl Tasklet {
@@ -348,6 +371,21 @@ impl Tasklet {
 
         Ok(())
     }
+
+    pub fn set_robopages(&mut self, server_address: &str, robopages: Vec<FunctionGroup>) {
+        let mut host_port = if server_address.contains("://") {
+            server_address.split("://").last().unwrap().to_string()
+        } else {
+            server_address.to_string()
+        };
+
+        if host_port.contains("/") {
+            host_port = host_port.split('/').next().unwrap().to_string();
+        }
+
+        self.robopages_server_address = Some(host_port);
+        self.robopages = robopages;
+    }
 }
 
 impl Task for Tasklet {
@@ -393,7 +431,17 @@ impl Task for Tasklet {
 
         if let Some(custom_functions) = self.functions.as_ref() {
             for group in custom_functions {
-                groups.push(group.compile(&self.folder).unwrap());
+                groups.push(group.compile(&self.folder, None).unwrap());
+            }
+        }
+
+        if !self.robopages.is_empty() {
+            for group in &self.robopages {
+                groups.push(
+                    group
+                        .compile(&self.folder, self.robopages_server_address.clone())
+                        .unwrap(),
+                );
             }
         }
 

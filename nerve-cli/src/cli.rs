@@ -30,6 +30,9 @@ pub struct Args {
     /// Pre define variables.
     #[arg(short = 'D', long, value_parser, num_args = 1.., value_delimiter = ' ')]
     pub define: Vec<String>,
+    /// Robopages server address. If specified, the agent will use the tools defined by the robopages server.
+    #[arg(short = 'R', long)]
+    pub robopages: Option<String>,
     /// Context window size.
     #[arg(long, default_value_t = 8000)]
     pub context_window: u32,

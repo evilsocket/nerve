@@ -14,3 +14,6 @@ colored = "2.1.0"
 mini-rag = "0.2.3"
 
 nerve-core = { path = "../nerve-core" }
+reqwest = { version = "0.12.8", default-features = false, features = [
+    "rustls-tls",
+] }
