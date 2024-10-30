@@ -47,10 +47,11 @@ serde_json = "1.0.120"
 clap = { version = "4.5.6", features = ["derive"] }
 
 [features]
-default = ["ollama", "groq", "openai", "fireworks", "hf"]
+default = ["ollama", "groq", "openai", "fireworks", "hf", "novita"]
 
 ollama = ["dep:ollama-rs"]
 groq = ["dep:groq-api-rs", "dep:duration-string"]
 openai = ["dep:openai_api_rust"]
 fireworks = ["dep:openai_api_rust"]
 hf = ["dep:openai_api_rust"]
+novita = ["dep:openai_api_rust"]
