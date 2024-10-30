@@ -4,10 +4,7 @@ use colored::Colorize;
 use nerve_core::agent::{
     events::{self, create_channel},
     generator,
-    task::{
-        robopages,
-        tasklet::{FunctionGroup, Tasklet},
-    },
+    task::{robopages, tasklet::Tasklet},
     Agent,
 };
 

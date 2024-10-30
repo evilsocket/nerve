@@ -4,7 +4,7 @@ use crate::openai::OpenAI;
 use crate::*;
 
 #[cfg(not(test))]
-use log::{debug, error, info};
+use log::{debug, error};
 
 #[cfg(test)]
 use std::{eprintln as error, println as info, println as debug};
