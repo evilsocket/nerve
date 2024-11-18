@@ -22,6 +22,8 @@ mod ollama;
 #[cfg(feature = "openai")]
 mod openai;
 
+mod openai_compatible;
+
 mod options;
 
 pub use options::*;
@@ -177,6 +179,12 @@ macro_rules! factory_body {
             )?)),
             #[cfg(feature = "novita")]
             "novita" => Ok(Box::new(novita::NovitaClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            "http" => Ok(Box::new(openai_compatible::OpenAiCompatibleClient::new(
                 $url,
                 $port,
                 $model_name,

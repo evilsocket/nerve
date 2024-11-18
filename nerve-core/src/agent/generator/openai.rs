@@ -43,6 +43,17 @@ impl OpenAIClient {
 
         Ok(Self { model, client })
     }
+
+    pub fn custom_no_auth(model: &str, endpoint: &str) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        let model = model.to_string();
+        let auth = Auth::new("");
+        let client = OpenAI::new(auth, endpoint);
+
+        Ok(Self { model, client })
+    }
 }
 
 #[async_trait]

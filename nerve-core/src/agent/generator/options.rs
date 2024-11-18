@@ -8,7 +8,7 @@ lazy_static! {
         Regex::new(r"(?m)^(.+)://(.+)@([^:]+):?(\d+)?$").unwrap();
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Options {
     pub type_name: String,
     pub model_name: String,
@@ -130,6 +130,15 @@ mod tests {
         assert_eq!(ret.model_name, "llama3");
         assert_eq!(ret.host, "");
         assert_eq!(ret.port, 0);
+        assert_eq!(ret.context_window, 123);
+    }
+
+    #[test]
+    fn test_parse_openai_compatible_http_generator() {
+        let ret = Options::parse("http://localhost:8000/v1", 123).unwrap();
+
+        assert_eq!(ret.type_name, "http");
+        assert_eq!(ret.model_name, "localhost:8000/v1");
         assert_eq!(ret.context_window, 123);
     }
 }
