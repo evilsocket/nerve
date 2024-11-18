@@ -11,8 +11,8 @@ use serde::Deserialize;
 use serde_trim::*;
 
 use super::{variables::interpolate_variables, Task};
-use crate::agent::get_user_input;
 use crate::agent::task::robopages;
+use crate::agent::{get_user_input, namespaces};
 use crate::agent::{
     namespaces::{Action, Namespace},
     state::SharedState,
@@ -41,8 +41,12 @@ pub struct TaskletAction {
     args: Option<HashMap<String, String>>,
     example_payload: Option<String>,
     timeout: Option<String>,
-    #[serde(deserialize_with = "string_trim")]
-    tool: String,
+
+    tool: Option<String>,
+    alias: Option<String>,
+
+    #[serde(skip_deserializing, skip_serializing)]
+    aliased_to: Option<Box<dyn Action>>,
 }
 
 #[async_trait]
@@ -56,10 +60,18 @@ impl Action for TaskletAction {
     }
 
     fn example_payload(&self) -> Option<&str> {
+        if let Some(aliased_to) = &self.aliased_to {
+            return aliased_to.example_payload();
+        }
+
         self.example_payload.as_deref()
     }
 
     fn example_attributes(&self) -> Option<HashMap<String, String>> {
+        if let Some(aliased_to) = &self.aliased_to {
+            return aliased_to.example_attributes();
+        }
+
         self.args.clone()
     }
 
@@ -88,9 +100,16 @@ impl Action for TaskletAction {
             return Ok(Some(result));
         }
 
+        // run as alias of a builtin namespace.action, here we can unwrap as everything is validated earlier
+        if let Some(aliased_to) = &self.aliased_to {
+            return aliased_to.run(state, attributes, payload).await;
+        }
+
         // run as local tool
         let parts: Vec<String> = self
             .tool
+            .as_ref()
+            .ok_or_else(|| anyhow!("tool not set"))?
             .split_whitespace()
             .map(|x| x.trim())
             .filter(|x| !x.is_empty())
@@ -314,12 +333,14 @@ impl Tasklet {
             let yaml = std::fs::read_to_string(&canon)?;
             let mut tasklet: Self = serde_yaml::from_str(&yaml)?;
 
+            // used to set the working directory while running the task
             tasklet.folder = if let Some(folder) = tasklet_parent_folder.to_str() {
                 folder.to_string()
             } else {
                 return Err(anyhow!("can't get string of {:?}", tasklet_parent_folder));
             };
 
+            // set unique task name from the folder or yaml file itself
             tasklet.name = if canon.ends_with("task.yaml") || canon.ends_with("task.yml") {
                 tasklet_parent_folder
                     .file_name()
@@ -330,6 +351,51 @@ impl Tasklet {
             } else {
                 canon.file_stem().unwrap().to_str().unwrap().to_owned()
             };
+
+            // check any tool definied as alias of a builtin namespace and perform some validation
+            if let Some(functions) = tasklet.functions.as_mut() {
+                for group in functions {
+                    for action in &mut group.actions {
+                        if let Some(alias) = &action.alias {
+                            if action.tool.is_some() {
+                                return Err(anyhow!("can't define both tool and alias"));
+                            }
+
+                            let (namespace_name, action_name) = alias
+                                .split_once('.')
+                                .ok_or_else(|| anyhow!("invalid alias format '{}', aliases must be provided as 'namespace.action'", alias))?;
+
+                            if let Some(get_namespace_fn) =
+                                namespaces::NAMESPACES.get(namespace_name)
+                            {
+                                let le_namespace = get_namespace_fn();
+                                let le_action = le_namespace
+                                    .actions
+                                    .iter()
+                                    .find(|a| a.name() == action_name);
+
+                                if let Some(le_action) = le_action {
+                                    log::info!(
+                                        "aliased {}.{} to {}",
+                                        group.name,
+                                        action.name,
+                                        le_action.name()
+                                    );
+                                    action.aliased_to = Some(le_action.clone());
+                                } else {
+                                    return Err(anyhow!(
+                                        "action '{}' not found in namespace '{}'",
+                                        action_name,
+                                        namespace_name
+                                    ));
+                                }
+                            } else {
+                                return Err(anyhow!("namespace '{}' not found", namespace_name));
+                            }
+                        }
+                    }
+                }
+            }
 
             log::debug!("tasklet = {:?}", &tasklet);
 
