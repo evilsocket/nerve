@@ -165,7 +165,7 @@ You can find more tasklet examples in the `examples` folder, feel free to send a
 Nerve can use functions from a [robopages server](https://github.com/dreadnode/robopages-cli). In order to do so, you'll need to pass its address to the tool via the `-R`/`--robopages` argument:
 
 ```sh
-nerve -G "openai@gpt-4o" \
+nerve -G "openai://gpt-4o" \
   -T /path/to/tasklet \
   -R "localhost:8000"
 ```
@@ -173,7 +173,7 @@ nerve -G "openai@gpt-4o" \
 To import only a subset of tools:
 
 ```sh
-nerve -G "openai@gpt-4o" \
+nerve -G "openai://gpt-4o" \
   -T /path/to/tasklet \
   -R "localhost:8000/cybersecurity/reverse-engineering"
 ```
