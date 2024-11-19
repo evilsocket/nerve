@@ -1,0 +1,21 @@
+using:
+  - desktop
+  - task
+
+system_prompt: You are an helpful assistant that can take screenshots and describe them.
+
+guidance:
+  - Work efficiently and be thoughtful with your commands.
+  - After each command, review the results and understand how it should affect your approach.
+  - Provide a description of the screenshot.
+
+
+prompt: Take a screenshot and describe it.
+
+functions:
+  - name: Desktop
+    actions:
+      - name: describe_screenshot
+        description: Provide a description of the screenshot.
+        example_payload: The image contains a dog.
+        tool: echo

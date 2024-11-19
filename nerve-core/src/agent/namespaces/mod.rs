@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
 
 use super::state::{storage::StorageType, SharedState};
 
-// TODO: add more namespaces of actions: take screenshot (multimodal), move mouse, ui interactions, etc
-
 pub mod filesystem;
 pub mod goal;
 pub mod http;
@@ -19,6 +17,9 @@ pub mod rag;
 pub mod shell;
 pub mod task;
 pub mod time;
+
+#[cfg(feature = "desktop")]
+pub mod desktop;
 
 lazy_static! {
     // Available namespaces.
@@ -34,6 +35,9 @@ lazy_static! {
         map.insert("rag".to_string(), rag::get_namespace as fn() -> Namespace);
         map.insert("http".to_string(), http::get_namespace as fn() -> Namespace);
         map.insert("shell".to_string(), shell::get_namespace as fn() -> Namespace);
+
+        #[cfg(feature = "desktop")]
+        map.insert("desktop".to_string(), desktop::get_namespace as fn() -> Namespace);
 
         map
     };
