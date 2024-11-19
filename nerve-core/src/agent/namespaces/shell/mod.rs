@@ -37,7 +37,7 @@ impl Action for Shell {
         payload: Option<String>,
     ) -> Result<Option<String>> {
         let command = payload.unwrap();
-        log::debug!("{}", &command);
+        log::warn!("executing command: {}", &command);
 
         // TODO: make the shell configurable
         let output = Command::new("/bin/sh")
