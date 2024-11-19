@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use super::{state::SharedState, Invocation};
+use super::{namespaces::ActionOutput, state::SharedState, Invocation};
 
 #[cfg(feature = "fireworks")]
 mod fireworks;
@@ -54,7 +54,7 @@ impl ChatOptions {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Message {
     Agent(String, Option<Invocation>),
-    Feedback(String, Option<Invocation>),
+    Feedback(ActionOutput, Option<Invocation>),
 }
 
 impl Display for Message {

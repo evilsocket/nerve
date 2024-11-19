@@ -5,7 +5,7 @@ use async_trait::async_trait;
 
 use crate::agent::state::SharedState;
 
-use super::{Action, Namespace};
+use super::{Action, ActionOutput, Namespace};
 
 #[derive(Debug, Default, Clone)]
 struct Search {}
@@ -29,7 +29,7 @@ impl Action for Search {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         let query = payload.unwrap();
         let start = Instant::now();
         // TODO: make top_k configurable?
@@ -43,19 +43,19 @@ impl Action for Search {
                 start.elapsed()
             );
 
-            Ok(Some(format!(
+            Ok(Some(ActionOutput::text(format!(
                 "Here is some supporting information:\n\n{}",
                 docs.iter_mut()
                     .map(|(doc, _)| doc.get_data().unwrap().to_string())
                     .collect::<Vec<String>>()
                     .join("\n")
-            )))
+            ))))
         } else {
             log::info!(
                 "search: no results for query '{query}' in {:?}",
                 start.elapsed()
             );
-            Ok(Some("no documents for this query".to_string()))
+            Ok(Some(ActionOutput::text("no documents for this query")))
         }
     }
 }

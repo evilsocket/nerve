@@ -1,9 +1,10 @@
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, fmt::Display, time::Duration};
 
 use anyhow::Result;
 use async_trait::async_trait;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 
 use super::state::{storage::StorageType, SharedState};
 
@@ -151,6 +152,33 @@ impl Namespace {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ActionOutput {
+    Text(String),
+    Image(String, String), // base64 encoded image, mime type
+}
+
+impl ActionOutput {
+    pub fn text<S: Into<String>>(text: S) -> Self {
+        ActionOutput::Text(text.into())
+    }
+
+    pub fn image(base64: String, mime_type: String) -> Self {
+        ActionOutput::Image(base64, mime_type)
+    }
+}
+
+impl Display for ActionOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ActionOutput::Text(text) => write!(f, "{}", text),
+            ActionOutput::Image(base64, mime_type) => {
+                write!(f, "image: {} ({})", base64, mime_type)
+            }
+        }
+    }
+}
+
 #[async_trait]
 pub trait Action: std::fmt::Debug + Sync + Send + ActionClone {
     fn name(&self) -> &str;
@@ -162,7 +190,7 @@ pub trait Action: std::fmt::Debug + Sync + Send + ActionClone {
         state: SharedState,
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>>;
+    ) -> Result<Option<ActionOutput>>;
 
     // optional execution timeout
     fn timeout(&self) -> Option<Duration> {

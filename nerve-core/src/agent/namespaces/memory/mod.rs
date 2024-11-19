@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use super::{Action, Namespace, StorageDescriptor};
+use super::{Action, ActionOutput, Namespace, StorageDescriptor};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
@@ -36,7 +36,7 @@ impl Action for SaveMemory {
         state: SharedState,
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         let attrs = attributes.unwrap();
         let key = attrs.get("key").unwrap();
 
@@ -46,7 +46,7 @@ impl Action for SaveMemory {
             .get_storage_mut("memories")?
             .add_tagged(key, payload.unwrap().as_str());
 
-        Ok(Some("memory saved".to_string()))
+        Ok(Some(ActionOutput::text("memory saved")))
     }
 }
 
@@ -76,7 +76,7 @@ impl Action for DeleteMemory {
         state: SharedState,
         attributes: Option<HashMap<String, String>>,
         _: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         let attrs = attributes.unwrap();
         let key = attrs.get("key").unwrap();
         if state
@@ -86,7 +86,7 @@ impl Action for DeleteMemory {
             .del_tagged(key)
             .is_some()
         {
-            Ok(Some("memory deleted".to_string()))
+            Ok(Some(ActionOutput::text("memory deleted")))
         } else {
             Err(anyhow!("memory '{}' not found", key))
         }

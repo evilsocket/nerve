@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use super::{Action, Namespace};
+use super::{Action, ActionOutput, Namespace};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
@@ -28,7 +28,7 @@ impl Action for Complete {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         state.lock().await.on_complete(false, payload)?;
         Ok(None)
     }
@@ -56,7 +56,7 @@ impl Action for Impossible {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         state.lock().await.on_complete(true, payload)?;
         Ok(None)
     }

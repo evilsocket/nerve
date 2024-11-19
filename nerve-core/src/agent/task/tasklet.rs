@@ -11,6 +11,7 @@ use serde::Deserialize;
 use serde_trim::*;
 
 use super::{variables::interpolate_variables, Task};
+use crate::agent::namespaces::ActionOutput;
 use crate::agent::task::robopages;
 use crate::agent::{get_user_input, namespaces};
 use crate::agent::{
@@ -91,13 +92,13 @@ impl Action for TaskletAction {
         state: SharedState,
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         // run via robopages server
         if let Some(server_address) = &self.robopages_server_address {
             let result = robopages::Client::new(server_address.clone())
                 .execute(&self.name, attributes.unwrap_or_default())
                 .await?;
-            return Ok(Some(result));
+            return Ok(Some(ActionOutput::text(result)));
         }
 
         // run as alias of a builtin namespace.action, here we can unwrap as everything is validated earlier
@@ -217,13 +218,13 @@ impl Action for TaskletAction {
             log::debug!("exit_code={}", exit_code);
             if exit_code == STATE_COMPLETE_EXIT_CODE {
                 state.lock().await.on_complete(false, Some(out))?;
-                return Ok(Some("task complete".to_string()));
+                return Ok(Some(ActionOutput::text("task complete")));
             }
 
             if !err.is_empty() {
                 Err(anyhow!(err))
             } else {
-                Ok(Some(out))
+                Ok(Some(ActionOutput::text(out)))
             }
         } else {
             let err = output.err().unwrap().to_string();

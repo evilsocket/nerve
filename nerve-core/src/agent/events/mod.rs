@@ -6,6 +6,7 @@ pub use channel::*;
 
 use super::{
     generator::ChatOptions,
+    namespaces::ActionOutput,
     state::{metrics::Metrics, storage::StorageType},
     Invocation,
 };
@@ -34,7 +35,7 @@ pub enum Event {
     ActionExecuted {
         invocation: Invocation,
         error: Option<String>,
-        result: Option<String>,
+        result: Option<ActionOutput>,
         elapsed: std::time::Duration,
     },
     TaskComplete {

@@ -149,17 +149,18 @@ impl Client for GroqClient {
                     if let Some(inv) = invocation {
                         tool_call_id = Some(format!("{}-{}", inv.action, call_idx));
                     }
+                    // TODO: handle image input
                     if tool_call_id.is_some() {
                         groq_api_rs::completion::message::Message::ToolMessage {
                             role: Some("tool".to_string()),
-                            content: Some(data.trim().to_string()),
+                            content: Some(data.to_string()),
                             name: None,
                             tool_call_id,
                         }
                     } else {
                         groq_api_rs::completion::message::Message::UserMessage {
                             role: Some("user".to_string()),
-                            content: Some(data.trim().to_string()),
+                            content: Some(data.to_string()),
                             name: None,
                             tool_call_id,
                         }

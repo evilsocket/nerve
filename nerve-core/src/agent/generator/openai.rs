@@ -7,7 +7,7 @@ use openai_api_rust::embeddings::EmbeddingsApi;
 use openai_api_rust::*;
 use serde::{Deserialize, Serialize};
 
-use crate::agent::{state::SharedState, Invocation};
+use crate::agent::{namespaces::ActionOutput, state::SharedState, Invocation};
 
 use super::{ChatOptions, Client, Message};
 
@@ -24,6 +24,22 @@ pub struct OpenAiToolFunctionParameters {
     pub the_type: String,
     pub required: Vec<String>,
     pub properties: HashMap<String, OpenAiToolFunctionParameterProperty>,
+}
+
+fn encode_action_output(output: &ActionOutput) -> String {
+    match output {
+        ActionOutput::Text(text) => text.to_string(),
+        ActionOutput::Image(base64, mime_type) => {
+            format!(
+                r#"{{
+                    "type": "image_url",
+                    "image_url": {{
+                        "url": "data:{};base64,{}",
+                }}"#,
+                mime_type, base64
+            )
+        }
+    }
 }
 
 pub struct OpenAIClient {
@@ -148,7 +164,7 @@ impl Client for OpenAIClient {
                 },
                 Message::Feedback(data, _) => openai_api_rust::Message {
                     role: Role::User,
-                    content: Some(data.trim().to_string()),
+                    content: Some(encode_action_output(data)),
                     tool_calls: None,
                 },
             });

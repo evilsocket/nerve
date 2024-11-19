@@ -9,6 +9,7 @@ use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOT
 use anyhow::Result;
 
 use super::{Action, Namespace};
+use crate::agent::namespaces::ActionOutput;
 use crate::agent::state::SharedState;
 
 // cast needed for Darwin apparently
@@ -77,7 +78,7 @@ impl Action for ReadFolder {
         _: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         // adapted from https://gist.github.com/mre/91ebb841c34df69671bd117ead621a8b
         let folder = payload.unwrap();
         let ret = fs::read_dir(&folder);
@@ -112,7 +113,7 @@ impl Action for ReadFolder {
 
             log::info!("list-folder-contents '{folder}' -> {} bytes", output.len());
 
-            Ok(Some(output))
+            Ok(Some(ActionOutput::text(output)))
         } else {
             Err(anyhow!("can't read {}: {:?}", folder, ret))
         }
@@ -141,12 +142,12 @@ impl Action for ReadFile {
         _: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         let filepath = payload.unwrap();
         let ret = std::fs::read_to_string(&filepath);
         if let Ok(contents) = ret {
             log::info!("read-file '{filepath}' -> {} bytes", contents.len());
-            Ok(Some(contents))
+            Ok(Some(ActionOutput::text(contents)))
         } else {
             let err = ret.err().unwrap();
             Err(anyhow!(err))

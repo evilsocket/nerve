@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::agent::{generator::Message, serialization, Invocation};
+use crate::agent::{generator::Message, namespaces::ActionOutput, serialization, Invocation};
 
 #[derive(Debug, Clone, Default)]
 pub struct Execution {
@@ -9,7 +9,7 @@ pub struct Execution {
     // parsed invocation
     invocation: Option<Invocation>,
 
-    result: Option<String>,
+    result: Option<ActionOutput>,
     error: Option<String>,
 }
 
@@ -32,7 +32,7 @@ impl Execution {
         }
     }
 
-    pub fn with_result(invocation: Invocation, result: Option<String>) -> Self {
+    pub fn with_result(invocation: Invocation, result: Option<ActionOutput>) -> Self {
         Self {
             invocation: Some(invocation),
             response: None,
@@ -55,11 +55,11 @@ impl Execution {
 
         messages.push(Message::Feedback(
             if let Some(err) = &self.error {
-                format!("ERROR: {err}")
+                ActionOutput::text(format!("ERROR: {err}"))
             } else if let Some(out) = &self.result {
-                out.to_string()
+                out.clone()
             } else {
-                "".to_string()
+                ActionOutput::text("")
             },
             self.invocation.clone(),
         ));

@@ -6,7 +6,7 @@ use tokio::process::Command;
 
 use crate::agent::state::SharedState;
 
-use super::{Action, Namespace};
+use super::{Action, ActionOutput, Namespace};
 
 #[derive(Debug, Default, Clone)]
 struct Shell {}
@@ -35,7 +35,7 @@ impl Action for Shell {
         _: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         let command = payload.unwrap();
         log::warn!("executing command: {}", &command);
 
@@ -62,7 +62,7 @@ impl Action for Shell {
 
         log::debug!("{}", &result);
 
-        Ok(Some(result))
+        Ok(Some(ActionOutput::text(result)))
     }
 }
 

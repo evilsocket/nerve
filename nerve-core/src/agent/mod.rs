@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use events::Event;
 use generator::{ChatOptions, Client};
-use namespaces::Action;
+use namespaces::{Action, ActionOutput};
 use state::{SharedState, State};
 use task::Task;
 
@@ -295,7 +295,7 @@ impl Agent {
     async fn on_executed_action(
         &self,
         invocation: Invocation,
-        ret: Result<Option<String>>,
+        ret: Result<Option<ActionOutput>>,
         start: &std::time::Instant,
     ) {
         let mut mut_state = self.state.lock().await;

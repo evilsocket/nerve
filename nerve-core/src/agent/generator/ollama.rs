@@ -11,12 +11,13 @@ use ollama_rs::{
             },
             ChatMessage,
         },
+        images::Image,
         options::GenerationOptions,
     },
     Ollama,
 };
 
-use crate::agent::{state::SharedState, Invocation};
+use crate::agent::{namespaces::ActionOutput, state::SharedState, Invocation};
 
 use super::{ChatOptions, Client, Message};
 
@@ -109,8 +110,12 @@ impl Client for OllamaClient {
 
         for m in &options.history {
             chat_history.push(match m {
-                Message::Agent(data, _) => ChatMessage::assistant(data.trim().to_string()),
-                Message::Feedback(data, _) => ChatMessage::user(data.trim().to_string()),
+                Message::Agent(data, _) => ChatMessage::assistant(data.to_string()),
+                Message::Feedback(data, _) => match data {
+                    ActionOutput::Text(text) => ChatMessage::user(text.to_string()),
+                    ActionOutput::Image(base64, _mime_type) => ChatMessage::user("".to_string())
+                        .with_images(vec![Image::from_base64(base64)]),
+                },
             });
         }
 

@@ -67,7 +67,7 @@ pub async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
                     log::debug!(
                         "{} -> {} bytes in {:?}",
                         args.serialization.serialize_invocation(&invocation),
-                        res.as_bytes().len(),
+                        res.to_string().as_bytes().len(),
                         elapsed
                     );
                 } else {
