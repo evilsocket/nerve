@@ -376,9 +376,10 @@ impl Tasklet {
 
                                 if let Some(le_action) = le_action {
                                     log::info!(
-                                        "aliased {}.{} to {}",
+                                        "aliased {}.{} to {}.{}",
                                         group.name,
                                         action.name,
+                                        le_namespace.name,
                                         le_action.name()
                                     );
                                     action.aliased_to = Some(le_action.clone());
