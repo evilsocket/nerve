@@ -9,13 +9,17 @@ guidance:
   - After each command, review the results and understand how it should affect your approach.
   - Provide a description of the screenshot.
 
-
-prompt: Take a screenshot and describe it.
+prompt: Use the mouse to open a web browser and navigate to https://www.google.com
 
 functions:
   - name: Desktop
     actions:
       - name: describe_screenshot
-        description: Provide a description of the screenshot.
-        example_payload: The image contains a dog.
+        description: Provide a detailed description of the desktop screenshots.
+        example_payload: |
+          The screenshot shows a dual-pane setup on a computer screen. 
+          On the left side:
+          - A code editor (likely Visual Studio Code) is open, displaying a Rust project structure.
+          On the right side:
+          - A terminal window is open.
         tool: echo

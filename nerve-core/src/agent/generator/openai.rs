@@ -26,22 +26,6 @@ pub struct OpenAiToolFunctionParameters {
     pub properties: HashMap<String, OpenAiToolFunctionParameterProperty>,
 }
 
-fn encode_action_output(output: &ActionOutput) -> String {
-    match output {
-        ActionOutput::Text(text) => text.to_string(),
-        ActionOutput::Image(base64, mime_type) => {
-            format!(
-                r#"{{
-                    "type": "image_url",
-                    "image_url": {{
-                        "url": "data:{};base64,{}",
-                }}"#,
-                mime_type, base64
-            )
-        }
-    }
-}
-
 pub struct OpenAIClient {
     model: String,
     client: OpenAI,
@@ -83,16 +67,8 @@ impl Client for OpenAIClient {
 
     async fn check_native_tools_support(&self) -> Result<bool> {
         let chat_history = vec![
-            openai_api_rust::Message {
-                role: Role::System,
-                content: Some("You are an helpful assistant.".to_string()),
-                tool_calls: None,
-            },
-            openai_api_rust::Message {
-                role: Role::User,
-                content: Some("Call the test function.".to_string()),
-                tool_calls: None,
-            },
+            openai_api_rust::Message::text("You are an helpful assistant.", Role::System),
+            openai_api_rust::Message::text("Call the test function.", Role::User),
         ];
 
         let tools = Some(vec![FunctionTool {
@@ -143,29 +119,22 @@ impl Client for OpenAIClient {
         options: &ChatOptions,
     ) -> anyhow::Result<(String, Vec<Invocation>)> {
         let mut chat_history = vec![
-            openai_api_rust::Message {
-                role: Role::System,
-                content: Some(options.system_prompt.trim().to_string()),
-                tool_calls: None,
-            },
-            openai_api_rust::Message {
-                role: Role::User,
-                content: Some(options.prompt.trim().to_string()),
-                tool_calls: None,
-            },
+            openai_api_rust::Message::text(options.system_prompt.trim(), Role::System),
+            openai_api_rust::Message::text(options.prompt.trim(), Role::User),
         ];
 
         for m in &options.history {
             chat_history.push(match m {
-                Message::Agent(data, _) => openai_api_rust::Message {
-                    role: Role::Assistant,
-                    content: Some(data.trim().to_string()),
-                    tool_calls: None,
-                },
-                Message::Feedback(data, _) => openai_api_rust::Message {
-                    role: Role::User,
-                    content: Some(encode_action_output(data)),
-                    tool_calls: None,
+                Message::Agent(data, _) => {
+                    openai_api_rust::Message::text(data.trim(), Role::Assistant)
+                }
+                Message::Feedback(data, _) => match data {
+                    ActionOutput::Text(text) => {
+                        openai_api_rust::Message::text(text.trim(), Role::User)
+                    }
+                    ActionOutput::Image(base64, mime_type) => {
+                        openai_api_rust::Message::image(base64, mime_type, Role::User)
+                    }
                 },
             });
         }

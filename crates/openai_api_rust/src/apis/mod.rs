@@ -54,11 +54,48 @@ pub struct ToolCall {
 	pub the_type: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ImageUrl {
+	pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ImageContent {
+	#[serde(rename(serialize = "type", deserialize = "type"))]
+	pub the_type: String,
+	pub image_url: ImageUrl,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
 	pub role: Role,
+
+	#[serde(skip_serializing_if = "Option::is_none")]
 	pub content: Option<String>,
+
+	#[serde(skip_serializing_if = "Option::is_none")]
+	#[serde(rename(serialize = "content", deserialize = "content"))]
+	pub image_content: Option<Vec<ImageContent>>,
+
 	pub tool_calls: Option<Vec<ToolCall>>,
+}
+
+impl Message {
+	pub fn text(str: &str, role: Role) -> Self {
+		Self { role, content: Some(str.to_string()), image_content: None, tool_calls: None }
+	}
+
+	pub fn image(base64: &str, mime_type: &str, role: Role) -> Self {
+		Self {
+			role,
+			content: None,
+			image_content: Some(vec![ImageContent {
+				image_url: ImageUrl { url: format!("data:{};base64,{}", mime_type, base64) },
+				the_type: "image_url".to_string(),
+			}]),
+			tool_calls: None,
+		}
+	}
 }
 
 impl Clone for Message {
@@ -66,6 +103,7 @@ impl Clone for Message {
 		Self {
 			role: self.role.clone(),
 			content: self.content.clone(),
+			image_content: self.image_content.clone(),
 			tool_calls: self.tool_calls.clone(),
 		}
 	}

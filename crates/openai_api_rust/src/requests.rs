@@ -7,7 +7,7 @@ use crate::*;
 use log::{debug, error};
 
 #[cfg(test)]
-use std::{eprintln as error, println as info, println as debug};
+use std::{eprintln as error, println as debug};
 
 pub trait Requests {
 	fn post(&self, sub_url: &str, body: Json) -> ApiResult<Json>;
