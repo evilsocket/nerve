@@ -11,9 +11,10 @@ system_prompt: >
 
 guidance:
   - Only report vulnerabilities that can be confirmed by the source code provided.
-  - Only report vulnerabilities that you are 100% sure of.
   - Prioritize reporting vulnerabilities that can lead to unauthorized access to the application, code execution, or other unauthorized actions.
-  - Use exclusively the report_findings tool to report your findings and once you are done reporting all of your findings, set your task as complete.
+  - Avoid reporting misconfigurations or other non-vulnerability issues such as improper error handling.
+  - Use exclusively the report_findings tool to report your findings.
+  - Make sure you reported everything you found and ince you are done reporting ALL of your findings, set your task as complete.
 
 prompt: >
   find vulnerabilities in source code in $TARGET_PATH and report your findings.
