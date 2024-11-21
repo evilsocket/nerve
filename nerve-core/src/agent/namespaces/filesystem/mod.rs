@@ -207,11 +207,16 @@ impl Action for AppendToFile {
 
         let content_to_append = if extension == "json" || extension == "jsonl" {
             // parse the payload as a JSON object
-            if let Ok(value) = serde_json::from_str::<serde_json::Value>(&payload) {
+            let parsed = serde_json::from_str::<serde_json::Value>(&payload);
+            if let Ok(value) = parsed {
                 // reconvert to make sure it's on a single line
                 serde_json::to_string(&value).unwrap()
             } else {
-                log::error!("can't parse payload as JSON: {}", payload);
+                log::error!(
+                    "can't parse payload as JSON: {} - {}",
+                    parsed.err().unwrap(),
+                    payload
+                );
                 serde_json::to_string(&InvalidJSON { data: payload }).unwrap()
             }
         } else {

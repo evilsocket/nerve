@@ -196,7 +196,12 @@ impl Client for OllamaClient {
 
                     if let Some(args) = call.function.arguments.as_ref() {
                         for (name, value) in args {
-                            let str_val = value.to_string().trim_matches('"').to_string();
+                            let mut content = value.to_string();
+                            if let serde_json::Value::String(escaped_json) = &value {
+                                content = escaped_json.to_string();
+                            }
+
+                            let str_val = content.trim_matches('"').to_string();
                             if name == "payload" {
                                 payload = Some(str_val);
                             } else {
