@@ -159,12 +159,24 @@ impl Agent {
     }
 
     #[allow(clippy::borrowed_box)]
-    pub fn validate(&self, invocation: &Invocation, action: &Box<dyn Action>) -> Result<()> {
+    pub fn validate(&self, invocation: &mut Invocation, action: &Box<dyn Action>) -> Result<()> {
         // validate prerequisites
         let payload_required = action.example_payload().is_some();
         let attrs_required = action.example_attributes().is_some();
-        let has_payload = invocation.payload.is_some();
-        let has_attributes = invocation.attributes.is_some();
+        let mut has_payload = invocation.payload.is_some();
+        let mut has_attributes = invocation.attributes.is_some();
+
+        // sometimes when the tool expects a json payload, the model returns it as separate arguments
+        // in this case we need to convert it back to a single json string
+        if (payload_required && !has_payload) && (!attrs_required && has_attributes) {
+            log::warn!(
+                "model returned the payload as separate arguments, converting back to payload"
+            );
+            invocation.payload = Some(serde_json::to_string(&invocation.attributes).unwrap());
+            invocation.attributes = None;
+            has_payload = true;
+            has_attributes = false;
+        }
 
         if payload_required && !has_payload {
             // payload required and not specified
@@ -363,7 +375,6 @@ impl Agent {
             self.serializer.try_parse(response.trim())?
         } else {
             // the model supports function calling natively
-
             tool_calls
         };
 
@@ -379,7 +390,7 @@ impl Agent {
         }
 
         // for each parsed invocation
-        for inv in invocations {
+        for mut inv in invocations {
             // lookup action
             let action = self.state.lock().await.get_action(&inv.action);
             if action.is_none() {
@@ -387,7 +398,7 @@ impl Agent {
             } else {
                 // validate prerequisites
                 let action = action.unwrap();
-                if let Err(err) = self.validate(&inv, &action) {
+                if let Err(err) = self.validate(&mut inv, &action) {
                     self.on_invalid_action(inv.clone(), Some(err.to_string()))
                         .await;
                 } else {
