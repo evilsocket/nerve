@@ -202,13 +202,21 @@ impl Action for AppendToFile {
             }
         };
 
-        // parse the payload as a JSON object
-        let one_line_json = if let Ok(value) = serde_json::from_str::<serde_json::Value>(&payload) {
-            // reconvert to make sure it's on a single line
-            serde_json::to_string(&value).unwrap()
+        // get lowercase file extension from filepath
+        let extension = filepath.rsplit('.').next().unwrap_or("").to_lowercase();
+
+        let content_to_append = if extension == "json" || extension == "jsonl" {
+            // parse the payload as a JSON object
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(&payload) {
+                // reconvert to make sure it's on a single line
+                serde_json::to_string(&value).unwrap()
+            } else {
+                log::error!("can't parse payload as JSON: {}", payload);
+                serde_json::to_string(&InvalidJSON { data: payload }).unwrap()
+            }
         } else {
-            log::error!("can't parse payload as JSON: {}", payload);
-            serde_json::to_string(&InvalidJSON { data: payload }).unwrap()
+            // add as it is
+            payload
         };
 
         // append the JSON to the file
@@ -217,7 +225,7 @@ impl Action for AppendToFile {
             .create(true)
             .open(&filepath)?;
 
-        writeln!(file, "{}", one_line_json)?;
+        writeln!(file, "{}", content_to_append)?;
 
         Ok(None)
     }

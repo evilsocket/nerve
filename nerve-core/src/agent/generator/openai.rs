@@ -54,6 +54,71 @@ impl OpenAIClient {
 
         Ok(Self { model, client })
     }
+
+    async fn get_tools_if_supported(&self, state: &SharedState) -> Vec<FunctionTool> {
+        let mut tools = vec![];
+
+        // if native tool calls are supported (and XML was not forced)
+        if state.lock().await.native_tools_support {
+            // for every namespace available to the model
+            for group in state.lock().await.get_namespaces() {
+                // for every action of the namespace
+                for action in &group.actions {
+                    let mut required = vec![];
+                    let mut properties = HashMap::new();
+
+                    if let Some(example) = action.example_payload() {
+                        required.push("payload".to_string());
+                        properties.insert(
+                            "payload".to_string(),
+                            OpenAiToolFunctionParameterProperty {
+                                the_type: "string".to_string(),
+                                description: format!(
+                                    "The main function argument, use this as a template: {}",
+                                    example
+                                ),
+                            },
+                        );
+                    }
+
+                    if let Some(attrs) = action.example_attributes() {
+                        for name in attrs.keys() {
+                            required.push(name.to_string());
+                            properties.insert(
+                                name.to_string(),
+                                OpenAiToolFunctionParameterProperty {
+                                    the_type: "string".to_string(),
+                                    description: name.to_string(),
+                                },
+                            );
+                        }
+                    }
+
+                    let function = FunctionDefinition {
+                        name: action.name().to_string(),
+                        description: Some(action.description().to_string()),
+                        parameters: Some(serde_json::json!(OpenAiToolFunctionParameters {
+                            the_type: "object".to_string(),
+                            required,
+                            properties,
+                        })),
+                    };
+
+                    tools.push(FunctionTool {
+                        the_type: "function".to_string(),
+                        function,
+                    });
+                }
+            }
+
+            log::trace!("openai.tools={:?}", &tools);
+
+            // let j = serde_json::to_string_pretty(&tools).unwrap();
+            // log::info!("{j}");
+        }
+
+        tools
+    }
 }
 
 #[async_trait]
@@ -74,7 +139,7 @@ impl Client for OpenAIClient {
             },
             openai_api_rust::Message {
                 role: Role::User,
-                content: Some("Call the test function.".to_string()),
+                content: Some("Execute the test function.".to_string()),
                 tool_calls: None,
             },
         ];
@@ -154,62 +219,7 @@ impl Client for OpenAIClient {
             });
         }
 
-        let mut tools = vec![];
-        if state.lock().await.native_tools_support {
-            for group in state.lock().await.get_namespaces() {
-                for action in &group.actions {
-                    let mut required = vec![];
-                    let mut properties = HashMap::new();
-
-                    if let Some(example) = action.example_payload() {
-                        required.push("payload".to_string());
-                        properties.insert(
-                            "payload".to_string(),
-                            OpenAiToolFunctionParameterProperty {
-                                the_type: "string".to_string(),
-                                description: format!(
-                                    "The main function argument, use this as a template: {}",
-                                    example
-                                ),
-                            },
-                        );
-                    }
-
-                    if let Some(attrs) = action.example_attributes() {
-                        for name in attrs.keys() {
-                            required.push(name.to_string());
-                            properties.insert(
-                                name.to_string(),
-                                OpenAiToolFunctionParameterProperty {
-                                    the_type: "string".to_string(),
-                                    description: name.to_string(),
-                                },
-                            );
-                        }
-                    }
-
-                    let function = FunctionDefinition {
-                        name: action.name().to_string(),
-                        description: Some(action.description().to_string()),
-                        parameters: Some(serde_json::json!(OpenAiToolFunctionParameters {
-                            the_type: "object".to_string(),
-                            required,
-                            properties,
-                        })),
-                    };
-
-                    tools.push(FunctionTool {
-                        the_type: "function".to_string(),
-                        function,
-                    });
-                }
-            }
-
-            log::trace!("openai.tools={:?}", &tools);
-
-            // let j = serde_json::to_string_pretty(&tools).unwrap();
-            // log::info!("{j}");
-        }
+        let tools = self.get_tools_if_supported(&state).await;
 
         let body = ChatBody {
             model: self.model.to_string(),
