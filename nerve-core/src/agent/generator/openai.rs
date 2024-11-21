@@ -161,13 +161,16 @@ impl Client for OpenAIClient {
                     let mut required = vec![];
                     let mut properties = HashMap::new();
 
-                    if action.example_payload().is_some() {
+                    if let Some(example) = action.example_payload() {
                         required.push("payload".to_string());
                         properties.insert(
                             "payload".to_string(),
                             OpenAiToolFunctionParameterProperty {
                                 the_type: "string".to_string(),
-                                description: "Main function argument.".to_string(),
+                                description: format!(
+                                    "The main function argument, provide it as a string and use this as a template: {}",
+                                    example
+                                ),
                             },
                         );
                     }
@@ -245,6 +248,8 @@ impl Client for OpenAIClient {
         };
 
         let mut invocations = vec![];
+
+        log::debug!("openai.tool_calls={:?}", &tool_calls);
 
         if let Some(calls) = tool_calls {
             for call in calls {
