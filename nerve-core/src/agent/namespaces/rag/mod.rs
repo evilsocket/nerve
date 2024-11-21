@@ -36,7 +36,7 @@ impl Action for Search {
         let mut docs = state.lock().await.rag_query(&query, 1).await?;
 
         if !docs.is_empty() {
-            log::info!(
+            log::debug!(
                 "rag search for '{}': {} results in {:?}",
                 query,
                 docs.len(),
@@ -51,7 +51,7 @@ impl Action for Search {
                     .join("\n")
             )))
         } else {
-            log::info!(
+            log::debug!(
                 "search: no results for query '{query}' in {:?}",
                 start.elapsed()
             );

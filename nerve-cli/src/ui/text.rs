@@ -1,9 +1,52 @@
+use std::time::Duration;
+
 use colored::Colorize;
+use nerve_core::agent::Invocation;
 
 use crate::{
     agent::events::{Event, Receiver},
     cli,
 };
+
+fn on_action_executed(
+    error: Option<String>,
+    invocation: Invocation,
+    result: Option<String>,
+    elapsed: Duration,
+) {
+    let mut view = String::new();
+
+    view.push_str("🧠 ");
+    view.push_str(&invocation.action.bold().to_string());
+    view.push_str("(");
+    if let Some(payload) = &invocation.payload {
+        view.push_str(&payload.dimmed().to_string());
+    }
+    if let Some(attributes) = &invocation.attributes {
+        view.push_str(", ");
+        view.push_str(
+            &attributes
+                .iter()
+                .map(|(k, v)| format!("{}={}", k, v).dimmed().to_string())
+                .collect::<Vec<String>>()
+                .join(", "),
+        );
+    }
+    view.push_str(")");
+
+    if let Some(err) = error {
+        log::error!("{}: {}", view, err);
+    } else if let Some(res) = result {
+        log::info!(
+            "{} -> {} bytes in {:?}",
+            view,
+            res.as_bytes().len(),
+            elapsed
+        );
+    } else {
+        log::info!("{} {} in {:?}", view, "no output".dimmed(), elapsed);
+    }
+}
 
 pub async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
     while let Some(event) = events_rx.recv().await {
@@ -57,27 +100,7 @@ pub async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
                 result,
                 elapsed,
             } => {
-                if let Some(err) = error {
-                    log::error!(
-                        "{}: {}",
-                        args.serialization.serialize_invocation(&invocation),
-                        err
-                    );
-                } else if let Some(res) = result {
-                    log::debug!(
-                        "{} -> {} bytes in {:?}",
-                        args.serialization.serialize_invocation(&invocation),
-                        res.as_bytes().len(),
-                        elapsed
-                    );
-                } else {
-                    log::debug!(
-                        "{} {} in {:?}",
-                        args.serialization.serialize_invocation(&invocation),
-                        "no output".dimmed(),
-                        elapsed
-                    );
-                }
+                on_action_executed(error, invocation, result, elapsed);
             }
             Event::TaskComplete { impossible, reason } => {
                 if impossible {

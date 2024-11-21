@@ -113,8 +113,6 @@ impl Action for ReadFolder {
                 }
             }
 
-            log::info!("list-folder-contents '{folder}' -> {} bytes", output.len());
-
             Ok(Some(output))
         } else {
             Err(anyhow!("can't read {}: {:?}", folder, ret))
@@ -148,7 +146,6 @@ impl Action for ReadFile {
         let filepath = payload.unwrap();
         let ret = std::fs::read_to_string(&filepath);
         if let Ok(contents) = ret {
-            log::info!("read-file '{filepath}' -> {} bytes", contents.len());
             Ok(Some(contents))
         } else {
             let err = ret.err().unwrap();
@@ -221,11 +218,6 @@ impl Action for AppendToFile {
             .open(&filepath)?;
 
         writeln!(file, "{}", one_line_json)?;
-
-        log::info!(
-            "append-to-file '{filepath}' -> {} bytes",
-            one_line_json.len()
-        );
 
         Ok(None)
     }

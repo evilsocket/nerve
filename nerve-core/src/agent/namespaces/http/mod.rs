@@ -248,7 +248,7 @@ impl Action for Request {
             request = request.header(key, &value.data);
         }
 
-        log::info!(
+        log::debug!(
             "{}.{} {} ...",
             "http".bold(),
             method.to_string().yellow(),
@@ -262,7 +262,7 @@ impl Action for Request {
 
         return if res.status().is_success() {
             let (reason, resp) = Self::handle_success_response(res).await?;
-            log::info!(
+            log::debug!(
                 "   {} {} -> {} bytes",
                 reason.green(),
                 format!("({:?})", elaps).dimmed(),
