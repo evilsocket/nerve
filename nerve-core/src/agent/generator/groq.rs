@@ -267,10 +267,15 @@ impl Client for GroqClient {
                 let mut payload = None;
 
                 if let Some(args) = call.function.arguments.as_ref() {
-                    let map: HashMap<String, String> = serde_json::from_str(args)?;
+                    let map: HashMap<String, serde_json::Value> = serde_json::from_str(args)?;
 
                     for (name, value) in map {
-                        let str_val = value.to_string().trim_matches('"').to_string();
+                        let mut content = value.to_string();
+                        if let serde_json::Value::String(escaped_json) = &value {
+                            content = escaped_json.to_string();
+                        }
+
+                        let str_val = content.trim_matches('"').to_string();
                         if name == "payload" {
                             payload = Some(str_val);
                         } else {
