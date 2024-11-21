@@ -178,13 +178,16 @@ impl Client for GroqClient {
                     let mut required = vec![];
                     let mut properties = HashMap::new();
 
-                    if action.example_payload().is_some() {
+                    if let Some(example) = action.example_payload() {
                         required.push("payload".to_string());
                         properties.insert(
                             "payload".to_string(),
                             GroqFunctionParameterProperty {
                                 the_type: "string".to_string(),
-                                description: "Main function argument.".to_string(),
+                                description: format!(
+                                    "The main function argument, use this as a template: {}",
+                                    example
+                                ),
                             },
                         );
                     }
