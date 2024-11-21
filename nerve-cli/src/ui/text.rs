@@ -9,7 +9,7 @@ pub async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
     while let Some(event) = events_rx.recv().await {
         match event {
             Event::MetricsUpdate(metrics) => {
-                log::info!("{}", metrics);
+                log::info!("{}", metrics.to_string().dimmed());
             }
             Event::StateUpdate(opts) => {
                 if let Some(prompt_path) = &args.save_to {
