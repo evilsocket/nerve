@@ -266,16 +266,23 @@ impl Client for OpenAIClient {
                 let mut attributes = HashMap::new();
                 let mut payload = None;
 
-                let map: HashMap<String, String> = serde_json::from_str(&call.function.arguments)
-                    .map_err(|e| {
-                    log::error!(
-                        "failed to parse tool call arguments: {e} - {}",
-                        call.function.arguments
-                    );
-                    anyhow!(e)
-                })?;
+                let map: HashMap<String, serde_json::Value> =
+                    serde_json::from_str(&call.function.arguments).map_err(|e| {
+                        log::error!(
+                            "failed to parse tool call arguments: {e} - {}",
+                            call.function.arguments
+                        );
+                        anyhow!(e)
+                    })?;
                 for (name, value) in map {
-                    let str_val = value.to_string().trim_matches('"').to_string();
+                    log::debug!("openai.tool_call.arg={} = {:?}", name, value);
+
+                    let mut content = value.to_string();
+                    if let serde_json::Value::String(escaped_json) = &value {
+                        content = escaped_json.to_string();
+                    }
+
+                    let str_val = content.trim_matches('"').to_string();
                     if name == "payload" {
                         payload = Some(str_val);
                     } else {
