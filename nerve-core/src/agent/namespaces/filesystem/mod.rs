@@ -5,7 +5,6 @@ use std::os::unix::fs::{FileTypeExt, PermissionsExt};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Local};
-use colored::Colorize;
 use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOTH, S_IXUSR};
 
 use anyhow::Result;
@@ -224,10 +223,8 @@ impl Action for AppendToFile {
         writeln!(file, "{}", one_line_json)?;
 
         log::info!(
-            "{}: appended {} bytes to {}",
-            "filesystem.append_to_file".dimmed(),
-            one_line_json.len(),
-            filepath.bold()
+            "append-to-file '{filepath}' -> {} bytes",
+            one_line_json.len()
         );
 
         Ok(None)
