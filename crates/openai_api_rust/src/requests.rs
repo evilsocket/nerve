@@ -4,10 +4,11 @@ use crate::openai::OpenAI;
 use crate::*;
 
 #[cfg(not(test))]
-use log::{debug, error};
+use log::error;
+use log::trace;
 
 #[cfg(test)]
-use std::{eprintln as error, println as info, println as debug};
+use std::eprintln as error;
 
 pub trait Requests {
 	fn post(&self, sub_url: &str, body: Json) -> ApiResult<Json>;
@@ -17,7 +18,7 @@ pub trait Requests {
 
 impl Requests for OpenAI {
 	fn post(&self, sub_url: &str, body: Json) -> ApiResult<Json> {
-		debug!("===> 🚀\n\tPost api: {sub_url}, body: {body}");
+		trace!("===> 🚀\n\tPost api: {sub_url}, body: {body}");
 
 		let response = self
 			.agent
@@ -31,7 +32,7 @@ impl Requests for OpenAI {
 	}
 
 	fn get(&self, sub_url: &str) -> ApiResult<Json> {
-		debug!("===> 🚀\n\tGet api: {sub_url}");
+		trace!("===> 🚀\n\tGet api: {sub_url}");
 
 		let response = self
 			.agent
@@ -45,7 +46,7 @@ impl Requests for OpenAI {
 	}
 
 	fn post_multipart(&self, sub_url: &str, mut multipart: Multipart) -> ApiResult<Json> {
-		debug!("===> 🚀\n\tPost multipart api: {sub_url}, multipart: {:?}", multipart);
+		trace!("===> 🚀\n\tPost multipart api: {sub_url}, multipart: {:?}", multipart);
 
 		let form_data = multipart.prepare().unwrap();
 
@@ -65,7 +66,7 @@ fn deal_response(response: Result<ureq::Response, ureq::Error>, sub_url: &str) -
 	match response {
 		Ok(resp) => {
 			let json = resp.into_json::<Json>().unwrap();
-			debug!("<== ✔️\n\tDone api: {sub_url}, resp: {json}");
+			trace!("<== ✔️\n\tDone api: {sub_url}, resp: {json}");
 			Ok(json)
 		},
 		Err(err) => match err {
