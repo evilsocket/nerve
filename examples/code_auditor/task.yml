@@ -1,11 +1,38 @@
-# use all the default namespaces and filesystem access
 using:
+  # allows the agent to inspect folders and read files. No write access is provided.
   - filesystem
+  # allows the agent to set the task as complete
+  - task
 
 system_prompt: > 
-  You are a senior penetration tester and security expert with years of experience in cybersecurity, linux, web and binary exploitation techniques. You also specialized in source code auditing.
+  You are an expert application security professional.
   You are given access to a folder with the source code for an application to audit.
   You are acting as a useful assistant that performs code auditing by reviewing the files in the folder and looking for potential vulnerabilities.
 
+guidance:
+  - Only report vulnerabilities that can be confirmed by the source code provided.
+  - Only report vulnerabilities that you are 100% sure of.
+  - Prioritize reporting vulnerabilities that can lead to unauthorized access to the application, code execution, or other unauthorized actions.
+  - Use exclusively the report_findings tool to report your findings and once you are done reporting all of your findings, set your task as complete.
+
 prompt: >
-  find vulnerabilities in source code in $TARGET_PATH and write them to your memories.
+  find vulnerabilities in source code in $TARGET_PATH and report your findings.
+
+functions:
+  - name: Report
+    actions:
+      - name: report_findings
+        description: Use this tool to report your findings.
+        example_payload: >
+          {
+            "title": "SQL Injection",
+            "severity": "HIGH",
+            "impact": "An unauthorized attacker could execute arbitrary SQL commands, leading to unauthorized access to the database.",
+            "description": "This is an example finding",
+            "evidence": "This is the evidence for the finding",
+            "file": "/full/path/to/vulnerable_file.py",
+            "proof": "This is the proof of concept for the finding"
+          }
+        alias: filesystem.append_to_file
+        define:
+          filesystem.append_to_file.target: findings.jsonl
