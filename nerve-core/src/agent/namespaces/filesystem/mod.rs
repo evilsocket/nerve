@@ -1,15 +1,19 @@
 use std::collections::HashMap;
-use std::fs::{self, FileType};
+use std::fs::{self, FileType, OpenOptions};
+use std::io::Write;
 use std::os::unix::fs::{FileTypeExt, PermissionsExt};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Local};
+use colored::Colorize;
 use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOTH, S_IXUSR};
 
 use anyhow::Result;
+use serde::Serialize;
 
 use super::{Action, Namespace};
 use crate::agent::state::SharedState;
+use crate::agent::task::variables::get_variable;
 
 // cast needed for Darwin apparently
 #[allow(clippy::unnecessary_cast)]
@@ -154,11 +158,91 @@ impl Action for ReadFile {
     }
 }
 
+const DEFAULT_APPEND_TO_FILE_TARGET: &str = "findings.jsonl";
+
+#[derive(Debug, Default, Serialize)]
+struct InvalidJSON {
+    data: String,
+}
+
+#[derive(Debug, Default, Clone)]
+struct AppendToFile {}
+
+#[async_trait]
+impl Action for AppendToFile {
+    fn name(&self) -> &str {
+        "append_to_file"
+    }
+
+    fn description(&self) -> &str {
+        include_str!("append_to_file.prompt")
+    }
+
+    fn example_payload(&self) -> Option<&str> {
+        Some(
+            r#"{
+      "title": "Example title",
+      "description": "Example description.",
+    }"#,
+        )
+    }
+
+    async fn run(
+        &self,
+        _: SharedState,
+        _: Option<HashMap<String, String>>,
+        payload: Option<String>,
+    ) -> Result<Option<String>> {
+        let payload = payload.unwrap();
+
+        let filepath = match get_variable("filesystem.append_to_file.target") {
+            Some(filepath) => filepath,
+            None => {
+                log::warn!(
+                    "filesystem.append_to_file.target not defined, using default {}",
+                    DEFAULT_APPEND_TO_FILE_TARGET
+                );
+                DEFAULT_APPEND_TO_FILE_TARGET.to_string()
+            }
+        };
+
+        // parse the payload as a JSON object
+        let one_line_json = if let Ok(value) = serde_json::from_str::<serde_json::Value>(&payload) {
+            // reconvert to make sure it's on a single line
+            serde_json::to_string(&value).unwrap()
+        } else {
+            log::error!("can't parse payload as JSON: {}", payload);
+            serde_json::to_string(&InvalidJSON { data: payload }).unwrap()
+        };
+
+        // append the JSON to the file
+        let mut file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(&filepath)?;
+
+        writeln!(file, "{}", one_line_json)?;
+
+        log::info!(
+            "{}: appended {} bytes to {}",
+            "filesystem.append_to_file".dimmed(),
+            one_line_json.len(),
+            filepath.bold()
+        );
+
+        Ok(None)
+    }
+}
+
 pub fn get_namespace() -> Namespace {
     Namespace::new_non_default(
         "Filesystem".to_string(),
         include_str!("ns.prompt").to_string(),
-        vec![Box::<ReadFile>::default(), Box::<ReadFolder>::default()],
+        vec![
+            Box::<ReadFile>::default(),
+            Box::<ReadFolder>::default(),
+            Box::<AppendToFile>::default(),
+        ],
         None,
     )
 }
