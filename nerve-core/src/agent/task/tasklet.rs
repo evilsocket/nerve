@@ -12,6 +12,7 @@ use serde_trim::*;
 
 use super::{variables::interpolate_variables, Task};
 use crate::agent::task::robopages;
+use crate::agent::task::variables::define_variable;
 use crate::agent::{get_user_input, namespaces};
 use crate::agent::{
     namespaces::{Action, Namespace},
@@ -39,6 +40,7 @@ pub struct TaskletAction {
     #[serde(deserialize_with = "string_trim")]
     description: String,
     args: Option<HashMap<String, String>>,
+    define: Option<HashMap<String, String>>,
     example_payload: Option<String>,
     timeout: Option<String>,
 
@@ -60,19 +62,21 @@ impl Action for TaskletAction {
     }
 
     fn example_payload(&self) -> Option<&str> {
-        if let Some(aliased_to) = &self.aliased_to {
+        if self.example_payload.is_some() {
+            return self.example_payload.as_deref();
+        } else if let Some(aliased_to) = &self.aliased_to {
             return aliased_to.example_payload();
         }
-
-        self.example_payload.as_deref()
+        None
     }
 
     fn example_attributes(&self) -> Option<HashMap<String, String>> {
-        if let Some(aliased_to) = &self.aliased_to {
+        if self.args.is_some() {
+            return self.args.clone();
+        } else if let Some(aliased_to) = &self.aliased_to {
             return aliased_to.example_attributes();
         }
-
-        self.args.clone()
+        None
     }
 
     fn timeout(&self) -> Option<Duration> {
@@ -82,6 +86,8 @@ impl Action for TaskletAction {
             } else {
                 log::error!("can't parse '{}' as duration string", timeout);
             }
+        } else if let Some(aliased_to) = &self.aliased_to {
+            return aliased_to.timeout();
         }
         None
     }
@@ -120,12 +126,29 @@ impl Action for TaskletAction {
             return Err(anyhow!("no tool defined"));
         }
 
+        // TODO: each action should have its own variables ... ?
+
+        // define action specific variables
+        if let Some(payload) = &payload {
+            define_variable("PAYLOAD", payload);
+        }
+
+        if let Some(attributes) = &attributes {
+            for (key, value) in attributes {
+                define_variable(&format!("ATTRIBUTES.{}", key), value);
+            }
+        }
+
+        let mut payload_consumed = false;
         let mut cmd = Command::new(&parts[0]);
         if parts.len() > 1 {
             // more complex command line
             for part in &parts[1..] {
                 if part.as_bytes()[0] == b'$' {
-                    let (_, var_value) = parse_variable_expr(part)?;
+                    let (var_name, var_value) = parse_variable_expr(part)?;
+                    if var_name == "PAYLOAD" {
+                        payload_consumed = true;
+                    }
                     cmd.arg(var_value);
                 } else {
                     // raw value
@@ -142,8 +165,11 @@ impl Action for TaskletAction {
             }
         }
 
-        if let Some(payload) = &payload {
-            cmd.arg(payload);
+        // if the payload was not excplicitly referenced by $PAYLOAD, add it as the last argument
+        if !payload_consumed {
+            if let Some(payload) = &payload {
+                cmd.arg(payload);
+            }
         }
 
         log::info!(
@@ -352,10 +378,26 @@ impl Tasklet {
                 canon.file_stem().unwrap().to_str().unwrap().to_owned()
             };
 
-            // check any tool definied as alias of a builtin namespace and perform some validation
+            // check any tool definied as alias of a builtin namespace and perform some preprocessing and validation
             if let Some(functions) = tasklet.functions.as_mut() {
+                // for each group of functions
                 for group in functions {
+                    // for each action in the group
                     for action in &mut group.actions {
+                        if let Some(defines) = &action.define {
+                            for (key, value) in defines {
+                                log::debug!(
+                                    "defining variable {} = '{}' for {}.{}",
+                                    key,
+                                    value,
+                                    group.name,
+                                    action.name
+                                );
+                                define_variable(key, value);
+                            }
+                        }
+
+                        // if the action has an alias perform some validation
                         if let Some(alias) = &action.alias {
                             if action.tool.is_some() {
                                 return Err(anyhow!("can't define both tool and alias"));
@@ -375,7 +417,7 @@ impl Tasklet {
                                     .find(|a| a.name() == action_name);
 
                                 if let Some(le_action) = le_action {
-                                    log::info!(
+                                    log::debug!(
                                         "aliased {}.{} to {}.{}",
                                         group.name,
                                         action.name,

@@ -13,6 +13,17 @@ lazy_static! {
         Regex::new(r"(?m)(\$[A-Za-z][A-Za-z0-9_]+)(\|\|[^\s]+)?").unwrap();
 }
 
+pub fn define_variable(name: &str, value: &str) {
+    VAR_CACHE
+        .lock()
+        .unwrap()
+        .insert(name.to_owned(), value.to_owned());
+}
+
+pub fn get_variable(name: &str) -> Option<String> {
+    VAR_CACHE.lock().unwrap().get(name).cloned()
+}
+
 pub fn parse_pre_defined_values(defines: &Vec<String>) -> Result<()> {
     for keyvalue in defines {
         let parts: Vec<&str> = keyvalue.splitn(2, '=').collect();
