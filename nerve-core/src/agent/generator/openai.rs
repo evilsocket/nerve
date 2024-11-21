@@ -168,7 +168,7 @@ impl Client for OpenAIClient {
                             OpenAiToolFunctionParameterProperty {
                                 the_type: "string".to_string(),
                                 description: format!(
-                                    "The main function argument, provide it as a string and use this as a template: {}",
+                                    "The main function argument, use this as a template: {}",
                                     example
                                 ),
                             },
