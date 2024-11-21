@@ -205,7 +205,7 @@ impl Client for OpenAIClient {
                 }
             }
 
-            log::debug!("openai.tools={:?}", &tools);
+            log::trace!("openai.tools={:?}", &tools);
 
             // let j = serde_json::to_string_pretty(&tools).unwrap();
             // log::info!("{j}");
@@ -256,7 +256,14 @@ impl Client for OpenAIClient {
                 let mut attributes = HashMap::new();
                 let mut payload = None;
 
-                let map: HashMap<String, String> = serde_json::from_str(&call.function.arguments)?;
+                let map: HashMap<String, String> = serde_json::from_str(&call.function.arguments)
+                    .map_err(|e| {
+                    log::error!(
+                        "failed to parse tool call arguments: {e} - {}",
+                        call.function.arguments
+                    );
+                    anyhow!(e)
+                })?;
                 for (name, value) in map {
                     let str_val = value.to_string().trim_matches('"').to_string();
                     if name == "payload" {
