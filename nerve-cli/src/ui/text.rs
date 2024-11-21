@@ -39,7 +39,7 @@ pub async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
                 );
             }
             Event::InvalidAction { invocation, error } => {
-                log::warn!("invalid action {} : {:?}", invocation.action, error,);
+                log::warn!("invalid action {} : {:?}", &invocation.action, error);
             }
             Event::ActionTimeout {
                 invocation,
