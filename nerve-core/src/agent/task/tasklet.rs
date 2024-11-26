@@ -1,5 +1,6 @@
+use std::io::Write;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::str::FromStr;
 use std::{collections::HashMap, time::Duration};
 
@@ -44,9 +45,15 @@ pub struct TaskletAction {
     example_payload: Option<String>,
     timeout: Option<String>,
 
-    tool: Option<String>,
-    alias: Option<String>,
+    judge: Option<String>,
+    #[serde(skip_deserializing, skip_serializing)]
+    judge_path: Option<PathBuf>,
 
+    complete_task: Option<bool>,
+
+    tool: Option<String>,
+
+    alias: Option<String>,
     #[serde(skip_deserializing, skip_serializing)]
     aliased_to: Option<Box<dyn Action>>,
 }
@@ -92,6 +99,10 @@ impl Action for TaskletAction {
         None
     }
 
+    fn complete_task(&self) -> bool {
+        self.complete_task.unwrap_or(false)
+    }
+
     async fn run(
         &self,
         state: SharedState,
@@ -109,6 +120,61 @@ impl Action for TaskletAction {
         // run as alias of a builtin namespace.action, here we can unwrap as everything is validated earlier
         if let Some(aliased_to) = &self.aliased_to {
             return aliased_to.run(state, attributes, payload).await;
+        }
+
+        // run as another instance of nerve for the judge tool
+        if let Some(judge_path) = &self.judge_path {
+            let nerve_exe = std::env::current_exe()
+                .map_err(|e| anyhow!("Failed to get current executable path: {}", e))?;
+
+            let generator = std::env::var("NERVE_JUDGE").unwrap();
+
+            let mut cmd = Command::new(&nerve_exe);
+            cmd.args([
+                "-J",
+                &generator,
+                "-T",
+                judge_path.to_str().unwrap(),
+                "--judge-mode",
+            ]);
+
+            let mut child = cmd
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect("Failed to spawn judge child process");
+
+            log::info!("running judge: {:?}", &cmd);
+
+            let mut stdin = child.stdin.take().expect("Failed to open stdin");
+            std::thread::spawn(move || {
+                stdin
+                    .write_all(format!("{}\n", payload.unwrap()).as_bytes())
+                    .expect("Failed to write to judge stdin");
+            });
+
+            // let output = cmd.output();
+            let output = child.wait_with_output();
+            let mut result = String::new();
+
+            if let Ok(output) = output {
+                let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+                if !err.is_empty() {
+                    result = format!("ERROR: {}\n", err);
+                }
+
+                if !out.is_empty() {
+                    result = format!("{}", out);
+                }
+            } else {
+                result = format!("ERROR: {}", output.err().unwrap());
+            }
+
+            log::info!("  > {}", &result);
+
+            return Ok(Some(result));
         }
 
         // run as local tool
@@ -395,6 +461,27 @@ impl Tasklet {
                                 );
                                 define_variable(key, value);
                             }
+                        }
+
+                        // if the action is a judge, validate the judge file
+                        if let Some(judge) = &action.judge {
+                            let judge_path = if judge.starts_with('/') {
+                                PathBuf::from_str(judge)?
+                            } else {
+                                PathBuf::from(&tasklet.folder).join(judge)
+                            };
+                            if !judge_path.exists() {
+                                return Err(anyhow!(
+                                    "judge file '{}' not found",
+                                    judge_path.display()
+                                ));
+                            } else if !judge_path.is_file() {
+                                return Err(anyhow!(
+                                    "judge file '{}' is not a file",
+                                    judge_path.display()
+                                ));
+                            }
+                            action.judge_path = Some(judge_path);
                         }
 
                         // if the action has an alias perform some validation

@@ -188,6 +188,11 @@ pub trait Action: std::fmt::Debug + Sync + Send + ActionClone {
     fn requires_user_confirmation(&self) -> bool {
         false
     }
+
+    // complete the task after execution
+    fn complete_task(&self) -> bool {
+        false
+    }
 }
 
 // https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object

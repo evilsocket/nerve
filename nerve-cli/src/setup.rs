@@ -55,22 +55,24 @@ pub async fn setup_agent(args: &cli::Args) -> Result<(Agent, events::Receiver)> 
     let mut tasklet = Tasklet::from_path(tasklet, &args.define)?;
     let tasklet_name = tasklet.name.clone();
 
-    println!(
-        "{} v{} 🧠 {}{} > {}\n",
-        APP_NAME,
-        APP_VERSION,
-        gen_options.model_name.bold(),
-        if gen_options.port == 0 {
-            format!("@{}", gen_options.type_name.dimmed())
-        } else {
-            format!(
-                "@{}:{}",
-                gen_options.host.dimmed(),
-                gen_options.port.to_string().dimmed()
-            )
-        },
-        tasklet_name.green().bold(),
-    );
+    if !args.judge_mode {
+        println!(
+            "{} v{} 🧠 {}{} > {}\n",
+            APP_NAME,
+            APP_VERSION,
+            gen_options.model_name.bold(),
+            if gen_options.port == 0 {
+                format!("@{}", gen_options.type_name.dimmed())
+            } else {
+                format!(
+                    "@{}:{}",
+                    gen_options.host.dimmed(),
+                    gen_options.port.to_string().dimmed()
+                )
+            },
+            tasklet_name.green().bold(),
+        );
+    }
 
     tasklet.prepare(&args.prompt)?;
 

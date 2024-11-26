@@ -20,6 +20,22 @@ async fn main() -> Result<()> {
     // set generator url if env variable is set
     if let Ok(env_generator) = std::env::var("NERVE_GENERATOR") {
         args.generator = env_generator;
+    } else {
+        // set env variable for later use
+        std::env::set_var("NERVE_GENERATOR", args.generator.clone());
+    }
+
+    // set judge url if env variable is set
+    if let Ok(env_judge) = std::env::var("NERVE_JUDGE") {
+        args.judge = env_judge;
+    } else {
+        // set env variable for later use
+        std::env::set_var("NERVE_JUDGE", args.judge.clone());
+    }
+
+    // if we're running in judge mode, set the generator to the judge model
+    if args.judge_mode {
+        args.generator = args.judge.clone();
     }
 
     // set tasklet if env variable is set
@@ -41,6 +57,22 @@ async fn main() -> Result<()> {
             "RUST_LOG",
             "info,openai_api_rust=warn,rustls=warn,ureq=warn",
         );
+    }
+
+    if args.judge_mode {
+        // disable most logging
+        std::env::set_var(
+            "RUST_LOG",
+            "error,openai_api_rust=error,rustls=error,ureq=error",
+        );
+
+        // read STDIN and preemptively set $STDIN
+        let mut input = String::new();
+        match std::io::stdin().read_line(&mut input) {
+            Ok(_goes_into_input_above) => {}
+            Err(_no_updates_is_fine) => {}
+        }
+        agent::task::variables::define_variable("STDIN", &input.trim());
     }
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))

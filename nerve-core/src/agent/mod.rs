@@ -306,6 +306,7 @@ impl Agent {
 
     async fn on_executed_action(
         &self,
+        action: &Box<dyn Action>,
         invocation: Invocation,
         ret: Result<Option<String>>,
         start: &std::time::Instant,
@@ -334,6 +335,7 @@ impl Agent {
             result,
             error,
             elapsed: start.elapsed(),
+            complete_task: action.complete_task(),
         })
         .unwrap();
     }
@@ -430,6 +432,7 @@ impl Agent {
                         if inp == "n" {
                             log::warn!("invocation rejected by user");
                             self.on_executed_action(
+                                &action,
                                 inv.clone(),
                                 Err(anyhow!("rejected by user".to_owned())),
                                 &start,
@@ -456,7 +459,13 @@ impl Agent {
                         if ret.is_err() {
                             self.on_timed_out_action(inv, &start).await;
                         } else {
-                            self.on_executed_action(inv, ret.unwrap(), &start).await;
+                            self.on_executed_action(&action, inv, ret.unwrap(), &start)
+                                .await;
+                        }
+
+                        if action.complete_task() {
+                            log::info!("! task complete");
+                            self.state.lock().await.on_complete(false, None)?;
                         }
                     }
                 }

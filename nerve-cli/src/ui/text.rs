@@ -9,11 +9,24 @@ use crate::{
 };
 
 fn on_action_executed(
+    judge_mode: bool,
     error: Option<String>,
     invocation: Invocation,
     result: Option<String>,
     elapsed: Duration,
+    complete_task: bool,
 ) {
+    if judge_mode {
+        if complete_task {
+            if let Some(err) = error {
+                println!("ERROR: {}", err);
+            } else if let Some(res) = result {
+                println!("{}", res);
+            }
+        }
+        return;
+    }
+
     let mut view = String::new();
 
     view.push_str("🧠 ");
@@ -99,8 +112,16 @@ pub async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
                 error,
                 result,
                 elapsed,
+                complete_task,
             } => {
-                on_action_executed(error, invocation, result, elapsed);
+                on_action_executed(
+                    args.judge_mode,
+                    error,
+                    invocation,
+                    result,
+                    elapsed,
+                    complete_task,
+                );
             }
             Event::TaskComplete { impossible, reason } => {
                 if impossible {

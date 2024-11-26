@@ -8,6 +8,12 @@ pub struct Args {
     /// Generator string as <type>://<model name>@<host>:<port>
     #[arg(short = 'G', long, default_value = "ollama://llama3@localhost:11434")]
     pub generator: String,
+    /// Judge generator string as <type>://<model name>@<host>:<port>
+    #[arg(short = 'J', long, default_value = "ollama://llama3@localhost:11434")]
+    pub judge: String,
+    /// Run in judge mode.
+    #[arg(long)]
+    pub judge_mode: bool,
     /// Embedder string as <type>://<model name>@<host>:<port>
     #[arg(
         short = 'E',

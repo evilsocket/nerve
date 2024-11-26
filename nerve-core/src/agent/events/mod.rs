@@ -36,6 +36,7 @@ pub enum Event {
         error: Option<String>,
         result: Option<String>,
         elapsed: std::time::Duration,
+        complete_task: bool,
     },
     TaskComplete {
         impossible: bool,
