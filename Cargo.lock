@@ -326,6 +326,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1462739cb27611015575c0c11df5df7601141071f07518d56fcc1be504cbec97"
 
 [[package]]
+name = "clust"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68160a6b518275a379a95d2ba041bb3b0052d65aceb645518693e939f3a493fc"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "pin-project",
+ "reqwest",
+ "serde",
+ "serde-json-fmt",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1357,6 +1373,7 @@ dependencies = [
  "bitcode",
  "chrono",
  "clap",
+ "clust",
  "colored",
  "duration-string",
  "glob",
@@ -2188,6 +2205,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-json-fmt"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4a33b7a5f52a26d520099339add40c48baf2e5ada194c8cc1b18cafa2b5e419"
+dependencies = [
+ "serde",
+ "serde_json",
+ "smartstring",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.203"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2317,6 +2345,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
+name = "smartstring"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fb72c633efbaa2dd666986505016c32c3044395ceaf881518399d2f4127ee29"
+dependencies = [
+ "autocfg",
+ "static_assertions",
+ "version_check",
+]
+
+[[package]]
 name = "socket2"
 version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2337,6 +2376,12 @@ name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
+
+[[package]]
+name = "static_assertions"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "string_cache"

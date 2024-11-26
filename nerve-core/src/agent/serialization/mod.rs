@@ -102,7 +102,12 @@ impl Strategy {
             "".to_string()
         } else {
             // model does not support tool calls, we need to provide the actions in its system prompt
-            include_str!("actions.prompt").to_owned() + "\n" + &self.actions_for_state(state)?
+            let mut raw = include_str!("actions.prompt").to_owned();
+
+            raw.push_str("\n");
+            raw.push_str(&self.actions_for_state(state)?);
+
+            raw
         };
 
         let iterations = if state.metrics.max_steps > 0 {
