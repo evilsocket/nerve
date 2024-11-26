@@ -1,17 +1,18 @@
-{system_prompt}
-            
+{{ system_prompt }}
+{% if storages or iterations or available_actions %}
+
 # Context
 
-{storages}
+{{ storages }}
 
-{iterations}
+{{ iterations }}
 
-{available_actions}
+{{ available_actions }}
 
 ---
-
+{% endif %}{% if guidance %}
 # Guidance
-
-{guidance}
-
+{% for rule in guidance %}  
+- {{ rule }}{% endfor %}
+{% endif %}
 Output a new action in your response. Prior action results are displayed in the chat history.

@@ -1,4 +1,5 @@
 use anyhow::Result;
+use tera::Tera;
 
 use super::{namespaces::NAMESPACES, state::State};
 use crate::agent::{namespaces::Action, state::storage::Storage, Invocation};
@@ -94,12 +95,7 @@ impl Strategy {
         }
 
         let storages = storages.join("\n\n");
-        let guidance = task
-            .guidance()?
-            .into_iter()
-            .map(|s| format!("- {}", s))
-            .collect::<Vec<String>>()
-            .join("\n");
+        let guidance = task.guidance()?;
 
         let available_actions = if state.native_tools_support {
             // model supports tool calls, no need to add actions to the system prompt
@@ -119,13 +115,15 @@ impl Strategy {
             "".to_string()
         };
 
-        Ok(format!(
-            include_str!("system.prompt"),
-            iterations = iterations,
-            system_prompt = system_prompt,
-            storages = storages,
-            available_actions = available_actions,
-            guidance = guidance,
-        ))
+        let mut context = tera::Context::new();
+
+        context.insert("system_prompt", &system_prompt);
+        context.insert("storages", &storages);
+        context.insert("iterations", &iterations);
+        context.insert("available_actions", &available_actions);
+        context.insert("guidance", &guidance);
+
+        Tera::one_off(include_str!("system.prompt"), &context, false)
+            .map_err(|e| anyhow::anyhow!(e))
     }
 }
