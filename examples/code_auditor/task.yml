@@ -14,6 +14,7 @@ guidance:
   - Prioritize reporting vulnerabilities that can lead to unauthorized access to the application, code execution, or other unauthorized actions.
   - Avoid reporting misconfigurations or other non-vulnerability issues such as improper error handling.
   - Use exclusively the report_findings tool to report your findings.
+  - Your task is not complete until you have analyzed ALL the files in EVERY subfolder and reported ALL of your findings.
   - Make sure you reported everything you found and ince you are done reporting ALL of your findings, set your task as complete.
 
 prompt: >
