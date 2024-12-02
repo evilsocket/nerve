@@ -63,14 +63,17 @@ Refer to [this document](https://huggingface.co/blog/tgi-messages-api#using-infe
 HF_API_TOKEN=you-api-key nerve -G "hf://tgi@your-custom-endpoint.aws.endpoints.huggingface.cloud" ...
 ```
 
+For **Anthropic**:
+
+```sh
+ANTHROPIC_API_KEY=you-api-key nerve -G "anthropic://claude" ...
+```
+
 For **Novita**:
 
 ```sh
 NOVITA_API_KEY=you-api-key nerve -G "novita://meta-llama/llama-3.1-70b-instruct" ...
 ```
-
-You can check your API keys [here](https://novita.ai/settings#key-management), and check all our models [here](https://novita.ai/model-api/product/llm-api).
-
 
 ## Example
 
