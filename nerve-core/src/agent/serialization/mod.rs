@@ -97,7 +97,7 @@ impl Strategy {
         let storages = storages.join("\n\n");
         let guidance = task.guidance()?;
 
-        let available_actions = if state.native_tools_support {
+        let available_actions = if state.use_native_tools_format {
             // model supports tool calls, no need to add actions to the system prompt
             "".to_string()
         } else {

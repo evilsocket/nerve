@@ -104,7 +104,7 @@ pub struct Agent {
     task_timeout: Option<Duration>,
 
     serializer: serialization::Strategy,
-    force_strategy: bool,
+    use_native_tools_format: bool,
 }
 
 impl Agent {
@@ -117,7 +117,7 @@ impl Agent {
         force_strategy: bool,
         max_iterations: usize,
     ) -> Result<Self> {
-        let use_native_tools_support = if force_strategy {
+        let use_native_tools_format = if force_strategy {
             log::info!("using {:?} serialization strategy", &serializer);
             false
         } else {
@@ -142,7 +142,7 @@ impl Agent {
                 task,
                 embedder,
                 max_iterations,
-                use_native_tools_support,
+                use_native_tools_format,
             )
             .await?,
         ));
@@ -153,7 +153,7 @@ impl Agent {
             state,
             max_history,
             task_timeout,
-            force_strategy,
+            use_native_tools_format,
             serializer,
         })
     }
@@ -372,7 +372,7 @@ impl Agent {
         let (response, tool_calls) = self.generator.chat(self.state.clone(), &options).await?;
 
         // parse the model response into invocations
-        let invocations = if tool_calls.is_empty() || self.force_strategy {
+        let invocations = if !self.use_native_tools_format {
             // use our own parsing strategy
             self.serializer.try_parse(response.trim())?
         } else {

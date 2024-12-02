@@ -59,7 +59,7 @@ impl OpenAIClient {
         let mut tools = vec![];
 
         // if native tool calls are supported (and XML was not forced)
-        if state.lock().await.native_tools_support {
+        if state.lock().await.use_native_tools_format {
             // for every namespace available to the model
             for group in state.lock().await.get_namespaces() {
                 // for every action of the namespace

@@ -170,7 +170,7 @@ impl Client for GroqClient {
 
         let mut request = builder::RequestBuilder::new(self.model.clone()).with_stream(false);
 
-        if state.lock().await.native_tools_support {
+        if state.lock().await.use_native_tools_format {
             let mut tools = vec![];
 
             for group in state.lock().await.get_namespaces() {

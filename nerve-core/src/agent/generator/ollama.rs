@@ -117,7 +117,7 @@ impl Client for OllamaClient {
         // Generate tools vector.
         let mut tools = vec![];
 
-        if state.lock().await.native_tools_support {
+        if state.lock().await.use_native_tools_format {
             for group in state.lock().await.get_namespaces() {
                 for action in &group.actions {
                     let mut required = vec![];

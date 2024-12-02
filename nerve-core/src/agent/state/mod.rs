@@ -40,7 +40,7 @@ pub struct State {
     // runtime metrics
     pub metrics: Metrics,
     // model support stool
-    pub native_tools_support: bool,
+    pub use_native_tools_format: bool,
 }
 
 pub type SharedState = Arc<tokio::sync::Mutex<State>>;
@@ -51,7 +51,7 @@ impl State {
         task: Box<dyn Task>,
         embedder: Box<dyn mini_rag::Embedder>,
         max_iterations: usize,
-        native_tools_support: bool,
+        use_native_tools_format: bool,
     ) -> Result<Self> {
         let complete = false;
         let mut variables = HashMap::new();
@@ -169,7 +169,7 @@ impl State {
             metrics,
             rag,
             events_tx,
-            native_tools_support,
+            use_native_tools_format,
         })
     }
 
