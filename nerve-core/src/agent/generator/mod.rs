@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 
 use super::{state::SharedState, Invocation};
 
+#[cfg(feature = "anthropic")]
+mod anthropic;
 #[cfg(feature = "fireworks")]
 mod fireworks;
 #[cfg(feature = "groq")]
@@ -179,6 +181,13 @@ macro_rules! factory_body {
             )?)),
             #[cfg(feature = "novita")]
             "novita" => Ok(Box::new(novita::NovitaClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            #[cfg(feature = "anthropic")]
+            "anthropic" | "claude" => Ok(Box::new(anthropic::AnthropicClient::new(
                 $url,
                 $port,
                 $model_name,
