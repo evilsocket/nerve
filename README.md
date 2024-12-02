@@ -19,13 +19,11 @@
   <img alt="Nerve" src="assets/concept.png"/>
 </p>
 
-While Nerve was inspired by other projects such as Autogen and Rigging, its main goal and core difference with other tools is to allow the user to instrument smart agents without writing code (unless required for custom functionalities). Another advantage of Nerve is being a single static binary (or docker container) that does not require heavy runtimes (such as Python) while offering maximum efficiency and memory safety.
-
-**NOTE:** The performance of this tool is heavily dependent on the model you use. Bigger models tend to interpret and generate structured data more reliably than smaller ones. If the model you are using generates invalid responses (visible at every step in the statistics), consider using a bigger one of your task.
+The project's main goal and core difference with other tools is to allow the user to instrument smart agents without writing code (unless required for custom functionalities).
 
 ## LLM Support
 
-Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/), [Fireworks](https://fireworks.ai/), [Huggingface](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) and [NovitaAI](https://novita.ai/model-api/product/llm-api) APIs. 
+Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/), [Anthropic](https://www.anthropic.com/), [Fireworks](https://fireworks.ai/), [Huggingface](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) and [NovitaAI](https://novita.ai/model-api/product/llm-api) APIs. 
 
 **The tool will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers older models to perform function calling anyway.**
 
