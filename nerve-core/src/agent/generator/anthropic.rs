@@ -191,10 +191,10 @@ impl Client for AnthropicClient {
 
         log::debug!("response = {:?}", response);
 
-        let (content, tool_use) = if let Ok(m) = response.content.flatten_into_tool_use() {
-            (response.content.flatten_into_text()?, Some(m))
-        } else {
-            ("", None)
+        let content = response.content.flatten_into_text().unwrap_or_default();
+        let tool_use = match response.content.flatten_into_tool_use() {
+            Ok(m) => Some(m),
+            Err(_) => None,
         };
 
         let mut invocations = vec![];
@@ -216,12 +216,12 @@ impl Client for AnthropicClient {
             for (name, value) in object {
                 log::debug!("tool_call.input[{}] = {:?}", name, value);
 
-                let mut content = value.to_string();
+                let mut value_content = value.to_string();
                 if let serde_json::Value::String(escaped_json) = &value {
-                    content = escaped_json.to_string();
+                    value_content = escaped_json.to_string();
                 }
 
-                let str_val = content.trim_matches('"').to_string();
+                let str_val = value_content.trim_matches('"').to_string();
                 if name == "payload" {
                     payload = Some(str_val);
                 } else {
@@ -246,7 +246,7 @@ impl Client for AnthropicClient {
         }
 
         if invocations.is_empty() && content.is_empty() {
-            log::warn!("response = {:?}", response);
+            log::warn!("empty tool calls and content in response: {:?}", response);
         }
 
         Ok((content.to_string(), invocations))
