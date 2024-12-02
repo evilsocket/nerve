@@ -27,7 +27,7 @@ impl AnthropicClient {
         let mut tools = vec![];
 
         // if native tool calls are supported (and XML was not forced)
-        if state.lock().await.native_tools_support {
+        if state.lock().await.use_native_tools_format {
             // for every namespace available to the model
             for group in state.lock().await.get_namespaces() {
                 // for every action of the namespace
@@ -161,7 +161,7 @@ impl Client for AnthropicClient {
         }
 
         // if the last message is an assistant message, remove it
-        if let Some(Message { role, content }) = messages.last() {
+        if let Some(Message { role, content: _ }) = messages.last() {
             // handles "Your API request included an `assistant` message in the final position, which would pre-fill the `assistant` response"
             if matches!(role, Role::Assistant) {
                 messages.pop();
