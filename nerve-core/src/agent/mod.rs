@@ -372,11 +372,15 @@ impl Agent {
         let (response, tool_calls) = self.generator.chat(self.state.clone(), &options).await?;
 
         // parse the model response into invocations
-        let invocations = if !self.use_native_tools_format {
+        let invocations = if self.use_native_tools_format && tool_calls.is_empty() {
+            // no tool calls, attempt to parse the content anyway
+            self.serializer
+                .try_parse(response.trim())
+                .unwrap_or_default()
+        } else if !self.use_native_tools_format {
             // use our own parsing strategy
             self.serializer.try_parse(response.trim())?
         } else {
-            // the model supports function calling natively
             tool_calls
         };
 
