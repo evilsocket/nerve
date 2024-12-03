@@ -71,12 +71,16 @@ fn deal_response(response: Result<ureq::Response, ureq::Error>, sub_url: &str) -
 		},
 		Err(err) => match err {
 			ureq::Error::Status(status, response) => {
-				let error_msg = response.into_json::<Json>().unwrap();
-				error!("<== ❌\n\tError api: {sub_url}, status: {status}, error: {error_msg}");
+				let raw = response.status_text().to_string();
+				let error_msg = match response.into_json::<Json>() {
+					Ok(json) => json.to_string(),
+					Err(_) => raw,
+				};
+				error!("api: {sub_url}, status: {status}, error: {error_msg}");
 				Err(Error::ApiError(format!("{error_msg}")))
 			},
 			ureq::Error::Transport(e) => {
-				error!("<== ❌\n\tError api: {sub_url}, error: {:?}", e.to_string());
+				error!("api: {sub_url}, error: {:?}", e.to_string());
 				Err(Error::RequestError(e.to_string()))
 			},
 		},

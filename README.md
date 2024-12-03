@@ -23,7 +23,7 @@ The project's main goal and core difference with other tools is to allow the use
 
 ## LLM Support
 
-Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/), [Anthropic](https://www.anthropic.com/), [Fireworks](https://fireworks.ai/), [Huggingface](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) and [NovitaAI](https://novita.ai/model-api/product/llm-api) APIs. 
+Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/), [Anthropic](https://www.anthropic.com/), [Fireworks](https://fireworks.ai/), [Huggingface](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries), [Nvidia NIM](https://www.nvidia.com/en-us/ai/) and [NovitaAI](https://novita.ai/model-api/product/llm-api) APIs. 
 
 **The tool will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers older models to perform function calling anyway.**
 
@@ -65,6 +65,12 @@ For **Anthropic**:
 
 ```sh
 ANTHROPIC_API_KEY=you-api-key nerve -G "anthropic://claude" ...
+```
+
+For **Nvidia NIM**:
+
+```sh
+NIM_API_KEY=you-api-key nerve -G "nim://nvidia/nemotron-4-340b-instruct" ...
 ```
 
 For **Novita**:

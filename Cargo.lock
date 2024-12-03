@@ -1341,7 +1341,7 @@ dependencies = [
 
 [[package]]
 name = "nerve"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -1356,7 +1356,7 @@ dependencies = [
 
 [[package]]
 name = "nerve-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",

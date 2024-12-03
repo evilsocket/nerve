@@ -17,6 +17,8 @@ mod fireworks;
 mod groq;
 #[cfg(feature = "hf")]
 mod huggingface;
+#[cfg(feature = "nim")]
+mod nim;
 #[cfg(feature = "novita")]
 mod novita;
 #[cfg(feature = "ollama")]
@@ -197,6 +199,13 @@ macro_rules! factory_body {
             )?)),
             #[cfg(feature = "anthropic")]
             "anthropic" | "claude" => Ok(Box::new(anthropic::AnthropicClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            #[cfg(feature = "nim")]
+            "nim" | "nvidia" => Ok(Box::new(nim::NvidiaNIMClient::new(
                 $url,
                 $port,
                 $model_name,
