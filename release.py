@@ -51,7 +51,7 @@ for path in ["Cargo.toml", "nerve-core/Cargo.toml", "nerve-cli/Cargo.toml"]:
         fp.write(result)
 
 # commit, push and create new tag
-print("git add Cargo.*")
+print("git add .")
 print("git commit -m 'releasing version %s'" % next_ver)
 print("git push")
 print("git tag -a v%s -m 'releasing v%s'" % (next_ver, next_ver))
