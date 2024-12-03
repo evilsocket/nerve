@@ -12,16 +12,16 @@
 </p>
 
 **Nerve is a tool that creates stateful agents with any LLM — without writing a single line of code.** Agents created with Nerve are capable of both planning _and_ enacting step-by-step whatever actions are required to complete a user-defined task. This is done by dynamically updating the system prompt with new information gathered during previous actions, making the agent stateful across multiple inferences.
-- **Automated Problem Solving:** Nerve provides a standard library of actions the agent uses autonomously to inform and enhance its performance. These include identifying specific goals required to complete the task, devising and revising a plan to achieve those goals, and creating and recalling memories comprised of pertinent information gleaned during previous actions.
-- **User-Defined Agents:** Agents are defined using a standard YAML template. _The sky is the limit!_ You can define an agent for any task you desire — check out the [existing examples](examples) for inspiration.
-- **Universal Tool Calling:** Nerve will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers the LLM to perform function calling anyway.
-- **Works with any LLM:** Nerve is an LLM-agnostic tool.
+
+- 🧠 **Automated Problem Solving:** Nerve provides a standard library of actions the agent uses autonomously to inform and enhance its performance. These include identifying specific goals required to complete the task, devising and revising a plan to achieve those goals, and creating and recalling memories comprised of pertinent information gleaned during previous actions.
+- 🧑‍💻 **User-Defined Agents:** Agents are defined using a standard YAML template. _The sky is the limit!_ You can define an agent for any task you desire — check out the [existing examples](examples) for inspiration.
+- 🛠️ **Universal Tool Calling:** Nerve will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers the LLM to perform function calling anyway.
+- 🤖 **Works with any LLM:** Nerve is an LLM-agnostic tool.
+- 💯 **Zero Code:** The project's main goal and core difference with other tools is to allow the user to instrument smart agents without writing code.
 
 <p align="center">
   <img alt="Nerve" src="assets/concept.png"/>
 </p>
-
-The project's main goal and core difference with other tools is to allow the user to instrument smart agents without writing code (unless required for custom functionalities).
 
 ## LLM Support
 
