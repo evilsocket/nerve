@@ -32,7 +32,7 @@ Nerve features integrations for any model accessible via the following providers
 | **Ollama** | - | `ollama://llama3@localhost:11434` |
 | **Groq** | `GROQ_API_KEY` | `groq://llama3-70b-8192` |
 | **OpenAI** | `OPENAI_API_KEY` | `openai://gpt-4` |
-| **Fireworks** | `LLM_FIREWORKS_KEY` | `fireworks://llama-v3-70b-instruct>` |
+| **Fireworks** | `LLM_FIREWORKS_KEY` | `fireworks://llama-v3-70b-instruct` |
 | **Huggingface**¹ | `HF_API_TOKEN` | `hf://tgi@your-custom-endpoint.aws.endpoints.huggingface.cloud` |
 | **Anthropic** | `ANTHROPIC_API_KEY` | `anthropic://claude` |
 | **Nvidia NIM** | `NIM_API_KEY` | `nim://nvidia/nemotron-4-340b-instruct` |
