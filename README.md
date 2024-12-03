@@ -14,6 +14,7 @@
 **Nerve is a tool that creates stateful agents with any LLM — without writing a single line of code.** Agents created with Nerve are capable of both planning _and_ enacting step-by-step whatever actions are required to complete a user-defined task. This is done by dynamically updating the system prompt with new information gathered during previous actions, making the agent stateful across multiple inferences.
 - **Automated Problem Solving:** Nerve provides a standard library of actions the agent uses autonomously to inform and enhance its performance. These include identifying specific goals required to complete the task, devising and revising a plan to achieve those goals, and creating and recalling memories comprised of pertinent information gleaned during previous actions.
 - **User-Defined Agents:** Agents are defined using a standard YAML template. _The sky is the limit!_ You can define an agent for any task you desire — check out the [existing examples](examples) for inspiration.
+- **Universal Tool Calling:** Nerve will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers the LLM to perform function calling anyway.
 - **Works with any LLM:** Nerve is an LLM-agnostic tool.
 
 <p align="center">
@@ -21,6 +22,24 @@
 </p>
 
 The project's main goal and core difference with other tools is to allow the user to instrument smart agents without writing code (unless required for custom functionalities).
+
+## LLM Support
+
+Nerve features integrations for any model accessible via the following providers:
+
+| Name | API Key Environment Variable | Generator Syntax |
+|----------|----------------------------|------------------|
+| **Ollama** | - | `ollama://llama3@localhost:11434` |
+| **Groq** | `GROQ_API_KEY` | `groq://llama3-70b-8192` |
+| **OpenAI** | `OPENAI_API_KEY` | `openai://gpt-4` |
+| **Fireworks** | `LLM_FIREWORKS_KEY` | `fireworks://llama-v3-70b-instruct>` |
+| **Huggingface**¹ | `HF_API_TOKEN` | `hf://tgi@your-custom-endpoint.aws.endpoints.huggingface.cloud` |
+| **Anthropic** | `ANTHROPIC_API_KEY` | `anthropic://claude` |
+| **Nvidia NIM** | `NIM_API_KEY` | `nim://nvidia/nemotron-4-340b-instruct` |
+| **DeepSeek** | `DEEPSEEK_API_KEY` | `deepseek://deepseek-chat` |
+| **Novita** | `NOVITA_API_KEY` | `novita://meta-llama/llama-3.1-70b-instruct` |
+
+¹ Refer to [this document](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) for how to configure a custom Huggingface endpoint.
 
 ## Installing with Cargo
 
@@ -64,70 +83,6 @@ Run a tasklet with a given OLLAMA server:
 
 ```sh
 docker build . -t nerve
-```
-
-## LLM Support
-
-Nerve features integrations for any model accessible via the [ollama](https://github.com/ollama/ollama), [groq](https://groq.com), [OpenAI](https://openai.com/index/openai-api/), [Anthropic](https://www.anthropic.com/), [Fireworks](https://fireworks.ai/), [Huggingface](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries), [Nvidia NIM](https://www.nvidia.com/en-us/ai/), [DeepSeek](https://deepseek.com/) and [NovitaAI](https://novita.ai/model-api/product/llm-api) APIs. 
-
-**The tool will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers older models to perform function calling anyway.**
-
-You can specify which provider and which model to use via the `-G` (or `--generator`) argument:
-
-For **Ollama**:
-
-```sh
-nerve -G "ollama://llama3@localhost:11434" ...
-```
-
-For **Groq**:
-
-```sh
-GROQ_API_KEY=you-api-key nerve -G "groq://llama3-70b-8192" ...
-```
-
-For **OpenAI**:
-
-```sh
-OPENAI_API_KEY=you-api-key nerve -G "openai://gpt-4" ...
-```
-
-For **Fireworks**:
-
-```sh
-LLM_FIREWORKS_KEY=you-api-key nerve -G "fireworks://llama-v3-70b-instruct" ...
-```
-
-For **Huggingface**:
-
-Refer to [this document](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) for how to configure a custom Huggingface endpoint.
-
-```sh
-HF_API_TOKEN=you-api-key nerve -G "hf://tgi@your-custom-endpoint.aws.endpoints.huggingface.cloud" ...
-```
-
-For **Anthropic**:
-
-```sh
-ANTHROPIC_API_KEY=you-api-key nerve -G "anthropic://claude" ...
-```
-
-For **Nvidia NIM**:
-
-```sh
-NIM_API_KEY=you-api-key nerve -G "nim://nvidia/nemotron-4-340b-instruct" ...
-```
-
-For **DeepSeek**:
-
-```sh
-DEEPSEEK_API_KEY=you-api-key nerve -G "deepseek://deepseek-chat" ...
-```
-
-For **Novita**:
-
-```sh
-NOVITA_API_KEY=you-api-key nerve -G "novita://meta-llama/llama-3.1-70b-instruct" ...
 ```
 
 ## Example
