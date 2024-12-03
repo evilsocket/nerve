@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use super::{state::SharedState, Invocation};
 
 mod anthropic;
+mod deepseek;
 mod fireworks;
 mod groq;
 mod huggingface;
@@ -189,6 +190,12 @@ macro_rules! factory_body {
                 $context_window,
             )?)),
             "nim" | "nvidia" => Ok(Box::new(nim::NvidiaNIMClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            "deepseek" => Ok(Box::new(deepseek::DeepSeekClient::new(
                 $url,
                 $port,
                 $model_name,
