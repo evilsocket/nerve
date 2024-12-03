@@ -124,7 +124,7 @@ impl Agent {
             // check if the model supports tools calling natively
             match generator.check_native_tools_support().await? {
                 true => {
-                    log::info!("model supports tools calling natively.");
+                    log::debug!("model supports tools calling natively.");
                     true
                 }
                 false => {
