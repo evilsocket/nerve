@@ -34,29 +34,20 @@ if len(m) != 1:
 current_ver = m[0]
 next_ver = input("current version is %s, enter next: " % current_ver)
 
-
-for path in ["Cargo.toml", "nerve-core/Cargo.toml", "nerve-cli/Cargo.toml"]:
-    with open(path, "rt") as fp:
-        manifest = fp.read()
-
-    # generate new manifest
-    result = re.sub(
-        version_match_re,
-        'version = "%s"' % next_ver,
-        manifest,
-        count=0,
-        flags=re.MULTILINE,
-    )
-    with open(path, "w+t") as fp:
-        fp.write(result)
+# generate new manifest
+result = re.sub(
+    version_match_re, 'version = "%s"' % next_ver, manifest, 0, re.MULTILINE
+)
+with open("Cargo.toml", "w+t") as fp:
+    fp.write(result)
 
 # commit, push and create new tag
-print("git add .")
+print("git add Cargo.*")
 print("git commit -m 'releasing version %s'" % next_ver)
 print("git push")
 print("git tag -a v%s -m 'releasing v%s'" % (next_ver, next_ver))
 print("git push origin v%s" % next_ver)
 
-# print()
+print()
 # publish on crates.io
-# print("cargo publish")
+print("cargo publish")

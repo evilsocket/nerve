@@ -4,6 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/evilsocket/nerve/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/evilsocket/nerve.svg?style=flat-square"></a>
+  <a href="https://crates.io/crates/nerve-ai"><img alt="Crate" src="https://img.shields.io/crates/v/nerve-ai.svg"></a>
   <a href="https://hub.docker.com/r/evilsocket/nerve"><img alt="Docker Hub" src="https://img.shields.io/docker/v/evilsocket/nerve?logo=docker"></a>
   <a href="https://rust-reportcard.xuri.me/report/github.com/evilsocket/nerve"><img alt="Rust Report" src="https://rust-reportcard.xuri.me/badge/github.com/evilsocket/nerve"></a>
   <a href="#"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/evilsocket/nerve/test.yml"></a>
@@ -20,6 +21,50 @@
 </p>
 
 The project's main goal and core difference with other tools is to allow the user to instrument smart agents without writing code (unless required for custom functionalities).
+
+## Installing with Cargo
+
+```sh
+cargo install nerve-ai
+```
+
+## Installing from DockerHub
+
+A Docker image is available on [Docker Hub](https://hub.docker.com/r/evilsocket/nerve):
+
+In order to run it, keep in mind that you'll probably want the same network as the host in order to reach the OLLAMA server, and remember to share in a volume the tasklet files:
+
+```sh
+docker run -it --network=host -v ./examples:/root/.nerve/tasklets evilsocket/nerve -h
+```
+
+An example with the `ssh_agent` tasklet via an Ollama server running on localhost:
+
+```sh
+docker run -it --network=host \
+  -v ./examples:/root/.nerve/tasklets \
+  evilsocket/nerve -G "ollama://llama3@localhost:11434" -T ssh_agent -P'find which process is consuming more ram'
+```
+
+## Building from sources
+
+To build from source:
+
+```sh
+cargo build --release
+```
+
+Run a tasklet with a given OLLAMA server:
+
+```sh
+./target/release/nerve -G "ollama://<model-name>@<ollama-host>:11434" -T /path/to/tasklet 
+```
+
+## Building with Docker
+
+```sh
+docker build . -t nerve
+```
 
 ## LLM Support
 
@@ -174,60 +219,6 @@ To import only a subset of tools:
 nerve -G "openai://gpt-4o" \
   -T /path/to/tasklet \
   -R "localhost:8000/cybersecurity/reverse-engineering"
-```
-
-### How does it work?
-
-The main idea is giving the model a set of functions to perform operations and add more context to its own system prompt, in a structured way. Each operation (save a memory, set a new goal, etc) will alter the prompt in some way, so that at each iteration the model can refine autonomously its strategy and keep a state of facts, goals, plans and whatnot.
-
-If you want to observe this (basically the debug mode of Nerve), run your tasklet by adding the following additional argument:
-
-```sh
-nerve -G ... -T whatever-tasklet --save-to state.txt
-```
-
-The agent save to disk its internal state at each iteration for you to observe.
-
-## About Crates.io
-
-Since v0.2.0 **Nerve is not on crates.io anymore** due to the [lack of support of local crates](https://users.rust-lang.org/t/is-it-possible-to-publish-crates-with-path-specified/91497).
-
-## Installing from DockerHub
-
-A Docker image is available on [Docker Hub](https://hub.docker.com/r/evilsocket/nerve):
-
-In order to run it, keep in mind that you'll probably want the same network as the host in order to reach the OLLAMA server, and remember to share in a volume the tasklet files:
-
-```sh
-docker run -it --network=host -v ./examples:/root/.nerve/tasklets evilsocket/nerve -h
-```
-
-An example with the `ssh_agent` tasklet via an Ollama server running on localhost:
-
-```sh
-docker run -it --network=host \
-  -v ./examples:/root/.nerve/tasklets \
-  evilsocket/nerve -G "ollama://llama3@localhost:11434" -T ssh_agent -P'find which process is consuming more ram'
-```
-
-## Building from sources
-
-To build from source:
-
-```sh
-cargo build --release
-```
-
-Run a tasklet with a given OLLAMA server:
-
-```sh
-./target/release/nerve -G "ollama://<model-name>@<ollama-host>:11434" -T /path/to/tasklet 
-```
-
-## Building with Docker
-
-```sh
-docker build . -t nerve
 ```
 
 ## License
