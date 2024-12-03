@@ -23,6 +23,10 @@ impl Client for HuggingfaceMessageClient {
         Ok(Self { client })
     }
 
+    async fn check_native_tools_support(&self) -> Result<bool> {
+        self.client.check_native_tools_support().await
+    }
+
     async fn chat(
         &self,
         state: SharedState,
