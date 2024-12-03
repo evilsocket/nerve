@@ -19,6 +19,7 @@ mod novita;
 mod ollama;
 mod openai;
 mod openai_compatible;
+mod xai;
 
 mod options;
 
@@ -196,6 +197,12 @@ macro_rules! factory_body {
                 $context_window,
             )?)),
             "deepseek" => Ok(Box::new(deepseek::DeepSeekClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            "xai" => Ok(Box::new(xai::XAIClient::new(
                 $url,
                 $port,
                 $model_name,

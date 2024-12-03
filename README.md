@@ -37,6 +37,7 @@ Nerve features integrations for any model accessible via the following providers
 | **Anthropic** | `ANTHROPIC_API_KEY` | `anthropic://claude` |
 | **Nvidia NIM** | `NIM_API_KEY` | `nim://nvidia/nemotron-4-340b-instruct` |
 | **DeepSeek** | `DEEPSEEK_API_KEY` | `deepseek://deepseek-chat` |
+| **xAI** | `XAI_API_KEY` | `xai://grok-beta` |
 | **Novita** | `NOVITA_API_KEY` | `novita://meta-llama/llama-3.1-70b-instruct` |
 
 ¹ Refer to [this document](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) for how to configure a custom Huggingface endpoint.
