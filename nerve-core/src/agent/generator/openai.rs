@@ -211,11 +211,18 @@ impl Client for OpenAIClient {
                     content: Some(data.trim().to_string()),
                     tool_calls: None,
                 },
-                Message::Feedback(data, _) => openai_api_rust::Message {
-                    role: Role::User,
-                    content: Some(data.trim().to_string()),
-                    tool_calls: None,
-                },
+                Message::Feedback(data, _) => {
+                    // handles string_too_short cases (NIM)
+                    let mut content = data.trim().to_string();
+                    if content.is_empty() {
+                        content = "<no output>".to_string();
+                    }
+                    openai_api_rust::Message {
+                        role: Role::User,
+                        content: Some(content),
+                        tool_calls: None,
+                    }
+                }
             });
         }
 
