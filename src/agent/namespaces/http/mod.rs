@@ -274,7 +274,7 @@ impl Action for Request {
             let reason = res.status().canonical_reason().unwrap();
             let resp = format!("{} {}", res.status().as_u16(), &reason);
 
-            log::error!("   {} {}", reason.red(), format!("({:?})", elaps).dimmed(),);
+            log::debug!("   {} {}", reason.red(), format!("({:?})", elaps).dimmed(),);
 
             Err(anyhow!(resp))
         };
