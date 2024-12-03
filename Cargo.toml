@@ -1,6 +1,6 @@
 [package]
 name = "nerve-ai"
-version = "0.4.2"
+version = "0.5.0"
 edition = "2021"
 description = "Nerve is a tool that allows creating stateful agents with any LLM of your choice - without writing a single line of code. The tool provides to the model a framework of functionalities for planning, saving or recalling memories, etc by dynamically adapting the prompt and making it stateful over multiple inferences. The model will be able to access and use these functionalities in order to accomplish the task you provided."
 keywords = ["llm", "agent", "stateful-agents", "ai"]
