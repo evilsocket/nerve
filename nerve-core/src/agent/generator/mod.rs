@@ -72,17 +72,26 @@ impl Display for Message {
     }
 }
 
+pub struct Usage {
+    /// The number of input tokens which were used.
+    pub input_tokens: u32,
+    /// The number of output tokens which were used.
+    pub output_tokens: u32,
+}
+
+pub struct ChatResponse {
+    pub content: String,
+    pub invocations: Vec<Invocation>,
+    pub usage: Option<Usage>,
+}
+
 #[async_trait]
 pub trait Client: mini_rag::Embedder + Send + Sync {
     fn new(url: &str, port: u16, model_name: &str, context_window: u32) -> Result<Self>
     where
         Self: Sized;
 
-    async fn chat(
-        &self,
-        state: SharedState,
-        options: &ChatOptions,
-    ) -> Result<(String, Vec<Invocation>)>;
+    async fn chat(&self, state: SharedState, options: &ChatOptions) -> Result<ChatResponse>;
 
     async fn check_native_tools_support(&self) -> Result<bool> {
         Ok(false)

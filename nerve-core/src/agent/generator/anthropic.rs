@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use crate::agent::{state::SharedState, Invocation};
+use crate::agent::{
+    generator::{ChatResponse, Usage},
+    state::SharedState,
+    Invocation,
+};
 use anyhow::Result;
 use async_trait::async_trait;
 use clust::messages::{
@@ -134,7 +138,7 @@ impl Client for AnthropicClient {
         &self,
         state: SharedState,
         options: &ChatOptions,
-    ) -> anyhow::Result<(String, Vec<Invocation>)> {
+    ) -> anyhow::Result<ChatResponse> {
         let mut messages = vec![Message::user(options.prompt.trim().to_string())];
         let max_tokens = MaxTokens::new(4096, self.model)?;
 
@@ -249,7 +253,14 @@ impl Client for AnthropicClient {
             log::warn!("empty tool calls and content in response: {:?}", response);
         }
 
-        Ok((content.to_string(), invocations))
+        Ok(ChatResponse {
+            content: content.to_string(),
+            invocations,
+            usage: Some(Usage {
+                input_tokens: response.usage.input_tokens,
+                output_tokens: response.usage.output_tokens,
+            }),
+        })
     }
 }
 

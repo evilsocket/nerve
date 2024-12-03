@@ -11,7 +11,11 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::agent::{generator::Message, state::SharedState, Invocation};
+use crate::agent::{
+    generator::{ChatResponse, Message},
+    state::SharedState,
+    Invocation,
+};
 
 use super::{ChatOptions, Client};
 
@@ -109,7 +113,7 @@ impl Client for GroqClient {
         &self,
         state: SharedState,
         options: &ChatOptions,
-    ) -> anyhow::Result<(String, Vec<Invocation>)> {
+    ) -> anyhow::Result<ChatResponse> {
         let mut chat_history = vec![
             groq_api_rs::completion::message::Message::SystemMessage {
                 role: Some("system".to_string()),
@@ -247,9 +251,9 @@ impl Client for GroqClient {
             return Err(error);
         }
 
-        let choice = match resp.unwrap() {
+        let (response, choice) = match resp.unwrap() {
             groq_api_rs::completion::client::CompletionOption::NonStream(resp) => {
-                resp.choices.first().unwrap().to_owned()
+                (resp.clone(), resp.choices.first().unwrap().to_owned())
             }
             groq_api_rs::completion::client::CompletionOption::Stream(_) => {
                 return Err(anyhow!("Groq streaming is not supported yet, if this happens please open an issue on GitHub"));
@@ -298,7 +302,14 @@ impl Client for GroqClient {
             }
         }
 
-        Ok((content, invocations))
+        Ok(ChatResponse {
+            content,
+            invocations,
+            usage: Some(super::Usage {
+                input_tokens: response.usage.prompt_tokens,
+                output_tokens: response.usage.completion_tokens,
+            }),
+        })
     }
 }
 

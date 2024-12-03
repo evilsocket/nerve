@@ -11,7 +11,7 @@ use mini_rag::Embedder;
 use serde::{Deserialize, Serialize};
 
 use events::Event;
-use generator::{ChatOptions, Client};
+use generator::{ChatOptions, ChatResponse, Client};
 use namespaces::Action;
 use state::{SharedState, State};
 use task::Task;
@@ -340,6 +340,17 @@ impl Agent {
         .unwrap();
     }
 
+    async fn on_completion(&self, response: &ChatResponse) {
+        // update tokens usage if available from the generator
+        if let Some(usage) = &response.usage {
+            let mut mut_state = self.state.lock().await;
+            mut_state.metrics.usage.last_input_tokens = usage.input_tokens;
+            mut_state.metrics.usage.last_output_tokens = usage.output_tokens;
+            mut_state.metrics.usage.total_input_tokens += usage.input_tokens;
+            mut_state.metrics.usage.total_output_tokens += usage.output_tokens;
+        }
+    }
+
     pub async fn get_metrics(&self) -> state::metrics::Metrics {
         self.state.lock().await.metrics.clone()
     }
@@ -369,27 +380,30 @@ impl Agent {
         self.on_state_update(&options, false).await?;
 
         // run model inference
-        let (response, tool_calls) = self.generator.chat(self.state.clone(), &options).await?;
+        let response = self.generator.chat(self.state.clone(), &options).await?;
+
+        // update tokens usage
+        self.on_completion(&response).await;
 
         // parse the model response into invocations
-        let invocations = if self.use_native_tools_format && tool_calls.is_empty() {
+        let invocations = if self.use_native_tools_format && response.invocations.is_empty() {
             // no tool calls, attempt to parse the content anyway
             self.serializer
-                .try_parse(response.trim())
+                .try_parse(response.content.trim())
                 .unwrap_or_default()
         } else if !self.use_native_tools_format {
             // use our own parsing strategy
-            self.serializer.try_parse(response.trim())?
+            self.serializer.try_parse(response.content.trim())?
         } else {
-            tool_calls
+            response.invocations
         };
 
         // nothing parsed, report the problem to the model
         if invocations.is_empty() {
-            if response.is_empty() {
+            if response.content.is_empty() {
                 self.on_empty_response().await;
             } else {
-                self.on_invalid_response(&response).await;
+                self.on_invalid_response(&response.content).await;
             }
         } else {
             self.on_valid_response().await;

@@ -18,7 +18,7 @@ use ollama_rs::{
 
 use crate::agent::{state::SharedState, Invocation};
 
-use super::{ChatOptions, Client, Message};
+use super::{ChatOptions, ChatResponse, Client, Message};
 
 pub struct OllamaClient {
     model: String,
@@ -92,7 +92,7 @@ impl Client for OllamaClient {
         &self,
         state: SharedState,
         options: &ChatOptions,
-    ) -> anyhow::Result<(String, Vec<Invocation>)> {
+    ) -> anyhow::Result<ChatResponse> {
         // TODO: images for multimodal (see todo for screenshot action)
 
         // build chat history:
@@ -225,10 +225,30 @@ impl Client for OllamaClient {
             }
 
             log::debug!("ollama.invocations = {:?}", &invocations);
-            Ok((content, invocations))
+            Ok(ChatResponse {
+                content,
+                invocations,
+                usage: match res.final_data {
+                    Some(final_data) => Some(super::Usage {
+                        input_tokens: final_data.prompt_eval_count as u32,
+                        output_tokens: final_data.eval_count as u32,
+                    }),
+                    None => None,
+                },
+            })
         } else {
             log::warn!("model returned an empty message.");
-            Ok(("".to_string(), vec![]))
+            Ok(ChatResponse {
+                content: "".to_string(),
+                invocations: vec![],
+                usage: match res.final_data {
+                    Some(final_data) => Some(super::Usage {
+                        input_tokens: final_data.prompt_eval_count as u32,
+                        output_tokens: final_data.eval_count as u32,
+                    }),
+                    None => None,
+                },
+            })
         }
     }
 }

@@ -1,6 +1,5 @@
 use std::fmt::Display;
 
-use memory_stats::memory_stats;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -24,6 +23,14 @@ impl ErrorMetrics {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Usage {
+    pub last_input_tokens: u32,
+    pub last_output_tokens: u32,
+    pub total_input_tokens: u32,
+    pub total_output_tokens: u32,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Metrics {
     pub max_steps: usize,
     pub current_step: usize,
@@ -31,6 +38,7 @@ pub struct Metrics {
     pub valid_actions: usize,
     pub success_actions: usize,
     pub errors: ErrorMetrics,
+    pub usage: Usage,
 }
 
 impl Display for Metrics {
@@ -66,11 +74,14 @@ impl Display for Metrics {
             write!(f, "actions:{} ", self.valid_actions,)?;
         }
 
-        if let Some(usage) = memory_stats() {
+        if self.usage.last_input_tokens > 0 {
             write!(
                 f,
-                "mem:{}",
-                human_bytes::human_bytes(usage.physical_mem as f64)
+                "token_usage(in:{} out:{} tot_in:{} tot_out:{}) ",
+                self.usage.last_input_tokens,
+                self.usage.last_output_tokens,
+                self.usage.total_input_tokens,
+                self.usage.total_output_tokens
             )?;
         }
 

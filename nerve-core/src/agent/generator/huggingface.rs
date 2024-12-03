@@ -1,9 +1,9 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::agent::{state::SharedState, Invocation};
+use crate::agent::state::SharedState;
 
-use super::{openai::OpenAIClient, ChatOptions, Client};
+use super::{openai::OpenAIClient, ChatOptions, ChatResponse, Client};
 
 pub struct HuggingfaceMessageClient {
     client: OpenAIClient,
@@ -27,7 +27,7 @@ impl Client for HuggingfaceMessageClient {
         &self,
         state: SharedState,
         options: &ChatOptions,
-    ) -> anyhow::Result<(String, Vec<Invocation>)> {
+    ) -> anyhow::Result<ChatResponse> {
         self.client.chat(state, options).await
     }
 }
