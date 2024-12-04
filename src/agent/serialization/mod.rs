@@ -104,7 +104,7 @@ impl Strategy {
             // model does not support tool calls, we need to provide the actions in its system prompt
             let mut raw = include_str!("actions.prompt").to_owned();
 
-            raw.push_str("\n");
+            raw.push('\n');
             raw.push_str(&self.actions_for_state(state)?);
 
             raw

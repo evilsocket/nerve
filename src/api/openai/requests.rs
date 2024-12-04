@@ -92,7 +92,7 @@ fn deal_response(response: Result<ureq::Response, ureq::Error>, sub_url: &str) -
                     Err(_) => raw,
                 };
                 error!("api: {sub_url}, status: {status}, error: {error_msg}");
-                Err(Error::ApiError(format!("{error_msg}")))
+                Err(Error::ApiError(error_msg.to_string()))
             }
             ureq::Error::Transport(e) => {
                 error!("api: {sub_url}, error: {:?}", e.to_string());

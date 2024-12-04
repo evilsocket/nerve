@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
             Ok(_goes_into_input_above) => {}
             Err(_no_updates_is_fine) => {}
         }
-        agent::task::variables::define_variable("STDIN", &input.trim());
+        agent::task::variables::define_variable("STDIN", input.trim());
     }
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))

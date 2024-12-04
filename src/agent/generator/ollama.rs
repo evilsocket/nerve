@@ -228,26 +228,20 @@ impl Client for OllamaClient {
             Ok(ChatResponse {
                 content,
                 invocations,
-                usage: match res.final_data {
-                    Some(final_data) => Some(super::Usage {
+                usage: res.final_data.map(|final_data| super::Usage {
                         input_tokens: final_data.prompt_eval_count as u32,
                         output_tokens: final_data.eval_count as u32,
                     }),
-                    None => None,
-                },
             })
         } else {
             log::warn!("model returned an empty message.");
             Ok(ChatResponse {
                 content: "".to_string(),
                 invocations: vec![],
-                usage: match res.final_data {
-                    Some(final_data) => Some(super::Usage {
+                usage: res.final_data.map(|final_data| super::Usage {
                         input_tokens: final_data.prompt_eval_count as u32,
                         output_tokens: final_data.eval_count as u32,
                     }),
-                    None => None,
-                },
             })
         }
     }

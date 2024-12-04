@@ -33,7 +33,7 @@ fn on_action_executed(
 
     view.push_str("🧠 ");
     view.push_str(&invocation.action.bold().to_string());
-    view.push_str("(");
+    view.push('(');
     if let Some(payload) = &invocation.payload {
         view.push_str(&payload.dimmed().to_string());
     }
@@ -47,7 +47,7 @@ fn on_action_executed(
                 .join(", "),
         );
     }
-    view.push_str(")");
+    view.push(')');
 
     if let Some(err) = error {
         log::error!("{}: {}", view, err);

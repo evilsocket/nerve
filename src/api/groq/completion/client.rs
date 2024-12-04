@@ -217,14 +217,14 @@ mod completion_test {
 
     #[test]
     fn test_eq_and_hash() {
-        let g1 = Groq::new("api_key").add_messages(vec![Message::UserMessage {
+        Groq::new("api_key").add_messages(vec![Message::UserMessage {
             role: Some("user".to_string()),
             content: Some("Explain the importance of fast language models".to_string()),
             name: None,
             tool_call_id: None,
         }]);
 
-        let g2 = Groq::new("api_key").add_messages(vec![Message::UserMessage {
+        Groq::new("api_key").add_messages(vec![Message::UserMessage {
             role: Some("user".to_string()),
             content: Some("Explain the importance of fast language models".to_string()),
             name: None,
@@ -234,8 +234,8 @@ mod completion_test {
         let mut hasher = DefaultHasher::new();
         let mut hasher1 = DefaultHasher::new();
 
-        g1.hash(&mut hasher);
-        g2.hash(&mut hasher1);
+        ().hash(&mut hasher);
+        ().hash(&mut hasher1);
         let hash_string = hasher.finish();
         let hash_string1 = hasher1.finish();
 

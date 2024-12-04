@@ -54,9 +54,9 @@ pub struct LazyError<'a, E> {
 }
 
 /// Take `self.error`, discarding `self.field_name`.
-impl<'a> Into<io::Error> for LazyError<'a, io::Error> {
-	fn into(self) -> io::Error {
-		self.error
+impl<'a> From<LazyError<'a, io::Error>> for io::Error {
+	fn from(val: LazyError<'a, io::Error>) -> Self {
+		val.error
 	}
 }
 

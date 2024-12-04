@@ -166,7 +166,7 @@ impl Action for TaskletAction {
                 }
 
                 if !out.is_empty() {
-                    result = format!("{}", out);
+                    result = out.to_string();
                 }
             } else {
                 result = format!("ERROR: {}", output.err().unwrap());
