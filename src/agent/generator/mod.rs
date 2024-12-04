@@ -20,6 +20,7 @@ mod ollama;
 mod openai;
 mod openai_compatible;
 mod xai;
+mod mistral;
 
 mod options;
 
@@ -203,6 +204,12 @@ macro_rules! factory_body {
                 $context_window,
             )?)),
             "xai" => Ok(Box::new(xai::XAIClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            "mistral" => Ok(Box::new(mistral::MistralClient::new(
                 $url,
                 $port,
                 $model_name,
