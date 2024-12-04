@@ -76,19 +76,10 @@ impl History {
         Self(vec![])
     }
 
-    pub fn to_chat_history(
-        &self,
-        serializer: &serialization::Strategy,
-        max: usize,
-    ) -> Result<Vec<Message>> {
+    pub fn to_chat_history(&self, serializer: &serialization::Strategy) -> Result<Vec<Message>> {
         let mut history = vec![];
-        let latest = if self.0.len() > max {
-            self.0[self.0.len() - max..].to_vec()
-        } else {
-            self.0.to_vec().to_vec()
-        };
 
-        for entry in latest {
+        for entry in self.0.iter() {
             history.extend(entry.to_messages(serializer));
         }
 

@@ -24,6 +24,9 @@ pub struct Args {
     /// Serialization strategy.
     #[arg(short = 'S', long, default_value_t, value_enum)]
     pub serialization: Strategy,
+    /// Conversation window, it can be either "full" (full chat history), "summary" (report the last messages entirely and compress the previous ones) or "N" (last N messages).
+    #[arg(long, default_value = "15")]
+    pub window: String,
     /// Force specified serialization format even if the model supports native tools calling.
     #[arg(long)]
     pub force_format: bool,

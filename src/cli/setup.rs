@@ -3,7 +3,7 @@ use colored::Colorize;
 
 use crate::agent::{
     events::{self, create_channel},
-    generator,
+    generator::{self, history::ConversationWindow},
     task::{robopages, tasklet::Tasklet},
     Agent,
 };
@@ -45,6 +45,9 @@ pub async fn setup_agent(args: &cli::Args) -> Result<(Agent, events::Receiver)> 
     // create generator and embedder
     let (gen_options, generator, embedder) = setup_models(args)?;
 
+    // create the conversation window
+    let conversation_window = ConversationWindow::parse(&args.window)?;
+
     // read and create the tasklet
     let tasklet = if let Some(t) = &args.tasklet {
         t
@@ -57,7 +60,7 @@ pub async fn setup_agent(args: &cli::Args) -> Result<(Agent, events::Receiver)> 
 
     if !args.judge_mode {
         println!(
-            "{} v{} 🧠 {}{} > {}\n",
+            "{} v{} 🧠 {}{} > {} ({})\n",
             APP_NAME,
             APP_VERSION,
             gen_options.model_name.bold(),
@@ -71,6 +74,7 @@ pub async fn setup_agent(args: &cli::Args) -> Result<(Agent, events::Receiver)> 
                 )
             },
             tasklet_name.green().bold(),
+            conversation_window.to_string().dimmed(),
         );
     }
 
@@ -95,6 +99,7 @@ pub async fn setup_agent(args: &cli::Args) -> Result<(Agent, events::Receiver)> 
         embedder,
         task,
         args.serialization.clone(),
+        conversation_window,
         args.force_format,
         args.max_iterations,
     )

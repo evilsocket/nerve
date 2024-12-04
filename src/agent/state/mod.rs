@@ -194,12 +194,8 @@ impl State {
         }
     }
 
-    pub fn to_chat_history(
-        &self,
-        serializer: &serialization::Strategy,
-        max: usize,
-    ) -> Result<Vec<Message>> {
-        self.history.to_chat_history(serializer, max)
+    pub fn to_chat_history(&self, serializer: &serialization::Strategy) -> Result<Vec<Message>> {
+        self.history.to_chat_history(serializer)
     }
 
     #[allow(clippy::borrowed_box)]

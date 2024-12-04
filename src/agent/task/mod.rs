@@ -23,10 +23,6 @@ pub trait Task: std::fmt::Debug + Send + Sync {
         None
     }
 
-    fn max_history_visibility(&self) -> u16 {
-        50
-    }
-
     fn guidance(&self) -> Result<Vec<String>> {
         self.base_guidance()
     }

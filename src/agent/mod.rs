@@ -11,7 +11,10 @@ use mini_rag::Embedder;
 use serde::{Deserialize, Serialize};
 
 use events::Event;
-use generator::{ChatOptions, ChatResponse, Client};
+use generator::{
+    history::{ChatHistory, ConversationWindow},
+    ChatOptions, ChatResponse, Client,
+};
 use namespaces::Action;
 use state::{SharedState, State};
 use task::Task;
@@ -100,8 +103,8 @@ pub struct Agent {
     events_chan: events::Sender,
     generator: Box<dyn Client>,
     state: SharedState,
-    max_history: u16,
     task_timeout: Option<Duration>,
+    conversation_window: ConversationWindow,
 
     serializer: serialization::Strategy,
     use_native_tools_format: bool,
@@ -114,6 +117,7 @@ impl Agent {
         embedder: Box<dyn Embedder>,
         task: Box<dyn Task>,
         serializer: serialization::Strategy,
+        conversation_window: ConversationWindow,
         force_strategy: bool,
         max_iterations: usize,
     ) -> Result<Self> {
@@ -134,7 +138,6 @@ impl Agent {
             }
         };
 
-        let max_history = task.max_history_visibility();
         let task_timeout = task.get_timeout();
         let state = Arc::new(tokio::sync::Mutex::new(
             State::new(
@@ -151,10 +154,10 @@ impl Agent {
             events_chan,
             generator,
             state,
-            max_history,
             task_timeout,
             use_native_tools_format,
             serializer,
+            conversation_window,
         })
     }
 
@@ -235,15 +238,16 @@ impl Agent {
             opts.system_prompt = self
                 .serializer
                 .system_prompt_for_state(&*self.state.lock().await)?;
-            opts.history = self
-                .state
-                .lock()
-                .await
-                .to_chat_history(&self.serializer, self.max_history as usize)?;
+
+            let messages = self.state.lock().await.to_chat_history(&self.serializer)?;
+
+            opts.history = ChatHistory::create(messages, self.conversation_window);
         }
 
         self.on_event(events::Event::StateUpdate(opts))
     }
+
+    // TODO: move these feedback strings to a common place
 
     async fn on_empty_response(&self) {
         let mut mut_state = self.state.lock().await;
@@ -364,8 +368,8 @@ impl Agent {
 
         let system_prompt = self.serializer.system_prompt_for_state(&mut_state)?;
         let prompt = mut_state.to_prompt()?;
-        let history = mut_state.to_chat_history(&self.serializer, self.max_history as usize)?;
-        let options = ChatOptions::new(system_prompt, prompt, history);
+        let history = mut_state.to_chat_history(&self.serializer)?;
+        let options = ChatOptions::new(system_prompt, prompt, history, self.conversation_window);
 
         Ok(options)
     }

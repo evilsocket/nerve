@@ -142,7 +142,7 @@ impl Client for AnthropicClient {
         let mut messages = vec![Message::user(options.prompt.trim().to_string())];
         let max_tokens = MaxTokens::new(4096, self.model)?;
 
-        for m in &options.history {
+        for m in options.history.iter() {
             // all messages must have non-empty content except for the optional final assistant messag
             match m {
                 super::Message::Agent(data, _) => {

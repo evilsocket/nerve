@@ -131,7 +131,7 @@ impl Client for GroqClient {
 
         let mut call_idx = 0;
 
-        for m in &options.history {
+        for m in options.history.iter() {
             chat_history.push(match m {
                 Message::Agent(data, invocation) => {
                     let mut tool_call_id = None;

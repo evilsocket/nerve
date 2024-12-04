@@ -3,6 +3,7 @@ use std::{fmt::Display, time::Duration};
 use anyhow::Result;
 use async_trait::async_trait;
 use duration_string::DurationString;
+use history::{ChatHistory, ConversationWindow};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -21,6 +22,7 @@ mod openai;
 mod openai_compatible;
 mod xai;
 
+pub(crate) mod history;
 mod options;
 
 pub use options::*;
@@ -35,11 +37,17 @@ lazy_static! {
 pub struct ChatOptions {
     pub system_prompt: String,
     pub prompt: String,
-    pub history: Vec<Message>,
+    pub history: ChatHistory,
 }
 
 impl ChatOptions {
-    pub fn new(system_prompt: String, prompt: String, history: Vec<Message>) -> Self {
+    pub fn new(
+        system_prompt: String,
+        prompt: String,
+        conversation: Vec<Message>,
+        history_strategy: ConversationWindow,
+    ) -> Self {
+        let history = ChatHistory::create(conversation, history_strategy);
         Self {
             system_prompt,
             prompt,
@@ -48,7 +56,7 @@ impl ChatOptions {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Message {
     Agent(String, Option<Invocation>),
     Feedback(String, Option<Invocation>),
