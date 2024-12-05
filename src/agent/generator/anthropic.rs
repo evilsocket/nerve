@@ -156,9 +156,9 @@ impl Client for AnthropicClient {
                 super::Message::Feedback(data, _) => {
                     let trimmed = data.trim();
                     if !trimmed.is_empty() {
-                        messages.push(Message::user(data.trim()))
+                        messages.push(Message::user(trimmed))
                     } else {
-                        log::warn!("ignoring empty user message: {:?}", m);
+                        messages.push(Message::user("no output".to_string()))
                     }
                 }
             }
