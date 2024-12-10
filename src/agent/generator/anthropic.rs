@@ -168,6 +168,13 @@ impl Client for AnthropicClient {
         if let Some(Message { role, content: _ }) = messages.last() {
             // handles "Your API request included an `assistant` message in the final position, which would pre-fill the `assistant` response"
             if matches!(role, Role::Assistant) {
+                let mut logs = String::new();
+
+                for m in messages.iter() {
+                    logs.push_str(&format!("{:?}\n", m));
+                }
+
+                log::warn!("removing final assistant message for anthropic: {}", &logs);
                 messages.pop();
             }
         }

@@ -57,7 +57,11 @@ impl ChatHistory {
         let history = match window {
             ConversationWindow::Full => conversation.clone(),
             ConversationWindow::LastN(n) => {
-                conversation.clone().into_iter().rev().take(n).collect()
+                if n <= conversation.len() {
+                    conversation[conversation.len() - n..].to_vec()
+                } else {
+                    conversation.clone()
+                }
             }
             ConversationWindow::Summary => {
                 let mut summarized = vec![];
