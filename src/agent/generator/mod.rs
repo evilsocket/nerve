@@ -97,8 +97,8 @@ pub trait Client: mini_rag::Embedder + Send + Sync {
 
     async fn chat(&self, state: SharedState, options: &ChatOptions) -> Result<ChatResponse>;
 
-    async fn supports_system_prompt(&self) -> Result<bool> {
-        Ok(true)
+    async fn check_native_tools_support(&self) -> Result<bool> {
+        Ok(false)
     }
 
     async fn check_rate_limit(&self, error: &str) -> bool {
