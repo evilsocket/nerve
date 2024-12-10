@@ -315,4 +315,47 @@ mod tests {
         let history = ChatHistory::create(conv, ConversationWindow::LastN(4));
         assert_eq!(history.history, expected);
     }
+
+    #[test]
+    fn test_last_n_strategy_with_small_conv() {
+        let conv = vec![
+            Message::Agent("test1".to_string(), None),
+            Message::Feedback("feedback1".to_string(), None),
+        ];
+
+        let expected = vec![
+            Message::Agent("test1".to_string(), None),
+            Message::Feedback("feedback1".to_string(), None),
+        ];
+
+        let history = ChatHistory::create(conv, ConversationWindow::LastN(10));
+        assert_eq!(history.history, expected);
+    }
+
+    #[test]
+    fn test_last_n_strategy_with_just_enough() {
+        let conv = vec![
+            Message::Agent("test1".to_string(), None),
+            Message::Feedback("feedback1".to_string(), None),
+            Message::Agent("test2".to_string(), None),
+            Message::Feedback("feedback2".to_string(), None),
+            Message::Agent("test3".to_string(), None),
+            Message::Feedback("feedback3".to_string(), None),
+            Message::Agent("test4".to_string(), None),
+            Message::Feedback("feedback4".to_string(), None),
+        ];
+
+        let expected = vec![
+            Message::Feedback("feedback1".to_string(), None),
+            Message::Agent("test2".to_string(), None),
+            Message::Feedback("feedback2".to_string(), None),
+            Message::Agent("test3".to_string(), None),
+            Message::Feedback("feedback3".to_string(), None),
+            Message::Agent("test4".to_string(), None),
+            Message::Feedback("feedback4".to_string(), None),
+        ];
+
+        let history = ChatHistory::create(conv, ConversationWindow::LastN(7));
+        assert_eq!(history.history, expected);
+    }
 }
