@@ -178,11 +178,13 @@ impl Client for OpenAIClient {
             if !comp.choices.is_empty() {
                 let first = comp.choices.first().unwrap();
                 if let Some(m) = first.message.as_ref() {
-                    if m.tool_calls.is_some() {
-                        return Ok(SupportedFeatures {
-                            system_prompt: true,
-                            tools: true,
-                        });
+                    if let Some(calls) = m.tool_calls.as_ref() {
+                        if !calls.is_empty() {
+                            return Ok(SupportedFeatures {
+                                system_prompt: true,
+                                tools: true,
+                            });
+                        }
                     }
                 }
             }
