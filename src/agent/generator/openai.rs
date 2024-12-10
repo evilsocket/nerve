@@ -180,6 +180,7 @@ impl Client for OpenAIClient {
                 if let Some(m) = first.message.as_ref() {
                     if let Some(calls) = m.tool_calls.as_ref() {
                         if !calls.is_empty() {
+                            log::debug!("found tool_calls: {:?}", calls);
                             return Ok(SupportedFeatures {
                                 system_prompt: true,
                                 tools: true,
