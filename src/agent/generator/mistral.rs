@@ -3,7 +3,7 @@ use async_trait::async_trait;
 
 use crate::agent::state::SharedState;
 
-use super::{openai::OpenAIClient, ChatOptions, ChatResponse, Client};
+use super::{openai::OpenAIClient, ChatOptions, ChatResponse, Client, SupportedFeatures};
 
 pub struct MistralClient {
     client: OpenAIClient,
@@ -15,13 +15,14 @@ impl Client for MistralClient {
     where
         Self: Sized,
     {
-        let client = OpenAIClient::custom(model_name, "MISTRAL_API_KEY", "https://api.mistral.ai/v1/")?;
+        let client =
+            OpenAIClient::custom(model_name, "MISTRAL_API_KEY", "https://api.mistral.ai/v1/")?;
 
         Ok(Self { client })
     }
 
-    async fn check_native_tools_support(&self) -> Result<bool> {
-        self.client.check_native_tools_support().await
+    async fn check_supported_features(&self) -> Result<SupportedFeatures> {
+        self.client.check_supported_features().await
     }
 
     async fn chat(
@@ -33,7 +34,7 @@ impl Client for MistralClient {
 
         if let Err(error) = &response {
             if self.check_rate_limit(&error.to_string()).await {
-                return self.chat(state, options).await;                
+                return self.chat(state, options).await;
             }
         }
 

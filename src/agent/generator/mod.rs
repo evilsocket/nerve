@@ -89,6 +89,20 @@ pub struct ChatResponse {
     pub usage: Option<Usage>,
 }
 
+pub struct SupportedFeatures {
+    pub system_prompt: bool,
+    pub tools: bool,
+}
+
+impl Default for SupportedFeatures {
+    fn default() -> Self {
+        Self {
+            system_prompt: true,
+            tools: false,
+        }
+    }
+}
+
 #[async_trait]
 pub trait Client: mini_rag::Embedder + Send + Sync {
     fn new(url: &str, port: u16, model_name: &str, context_window: u32) -> Result<Self>
@@ -97,8 +111,8 @@ pub trait Client: mini_rag::Embedder + Send + Sync {
 
     async fn chat(&self, state: SharedState, options: &ChatOptions) -> Result<ChatResponse>;
 
-    async fn check_native_tools_support(&self) -> Result<bool> {
-        Ok(false)
+    async fn check_supported_features(&self) -> Result<SupportedFeatures> {
+        Ok(SupportedFeatures::default())
     }
 
     async fn check_rate_limit(&self, error: &str) -> bool {

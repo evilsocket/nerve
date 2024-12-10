@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::agent::{
-    generator::{ChatResponse, Usage},
+    generator::{ChatResponse, SupportedFeatures, Usage},
     state::SharedState,
     Invocation,
 };
@@ -102,7 +102,7 @@ impl Client for AnthropicClient {
         Ok(Self { model, client })
     }
 
-    async fn check_native_tools_support(&self) -> Result<bool> {
+    async fn check_supported_features(&self) -> Result<SupportedFeatures> {
         let messages = vec![Message::user("Execute the test function.")];
         let max_tokens = MaxTokens::new(4096, self.model)?;
 
@@ -128,9 +128,15 @@ impl Client for AnthropicClient {
         log::debug!("response = {:?}", response);
 
         if let Ok(tool_use) = response.content.flatten_into_tool_use() {
-            Ok(tool_use.name == "test")
+            Ok(SupportedFeatures {
+                system_prompt: true,
+                tools: tool_use.name == "test",
+            })
         } else {
-            Ok(false)
+            Ok(SupportedFeatures {
+                system_prompt: true,
+                tools: false,
+            })
         }
     }
 
@@ -183,10 +189,10 @@ impl Client for AnthropicClient {
 
         let request_body = MessagesRequestBody {
             model: self.model,
-            system: match &options.system_prompt {
-                Some(sp) => Some(SystemPrompt::new(sp.trim())),
-                None => None,
-            },
+            system: options
+                .system_prompt
+                .as_ref()
+                .map(|sp| SystemPrompt::new(sp.trim())),
             messages,
             max_tokens,
             tools: if tools.is_empty() { None } else { Some(tools) },

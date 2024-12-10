@@ -3,7 +3,7 @@ use async_trait::async_trait;
 
 use crate::agent::state::SharedState;
 
-use super::{openai::OpenAIClient, ChatOptions, ChatResponse, Client};
+use super::{openai::OpenAIClient, ChatOptions, ChatResponse, Client, SupportedFeatures};
 
 pub struct FireworksClient {
     client: OpenAIClient,
@@ -22,6 +22,10 @@ impl Client for FireworksClient {
         )?;
 
         Ok(Self { client })
+    }
+
+    async fn check_supported_features(&self) -> Result<SupportedFeatures> {
+        self.client.check_supported_features().await
     }
 
     async fn chat(

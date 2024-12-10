@@ -18,7 +18,7 @@ use async_trait::async_trait;
 
 use crate::agent::{state::SharedState, Invocation};
 
-use super::{ChatOptions, ChatResponse, Client, Message};
+use super::{ChatOptions, ChatResponse, Client, Message, SupportedFeatures};
 
 pub struct OllamaClient {
     model: String,
@@ -51,7 +51,7 @@ impl Client for OllamaClient {
         })
     }
 
-    async fn check_native_tools_support(&self) -> Result<bool> {
+    async fn check_supported_features(&self) -> Result<SupportedFeatures> {
         let chat_history = vec![
             ChatMessage::system("You are an helpful assistant.".to_string()),
             ChatMessage::user("Call the test function.".to_string()),
@@ -79,12 +79,18 @@ impl Client for OllamaClient {
 
         if let Err(err) = self.client.send_chat_messages(request).await {
             if err.to_string().contains("does not support tools") {
-                Ok(false)
+                Ok(SupportedFeatures {
+                    system_prompt: true,
+                    tools: false,
+                })
             } else {
                 Err(anyhow!(err))
             }
         } else {
-            Ok(true)
+            Ok(SupportedFeatures {
+                system_prompt: true,
+                tools: true,
+            })
         }
     }
 

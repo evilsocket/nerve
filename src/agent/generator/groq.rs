@@ -17,7 +17,7 @@ use crate::agent::{
     Invocation,
 };
 
-use super::{ChatOptions, Client};
+use super::{ChatOptions, Client, SupportedFeatures};
 
 lazy_static! {
     static ref RETRY_TIME_PARSER: Regex =
@@ -58,7 +58,7 @@ impl Client for GroqClient {
         Ok(Self { model, api_key })
     }
 
-    async fn check_native_tools_support(&self) -> Result<bool> {
+    async fn check_supported_features(&self) -> Result<SupportedFeatures> {
         let chat_history = vec![
             crate::api::groq::completion::message::Message::SystemMessage {
                 role: Some("system".to_string()),
@@ -106,7 +106,10 @@ impl Client for GroqClient {
 
         log::debug!("groq.check_tools_support.resp = {:?}", &resp);
 
-        Ok(resp.is_ok())
+        Ok(SupportedFeatures {
+            system_prompt: true,
+            tools: resp.is_ok(),
+        })
     }
 
     async fn chat(

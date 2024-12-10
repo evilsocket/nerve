@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::agent::{state::SharedState, Invocation};
 
-use super::{ChatOptions, ChatResponse, Client, Message};
+use super::{ChatOptions, ChatResponse, Client, Message, SupportedFeatures};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenAiToolFunctionParameterProperty {
@@ -130,7 +130,7 @@ impl Client for OpenAIClient {
         Self::custom(model_name, "OPENAI_API_KEY", "https://api.openai.com/v1/")
     }
 
-    async fn check_native_tools_support(&self) -> Result<bool> {
+    async fn check_supported_features(&self) -> Result<SupportedFeatures> {
         let chat_history = vec![
             crate::api::openai::Message {
                 role: Role::System,
@@ -172,18 +172,35 @@ impl Client for OpenAIClient {
 
         log::debug!("openai.check_tools_support.resp = {:?}", &resp);
 
+        let mut system_prompt_support = true;
+
         if let Ok(comp) = resp {
             if !comp.choices.is_empty() {
                 let first = comp.choices.first().unwrap();
                 if let Some(m) = first.message.as_ref() {
                     if m.tool_calls.is_some() {
-                        return Ok(true);
+                        return Ok(SupportedFeatures {
+                            system_prompt: true,
+                            tools: true,
+                        });
                     }
                 }
             }
+        } else {
+            let api_error = resp.unwrap_err().to_string();
+            if api_error.contains("unsupported_value")
+                && api_error.contains("does not support 'system' with this model")
+            {
+                system_prompt_support = false;
+            } else {
+                log::error!("openai.check_tools_support.error = {}", api_error);
+            }
         }
 
-        Ok(false)
+        Ok(SupportedFeatures {
+            system_prompt: system_prompt_support,
+            tools: false,
+        })
     }
 
     async fn chat(

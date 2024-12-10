@@ -3,7 +3,7 @@ use async_trait::async_trait;
 
 use crate::agent::state::SharedState;
 
-use super::{openai::OpenAIClient, ChatOptions, ChatResponse, Client};
+use super::{openai::OpenAIClient, ChatOptions, ChatResponse, Client, SupportedFeatures};
 
 pub struct HuggingfaceMessageClient {
     client: OpenAIClient,
@@ -23,8 +23,8 @@ impl Client for HuggingfaceMessageClient {
         Ok(Self { client })
     }
 
-    async fn check_native_tools_support(&self) -> Result<bool> {
-        self.client.check_native_tools_support().await
+    async fn check_supported_features(&self) -> Result<SupportedFeatures> {
+        self.client.check_supported_features().await
     }
 
     async fn chat(

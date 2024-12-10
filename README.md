@@ -41,7 +41,7 @@ Nerve features integrations for any model accessible via the following providers
 | **Mistral.ai** | `MISTRAL_API_KEY` | `mistral://mistral-large-latest` |
 | **Novita** | `NOVITA_API_KEY` | `novita://meta-llama/llama-3.1-70b-instruct` |
 
-¹ **o1-preview and o1 models do not support function calling directly** and do not support a system prompt. It is possible to workaround this by adding the `--user-only` flag to the command line.
+¹ **o1-preview and o1 models do not support function calling directly** and do not support a system prompt. Nerve will try to detect this and fallback to user prompt. It is possible to force this behaviour by adding the `--user-only` flag to the command line.
 
 ² Refer to [this document](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) for how to configure a custom Huggingface endpoint.
 

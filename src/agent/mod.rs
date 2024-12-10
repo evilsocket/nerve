@@ -123,12 +123,14 @@ impl Agent {
         user_only: bool,
         max_iterations: usize,
     ) -> Result<Self> {
+        // check if the model supports tools calling and system prompt natively
+        let supported_features = generator.check_supported_features().await?;
+
         let use_native_tools_format = if force_strategy {
             log::info!("using {:?} serialization strategy", &serializer);
             false
         } else {
-            // check if the model supports tools calling natively
-            match generator.check_native_tools_support().await? {
+            match supported_features.tools {
                 true => {
                     log::debug!("model supports tools calling natively.");
                     true
@@ -138,6 +140,14 @@ impl Agent {
                     false
                 }
             }
+        };
+
+        let user_only = if !user_only && !supported_features.system_prompt {
+            log::info!("model does not support system prompt, forcing user prompt");
+            true
+        } else {
+            // leave whatever the user set
+            user_only
         };
 
         let task_timeout = task.get_timeout();
