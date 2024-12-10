@@ -114,20 +114,30 @@ impl Client for GroqClient {
         state: SharedState,
         options: &ChatOptions,
     ) -> anyhow::Result<ChatResponse> {
-        let mut chat_history = vec![
-            crate::api::groq::completion::message::Message::SystemMessage {
-                role: Some("system".to_string()),
-                content: Some(options.system_prompt.trim().to_string()),
-                name: None,
-                tool_call_id: None,
-            },
-            crate::api::groq::completion::message::Message::UserMessage {
-                role: Some("user".to_string()),
-                content: Some(options.prompt.trim().to_string()),
-                name: None,
-                tool_call_id: None,
-            },
-        ];
+        let mut chat_history = match &options.system_prompt {
+            Some(sp) => vec![
+                crate::api::groq::completion::message::Message::SystemMessage {
+                    role: Some("system".to_string()),
+                    content: Some(sp.trim().to_string()),
+                    name: None,
+                    tool_call_id: None,
+                },
+                crate::api::groq::completion::message::Message::UserMessage {
+                    role: Some("user".to_string()),
+                    content: Some(options.prompt.trim().to_string()),
+                    name: None,
+                    tool_call_id: None,
+                },
+            ],
+            None => vec![
+                crate::api::groq::completion::message::Message::UserMessage {
+                    role: Some("user".to_string()),
+                    content: Some(options.prompt.trim().to_string()),
+                    name: None,
+                    tool_call_id: None,
+                },
+            ],
+        };
 
         let mut call_idx = 0;
 

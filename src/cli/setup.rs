@@ -101,6 +101,7 @@ pub async fn setup_agent(args: &cli::Args) -> Result<(Agent, events::Receiver)> 
         args.serialization.clone(),
         conversation_window,
         args.force_format,
+        args.user_only,
         args.max_iterations,
     )
     .await?;

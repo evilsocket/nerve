@@ -14,6 +14,9 @@ pub struct Args {
     /// Run in judge mode.
     #[arg(long)]
     pub judge_mode: bool,
+    /// Only rely on user prompt. Use for models like openai/o1 family that don't allow a system prompt.
+    #[arg(long)]
+    pub user_only: bool,
     /// Embedder string as <type>://<model name>@<host>:<port>
     #[arg(
         short = 'E',

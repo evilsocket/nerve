@@ -102,10 +102,13 @@ impl Client for OllamaClient {
         //    - msg 1
         //    - ...
         //    - msg n
-        let mut chat_history = vec![
-            ChatMessage::system(options.system_prompt.trim().to_string()),
-            ChatMessage::user(options.prompt.to_string()),
-        ];
+        let mut chat_history = match &options.system_prompt {
+            Some(sp) => vec![
+                ChatMessage::system(sp.trim().to_string()),
+                ChatMessage::user(options.prompt.to_string()),
+            ],
+            None => vec![ChatMessage::user(options.prompt.to_string())],
+        };
 
         for m in options.history.iter() {
             chat_history.push(match m {
@@ -229,9 +232,9 @@ impl Client for OllamaClient {
                 content,
                 invocations,
                 usage: res.final_data.map(|final_data| super::Usage {
-                        input_tokens: final_data.prompt_eval_count as u32,
-                        output_tokens: final_data.eval_count as u32,
-                    }),
+                    input_tokens: final_data.prompt_eval_count as u32,
+                    output_tokens: final_data.eval_count as u32,
+                }),
             })
         } else {
             log::warn!("model returned an empty message.");
@@ -239,9 +242,9 @@ impl Client for OllamaClient {
                 content: "".to_string(),
                 invocations: vec![],
                 usage: res.final_data.map(|final_data| super::Usage {
-                        input_tokens: final_data.prompt_eval_count as u32,
-                        output_tokens: final_data.eval_count as u32,
-                    }),
+                    input_tokens: final_data.prompt_eval_count as u32,
+                    output_tokens: final_data.eval_count as u32,
+                }),
             })
         }
     }

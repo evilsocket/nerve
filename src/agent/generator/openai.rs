@@ -191,18 +191,25 @@ impl Client for OpenAIClient {
         state: SharedState,
         options: &ChatOptions,
     ) -> anyhow::Result<ChatResponse> {
-        let mut chat_history = vec![
-            crate::api::openai::Message {
-                role: Role::System,
-                content: Some(options.system_prompt.trim().to_string()),
-                tool_calls: None,
-            },
-            crate::api::openai::Message {
+        let mut chat_history = match &options.system_prompt {
+            Some(sp) => vec![
+                crate::api::openai::Message {
+                    role: Role::System,
+                    content: Some(sp.trim().to_string()),
+                    tool_calls: None,
+                },
+                crate::api::openai::Message {
+                    role: Role::User,
+                    content: Some(options.prompt.trim().to_string()),
+                    tool_calls: None,
+                },
+            ],
+            None => vec![crate::api::openai::Message {
                 role: Role::User,
                 content: Some(options.prompt.trim().to_string()),
                 tool_calls: None,
-            },
-        ];
+            }],
+        };
 
         for m in options.history.iter() {
             chat_history.push(match m {

@@ -15,13 +15,13 @@ mod deepseek;
 mod fireworks;
 mod groq;
 mod huggingface;
+mod mistral;
 mod nim;
 mod novita;
 mod ollama;
 mod openai;
 mod openai_compatible;
 mod xai;
-mod mistral;
 
 pub(crate) mod history;
 mod options;
@@ -36,14 +36,14 @@ lazy_static! {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ChatOptions {
-    pub system_prompt: String,
+    pub system_prompt: Option<String>,
     pub prompt: String,
     pub history: ChatHistory,
 }
 
 impl ChatOptions {
     pub fn new(
-        system_prompt: String,
+        system_prompt: Option<String>,
         prompt: String,
         conversation: Vec<Message>,
         history_strategy: ConversationWindow,
@@ -97,8 +97,8 @@ pub trait Client: mini_rag::Embedder + Send + Sync {
 
     async fn chat(&self, state: SharedState, options: &ChatOptions) -> Result<ChatResponse>;
 
-    async fn check_native_tools_support(&self) -> Result<bool> {
-        Ok(false)
+    async fn supports_system_prompt(&self) -> Result<bool> {
+        Ok(true)
     }
 
     async fn check_rate_limit(&self, error: &str) -> bool {

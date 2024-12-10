@@ -183,7 +183,10 @@ impl Client for AnthropicClient {
 
         let request_body = MessagesRequestBody {
             model: self.model,
-            system: Some(SystemPrompt::new(options.system_prompt.trim())),
+            system: match &options.system_prompt {
+                Some(sp) => Some(SystemPrompt::new(sp.trim())),
+                None => None,
+            },
             messages,
             max_tokens,
             tools: if tools.is_empty() { None } else { Some(tools) },

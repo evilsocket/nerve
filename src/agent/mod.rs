@@ -108,6 +108,7 @@ pub struct Agent {
 
     serializer: serialization::Strategy,
     use_native_tools_format: bool,
+    user_only: bool,
 }
 
 impl Agent {
@@ -119,6 +120,7 @@ impl Agent {
         serializer: serialization::Strategy,
         conversation_window: ConversationWindow,
         force_strategy: bool,
+        user_only: bool,
         max_iterations: usize,
     ) -> Result<Self> {
         let use_native_tools_format = if force_strategy {
@@ -156,6 +158,7 @@ impl Agent {
             state,
             task_timeout,
             use_native_tools_format,
+            user_only,
             serializer,
             conversation_window,
         })
@@ -235,9 +238,10 @@ impl Agent {
     async fn on_state_update(&self, options: &ChatOptions, refresh: bool) -> Result<()> {
         let mut opts = options.clone();
         if refresh {
-            opts.system_prompt = self
-                .serializer
-                .system_prompt_for_state(&*self.state.lock().await)?;
+            opts.system_prompt = Some(
+                self.serializer
+                    .system_prompt_for_state(&*self.state.lock().await)?,
+            );
 
             let messages = self.state.lock().await.to_chat_history(&self.serializer)?;
 
@@ -368,6 +372,14 @@ impl Agent {
 
         let system_prompt = self.serializer.system_prompt_for_state(&mut_state)?;
         let prompt = mut_state.to_prompt()?;
+
+        let (system_prompt, prompt) = if self.user_only {
+            // combine with user prompt for models like the openai/o1 family
+            (None, format!("{system_prompt}\n\n{prompt}"))
+        } else {
+            (Some(system_prompt), prompt)
+        };
+
         let history = mut_state.to_chat_history(&self.serializer)?;
         let options = ChatOptions::new(system_prompt, prompt, history, self.conversation_window);
 

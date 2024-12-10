@@ -73,7 +73,7 @@ pub async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
                 if let Some(prompt_path) = &args.save_to {
                     let data = format!(
                         "[SYSTEM PROMPT]\n\n{}\n\n[PROMPT]\n\n{}\n\n[CHAT]\n\n{}",
-                        &opts.system_prompt,
+                        &opts.system_prompt.unwrap_or_default(),
                         &opts.prompt,
                         opts.history
                             .iter()

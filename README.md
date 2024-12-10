@@ -31,9 +31,9 @@ Nerve features integrations for any model accessible via the following providers
 |----------|----------------------------|------------------|
 | **Ollama** | - | `ollama://llama3@localhost:11434` |
 | **Groq** | `GROQ_API_KEY` | `groq://llama3-70b-8192` |
-| **OpenAI** | `OPENAI_API_KEY` | `openai://gpt-4` |
+| **OpenAI**¹ | `OPENAI_API_KEY` | `openai://gpt-4` |
 | **Fireworks** | `LLM_FIREWORKS_KEY` | `fireworks://llama-v3-70b-instruct` |
-| **Huggingface**¹ | `HF_API_TOKEN` | `hf://tgi@your-custom-endpoint.aws.endpoints.huggingface.cloud` |
+| **Huggingface**² | `HF_API_TOKEN` | `hf://tgi@your-custom-endpoint.aws.endpoints.huggingface.cloud` |
 | **Anthropic** | `ANTHROPIC_API_KEY` | `anthropic://claude` |
 | **Nvidia NIM** | `NIM_API_KEY` | `nim://nvidia/nemotron-4-340b-instruct` |
 | **DeepSeek** | `DEEPSEEK_API_KEY` | `deepseek://deepseek-chat` |
@@ -41,7 +41,9 @@ Nerve features integrations for any model accessible via the following providers
 | **Mistral.ai** | `MISTRAL_API_KEY` | `mistral://mistral-large-latest` |
 | **Novita** | `NOVITA_API_KEY` | `novita://meta-llama/llama-3.1-70b-instruct` |
 
-¹ Refer to [this document](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) for how to configure a custom Huggingface endpoint.
+¹ **o1-preview and o1 models do not support function calling directly** and do not support a system prompt. It is possible to workaround this by adding the `--user-only` flag to the command line.
+
+² Refer to [this document](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) for how to configure a custom Huggingface endpoint.
 
 ## Installing with Cargo
 
