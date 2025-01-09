@@ -203,6 +203,10 @@ impl State {
         &self.task
     }
 
+    pub fn get_variables(&self) -> &HashMap<String, String> {
+        &self.variables
+    }
+
     pub fn get_variable(&self, name: &str) -> Option<&String> {
         self.variables.get(name)
     }

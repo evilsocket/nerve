@@ -42,6 +42,7 @@ pub struct TaskletAction {
     description: String,
     args: Option<HashMap<String, String>>,
     define: Option<HashMap<String, String>>,
+    store_to: Option<String>,
     example_payload: Option<String>,
     timeout: Option<String>,
 
@@ -58,125 +59,78 @@ pub struct TaskletAction {
     aliased_to: Option<Box<dyn Action>>,
 }
 
-#[async_trait]
-impl Action for TaskletAction {
-    fn name(&self) -> &str {
-        &self.name
+impl TaskletAction {
+    async fn run_via_robopages(
+        &self,
+        attributes: Option<HashMap<String, String>>,
+    ) -> Result<Option<String>> {
+        let result =
+            robopages::Client::new(self.robopages_server_address.as_ref().unwrap().clone())
+                .execute(&self.name, attributes.unwrap_or_default())
+                .await?;
+        Ok(Some(result))
     }
 
-    fn description(&self) -> &str {
-        &self.description
-    }
+    async fn run_as_judge(&self, payload: Option<String>) -> Result<Option<String>> {
+        let nerve_exe = std::env::current_exe()
+            .map_err(|e| anyhow!("Failed to get current executable path: {}", e))?;
 
-    fn example_payload(&self) -> Option<&str> {
-        if self.example_payload.is_some() {
-            return self.example_payload.as_deref();
-        } else if let Some(aliased_to) = &self.aliased_to {
-            return aliased_to.example_payload();
-        }
-        None
-    }
+        let generator = std::env::var("NERVE_JUDGE").unwrap();
 
-    fn example_attributes(&self) -> Option<HashMap<String, String>> {
-        if self.args.is_some() {
-            return self.args.clone();
-        } else if let Some(aliased_to) = &self.aliased_to {
-            return aliased_to.example_attributes();
-        }
-        None
-    }
+        let mut cmd = Command::new(&nerve_exe);
+        cmd.args([
+            "-J",
+            &generator,
+            "-T",
+            self.judge_path.as_ref().unwrap().to_str().unwrap(),
+            "--judge-mode",
+        ]);
 
-    fn timeout(&self) -> Option<Duration> {
-        if let Some(timeout) = &self.timeout {
-            if let Ok(tm) = timeout.parse::<DurationString>() {
-                return Some(*tm);
-            } else {
-                log::error!("can't parse '{}' as duration string", timeout);
+        let mut child = cmd
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("Failed to spawn judge child process");
+
+        log::info!("running judge: {:?}", &cmd);
+
+        let mut stdin = child.stdin.take().expect("Failed to open stdin");
+        std::thread::spawn(move || {
+            stdin
+                .write_all(format!("{}\n", payload.unwrap()).as_bytes())
+                .expect("Failed to write to judge stdin");
+        });
+
+        // let output = cmd.output();
+        let output = child.wait_with_output();
+        let mut result = String::new();
+
+        if let Ok(output) = output {
+            let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+            if !err.is_empty() {
+                result = format!("ERROR: {}\n", err);
             }
-        } else if let Some(aliased_to) = &self.aliased_to {
-            return aliased_to.timeout();
+
+            if !out.is_empty() {
+                result = out.to_string();
+            }
+        } else {
+            result = format!("ERROR: {}", output.err().unwrap());
         }
-        None
+
+        log::info!("  > {}", &result);
+
+        Ok(Some(result))
     }
 
-    fn complete_task(&self) -> bool {
-        self.complete_task.unwrap_or(false)
-    }
-
-    async fn run(
+    async fn run_as_command_line(
         &self,
         state: SharedState,
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<String>> {
-        // run via robopages server
-        if let Some(server_address) = &self.robopages_server_address {
-            let result = robopages::Client::new(server_address.clone())
-                .execute(&self.name, attributes.unwrap_or_default())
-                .await?;
-            return Ok(Some(result));
-        }
-
-        // run as alias of a builtin namespace.action, here we can unwrap as everything is validated earlier
-        if let Some(aliased_to) = &self.aliased_to {
-            return aliased_to.run(state, attributes, payload).await;
-        }
-
-        // run as another instance of nerve for the judge tool
-        if let Some(judge_path) = &self.judge_path {
-            let nerve_exe = std::env::current_exe()
-                .map_err(|e| anyhow!("Failed to get current executable path: {}", e))?;
-
-            let generator = std::env::var("NERVE_JUDGE").unwrap();
-
-            let mut cmd = Command::new(&nerve_exe);
-            cmd.args([
-                "-J",
-                &generator,
-                "-T",
-                judge_path.to_str().unwrap(),
-                "--judge-mode",
-            ]);
-
-            let mut child = cmd
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .spawn()
-                .expect("Failed to spawn judge child process");
-
-            log::info!("running judge: {:?}", &cmd);
-
-            let mut stdin = child.stdin.take().expect("Failed to open stdin");
-            std::thread::spawn(move || {
-                stdin
-                    .write_all(format!("{}\n", payload.unwrap()).as_bytes())
-                    .expect("Failed to write to judge stdin");
-            });
-
-            // let output = cmd.output();
-            let output = child.wait_with_output();
-            let mut result = String::new();
-
-            if let Ok(output) = output {
-                let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
-                let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
-
-                if !err.is_empty() {
-                    result = format!("ERROR: {}\n", err);
-                }
-
-                if !out.is_empty() {
-                    result = out.to_string();
-                }
-            } else {
-                result = format!("ERROR: {}", output.err().unwrap());
-            }
-
-            log::info!("  > {}", &result);
-
-            return Ok(Some(result));
-        }
-
         // run as local tool
         let parts: Vec<String> = self
             .tool
@@ -322,6 +276,87 @@ impl Action for TaskletAction {
             log::error!("{}", &err);
             Err(anyhow!(err))
         }
+    }
+}
+
+#[async_trait]
+impl Action for TaskletAction {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn description(&self) -> &str {
+        &self.description
+    }
+
+    fn example_payload(&self) -> Option<&str> {
+        if self.example_payload.is_some() {
+            return self.example_payload.as_deref();
+        } else if let Some(aliased_to) = &self.aliased_to {
+            return aliased_to.example_payload();
+        }
+        None
+    }
+
+    fn example_attributes(&self) -> Option<HashMap<String, String>> {
+        if self.args.is_some() {
+            return self.args.clone();
+        } else if let Some(aliased_to) = &self.aliased_to {
+            return aliased_to.example_attributes();
+        }
+        None
+    }
+
+    fn timeout(&self) -> Option<Duration> {
+        if let Some(timeout) = &self.timeout {
+            if let Ok(tm) = timeout.parse::<DurationString>() {
+                return Some(*tm);
+            } else {
+                log::error!("can't parse '{}' as duration string", timeout);
+            }
+        } else if let Some(aliased_to) = &self.aliased_to {
+            return aliased_to.timeout();
+        }
+        None
+    }
+
+    fn complete_task(&self) -> bool {
+        self.complete_task.unwrap_or(false)
+    }
+
+    async fn run(
+        &self,
+        state: SharedState,
+        attributes: Option<HashMap<String, String>>,
+        payload: Option<String>,
+    ) -> Result<Option<String>> {
+        let output = if self.robopages_server_address.is_some() {
+            // run via robopages server
+            self.run_via_robopages(attributes).await?
+        } else if let Some(aliased_to) = &self.aliased_to {
+            // run as alias of a builtin namespace.action, here we can unwrap as everything is validated earlier
+            aliased_to.run(state.clone(), attributes, payload).await?
+        } else if self.judge_path.is_some() {
+            // run as another instance of nerve for the judge tool
+            self.run_as_judge(payload).await?
+        } else if self.tool.is_some() {
+            // run as a command line tool
+            self.run_as_command_line(state.clone(), attributes, payload)
+                .await?
+        } else {
+            // just return the payload
+            payload
+        };
+
+        if let Some(store_to) = &self.store_to {
+            log::debug!("storing output to {}", store_to);
+            state
+                .lock()
+                .await
+                .set_variable(store_to.to_string(), output.clone().unwrap_or_default());
+        }
+
+        Ok(output)
     }
 }
 

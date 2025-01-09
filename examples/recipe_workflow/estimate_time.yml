@@ -1,0 +1,22 @@
+using: []
+
+system_prompt: You are a talented chef. You are given a list of ingredients and a list of preparation steps. You need to estimate the time it will take to prepare the food.
+
+prompt: >
+  Estimate the time it will take to prepare $food. 
+
+  The ingredients at your disposal are:
+    $ingredients
+  The preparation steps are: 
+    $steps
+guidance:
+  - Once you have made an estimation, use the estimate_time tool to confirm the decision.
+
+functions:
+  - name: Tools
+    actions:
+      - name: estimate_time
+        description: "To provide the time it will take to prepare the food:"
+        store_to: preparation_time
+        complete_task: true
+        example_payload: 25 minutes

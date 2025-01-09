@@ -1,0 +1,22 @@
+using: []
+
+system_prompt: You are a talented chef.
+
+prompt: prepare a list of ingredients for $food
+
+guidance:
+  - Once you have made a list of ingredients, use the create_list_of_ingredients tool to confirm the decision.
+
+functions:
+  - name: Tools
+    actions:
+      - name: create_list_of_ingredients
+        description: "To provide the ingredients one per line as an organized list:"
+        store_to: ingredients
+        complete_task: true
+        example_payload: >
+          - 1 cup of flour
+          - 1 cup of sugar
+          - 1 cup of eggs
+          - 1 cup of milk
+          - 1 cup of butter

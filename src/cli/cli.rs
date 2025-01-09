@@ -2,7 +2,7 @@ use crate::agent::serialization::Strategy;
 use clap::Parser;
 
 /// Get things done with LLMs.
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug, Clone, Default)]
 #[command(version, about, long_about = None)]
 pub struct Args {
     /// Generator string as <type>://<model name>@<host>:<port>
@@ -36,6 +36,9 @@ pub struct Args {
     /// Tasklet file.
     #[arg(short = 'T', long)]
     pub tasklet: Option<String>,
+    /// Workflow file.
+    #[arg(short = 'W', long)]
+    pub workflow: Option<String>,
     /// Specify the prompt if not provided by the tasklet.
     #[arg(short = 'P', long)]
     pub prompt: Option<String>,

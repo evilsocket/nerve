@@ -1,0 +1,22 @@
+using: []
+
+system_prompt: You are a talented and creative chef.
+
+prompt: describe the preparation steps for $food. The ingredients at your disposal are $ingredients.
+
+guidance:
+  - Use the describe_preparation_steps tool to describe each step in the preparation.
+  - Once you have described each step in the preparation of the pie set your task as complete.
+
+functions:
+  - name: Tools
+    actions:
+      - name: describe_preparation_steps
+        description: "To provide the preparation steps one per line as an organized list:"
+        store_to: steps
+        complete_task: true
+        example_payload: >
+          - Preheat the oven to 350 degrees F (175 degrees C)
+          - In a large bowl, mix together flour, sugar, eggs, and milk.
+          - Pour the mixture into a pie crust.
+          - Bake in the preheated oven for 20 minutes, or until a knife inserted into the center comes out clean.

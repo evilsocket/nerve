@@ -25,6 +25,7 @@ pub mod namespaces;
 pub mod serialization;
 pub mod state;
 pub mod task;
+pub mod workflow;
 
 pub fn get_user_input(prompt: &str) -> String {
     print!("\n{}", prompt);
@@ -369,6 +370,10 @@ impl Agent {
         }
     }
 
+    pub async fn get_variables(&self) -> HashMap<String, String> {
+        self.state.lock().await.get_variables().clone()
+    }
+
     pub async fn get_metrics(&self) -> state::metrics::Metrics {
         self.state.lock().await.metrics.clone()
     }
@@ -508,7 +513,7 @@ impl Agent {
                         }
 
                         if action.complete_task() {
-                            log::info!("! task complete");
+                            log::debug!("! task complete");
                             self.state.lock().await.on_complete(false, None)?;
                         }
                     }

@@ -2,12 +2,9 @@ use std::time::Duration;
 
 use colored::Colorize;
 
-use crate::{
-    agent::{
-        events::{Event, Receiver},
-        Invocation,
-    },
-    cli,
+use crate::agent::{
+    events::{Event, Receiver},
+    Invocation,
 };
 
 fn on_action_executed(
@@ -63,14 +60,21 @@ fn on_action_executed(
     }
 }
 
-pub async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
+pub async fn consume_events(
+    mut events_rx: Receiver,
+    save_to: Option<String>,
+    is_judge: bool,
+    is_workflow: bool,
+) {
     while let Some(event) = events_rx.recv().await {
         match event {
             Event::MetricsUpdate(metrics) => {
-                log::info!("{}", metrics.to_string().dimmed());
+                if !is_workflow {
+                    println!("{}", metrics.to_string().dimmed());
+                }
             }
             Event::StateUpdate(opts) => {
-                if let Some(prompt_path) = &args.save_to {
+                if let Some(prompt_path) = &save_to {
                     let data = format!(
                         "[SYSTEM PROMPT]\n\n{}\n\n[PROMPT]\n\n{}\n\n[CHAT]\n\n{}",
                         &opts.system_prompt.unwrap_or_default(),
@@ -116,36 +120,31 @@ pub async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
                 elapsed,
                 complete_task,
             } => {
-                on_action_executed(
-                    args.judge_mode,
-                    error,
-                    invocation,
-                    result,
-                    elapsed,
-                    complete_task,
-                );
+                on_action_executed(is_judge, error, invocation, result, elapsed, complete_task);
             }
             Event::TaskComplete { impossible, reason } => {
-                if impossible {
-                    log::error!(
-                        "{}: '{}'",
-                        "task is impossible".bold().red(),
-                        if let Some(r) = &reason {
-                            r
-                        } else {
-                            "no reason provided"
-                        }
-                    );
-                } else {
-                    log::info!(
-                        "{}: '{}'",
-                        "task complete".bold().green(),
-                        if let Some(r) = &reason {
-                            r
-                        } else {
-                            "no reason provided"
-                        }
-                    );
+                if !is_workflow {
+                    if impossible {
+                        log::error!(
+                            "{}: '{}'",
+                            "task is impossible".bold().red(),
+                            if let Some(r) = &reason {
+                                r
+                            } else {
+                                "no reason provided"
+                            }
+                        );
+                    } else {
+                        log::info!(
+                            "{}: '{}'",
+                            "task complete".bold().green(),
+                            if let Some(r) = &reason {
+                                r
+                            } else {
+                                "no reason provided"
+                            }
+                        );
+                    }
                 }
             }
             Event::StorageUpdate {
@@ -155,32 +154,34 @@ pub async fn consume_events(args: cli::Args, mut events_rx: Receiver) {
                 prev,
                 new,
             } => {
-                if prev.is_none() && new.is_none() {
-                    log::info!("storage.{} cleared", storage_name.yellow().bold());
-                } else if prev.is_none() && new.is_some() {
-                    log::info!(
-                        "storage.{}.{} > {}",
-                        storage_name.yellow().bold(),
-                        key,
-                        new.unwrap().green()
-                    );
-                } else if prev.is_some() && new.is_none() {
-                    log::info!("{}.{} removed", storage_name.yellow().bold(), key);
-                } else if new.is_some() {
-                    log::info!(
-                        "{}.{} > {}",
-                        storage_name.yellow().bold(),
-                        key,
-                        new.unwrap().green()
-                    );
-                } else {
-                    log::info!(
-                        "{}.{} prev={:?} new={:?}",
-                        storage_name.yellow().bold(),
-                        key,
-                        prev,
-                        new
-                    );
+                if !is_workflow {
+                    if prev.is_none() && new.is_none() {
+                        log::info!("storage.{} cleared", storage_name.yellow().bold());
+                    } else if prev.is_none() && new.is_some() {
+                        log::info!(
+                            "storage.{}.{} > {}",
+                            storage_name.yellow().bold(),
+                            key,
+                            new.unwrap().green()
+                        );
+                    } else if prev.is_some() && new.is_none() {
+                        log::info!("{}.{} removed", storage_name.yellow().bold(), key);
+                    } else if new.is_some() {
+                        log::info!(
+                            "{}.{} > {}",
+                            storage_name.yellow().bold(),
+                            key,
+                            new.unwrap().green()
+                        );
+                    } else {
+                        log::info!(
+                            "{}.{} prev={:?} new={:?}",
+                            storage_name.yellow().bold(),
+                            key,
+                            prev,
+                            new
+                        );
+                    }
                 }
             }
         }

@@ -1,0 +1,17 @@
+name: "Write a Recipe"
+description: "A workflow for writing a recipe."
+
+tasks:
+  create_list_of_ingredients:
+    generator: anthropic://claude
+
+  describe_preparation_steps:
+    generator: openai://gpt-4o
+
+  estimate_time:
+    generator: openai://gpt-4o-mini
+
+  rewrite_nicely:
+    generator: openai://gpt-4o
+
+report: $report

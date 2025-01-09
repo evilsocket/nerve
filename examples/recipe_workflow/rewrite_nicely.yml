@@ -1,0 +1,87 @@
+using: []
+
+system_prompt: You are a talented copywriter specialized in food recipes and food blogging. You are given with a basic food recipe and you need to rewrite it in a more engaging and interesting way.
+
+prompt: >
+  Rewrite the following recipe in a more engaging and interesting way:
+
+  Recipe for $food ($preparation_time)
+
+  Ingredients:
+
+    $ingredients
+
+  Preparation steps:
+
+    $steps
+
+guidance:
+  - Once you have completed the task, use the rewrite tool to confirm the decision.
+
+functions:
+  - name: Tools
+    actions:
+      - name: rewrite
+        description: "To confirm your version of the recipe:"
+        store_to: report
+        complete_task: true
+        example_payload: >
+          # **Epic Lazy Day Pancakes**
+
+          ---
+
+          ## **Ingredients** *(serves 2-3)*
+          - 1 cup all-purpose flour
+          - 2 tablespoons sugar
+          - 2 teaspoons baking powder
+          - 1 pinch of salt (because we're fancy)
+          - 3/4 cup milk (or plant-based if you're feeling trendy)
+          - 1 egg (preferably not from a dragon)
+          - 2 tablespoons melted butter (plus extra for the pan)
+          - 1 teaspoon vanilla extract (the secret magic potion)
+          - **Optional:** Chocolate chips, berries, or sprinkles for pizzazz
+
+          ---
+
+          ## **Estimated Time**
+          - **Prep time:** 5 minutes  
+          - **Cook time:** 15 minutes  
+          - **Total time:** 20 minutes (faster than your morning scroll through memes)
+
+          ---
+
+          ## **Preparation Steps**
+          1. **Get in the Mood:**  
+            Put on some feel-good music (bonus points for songs about breakfast). This is going to be legendary.
+
+          2. **Mix the Dry Squad:**  
+            In a large bowl, whisk together the flour, sugar, baking powder, and salt. They're the Avengers of pancakes—basic but crucial.
+
+          3. **Assemble the Wet Heroes:**  
+            In a separate bowl, combine the milk, egg, melted butter, and vanilla. Whisk until they’re besties.
+
+          4. **Bring the Teams Together:**  
+            Pour the wet ingredients into the dry ones. Stir gently—like you're making a potion. A few lumps are fine; you're not chasing Michelin stars.
+
+          5. **Heat Things Up:**  
+            Heat a non-stick pan or griddle over medium heat. Add a small dollop of butter. Watch it sizzle like a firework show.
+
+          6. **Create Pancake Perfection:**  
+            Pour 1/4 cup of batter per pancake onto the pan. If you're adding toppings (like chocolate chips), sprinkle them on before flipping. Cook until bubbles form on the surface (about 2 minutes), then flip and cook for another 1-2 minutes.
+
+          7. **Stack 'Em High:**  
+            Transfer your pancakes to a plate and stack them like you're building a tower of happiness. Keep them warm in a low oven if you're slow (or just impatiently eat them as you go).
+
+          8. **Top It Off:**  
+            Go wild with maple syrup, whipped cream, fruit, or even Nutella. This is your masterpiece; own it.
+
+          ---
+
+          ## **Pro Tips**
+          - Want fluffy pancakes? Don’t overmix—be lazy here.  
+          - Prefer crispy edges? Add a bit more butter to the pan between batches.
+
+          ---
+
+          ## **Outcome**
+          You'll end up with golden, fluffy pancakes that taste like you put in way more effort than you actually did. Perfect for lazy mornings, impressing someone special, or just treating yourself because you’re awesome. Enjoy! 🥞

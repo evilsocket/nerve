@@ -115,7 +115,10 @@ fn setup_models(
     Ok((gen_options, generator, embedder))
 }
 
-pub async fn setup_agent(args: &cli::Args) -> Result<(Agent, events::Receiver)> {
+pub async fn setup_agent_for_task(
+    args: &cli::Args,
+    workflow_mode: bool,
+) -> Result<(Agent, events::Receiver)> {
     // create generator and embedder
     let (gen_options, generator, embedder) = setup_models(args)?;
 
@@ -133,10 +136,11 @@ pub async fn setup_agent(args: &cli::Args) -> Result<(Agent, events::Receiver)> 
     let tasklet_name = tasklet.name.clone();
 
     if !args.judge_mode {
+        if !workflow_mode {
+            print!("{} v{} 🧠 ", APP_NAME, APP_VERSION);
+        }
         println!(
-            "{} v{} 🧠 {}{} > {} ({})\n",
-            APP_NAME,
-            APP_VERSION,
+            "{}{} > {} ({})\n",
             gen_options.model_name.bold(),
             if gen_options.port == 0 {
                 format!("@{}", gen_options.type_name.dimmed())
