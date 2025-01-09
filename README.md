@@ -17,6 +17,7 @@
 - 🧑‍💻 **User-Defined Agents:** Agents are defined using a standard YAML template. _The sky is the limit!_ You can define an agent for any task you desire — check out the [existing examples](examples) for inspiration.
 - 🛠️ **Universal Tool Calling:** Nerve will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers the LLM to perform function calling anyway.
 - 🤖 **Works with any LLM:** Nerve is an LLM-agnostic tool.
+- 🤝 **Multi-Agent Workflow:** Nerve allows you to define a multi-agent workflow, where each agent is responsible for a different part of the task.
 - 💯 **Zero Code:** The project's main goal and core difference with other tools is to allow the user to instrument smart agents without writing code.
 
 <p align="center">
