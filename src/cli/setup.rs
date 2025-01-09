@@ -1,7 +1,9 @@
 use anyhow::Result;
+use clap::Parser;
 use colored::Colorize;
 
 use crate::agent::{
+    self,
     events::{self, create_channel},
     generator::{self, history::ConversationWindow},
     task::{robopages, tasklet::Tasklet},
@@ -9,6 +11,78 @@ use crate::agent::{
 };
 
 use crate::{cli, APP_NAME, APP_VERSION};
+
+use super::Args;
+
+pub async fn setup_arguments() -> Result<Args> {
+    // TODO: save/restore session
+    let mut args = cli::Args::parse();
+
+    // set generator url if env variable is set
+    if let Ok(env_generator) = std::env::var("NERVE_GENERATOR") {
+        args.generator = env_generator;
+    } else {
+        // set env variable for later use
+        std::env::set_var("NERVE_GENERATOR", args.generator.clone());
+    }
+
+    // set judge url if env variable is set
+    if let Ok(env_judge) = std::env::var("NERVE_JUDGE") {
+        args.judge = env_judge;
+    } else {
+        // set env variable for later use
+        std::env::set_var("NERVE_JUDGE", args.judge.clone());
+    }
+
+    // if we're running in judge mode, set the generator to the judge model
+    if args.judge_mode {
+        args.generator = args.judge.clone();
+    }
+
+    // set tasklet if env variable is set
+    if let Ok(env_tasklet) = std::env::var("NERVE_TASKLET") {
+        args.tasklet = Some(env_tasklet);
+    }
+
+    // TODO: handle max tokens
+
+    if args.generate_doc {
+        // generate action namespaces documentation and exit
+        println!("{}", agent::serialization::Strategy::available_actions());
+        std::process::exit(0);
+    }
+
+    if std::env::var_os("RUST_LOG").is_none() {
+        // set `RUST_LOG=debug` to see debug logs
+        std::env::set_var(
+            "RUST_LOG",
+            "info,openai_api_rust=warn,rustls=warn,ureq=warn",
+        );
+    }
+
+    if args.judge_mode {
+        // disable most logging
+        std::env::set_var(
+            "RUST_LOG",
+            "error,openai_api_rust=error,rustls=error,ureq=error",
+        );
+
+        // read STDIN and preemptively set $STDIN
+        let mut input = String::new();
+        match std::io::stdin().read_line(&mut input) {
+            Ok(_goes_into_input_above) => {}
+            Err(_no_updates_is_fine) => {}
+        }
+        agent::task::variables::define_variable("STDIN", input.trim());
+    }
+
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format_module_path(false)
+        .format_target(false)
+        .init();
+
+    Ok(args)
+}
 
 #[allow(clippy::type_complexity)]
 fn setup_models(
