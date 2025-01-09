@@ -3,6 +3,10 @@
 </p>
 
 <p align="center">
+  <strong>The simplest way to create LLM based agents.</strong>
+</p>
+
+<p align="center">
   <a href="https://github.com/evilsocket/nerve/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/evilsocket/nerve.svg?style=flat-square"></a>
   <a href="https://crates.io/crates/nerve-ai"><img alt="Crate" src="https://img.shields.io/crates/v/nerve-ai.svg"></a>
   <a href="https://hub.docker.com/r/evilsocket/nerve"><img alt="Docker Hub" src="https://img.shields.io/docker/v/evilsocket/nerve?logo=docker"></a>
@@ -11,14 +15,12 @@
   <a href="https://github.com/evilsocket/nerve/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square"></a>
 </p>
 
-**Nerve is a tool that creates stateful agents with any LLM — without writing a single line of code.** Agents created with Nerve are capable of both planning _and_ enacting step-by-step whatever actions are required to complete a user-defined task. This is done by dynamically updating the system prompt with new information gathered during previous actions, making the agent stateful across multiple inferences.
-
-- 🧠 **Automated Problem Solving:** Nerve provides a standard library of actions the agent uses autonomously to inform and enhance its performance. These include identifying specific goals required to complete the task, devising and revising a plan to achieve those goals, and creating and recalling memories comprised of pertinent information gleaned during previous actions.
 - 🧑‍💻 **User-Defined Agents:** Agents are defined using a standard YAML template. _The sky is the limit!_ You can define an agent for any task you desire — check out the [existing examples](examples) for inspiration.
-- 🛠️ **Universal Tool Calling:** Nerve will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers the LLM to perform function calling anyway.
+- 🧠 **Automated Problem Solving:** Nerve provides a standard library of actions the agent uses autonomously to inform and enhance its performance. These include identifying specific goals required to complete the task, devising and revising a plan to achieve those goals, and creating and recalling memories comprised of pertinent information gleaned during previous actions.
+- 🛠️ **Simple and Universal Tool Calling:** Nerve will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers the LLM to perform function calling anyway.
 - 🤖 **Works with any LLM:** Nerve is an LLM-agnostic tool.
-- 🤝 **Multi-Agent Workflow:** Nerve allows you to define a multi-agent workflow, where each agent is responsible for a different part of the task.
-- 💯 **Zero Code:** The project's main goal and core difference with other tools is to allow the user to instrument smart agents without writing code.
+- 🤝 **Multi-Agent Workflows:** Nerve allows you to define a multi-agent workflow, where each agent is responsible for a different part of the task.
+- 💯 **Zero Code:** The project's main goal and core difference with other tools is to allow the user to instrument smart agents by writing simple YAML files.
 
 <p align="center">
   <img alt="Nerve" src="assets/concept.png"/>
@@ -48,15 +50,15 @@ Nerve features integrations for any model accessible via the following providers
 
 ## Installing with Cargo
 
+The easiest and recommended way to install Nerve is via [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html):
+
 ```sh
 cargo install nerve-ai
 ```
 
 ## Installing from DockerHub
 
-A Docker image is available on [Docker Hub](https://hub.docker.com/r/evilsocket/nerve):
-
-In order to run it, keep in mind that you'll probably want the same network as the host in order to reach the OLLAMA server, and remember to share in a volume the tasklet files:
+Alternatively a Docker image is available on [Docker Hub](https://hub.docker.com/r/evilsocket/nerve). In order to run it, keep in mind that you'll probably want the same network as the host in order to reach the OLLAMA server, and remember to share in a volume the tasklet files:
 
 ```sh
 docker run -it --network=host -v ./examples:/root/.nerve/tasklets evilsocket/nerve -h
@@ -82,12 +84,6 @@ Run a tasklet with a given OLLAMA server:
 
 ```sh
 ./target/release/nerve -G "ollama://<model-name>@<ollama-host>:11434" -T /path/to/tasklet 
-```
-
-## Building with Docker
-
-```sh
-docker build . -t nerve
 ```
 
 ## Example
