@@ -60,14 +60,6 @@ Alternatively a Docker image is available on [Docker Hub](https://hub.docker.com
 docker run -it --network=host -v ./examples:/root/.nerve/tasklets evilsocket/nerve -h
 ```
 
-An example with the `ssh_agent` tasklet via an Ollama server running on localhost:
-
-```sh
-docker run -it --network=host \
-  -v ./examples:/root/.nerve/tasklets \
-  evilsocket/nerve -G "ollama://llama3@localhost:11434" -T ssh_agent -P'find which process is consuming more ram'
-```
-
 ## Building from sources
 
 To build from source:

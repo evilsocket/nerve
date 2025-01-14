@@ -2,14 +2,8 @@
 # standard function namespaces. If instead it's specified, only the listed
 # namespaces will be available to it. Use it to limit what the agent can do.
 using:
-  # the agent can save and recall memories
-  - memory
-  # the agent can update its own goal
-  - goal
   # the agent can set the task as completed or impossible autonomously
   - task
-  # the agent can create an action plan for the task
-  - planning
   #  give the agent a sense of time
   - time
 
@@ -28,6 +22,7 @@ guidance:
   - Prefer using full paths to files and directories.
   - Use the /tmp directory for any file write operations.
   - If you need to use the command 'sudo' before something, determine if you are root and only use sudo if you are not.
+  - ONLY set your task as completed once you performed the user request.
 
 # optional global action timeout
 timeout: 120s
