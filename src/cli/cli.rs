@@ -39,6 +39,9 @@ pub struct Args {
     /// Workflow file.
     #[arg(short = 'W', long)]
     pub workflow: Option<String>,
+    /// Save output state to file.
+    #[arg(short = 'O', long)]
+    pub output: Option<String>,
     /// Specify the prompt if not provided by the tasklet.
     #[arg(short = 'P', long)]
     pub prompt: Option<String>,

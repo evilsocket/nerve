@@ -8,10 +8,10 @@ mod agent;
 mod api;
 mod cli;
 
-use std::path::PathBuf;
+use std::{fs::File, path::PathBuf};
 
 use agent::{
-    task::variables::{define_variable, interpolate_variables},
+    task::variables::{define_variable, get_variables, interpolate_variables},
     workflow::Workflow,
 };
 use anyhow::Result;
@@ -77,6 +77,14 @@ async fn main() -> Result<()> {
 
         if let Some(report) = workflow.report {
             println!("\n{}", interpolate_variables(&report).unwrap());
+        }
+
+        if let Some(output) = args.output {
+            let mut file = File::create(&output)?;
+            let variables = get_variables();
+            serde_json::to_writer_pretty(&mut file, &variables)?;
+
+            log::info!("output state saved to {}", output.green().bold());
         }
 
         return Ok(());

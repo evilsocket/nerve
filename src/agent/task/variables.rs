@@ -24,6 +24,10 @@ pub fn get_variable(name: &str) -> Option<String> {
     VAR_CACHE.lock().unwrap().get(name).cloned()
 }
 
+pub fn get_variables() -> HashMap<String, String> {
+    VAR_CACHE.lock().unwrap().clone()
+}
+
 pub fn parse_pre_defined_values(defines: &Vec<String>) -> Result<()> {
     for keyvalue in defines {
         let parts: Vec<&str> = keyvalue.splitn(2, '=').collect();
