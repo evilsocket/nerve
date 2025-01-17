@@ -100,7 +100,8 @@ fn setup_models(
         gen_options.port,
         &gen_options.model_name,
         gen_options.context_window,
-    )?;
+    )
+    .map_err(|e| anyhow!("{}: {}", args.generator, e))?;
 
     // create embedder
     let emb_options = generator::Options::parse(&args.embedder, args.context_window)?;
@@ -110,7 +111,8 @@ fn setup_models(
         emb_options.port,
         &emb_options.model_name,
         emb_options.context_window,
-    )?;
+    )
+    .map_err(|e| anyhow!("{}: {}", args.generator, e))?;
 
     Ok((gen_options, generator, embedder))
 }
