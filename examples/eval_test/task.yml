@@ -11,9 +11,6 @@ evaluator:
     - python3
     - eval.py
 
-  # python: ...
-
-
 # tools are not needed here, the evaluator will just check the chat history
 
 # functions:
