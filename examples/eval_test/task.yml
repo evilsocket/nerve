@@ -6,6 +6,12 @@ system_prompt: >
 prompt: >
   What is the meaning of life?
 
+# An evaluator is a command line that receives the current state of the agent via standard input 
+# and performs some evaluation, at the end of which it can:
+# 
+# 1. Exit with a 42 status code if the task is completed successfully.
+# 2. Exit with any other status code if the task is not completed successfully.
+# 3. Return via stdout anything, that'll go to the chat history itself.
 evaluator: 
   command:
     - python3
