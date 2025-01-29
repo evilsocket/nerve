@@ -73,13 +73,15 @@ pub async fn consume_events(
                     println!("{}", metrics.to_string().dimmed());
                 }
             }
-            Event::StateUpdate(opts) => {
+            Event::StateUpdate(state) => {
                 if let Some(prompt_path) = &save_to {
                     let data = format!(
                         "[SYSTEM PROMPT]\n\n{}\n\n[PROMPT]\n\n{}\n\n[CHAT]\n\n{}",
-                        &opts.system_prompt.unwrap_or_default(),
-                        &opts.prompt,
-                        opts.history
+                        &state.chat.system_prompt.unwrap_or_default(),
+                        &state.chat.prompt,
+                        state
+                            .chat
+                            .history
                             .iter()
                             .map(|m| m.to_string())
                             .collect::<Vec<String>>()

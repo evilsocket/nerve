@@ -34,7 +34,7 @@ lazy_static! {
     static ref CONN_RESET_PARSER: Regex = Regex::new(r"(?m)^.+onnection reset by peer.*").unwrap();
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ChatOptions {
     pub system_prompt: Option<String>,
     pub prompt: String,
@@ -58,6 +58,7 @@ impl ChatOptions {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "type", content = "data", rename_all = "lowercase")]
 pub enum Message {
     Agent(String, Option<Invocation>),
     Feedback(String, Option<Invocation>),

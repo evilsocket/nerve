@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::Message;
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub enum ConversationWindow {
     /// Use the history as is.
     Full,
@@ -42,7 +42,7 @@ impl std::fmt::Display for ConversationWindow {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ChatHistory {
     // full list of messages as is
     conversation: Vec<Message>,

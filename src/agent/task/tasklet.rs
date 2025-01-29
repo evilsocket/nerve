@@ -11,6 +11,7 @@ use duration_string::DurationString;
 use serde::Deserialize;
 use serde_trim::*;
 
+use super::Evaluator;
 use super::{variables::interpolate_variables, Task};
 use crate::agent::task::robopages;
 use crate::agent::task::variables::define_variable;
@@ -409,6 +410,7 @@ pub struct Tasklet {
     using: Option<Vec<String>>,
     guidance: Option<Vec<String>>,
     functions: Option<Vec<FunctionGroup>>,
+    evaluator: Option<Evaluator>,
 
     #[serde(skip_deserializing, skip_serializing)]
     robopages: Vec<FunctionGroup>,
@@ -629,6 +631,14 @@ impl Task for Tasklet {
             }
         }
         None
+    }
+
+    fn get_working_directory(&self) -> Option<String> {
+        Some(self.folder.clone())
+    }
+
+    fn get_evaluator(&self) -> Option<Evaluator> {
+        self.evaluator.clone()
     }
 
     fn get_rag_config(&self) -> Option<mini_rag::Configuration> {

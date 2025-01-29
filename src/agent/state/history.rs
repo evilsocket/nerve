@@ -23,6 +23,15 @@ impl Execution {
         }
     }
 
+    pub fn with_feedback(message: String) -> Self {
+        Self {
+            invocation: None,
+            response: None,
+            result: Some(message),
+            error: None,
+        }
+    }
+
     pub fn with_error(invocation: Invocation, error: String) -> Self {
         Self {
             invocation: Some(invocation),

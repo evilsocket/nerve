@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 mod channel;
@@ -10,6 +12,13 @@ use super::{
     Invocation,
 };
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct StateUpdate {
+    pub chat: ChatOptions,
+    pub globals: HashMap<String, String>,
+    pub variables: HashMap<String, String>,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Event {
     MetricsUpdate(Metrics),
@@ -20,7 +29,7 @@ pub enum Event {
         prev: Option<String>,
         new: Option<String>,
     },
-    StateUpdate(ChatOptions),
+    StateUpdate(StateUpdate),
     EmptyResponse,
     InvalidResponse(String),
     InvalidAction {

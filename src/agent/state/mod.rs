@@ -262,6 +262,10 @@ impl State {
             .push(Execution::with_unparsed_response(response, error));
     }
 
+    pub fn add_feedback_to_history(&mut self, feedback: String) {
+        self.history.push(Execution::with_feedback(feedback));
+    }
+
     pub fn get_action(&self, name: &str) -> Option<Box<dyn namespaces::Action>> {
         for group in &self.namespaces {
             for action in &group.actions {

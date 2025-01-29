@@ -10,14 +10,14 @@ use anyhow::Result;
 use mini_rag::Embedder;
 use serde::{Deserialize, Serialize};
 
-use events::Event;
+use events::{Event, StateUpdate};
 use generator::{
     history::{ChatHistory, ConversationWindow},
     ChatOptions, ChatResponse, Client,
 };
 use namespaces::Action;
 use state::{SharedState, State};
-use task::Task;
+use task::{eval::Evaluator, Task};
 
 pub mod events;
 pub mod generator;
@@ -104,7 +104,11 @@ pub struct Agent {
     events_chan: events::Sender,
     generator: Box<dyn Client>,
     state: SharedState,
+
     task_timeout: Option<Duration>,
+    task_evaluator: Option<Evaluator>,
+    task_working_directory: Option<String>,
+
     conversation_window: ConversationWindow,
 
     serializer: serialization::Strategy,
@@ -152,6 +156,9 @@ impl Agent {
         };
 
         let task_timeout = task.get_timeout();
+        let task_evaluation = task.get_evaluator();
+        let task_working_directory = task.get_working_directory();
+
         let state = Arc::new(tokio::sync::Mutex::new(
             State::new(
                 events_chan.clone(),
@@ -168,6 +175,8 @@ impl Agent {
             generator,
             state,
             task_timeout,
+            task_evaluator: task_evaluation,
+            task_working_directory,
             use_native_tools_format,
             user_only,
             serializer,
@@ -247,19 +256,48 @@ impl Agent {
     }
 
     async fn on_state_update(&self, options: &ChatOptions, refresh: bool) -> Result<()> {
-        let mut opts = options.clone();
+        let mut state_update = StateUpdate {
+            chat: options.clone(),
+            globals: task::variables::get_variables(),
+            variables: self.state.lock().await.get_variables().clone(),
+        };
+
         if refresh {
-            opts.system_prompt = Some(
+            state_update.chat.system_prompt = Some(
                 self.serializer
                     .system_prompt_for_state(&*self.state.lock().await)?,
             );
 
             let messages = self.state.lock().await.to_chat_history(&self.serializer)?;
 
-            opts.history = ChatHistory::create(messages, self.conversation_window);
+            state_update.chat.history = ChatHistory::create(messages, self.conversation_window);
         }
 
-        self.on_event(events::Event::StateUpdate(opts))
+        // if there was a state change
+        if refresh {
+            // if this task has an evaluation strategy
+            if let Some(task_evaluation) = &self.task_evaluator {
+                // run it
+                let evaluation = task_evaluation
+                    .evaluate(&state_update, &self.task_working_directory)
+                    .await;
+                if let Err(e) = evaluation {
+                    log::error!("error evaluating task: {}", e);
+                } else {
+                    let evaluation = evaluation.unwrap();
+                    if evaluation.completed {
+                        self.state
+                            .lock()
+                            .await
+                            .on_complete(false, Some("evaluation success".to_string()))?;
+                    } else if let Some(feedback) = evaluation.feedback {
+                        self.state.lock().await.add_feedback_to_history(feedback);
+                    }
+                }
+            }
+        }
+
+        self.on_event(events::Event::StateUpdate(state_update))
     }
 
     // TODO: move these feedback strings to a common place
@@ -440,6 +478,8 @@ impl Agent {
             self.on_valid_response().await;
         }
 
+        let mut any_state_updates = false;
+
         // for each parsed invocation
         for mut inv in invocations {
             // lookup action
@@ -521,11 +561,17 @@ impl Agent {
             }
 
             self.on_state_update(&options, true).await?;
+            any_state_updates = true;
 
             // break the loop if we're done
             if self.state.lock().await.is_complete() {
                 break;
             }
+        }
+
+        // trigger a final state update if there were no state changes
+        if !any_state_updates {
+            self.on_state_update(&options, true).await?;
         }
 
         Ok(())
