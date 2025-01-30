@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://github.com/dreadnode/nerve/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/dreadnode/nerve.svg?style=flat-square"></a>
   <a href="https://crates.io/crates/nerve-ai"><img alt="Crate" src="https://img.shields.io/crates/v/nerve-ai.svg"></a>
-  <a href="https://hub.docker.com/r/evilsocket/nerve"><img alt="Docker Hub" src="https://img.shields.io/docker/v/evilsocket/nerve?logo=docker"></a>
+  <a href="https://hub.docker.com/r/dreadnode/nerve"><img alt="Docker Hub" src="https://img.shields.io/docker/v/dreadnode/nerve?logo=docker"></a>
   <a href="https://rust-reportcard.xuri.me/report/github.com/dreadnode/nerve"><img alt="Rust Report" src="https://rust-reportcard.xuri.me/badge/github.com/dreadnode/nerve"></a>
   <a href="#"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/dreadnode/nerve/test.yml"></a>
   <a href="https://github.com/dreadnode/nerve/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square"></a>
@@ -54,10 +54,10 @@ cargo install nerve-ai
 
 ## Installing from DockerHub
 
-Alternatively a Docker image is available on [Docker Hub](https://hub.docker.com/r/evilsocket/nerve). In order to run it, keep in mind that you'll probably want the same network as the host in order to reach the OLLAMA server, and remember to share in a volume the tasklet files:
+Alternatively a Docker image is available on [Docker Hub](https://hub.docker.com/r/dreadnode/nerve). In order to run it, keep in mind that you'll probably want the same network as the host in order to reach the OLLAMA server, and remember to share in a volume the tasklet files:
 
 ```sh
-docker run -it --network=host -v ./examples:/root/.nerve/tasklets evilsocket/nerve -h
+docker run -it --network=host -v ./examples:/root/.nerve/tasklets dreadnode/nerve -h
 ```
 
 ## Building from sources

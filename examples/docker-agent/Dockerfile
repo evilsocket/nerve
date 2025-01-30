@@ -1,5 +1,5 @@
 # image is automatically built and pushed to the docker hub at every commit to mai
-FROM evilsocket/nerve:latest
+FROM dreadnode/nerve:latest
 
 WORKDIR /app
 COPY task.yml .
