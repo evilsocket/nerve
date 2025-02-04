@@ -1,5 +1,5 @@
 use anyhow::Result;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::agent::events::StateUpdate;
 
@@ -10,7 +10,7 @@ pub struct Evaluation {
     pub feedback: Option<String>,
 }
 
-#[derive(Default, Deserialize, Debug, Clone)]
+#[derive(Default, Deserialize, Serialize, Debug, Clone)]
 pub struct Evaluator {
     command: Vec<String>,
 }

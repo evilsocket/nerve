@@ -39,9 +39,6 @@ pub struct Args {
     /// Workflow file.
     #[arg(short = 'W', long)]
     pub workflow: Option<String>,
-    /// Save output state to file.
-    #[arg(short = 'O', long)]
-    pub output: Option<String>,
     /// Specify the prompt if not provided by the tasklet.
     #[arg(short = 'P', long)]
     pub prompt: Option<String>,
@@ -57,9 +54,9 @@ pub struct Args {
     /// Maximum number of steps to complete the task or 0 for no limit.
     #[arg(long, default_value_t = 0)]
     pub max_iterations: usize,
-    /// At every step, save the current system prompt and state data to this file.
+    /// Record every event of the session to a JSONL file.
     #[arg(long)]
-    pub save_to: Option<String>,
+    pub record_to: Option<String>,
     /// Print the documentation of the available action namespaces.
     #[arg(long)]
     pub generate_doc: bool,

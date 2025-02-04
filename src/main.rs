@@ -8,10 +8,11 @@ mod agent;
 mod api;
 mod cli;
 
-use std::{collections::HashMap, fs::File, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf};
 
 use agent::{
-    task::variables::{define_variable, get_variables, interpolate_variables},
+    events::{Event, EventType},
+    task::variables::{define_variable, interpolate_variables},
     workflow::Workflow,
 };
 use anyhow::Result;
@@ -23,7 +24,7 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 async fn run_task(args: Args, for_workflow: bool) -> Result<HashMap<String, String>> {
     // single task
-    let (mut agent, events_rx) = setup::setup_agent_for_task(&args, for_workflow).await?;
+    let (mut agent, tasklet, events_rx) = setup::setup_agent_for_task(&args, for_workflow).await?;
 
     // spawn the events consumer
     tokio::spawn(ui::text::consume_events(
@@ -31,6 +32,9 @@ async fn run_task(args: Args, for_workflow: bool) -> Result<HashMap<String, Stri
         args.clone(),
         for_workflow,
     ));
+
+    // signal the task start
+    agent.on_event(Event::new(EventType::TaskStarted(tasklet)))?;
 
     // keep going until the task is complete or a fatal error is reached
     while !agent.is_done().await {
@@ -43,6 +47,7 @@ async fn run_task(args: Args, for_workflow: bool) -> Result<HashMap<String, Stri
 
     agent.on_end().await?;
 
+    // return any defined variables
     Ok(agent.get_variables().await)
 }
 
@@ -93,14 +98,6 @@ async fn run_workflow(args: Args, workflow: &str) -> Result<()> {
 
     if let Some(report) = workflow.report {
         println!("\n{}", interpolate_variables(&report).unwrap());
-    }
-
-    if let Some(output) = args.output {
-        let mut file = File::create(&output)?;
-        let variables = get_variables();
-        serde_json::to_writer_pretty(&mut file, &variables)?;
-
-        log::info!("output state saved to {}", output.green().bold());
     }
 
     Ok(())

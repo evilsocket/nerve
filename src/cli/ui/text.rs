@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{io::Write, time::Duration};
 
 use colored::Colorize;
 
@@ -65,32 +65,25 @@ fn on_action_executed(
 
 pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bool) {
     while let Some(event) = events_rx.recv().await {
+        if let Some(record_to) = &args.record_to {
+            let data = serde_json::to_string(&event).unwrap() + "\n";
+            let mut file = std::fs::OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(record_to)
+                .unwrap();
+
+            file.write_all(data.as_bytes()).unwrap();
+        }
+
         match event.event {
+            EventType::TaskStarted(_task) => {}
             EventType::MetricsUpdate(metrics) => {
                 if !is_workflow {
                     println!("{}", metrics.to_string().dimmed());
                 }
             }
-            EventType::StateUpdate(state) => {
-                if let Some(prompt_path) = &args.save_to {
-                    let data = format!(
-                        "[SYSTEM PROMPT]\n\n{}\n\n[PROMPT]\n\n{}\n\n[CHAT]\n\n{}",
-                        &state.chat.system_prompt.unwrap_or_default(),
-                        &state.chat.prompt,
-                        state
-                            .chat
-                            .history
-                            .iter()
-                            .map(|m| m.to_string())
-                            .collect::<Vec<String>>()
-                            .join("\n")
-                    );
-
-                    if let Err(e) = std::fs::write(prompt_path, data) {
-                        log::error!("error writing {}: {:?}", prompt_path, e);
-                    }
-                }
-            }
+            EventType::StateUpdate(_state) => {}
             EventType::EmptyResponse => {
                 log::warn!("agent did not provide valid instructions: empty response");
             }

@@ -120,7 +120,7 @@ fn setup_models(
 pub async fn setup_agent_for_task(
     args: &cli::Args,
     workflow_mode: bool,
-) -> Result<(Agent, events::Receiver)> {
+) -> Result<(Agent, Tasklet, events::Receiver)> {
     // create generator and embedder
     let (gen_options, generator, embedder) = setup_models(args)?;
 
@@ -169,7 +169,7 @@ pub async fn setup_agent_for_task(
         );
     }
 
-    let task = Box::new(tasklet);
+    let task = Box::new(tasklet.clone());
     let (tx, rx) = create_channel();
 
     // create the agent configuration
@@ -184,5 +184,5 @@ pub async fn setup_agent_for_task(
     // create the agent
     let agent = Agent::new(tx, generator, embedder, task, agent_config).await?;
 
-    Ok((agent, rx))
+    Ok((agent, tasklet, rx))
 }

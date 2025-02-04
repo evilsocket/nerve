@@ -8,7 +8,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use colored::Colorize;
 use duration_string::DurationString;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_trim::*;
 
 use super::Evaluator;
@@ -28,7 +28,7 @@ fn default_max_shown_output() -> usize {
     256
 }
 
-#[derive(Default, Deserialize, Debug, Clone)]
+#[derive(Default, Deserialize, Serialize, Debug, Clone)]
 pub struct TaskletAction {
     #[serde(skip_deserializing, skip_serializing)]
     working_directory: String,
@@ -361,7 +361,7 @@ impl Action for TaskletAction {
     }
 }
 
-#[derive(Default, Deserialize, Debug, Clone)]
+#[derive(Default, Deserialize, Serialize, Debug, Clone)]
 pub struct FunctionGroup {
     #[serde(deserialize_with = "string_trim")]
     pub name: String,
@@ -396,11 +396,11 @@ impl FunctionGroup {
     }
 }
 
-#[derive(Default, Deserialize, Debug, Clone)]
+#[derive(Default, Deserialize, Serialize, Debug, Clone)]
 pub struct Tasklet {
     #[serde(skip_deserializing, skip_serializing)]
     pub folder: String,
-    #[serde(skip_deserializing, skip_serializing)]
+    #[serde(skip_deserializing)]
     pub name: String,
     #[serde(deserialize_with = "string_trim")]
     system_prompt: String,

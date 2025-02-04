@@ -7,6 +7,7 @@ mod channel;
 
 pub use channel::*;
 
+use super::task::tasklet::Tasklet;
 use super::{
     generator::ChatOptions,
     state::{metrics::Metrics, storage::StorageType},
@@ -22,6 +23,7 @@ pub struct StateUpdate {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum EventType {
+    TaskStarted(Tasklet),
     MetricsUpdate(Metrics),
     StorageUpdate {
         storage_name: String,
