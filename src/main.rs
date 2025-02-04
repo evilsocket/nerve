@@ -47,7 +47,7 @@ async fn run_task(args: Args, for_workflow: bool) -> Result<HashMap<String, Stri
 }
 
 fn get_workflow_task_args(
-    args: Args,
+    args: &Args,
     task_name: &str,
     workflow: &Workflow,
     generator: Option<String>,
@@ -80,7 +80,7 @@ async fn run_workflow(args: Args, workflow: &String) -> Result<()> {
     for (task_name, task) in &workflow.tasks {
         // create the task specific arguments
         let task_args =
-            get_workflow_task_args(args.clone(), &task_name, &workflow, task.generator.clone());
+            get_workflow_task_args(&args, &task_name, &workflow, task.generator.clone());
         // run the task as part of the workflow
         let variables = run_task(task_args, true).await?;
         // define variables for the next task
