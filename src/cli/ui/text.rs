@@ -2,9 +2,12 @@ use std::time::Duration;
 
 use colored::Colorize;
 
-use crate::agent::{
-    events::{EventType, Receiver},
-    Invocation,
+use crate::{
+    agent::{
+        events::{EventType, Receiver},
+        Invocation,
+    },
+    cli::Args,
 };
 
 fn on_action_executed(
@@ -60,12 +63,7 @@ fn on_action_executed(
     }
 }
 
-pub async fn consume_events(
-    mut events_rx: Receiver,
-    save_to: Option<String>,
-    is_judge: bool,
-    is_workflow: bool,
-) {
+pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bool) {
     while let Some(event) = events_rx.recv().await {
         match event.event {
             EventType::MetricsUpdate(metrics) => {
@@ -74,7 +72,7 @@ pub async fn consume_events(
                 }
             }
             EventType::StateUpdate(state) => {
-                if let Some(prompt_path) = &save_to {
+                if let Some(prompt_path) = &args.save_to {
                     let data = format!(
                         "[SYSTEM PROMPT]\n\n{}\n\n[PROMPT]\n\n{}\n\n[CHAT]\n\n{}",
                         &state.chat.system_prompt.unwrap_or_default(),
@@ -122,7 +120,14 @@ pub async fn consume_events(
                 elapsed,
                 complete_task,
             } => {
-                on_action_executed(is_judge, error, invocation, result, elapsed, complete_task);
+                on_action_executed(
+                    args.judge_mode,
+                    error,
+                    invocation,
+                    result,
+                    elapsed,
+                    complete_task,
+                );
             }
             EventType::TaskComplete { impossible, reason } => {
                 if !is_workflow {

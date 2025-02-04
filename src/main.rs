@@ -28,9 +28,8 @@ async fn run_task(args: Args, for_workflow: bool) -> Result<HashMap<String, Stri
     // spawn the events consumer
     tokio::spawn(ui::text::consume_events(
         events_rx,
-        args.save_to,
-        args.judge_mode,
-        false,
+        args.clone(),
+        for_workflow,
     ));
 
     // keep going until the task is complete or a fatal error is reached
