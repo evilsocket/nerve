@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +21,7 @@ pub struct StateUpdate {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum Event {
+pub enum EventType {
     MetricsUpdate(Metrics),
     StorageUpdate {
         storage_name: String,
@@ -51,4 +52,22 @@ pub enum Event {
         impossible: bool,
         reason: Option<String>,
     },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Event {
+    pub timestamp: u64,
+    pub event: EventType,
+}
+
+impl Event {
+    pub fn new(event: EventType) -> Self {
+        Self {
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            event,
+        }
+    }
 }

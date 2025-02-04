@@ -6,7 +6,7 @@ use metrics::Metrics;
 use crate::agent::task::variables::parse_variable_expr;
 
 use super::{
-    events::Event,
+    events::{Event, EventType},
     generator::Message,
     namespaces::{self, Namespace},
     serialization,
@@ -280,7 +280,7 @@ impl State {
 
     pub fn on_complete(&mut self, impossible: bool, reason: Option<String>) -> Result<()> {
         self.complete = true;
-        self.on_event(Event::TaskComplete { impossible, reason })
+        self.on_event(Event::new(EventType::TaskComplete { impossible, reason }))
     }
 
     pub fn on_event(&self, event: Event) -> Result<()> {

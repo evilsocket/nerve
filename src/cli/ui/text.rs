@@ -3,7 +3,7 @@ use std::time::Duration;
 use colored::Colorize;
 
 use crate::agent::{
-    events::{Event, Receiver},
+    events::{EventType, Receiver},
     Invocation,
 };
 
@@ -67,13 +67,13 @@ pub async fn consume_events(
     is_workflow: bool,
 ) {
     while let Some(event) = events_rx.recv().await {
-        match event {
-            Event::MetricsUpdate(metrics) => {
+        match event.event {
+            EventType::MetricsUpdate(metrics) => {
                 if !is_workflow {
                     println!("{}", metrics.to_string().dimmed());
                 }
             }
-            Event::StateUpdate(state) => {
+            EventType::StateUpdate(state) => {
                 if let Some(prompt_path) = &save_to {
                     let data = format!(
                         "[SYSTEM PROMPT]\n\n{}\n\n[PROMPT]\n\n{}\n\n[CHAT]\n\n{}",
@@ -93,19 +93,19 @@ pub async fn consume_events(
                     }
                 }
             }
-            Event::EmptyResponse => {
+            EventType::EmptyResponse => {
                 log::warn!("agent did not provide valid instructions: empty response");
             }
-            Event::InvalidResponse(response) => {
+            EventType::InvalidResponse(response) => {
                 log::warn!(
                     "agent did not provide valid instructions: \n\n{}\n\n",
                     response.dimmed()
                 );
             }
-            Event::InvalidAction { invocation, error } => {
+            EventType::InvalidAction { invocation, error } => {
                 log::warn!("invalid action {} : {:?}", &invocation.action, error);
             }
-            Event::ActionTimeout {
+            EventType::ActionTimeout {
                 invocation,
                 elapsed,
             } => {
@@ -115,7 +115,7 @@ pub async fn consume_events(
                     elapsed
                 );
             }
-            Event::ActionExecuted {
+            EventType::ActionExecuted {
                 invocation,
                 error,
                 result,
@@ -124,7 +124,7 @@ pub async fn consume_events(
             } => {
                 on_action_executed(is_judge, error, invocation, result, elapsed, complete_task);
             }
-            Event::TaskComplete { impossible, reason } => {
+            EventType::TaskComplete { impossible, reason } => {
                 if !is_workflow {
                     if impossible {
                         log::error!(
@@ -149,7 +149,7 @@ pub async fn consume_events(
                     }
                 }
             }
-            Event::StorageUpdate {
+            EventType::StorageUpdate {
                 storage_name,
                 storage_type: _,
                 key,

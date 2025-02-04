@@ -10,7 +10,7 @@ use anyhow::Result;
 use mini_rag::Embedder;
 use serde::{Deserialize, Serialize};
 
-use events::{Event, StateUpdate};
+use events::{Event, EventType, StateUpdate};
 use generator::{
     history::{ChatHistory, ConversationWindow},
     ChatOptions, ChatResponse, Client,
@@ -297,7 +297,7 @@ impl Agent {
             }
         }
 
-        self.on_event(events::Event::StateUpdate(state_update))
+        self.on_event(Event::new(EventType::StateUpdate(state_update)))
     }
 
     // TODO: move these feedback strings to a common place
@@ -308,7 +308,7 @@ impl Agent {
         mut_state
             .add_unparsed_response_to_history("", "Do not return an empty responses.".to_string());
 
-        self.on_event(events::Event::EmptyResponse).unwrap();
+        self.on_event(Event::new(EventType::EmptyResponse)).unwrap();
     }
 
     async fn on_invalid_response(&self, response: &str) {
@@ -318,7 +318,7 @@ impl Agent {
         response,
         "I could not parse any valid actions from your response, please correct it according to the instructions.".to_string(),
     );
-        self.on_event(events::Event::InvalidResponse(response.to_string()))
+        self.on_event(Event::new(EventType::InvalidResponse(response.to_string())))
             .unwrap();
     }
 
@@ -339,7 +339,7 @@ impl Agent {
                 .unwrap_or(format!("'{name}' is not a valid action name")),
         );
 
-        self.on_event(events::Event::InvalidAction { invocation, error })
+        self.on_event(Event::new(EventType::InvalidAction { invocation, error }))
             .unwrap();
     }
 
@@ -354,10 +354,10 @@ impl Agent {
         mut_state.add_error_to_history(invocation.clone(), "action timed out".to_string());
 
         self.events_chan
-            .send(events::Event::ActionTimeout {
+            .send(Event::new(EventType::ActionTimeout {
                 invocation,
                 elapsed: start.elapsed(),
-            })
+            }))
             .unwrap();
     }
 
@@ -387,13 +387,13 @@ impl Agent {
             result = ret;
         }
 
-        self.on_event(events::Event::ActionExecuted {
+        self.on_event(Event::new(EventType::ActionExecuted {
             invocation,
             result,
             error,
             elapsed: start.elapsed(),
             complete_task: action.complete_task(),
-        })
+        }))
         .unwrap();
     }
 
@@ -421,7 +421,9 @@ impl Agent {
 
         mut_state.on_step()?;
 
-        self.on_event(events::Event::MetricsUpdate(mut_state.metrics.clone()))?;
+        self.on_event(Event::new(EventType::MetricsUpdate(
+            mut_state.metrics.clone(),
+        )))?;
 
         let system_prompt = self.serializer.system_prompt_for_state(&mut_state)?;
         let prompt = mut_state.to_prompt()?;
@@ -581,6 +583,6 @@ impl Agent {
         // report final metrics on exit
         let last_metrics = self.get_metrics().await;
 
-        self.on_event(Event::MetricsUpdate(last_metrics))
+        self.on_event(Event::new(EventType::MetricsUpdate(last_metrics)))
     }
 }

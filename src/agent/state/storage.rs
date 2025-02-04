@@ -3,7 +3,7 @@ use std::{ops::Deref, time::Instant /* , time::SystemTime*/};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
-use crate::agent::events::{Event, Sender};
+use crate::agent::events::{Event, EventType, Sender};
 
 #[derive(Debug)]
 pub struct Entry {
@@ -115,13 +115,13 @@ impl Storage {
     pub fn add_data(&mut self, key: &str, data: &str) {
         self.inner
             .insert(key.to_string(), Entry::new(data.to_string()));
-        self.on_event(Event::StorageUpdate {
+        self.on_event(Event::new(EventType::StorageUpdate {
             storage_name: self.name.to_string(),
             storage_type: self.type_,
             key: key.to_string(),
             prev: None,
             new: Some(data.to_string()),
-        });
+        }));
     }
 
     pub fn add_tagged(&mut self, key: &str, data: &str) {
@@ -130,25 +130,25 @@ impl Storage {
         self.inner
             .insert(key.to_string(), Entry::new(data.to_string()));
 
-        self.on_event(Event::StorageUpdate {
+        self.on_event(Event::new(EventType::StorageUpdate {
             storage_name: self.name.to_string(),
             storage_type: self.type_,
             key: key.to_string(),
             prev: None,
             new: Some(data.to_string()),
-        });
+        }));
     }
 
     pub fn del_tagged(&mut self, key: &str) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Tagged));
         if let Some(old) = self.inner.shift_remove(key) {
-            self.on_event(Event::StorageUpdate {
+            self.on_event(Event::new(EventType::StorageUpdate {
                 storage_name: self.name.to_string(),
                 storage_type: self.type_,
                 key: key.to_string(),
                 prev: Some(old.data.to_string()),
                 new: None,
-            });
+            }));
 
             Some(old.data)
         } else {
@@ -167,26 +167,26 @@ impl Storage {
         self.inner
             .insert(tag.to_string(), Entry::new(data.to_string()));
 
-        self.on_event(Event::StorageUpdate {
+        self.on_event(Event::new(EventType::StorageUpdate {
             storage_name: self.name.to_string(),
             storage_type: self.type_,
             key: tag,
             prev: None,
             new: Some(data.to_string()),
-        });
+        }));
     }
 
     pub fn del_completion(&mut self, pos: usize) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Completion));
         let tag = format!("{}", pos);
         if let Some(old) = self.inner.shift_remove(&tag) {
-            self.on_event(Event::StorageUpdate {
+            self.on_event(Event::new(EventType::StorageUpdate {
                 storage_name: self.name.to_string(),
                 storage_type: self.type_,
                 key: tag,
                 prev: Some(old.data.to_string()),
                 new: None,
-            });
+            }));
 
             Some(old.data)
         } else {
@@ -201,13 +201,13 @@ impl Storage {
             let prev = entry.complete;
             entry.complete = true;
 
-            self.on_event(Event::StorageUpdate {
+            self.on_event(Event::new(EventType::StorageUpdate {
                 storage_name: self.name.to_string(),
                 storage_type: self.type_,
                 key: tag,
                 prev: Some((if prev { "complete" } else { "incomplete" }).to_string()),
                 new: Some("complete".to_string()),
-            });
+            }));
 
             Some(prev)
         } else {
@@ -222,13 +222,13 @@ impl Storage {
             let prev = entry.complete;
             entry.complete = false;
 
-            self.on_event(Event::StorageUpdate {
+            self.on_event(Event::new(EventType::StorageUpdate {
                 storage_name: self.name.to_string(),
                 storage_type: self.type_,
                 key: tag,
                 prev: Some((if prev { "complete" } else { "incomplete" }).to_string()),
                 new: Some("incomplete".to_string()),
-            });
+            }));
 
             Some(prev)
         } else {
@@ -242,26 +242,26 @@ impl Storage {
         self.inner
             .insert(tag.to_string(), Entry::new(data.to_string()));
 
-        self.on_event(Event::StorageUpdate {
+        self.on_event(Event::new(EventType::StorageUpdate {
             storage_name: self.name.to_string(),
             storage_type: self.type_,
             key: tag,
             prev: None,
             new: Some(data.to_string()),
-        });
+        }));
     }
 
     pub fn del_untagged(&mut self, pos: usize) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Untagged));
         let tag = format!("{}", pos);
         if let Some(old) = self.inner.shift_remove(&tag) {
-            self.on_event(Event::StorageUpdate {
+            self.on_event(Event::new(EventType::StorageUpdate {
                 storage_name: self.name.to_string(),
                 storage_type: self.type_,
                 key: tag,
                 prev: Some(old.data.to_string()),
                 new: None,
-            });
+            }));
             Some(old.data)
         } else {
             None
@@ -282,23 +282,23 @@ impl Storage {
             None
         };
 
-        self.on_event(Event::StorageUpdate {
+        self.on_event(Event::new(EventType::StorageUpdate {
             storage_name: self.name.to_string(),
             storage_type: self.type_,
             key: CURRENT_TAG.to_string(),
             prev,
             new: Some(data.to_string()),
-        });
+        }));
     }
 
     pub fn clear(&mut self) {
         self.inner.clear();
-        self.on_event(Event::StorageUpdate {
+        self.on_event(Event::new(EventType::StorageUpdate {
             storage_name: self.name.to_string(),
             storage_type: self.type_,
             key: "".to_string(),
             prev: None,
             new: None,
-        });
+        }));
     }
 }
