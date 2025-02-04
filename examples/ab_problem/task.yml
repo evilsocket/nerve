@@ -1,0 +1,57 @@
+using: []
+
+system_prompt: You are an useful assistant that solves problems.
+
+prompt: >
+  A::B is a system with 4 tokens: `A#`, `#A`, `B#` and `#B`.
+
+  An A::B program is a sequence of tokens. Example:
+
+    B# A# #B #A B#
+
+  To *compute* a program, we must rewrite neighbor tokens, using the rules:
+
+    A# #A ... becomes ... nothing
+    A# #B ... becomes ... #B A#
+    B# #A ... becomes ... #A B#
+    B# #B ... becomes ... nothing
+    
+  In other words, whenever two neighbor tokens have their '#' facing each-other, they must be rewritten according to 
+  the corresponding rule. For example, the first example shown here is computed as:
+
+    B# A# #B #A B# =
+    B# #B A# #A B# =
+    A# #A B# =
+    B#
+
+  The steps were:
+
+  1. We replaced `A# #B` by `#B A#`. 
+  2. We replaced `B# #B` by nothing. 
+  3. We replaced `A# #A` by nothing. 
+  The final result was just `B#`.
+  
+  Now, consider the following program:
+  
+  $program
+  
+  Fully compute it, step by step and then submit the final result.
+
+guidance:
+  - Once you have computed the program, submit the final result via the `solution` action.
+  - Do NOT submit the steps, ONLY the final solution.
+
+evaluator: 
+  command:
+    - python3
+    - eval.py
+
+functions:
+  - name: Solve
+    description: You will use these actions to provide final answer to the problem.
+    actions:
+      - name: solution
+        description: "To provide final result:"
+        example_payload: B#
+        # if no tool is provided, the input payload will be returned as the output
+        # so that the evaluation can be done by inspecting the chat history    
