@@ -172,19 +172,17 @@ pub async fn setup_agent_for_task(
     let task = Box::new(tasklet);
     let (tx, rx) = create_channel();
 
-    // create the agent
-    let agent = Agent::new(
-        tx,
-        generator,
-        embedder,
-        task,
-        args.serialization.clone(),
+    // create the agent configuration
+    let agent_config = agent::Config {
+        serializer: args.serialization.clone(),
         conversation_window,
-        args.force_format,
-        args.user_only,
-        args.max_iterations,
-    )
-    .await?;
+        force_strategy: args.force_format,
+        user_only: args.user_only,
+        max_iterations: args.max_iterations,
+    };
+
+    // create the agent
+    let agent = Agent::new(tx, generator, embedder, task, agent_config).await?;
 
     Ok((agent, rx))
 }

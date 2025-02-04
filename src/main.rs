@@ -68,7 +68,7 @@ fn get_workflow_task_args(
     task_args
 }
 
-async fn run_workflow(args: Args, workflow: &String) -> Result<()> {
+async fn run_workflow(args: Args, workflow: &str) -> Result<()> {
     let workflow = Workflow::from_path(workflow)?;
     println!(
         "{} v{} 🧠 | executing workflow {}\n",
@@ -79,8 +79,7 @@ async fn run_workflow(args: Args, workflow: &String) -> Result<()> {
 
     for (task_name, task) in &workflow.tasks {
         // create the task specific arguments
-        let task_args =
-            get_workflow_task_args(&args, &task_name, &workflow, task.generator.clone());
+        let task_args = get_workflow_task_args(&args, task_name, &workflow, task.generator.clone());
         // run the task as part of the workflow
         let variables = run_task(task_args, true).await?;
         // define variables for the next task
@@ -104,7 +103,7 @@ async fn run_workflow(args: Args, workflow: &String) -> Result<()> {
         log::info!("output state saved to {}", output.green().bold());
     }
 
-    return Ok(());
+    Ok(())
 }
 
 #[tokio::main]

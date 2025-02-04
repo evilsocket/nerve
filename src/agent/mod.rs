@@ -100,20 +100,33 @@ impl Invocation {
     }
 }
 
+pub struct Config {
+    pub serializer: serialization::Strategy,
+    pub conversation_window: ConversationWindow,
+    pub force_strategy: bool,
+    pub user_only: bool,
+    pub max_iterations: usize,
+}
+
+pub struct TaskSpecs {
+    pub timeout: Option<Duration>,
+    pub evaluator: Option<Evaluator>,
+    pub working_directory: Option<String>,
+}
+
 pub struct Agent {
+    // were events are sent to
     events_chan: events::Sender,
+    // the LLM client
     generator: Box<dyn Client>,
+    // the state object
     state: SharedState,
-
-    task_timeout: Option<Duration>,
-    task_evaluator: Option<Evaluator>,
-    task_working_directory: Option<String>,
-
-    conversation_window: ConversationWindow,
-
-    serializer: serialization::Strategy,
+    // task specs
+    task_specs: TaskSpecs,
+    // agent configuration
+    config: Config,
+    // whether to use native tools format
     use_native_tools_format: bool,
-    user_only: bool,
 }
 
 impl Agent {
@@ -122,17 +135,13 @@ impl Agent {
         generator: Box<dyn Client>,
         embedder: Box<dyn Embedder>,
         task: Box<dyn Task>,
-        serializer: serialization::Strategy,
-        conversation_window: ConversationWindow,
-        force_strategy: bool,
-        user_only: bool,
-        max_iterations: usize,
+        mut config: Config,
     ) -> Result<Self> {
         // check if the model supports tools calling and system prompt natively
         let supported_features = generator.check_supported_features().await?;
 
-        let use_native_tools_format = if force_strategy {
-            log::info!("using {:?} serialization strategy", &serializer);
+        let use_native_tools_format = if config.force_strategy {
+            log::info!("using {:?} serialization strategy", &config.serializer);
             false
         } else {
             match supported_features.tools {
@@ -147,24 +156,26 @@ impl Agent {
             }
         };
 
-        let user_only = if !user_only && !supported_features.system_prompt {
+        config.user_only = if !config.user_only && !supported_features.system_prompt {
             log::info!("model does not support system prompt, forcing user prompt");
             true
         } else {
             // leave whatever the user set
-            user_only
+            config.user_only
         };
 
-        let task_timeout = task.get_timeout();
-        let task_evaluation = task.get_evaluator();
-        let task_working_directory = task.get_working_directory();
+        let task_specs = TaskSpecs {
+            timeout: task.get_timeout(),
+            evaluator: task.get_evaluator(),
+            working_directory: task.get_working_directory(),
+        };
 
         let state = Arc::new(tokio::sync::Mutex::new(
             State::new(
                 events_chan.clone(),
                 task,
                 embedder,
-                max_iterations,
+                config.max_iterations,
                 use_native_tools_format,
             )
             .await?,
@@ -174,13 +185,9 @@ impl Agent {
             events_chan,
             generator,
             state,
-            task_timeout,
-            task_evaluator: task_evaluation,
-            task_working_directory,
+            task_specs,
             use_native_tools_format,
-            user_only,
-            serializer,
-            conversation_window,
+            config,
         })
     }
 
@@ -264,22 +271,28 @@ impl Agent {
 
         if refresh {
             state_update.chat.system_prompt = Some(
-                self.serializer
+                self.config
+                    .serializer
                     .system_prompt_for_state(&*self.state.lock().await)?,
             );
 
-            let messages = self.state.lock().await.to_chat_history(&self.serializer)?;
+            let messages = self
+                .state
+                .lock()
+                .await
+                .to_chat_history(&self.config.serializer)?;
 
-            state_update.chat.history = ChatHistory::create(messages, self.conversation_window);
+            state_update.chat.history =
+                ChatHistory::create(messages, self.config.conversation_window);
         }
 
         // if there was a state change
         if refresh {
             // if this task has an evaluation strategy
-            if let Some(task_evaluation) = &self.task_evaluator {
+            if let Some(task_evaluation) = &self.task_specs.evaluator {
                 // run it
                 let evaluation = task_evaluation
-                    .evaluate(&state_update, &self.task_working_directory)
+                    .evaluate(&state_update, &self.task_specs.working_directory)
                     .await;
                 if let Err(e) = evaluation {
                     log::error!("error evaluating task: {}", e);
@@ -425,18 +438,23 @@ impl Agent {
             mut_state.metrics.clone(),
         )))?;
 
-        let system_prompt = self.serializer.system_prompt_for_state(&mut_state)?;
+        let system_prompt = self.config.serializer.system_prompt_for_state(&mut_state)?;
         let prompt = mut_state.to_prompt()?;
 
-        let (system_prompt, prompt) = if self.user_only {
+        let (system_prompt, prompt) = if self.config.user_only {
             // combine with user prompt for models like the openai/o1 family
             (None, format!("{system_prompt}\n\n{prompt}"))
         } else {
             (Some(system_prompt), prompt)
         };
 
-        let history = mut_state.to_chat_history(&self.serializer)?;
-        let options = ChatOptions::new(system_prompt, prompt, history, self.conversation_window);
+        let history = mut_state.to_chat_history(&self.config.serializer)?;
+        let options = ChatOptions::new(
+            system_prompt,
+            prompt,
+            history,
+            self.config.conversation_window,
+        );
 
         Ok(options)
     }
@@ -459,12 +477,13 @@ impl Agent {
         // parse the model response into invocations
         let invocations = if self.use_native_tools_format && response.invocations.is_empty() {
             // no tool calls, attempt to parse the content anyway
-            self.serializer
+            self.config
+                .serializer
                 .try_parse(response.content.trim())
                 .unwrap_or_default()
         } else if !self.use_native_tools_format {
             // use our own parsing strategy
-            self.serializer.try_parse(response.content.trim())?
+            self.config.serializer.try_parse(response.content.trim())?
         } else {
             response.invocations
         };
@@ -500,7 +519,7 @@ impl Agent {
                     // determine if we have a timeout
                     let timeout = if let Some(action_tm) = action.timeout().as_ref() {
                         *action_tm
-                    } else if let Some(task_tm) = self.task_timeout.as_ref() {
+                    } else if let Some(task_tm) = self.task_specs.timeout.as_ref() {
                         *task_tm
                     } else {
                         // one month by default :D
