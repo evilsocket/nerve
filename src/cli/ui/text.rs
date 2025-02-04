@@ -84,6 +84,9 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
                 }
             }
             EventType::StateUpdate(_state) => {}
+            EventType::Thinking(thinking) => {
+                log::info!("🧠 thinking: {}", thinking.dimmed());
+            }
             EventType::EmptyResponse => {
                 log::warn!("agent did not provide valid instructions: empty response");
             }

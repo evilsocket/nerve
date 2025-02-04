@@ -340,6 +340,12 @@ impl Agent {
     }
 
     async fn on_invalid_action(&self, invocation: Invocation, error: Option<String>) {
+        if invocation.action == "thinking" || invocation.action == "think" {
+            self.on_event(Event::new(EventType::Thinking(invocation.payload.unwrap())))
+                .unwrap();
+            return;
+        }
+
         let mut mut_state = self.state.lock().await;
         mut_state.metrics.errors.unknown_actions += 1;
         // tell the model that the action name is wrong

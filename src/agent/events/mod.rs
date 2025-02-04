@@ -34,6 +34,7 @@ pub enum EventType {
     },
     StateUpdate(StateUpdate),
     EmptyResponse,
+    Thinking(String),
     InvalidResponse(String),
     InvalidAction {
         invocation: Invocation,
