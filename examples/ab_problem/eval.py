@@ -78,13 +78,6 @@ def get_solution(message):
 
 
 if __name__ == "__main__":
-    """
-    program = "#A #B #A #A #B A# #B #A #A #A B# B#".strip().split(" ")
-    actual, _ = solve(program)
-    print(program)
-    print(actual)
-    exit()
-    """
     raw = sys.stdin.read()
     state = json.loads(raw)
 
@@ -98,21 +91,19 @@ if __name__ == "__main__":
 
     # find the most recent solution in the chat history
     for message in reversed(state["chat"]["history"]["conversation"]):
-        try:
-            solution = get_solution(message)
-            if solution is not None:
-                if actual == solution:
-                    exit(42)
-                elif any(token not in TOKENS for token in solution):
-                    print(
-                        "Invalid solution, provide a single string of tokens separated by spaceswith the solution"
-                    )
-                else:
-                    print("Solution is incorrect")
-                break
-        except Exception as e:
-            print(message)
-            raise e
+        solution = get_solution(message)
+        if solution is not None:
+            if actual == solution:
+                # exit code 42 is a special exit code that indicates the solution is correct
+                exit(42)
+            elif any(token not in TOKENS for token in solution):
+                # anything that goes to stdout will be added to the chat history, as feedback to the model
+                print(
+                    "Invalid solution, provide a single string of tokens separated by spaceswith the solution"
+                )
+            else:
+                print("Solution is incorrect")
+            break
 
     if solution is None:
         print("No solution provided")
