@@ -26,7 +26,7 @@ pub fn invocation(inv: &Invocation) -> String {
 
 #[allow(clippy::borrowed_box)]
 pub fn action(action: &Box<dyn Action>) -> String {
-    let mut xml = format!("<{}", action.name());
+    let mut xml = format!("`<{}", action.name());
 
     if let Some(attrs) = action.example_attributes() {
         for (name, example_value) in &attrs {
@@ -36,9 +36,9 @@ pub fn action(action: &Box<dyn Action>) -> String {
 
     if let Some(payload) = action.example_payload() {
         // TODO: escape payload?
-        xml += &format!(">{}</{}>", payload, action.name());
+        xml += &format!(">{}</{}>`", payload, action.name());
     } else {
-        xml += "/>";
+        xml += "/>`";
     }
 
     xml

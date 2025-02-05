@@ -22,13 +22,13 @@ impl Strategy {
 
         for build_fn in NAMESPACES.values() {
             let group = build_fn();
-            md += &format!("## {}\n\n", group.name);
+            md += &format!("\n## {}\n\n", group.name);
             if !group.description.is_empty() {
                 md += &format!("{}\n\n", group.description);
             }
             for action in &group.actions {
                 md += &format!(
-                    "{} {}\n\n",
+                    "* {} {}\n",
                     action.description(),
                     default_serializer.serialize_action(action)
                 );

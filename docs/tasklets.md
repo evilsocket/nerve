@@ -1,0 +1,174 @@
+# Tasklets
+
+* [Prompts](#prompts)
+* [Guidance](#guidance)
+* [Task Timeout](#task-timeout)
+* [Tools](#tools)
+    * [Predefined Tools](#predefined-tools)
+    * [Custom Tools](#custom-tools)
+        * [Additional Fields](#additional-fields)
+
+Tasklets are the building blocks of agents. They are defined in YAML files and provide the system and user prompts, what the agent can do and optional guidelines on how to perform the task. A tasklet defines dynamically the chat history that will be used to generate the agent's response in the agent loop:
+
+```python
+# pseudo code
+while not task.done:
+    history = tasklet.prepare_chat_history()
+    agent.step(history)
+```
+
+The agent will keep running until one of the following conditions is met:
+
+- the task is complete and has been set as such
+- the task is impossible and has been set as such
+- the task times out
+- one of the tools with the `complete_task` flag set to `true` is executed
+
+Several examples of tasklets can be found in the [examples](https://github.com/nerve-ai/nerve/tree/main/examples) directory.
+
+## Prompts
+
+The two essential blocks of a tasklet are the system and user prompts. The system prompt is a description of the agent's role, while the user prompt defines the specific task to be performed:
+
+```yaml
+system_prompt: You are a helpful assistant.
+
+prompt: How much is 2 + 2?
+```
+
+If the prompt is not provided it will be asked to the user at runtime.
+
+## Guidance
+
+It is possible to provide a set of rules to help the agent to perform the task. These are called guidance:
+
+```yaml
+system_prompt: You are a helpful assistant.
+
+prompt: How much is 2 + 2?
+
+guidance:
+    - Reason step by step.
+    - Make sure your answer is correct.
+    - Be always polite and professional.
+```
+
+## Task Timeout
+
+It is possible to set a timeout for the task. If the agent does not complete the task within the timeout, it will be interrupted and the task will be marked as failed:
+
+```yaml
+# ... snippet ...
+
+# timeout in seconds
+timeout: 10 
+
+# ... snippet ...
+```
+
+## Tools
+
+One of the main characteristics of an agent is the ability to use tools.
+
+### Predefined Tools
+
+Nerve offers a rich set of predefined tools, organized in [namespaces](namespaces.md), that the agent can import via the using directive:
+
+```yaml
+using:
+    # gives access to the filesystem
+    - filesystem
+    # allows the agent to define goals and track progress
+    - goal
+    # gives access to http requests
+    - http
+    # allows the agent to store and retrieve memories
+    - memory
+    # allows the agent to create and implement plans
+    - planning
+    # gives the agent access to an index of documents for RAG
+    - rag
+    # allows shell commands to be executed
+    - shell
+    # allows the agent to set the task as complete or impossible autonomously
+    # NOTE: this is the only namespace that is not imported by default
+    - task
+    # tells the agent the current time
+    - time
+
+# ... snippet ...
+```
+
+While it might be tempting to use all of them, it is important to remember that the more tools you use, the more tokens will be used in the prompt. Smaller models especially tend to get confused if too much information is provided at once, so it is recommended to use only the necessary ones.
+
+For more information about the default namespaces see [the namespaces documentation](namespaces.md).
+
+### Custom Tools
+
+Additional tools can be defined in the tasklet's `functions` section, and each is a group of actions that can be used by the agent, defining a `name`, `description` and a `tool` field with the command to be executed:
+
+```yaml
+# ... snippet ...
+
+functions:
+  - name: News
+    decription: You will use this action to read the recent news.
+    actions:
+      - name: read_news
+        description: "To read the recent news:"
+        # the output of this command will be returned to the agent
+        tool: curl -s getnews.tech/ai,nocolor
+
+# ... snippet ...
+```
+
+If the agent must provide arguments to the tool, it is possible to define an example_payload to instruct the agent on how to use the tool:
+
+```yaml
+# ... snippet ...
+functions:
+  - name: Environment
+    actions:
+      - name: report_finding
+        description: When you are ready to report findings, use this tool for each finding.
+        example_payload: >
+          {
+            "title": "SQL Injection",
+            "description": "Short description of the vulnerability",
+            "file": "path/to/vulnerable_file.py",
+            "function": "function_name",
+            "line": 123
+          }
+        tool: curl -s -XPOST -H Content-Type:application/json http://dropship/output -d
+# ... snippet ...
+```
+
+If the tool requires named arguments it is possible to define them in the `args` field:
+
+```yaml
+# ... snippet ...
+functions:
+  - name: Conversation
+    description: You will use these actions to create conversational entries.
+    actions:
+      - name: talk
+        description: "To have one of the characters say a specific sentence:"
+        example_payload: hi, how are you doing today?
+        tool: ./talk.py
+        # in case the command requires arguments, declare them with an example value
+        args:
+          character_name: NameOfTheSpeakingCharacter
+# ... snippet ...
+```
+
+#### Additional Fields
+
+In addition to the ones already mentioned, tools can optionally define the following fields:
+
+- `max_shown_output`: the maximum number of characters to be shown in the output of the tool.
+- `store_to`: save the output of the tool in a named variable used to pass data between different tasks (see the [example workflows](https://github.com/search?q=repo%3Adreadnode%2Fnerve+store_to+language%3AYAML&type=code)).
+- `timeout`: timeout for the specific tool.
+- `mime_type`: if set to `image/<any valid format>`, like `image/png`, the output of the tool will be considered as a base64 encoded image for vision models (see [examples/screenshot](https://github.com/dreadnode/nerve/tree/main/examples/screenshot)).
+- `complete_task`: if set to `true`, the task will be marked as complete after the tool is executed.
+- `judge`: uses another tasklet as a judge to validate the output of the tool (see [examples/code_auditor_with_judge](https://github.com/dreadnode/nerve/tree/main/examples/code_auditor_with_judge))
+- `alias`: use to create a tool that's an alias to one of the predefined ones (see [examples/docker-agent](https://github.com/dreadnode/nerve/tree/main/examples/docker-agent))
