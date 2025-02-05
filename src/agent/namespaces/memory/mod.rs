@@ -133,7 +133,7 @@ impl Action for RecallMemory {
 }
  */
 pub fn get_namespace() -> Namespace {
-    Namespace::new_default(
+    Namespace::new_non_default(
         "Memory".to_string(),
         include_str!("ns.prompt").to_string(),
         vec![Box::<SaveMemory>::default(), Box::<DeleteMemory>::default()],

@@ -171,7 +171,7 @@ impl Action for Clear {
 }
 
 pub fn get_namespace() -> Namespace {
-    Namespace::new_default(
+    Namespace::new_non_default(
         "Planning".to_string(),
         include_str!("ns.prompt").to_string(),
         vec![

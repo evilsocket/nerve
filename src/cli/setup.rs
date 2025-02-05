@@ -15,7 +15,6 @@ use crate::{cli, APP_NAME, APP_VERSION};
 use super::Args;
 
 pub async fn setup_arguments() -> Result<Args> {
-    // TODO: save/restore session
     let mut args = cli::Args::parse();
 
     // set generator url if env variable is set
@@ -43,8 +42,6 @@ pub async fn setup_arguments() -> Result<Args> {
     if let Ok(env_tasklet) = std::env::var("NERVE_TASKLET") {
         args.tasklet = Some(env_tasklet);
     }
-
-    // TODO: handle max tokens
 
     if args.generate_doc {
         // generate action namespaces documentation and exit

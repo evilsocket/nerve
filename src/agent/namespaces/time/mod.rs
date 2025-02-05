@@ -40,7 +40,7 @@ impl Action for Wait {
 }
 
 pub fn get_namespace() -> Namespace {
-    Namespace::new_default(
+    Namespace::new_non_default(
         "Time".to_string(),
         "".to_string(),
         vec![Box::<Wait>::default()],

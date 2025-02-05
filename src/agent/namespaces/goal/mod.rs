@@ -39,7 +39,7 @@ impl Action for UpdateGoal {
 }
 
 pub fn get_namespace() -> Namespace {
-    Namespace::new_default(
+    Namespace::new_non_default(
         "Goal".to_string(),
         include_str!("ns.prompt").to_string(),
         vec![Box::<UpdateGoal>::default()],
