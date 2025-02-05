@@ -189,7 +189,7 @@ mod tests {
     fn test_full_strategy_agent_feedback() {
         let conv = vec![
             Message::Agent("test1".to_string(), None),
-            Message::Feedback("test2".to_string(), None),
+            Message::Feedback(ActionOutput::text("test2"), None),
         ];
         let history = ChatHistory::create(conv.clone(), ConversationWindow::Full);
         assert_eq!(history.history, conv);
@@ -199,9 +199,9 @@ mod tests {
     fn test_full_strategy_multiple_messages() {
         let conv = vec![
             Message::Agent("test1".to_string(), None),
-            Message::Feedback("test2".to_string(), None),
+            Message::Feedback(ActionOutput::text("test2"), None),
             Message::Agent("test3".to_string(), None),
-            Message::Feedback("test4".to_string(), None),
+            Message::Feedback(ActionOutput::text("test4"), None),
         ];
         let history = ChatHistory::create(conv.clone(), ConversationWindow::Full);
         assert_eq!(history.history, conv);
@@ -224,7 +224,7 @@ mod tests {
     fn test_summary_strategy_agent_feedback() {
         let conv = vec![
             Message::Agent("test1".to_string(), None),
-            Message::Feedback("test2".to_string(), None),
+            Message::Feedback(ActionOutput::text("test2"), None),
         ];
         let history = ChatHistory::create(conv.clone(), ConversationWindow::Summary);
         assert_eq!(history.history, conv);
@@ -234,16 +234,25 @@ mod tests {
     fn test_summary_strategy_compresses_old_feedback() {
         let conv = vec![
             Message::Agent("test1".to_string(), None),
-            Message::Feedback("long feedback that should be compressed".to_string(), None),
+            Message::Feedback(
+                ActionOutput::text("long feedback that should be compressed"),
+                None,
+            ),
             Message::Agent("test3".to_string(), None),
-            Message::Feedback("final very very very very long feedback".to_string(), None),
+            Message::Feedback(
+                ActionOutput::text("final very very very very long feedback"),
+                None,
+            ),
         ];
 
         let expected = vec![
             Message::Agent("test1".to_string(), None),
-            Message::Feedback("<output removed>".to_string(), None),
+            Message::Feedback(ActionOutput::text("<output removed>"), None),
             Message::Agent("test3".to_string(), None),
-            Message::Feedback("final very very very very long feedback".to_string(), None),
+            Message::Feedback(
+                ActionOutput::text("final very very very very long feedback"),
+                None,
+            ),
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::Summary);
@@ -254,16 +263,16 @@ mod tests {
     fn test_summary_strategy_keeps_short_feedback() {
         let conv = vec![
             Message::Agent("test1".to_string(), None),
-            Message::Feedback("ok".to_string(), None), // shorter than "<output removed>"
+            Message::Feedback(ActionOutput::text("ok"), None), // shorter than "<output removed>"
             Message::Agent("test3".to_string(), None),
-            Message::Feedback("final".to_string(), None),
+            Message::Feedback(ActionOutput::text("final"), None),
         ];
 
         let expected = vec![
             Message::Agent("test1".to_string(), None),
-            Message::Feedback("ok".to_string(), None),
+            Message::Feedback(ActionOutput::text("ok"), None),
             Message::Agent("test3".to_string(), None),
-            Message::Feedback("final".to_string(), None),
+            Message::Feedback(ActionOutput::text("final"), None),
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::Summary);
@@ -276,18 +285,18 @@ mod tests {
         let conv = vec![
             Message::Agent("test1".to_string(), invocation.clone()),
             Message::Feedback(
-                "very very very very long feedback".to_string(),
+                ActionOutput::text("very very very very long feedback"),
                 invocation.clone(),
             ),
             Message::Agent("test3".to_string(), invocation.clone()),
-            Message::Feedback("final".to_string(), invocation.clone()),
+            Message::Feedback(ActionOutput::text("final"), invocation.clone()),
         ];
 
         let expected = vec![
             Message::Agent("test1".to_string(), invocation.clone()),
-            Message::Feedback("<output removed>".to_string(), invocation.clone()),
+            Message::Feedback(ActionOutput::text("<output removed>"), invocation.clone()),
             Message::Agent("test3".to_string(), invocation.clone()),
-            Message::Feedback("final".to_string(), invocation.clone()),
+            Message::Feedback(ActionOutput::text("final"), invocation.clone()),
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::Summary);
@@ -298,20 +307,20 @@ mod tests {
     fn test_last_n_strategy() {
         let conv = vec![
             Message::Agent("test1".to_string(), None),
-            Message::Feedback("feedback1".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback1"), None),
             Message::Agent("test2".to_string(), None),
-            Message::Feedback("feedback2".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback2"), None),
             Message::Agent("test3".to_string(), None),
-            Message::Feedback("feedback3".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback3"), None),
             Message::Agent("test4".to_string(), None),
-            Message::Feedback("feedback4".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback4"), None),
         ];
 
         let expected = vec![
             Message::Agent("test3".to_string(), None),
-            Message::Feedback("feedback3".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback3"), None),
             Message::Agent("test4".to_string(), None),
-            Message::Feedback("feedback4".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback4"), None),
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::LastN(4));
@@ -322,12 +331,12 @@ mod tests {
     fn test_last_n_strategy_with_small_conv() {
         let conv = vec![
             Message::Agent("test1".to_string(), None),
-            Message::Feedback("feedback1".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback1"), None),
         ];
 
         let expected = vec![
             Message::Agent("test1".to_string(), None),
-            Message::Feedback("feedback1".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback1"), None),
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::LastN(10));
@@ -338,23 +347,23 @@ mod tests {
     fn test_last_n_strategy_with_just_enough() {
         let conv = vec![
             Message::Agent("test1".to_string(), None),
-            Message::Feedback("feedback1".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback1"), None),
             Message::Agent("test2".to_string(), None),
-            Message::Feedback("feedback2".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback2"), None),
             Message::Agent("test3".to_string(), None),
-            Message::Feedback("feedback3".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback3"), None),
             Message::Agent("test4".to_string(), None),
-            Message::Feedback("feedback4".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback4"), None),
         ];
 
         let expected = vec![
-            Message::Feedback("feedback1".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback1"), None),
             Message::Agent("test2".to_string(), None),
-            Message::Feedback("feedback2".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback2"), None),
             Message::Agent("test3".to_string(), None),
-            Message::Feedback("feedback3".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback3"), None),
             Message::Agent("test4".to_string(), None),
-            Message::Feedback("feedback4".to_string(), None),
+            Message::Feedback(ActionOutput::text("feedback4"), None),
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::LastN(7));

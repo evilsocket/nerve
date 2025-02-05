@@ -222,6 +222,7 @@ mod completion_test {
             content: Some("Explain the importance of fast language models".to_string()),
             name: None,
             tool_call_id: None,
+            image_content: None,
         }]);
 
         Groq::new("api_key").add_messages(vec![Message::UserMessage {
@@ -229,6 +230,7 @@ mod completion_test {
             content: Some("Explain the importance of fast language models".to_string()),
             name: None,
             tool_call_id: None,
+            image_content: None,
         }]);
 
         let mut hasher = DefaultHasher::new();
@@ -290,6 +292,7 @@ mod completion_test {
             content: Some("Explain the importance of fast language models".to_string()),
             name: None,
             tool_call_id: None,
+            image_content: None,
         }];
         let request =
             builder::RequestBuilder::new("mixtral-8x7b-32768".to_string()).with_stream(true);
