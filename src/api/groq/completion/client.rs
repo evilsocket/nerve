@@ -167,7 +167,7 @@ impl Groq {
             .with_messages(self.get_request_messages_with_disposable_clear())?
             .build();
 
-        // println!("req={}", serde_json::to_string_pretty(&req).unwrap());
+        log::debug!("groq.req={}", serde_json::to_string_pretty(&req).unwrap());
 
         let body = (self.client)
             .post("https://api.groq.com/openai/v1/chat/completions")

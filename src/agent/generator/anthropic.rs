@@ -2,13 +2,15 @@ use std::collections::HashMap;
 
 use crate::agent::{
     generator::{ChatResponse, SupportedFeatures, Usage},
+    namespaces::ActionOutput,
     state::SharedState,
     Invocation,
 };
 use anyhow::Result;
 use async_trait::async_trait;
 use clust::messages::{
-    ClaudeModel, MaxTokens, Message, MessagesRequestBody, Role, SystemPrompt, ToolDefinition,
+    ClaudeModel, Content, ImageContentSource, ImageMediaType, MaxTokens, Message,
+    MessagesRequestBody, Role, SystemPrompt, ToolDefinition,
 };
 use serde::{Deserialize, Serialize};
 
@@ -19,6 +21,16 @@ pub struct AnthropicToolFunctionParameterProperty {
     #[serde(rename(serialize = "type", deserialize = "type"))]
     pub the_type: String,
     pub description: String,
+}
+
+fn get_media_type(mime_type: &str) -> ImageMediaType {
+    match mime_type {
+        "image/png" => ImageMediaType::Png,
+        "image/jpeg" => ImageMediaType::Jpeg,
+        "image/gif" => ImageMediaType::Gif,
+        "image/webp" => ImageMediaType::Webp,
+        _ => ImageMediaType::Jpeg,
+    }
 }
 
 pub struct AnthropicClient {
@@ -159,14 +171,19 @@ impl Client for AnthropicClient {
                         log::warn!("ignoring empty assistant message: {:?}", m);
                     }
                 }
-                super::Message::Feedback(data, _) => {
-                    let trimmed = data.trim();
-                    if !trimmed.is_empty() {
-                        messages.push(Message::user(trimmed))
-                    } else {
-                        messages.push(Message::user("no output".to_string()))
+                super::Message::Feedback(data, _) => match data {
+                    ActionOutput::Image { data, mime_type } => messages.push(Message::user(
+                        Content::from(ImageContentSource::base64(get_media_type(mime_type), data)),
+                    )),
+                    ActionOutput::Text(text) => {
+                        let trimmed = text.trim();
+                        if !trimmed.is_empty() {
+                            messages.push(Message::user(trimmed))
+                        } else {
+                            messages.push(Message::user("no output".to_string()))
+                        }
                     }
-                }
+                },
             }
         }
 

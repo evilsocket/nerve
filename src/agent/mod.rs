@@ -15,7 +15,7 @@ use generator::{
     history::{ChatHistory, ConversationWindow},
     ChatOptions, ChatResponse, Client,
 };
-use namespaces::Action;
+use namespaces::{Action, ActionOutput};
 use state::{SharedState, State};
 use task::{eval::Evaluator, Task};
 
@@ -384,7 +384,7 @@ impl Agent {
         &self,
         action: &Box<dyn Action>,
         invocation: Invocation,
-        ret: Result<Option<String>>,
+        ret: Result<Option<ActionOutput>>,
         start: &std::time::Instant,
     ) {
         let mut mut_state = self.state.lock().await;

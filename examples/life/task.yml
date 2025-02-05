@@ -1,0 +1,59 @@
+using: []
+
+system_prompt: > 
+  You are an AI simulating life in a virtual world.
+  You have a set of tools that you can use to observe the world and interact with it.
+
+prompt: Simulate life in a continuous and complex way. Create complex patterns, structures and showcase emergent behavior.
+
+guidance:
+  - Follow physical laws, such as diffusion, diffusion of energy, diffusion of life, etc.
+  - Create complex patterns, structures and showcase emergent behavior.
+  - Create life forms that can evolve and change over time.
+  - Create life forms that can communicate with each other.
+  - Create life forms that can learn and improve over time.
+  - Create life forms that can build and use tools.
+  - Create life forms that can build and use weapons.
+  - Create life forms that can build and use structures.
+  - Create life forms that can build and use machines.
+
+functions:
+  - name: World
+    actions:
+      - name: observe
+        description: "To observe the world:"
+        max_shown_output: 10000
+        tool: ./world.py observe
+
+      - name: set_energy
+        description: "To increase or decrease the energy level of a given cell of the world:"
+        max_shown_output: 10000
+        example_payload: >
+          {
+            "x": 1,
+            "y": 2,
+            "energy": 10
+          }
+        tool: ./world.py set_energy
+
+      - name: set_life
+        description: "To create or remove life in a given cell of the world:"
+        max_shown_output: 10000
+        example_payload: >
+          {
+            "x": 1,
+            "y": 2,
+            "life": true
+          }
+        tool: ./world.py set_life
+        
+      - name: set_cell
+        description: "To set the symbol of a given cell of the world:"
+        max_shown_output: 10000
+        example_payload: >
+          {
+            "x": 1,
+            "y": 2,
+            "value": "💥"
+          }
+        tool: ./world.py set_cell

@@ -5,6 +5,7 @@ use colored::Colorize;
 use crate::{
     agent::{
         events::{EventType, Receiver},
+        namespaces::ActionOutput,
         Invocation,
     },
     cli::Args,
@@ -14,7 +15,7 @@ fn on_action_executed(
     judge_mode: bool,
     error: Option<String>,
     invocation: Invocation,
-    result: Option<String>,
+    result: Option<ActionOutput>,
     elapsed: Duration,
     complete_task: bool,
 ) {
@@ -55,7 +56,7 @@ fn on_action_executed(
         log::info!(
             "{} -> {} bytes in {:?}",
             view,
-            res.as_bytes().len(),
+            res.to_string().as_bytes().len(),
             elapsed
         );
     } else {
@@ -128,25 +129,17 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
             EventType::TaskComplete { impossible, reason } => {
                 if !is_workflow {
                     if impossible {
-                        log::error!(
-                            "{}: '{}'",
-                            "task is impossible".bold().red(),
-                            if let Some(r) = &reason {
-                                r
-                            } else {
-                                "no reason provided"
-                            }
-                        );
+                        if let Some(reason) = reason {
+                            log::error!("{}: '{}'", "task is impossible".bold().red(), reason);
+                        } else {
+                            log::error!("{}", "task is impossible".bold().red());
+                        }
                     } else {
-                        log::info!(
-                            "{}: '{}'",
-                            "task complete".bold().green(),
-                            if let Some(r) = &reason {
-                                r
-                            } else {
-                                "no reason provided"
-                            }
-                        );
+                        if let Some(reason) = reason {
+                            log::info!("{}: '{}'", "task complete".bold().green(), reason);
+                        } else {
+                            log::info!("{}", "task complete".bold().green());
+                        }
                     }
                 }
             }

@@ -8,7 +8,7 @@ use crate::agent::task::variables::parse_variable_expr;
 use super::{
     events::{Event, EventType},
     generator::Message,
-    namespaces::{self, Namespace},
+    namespaces::{self, ActionOutput, Namespace},
     serialization,
     task::Task,
     Invocation,
@@ -248,7 +248,7 @@ impl State {
         &self.namespaces
     }
 
-    pub fn add_success_to_history(&mut self, invocation: Invocation, result: Option<String>) {
+    pub fn add_success_to_history(&mut self, invocation: Invocation, result: Option<ActionOutput>) {
         self.history
             .push(Execution::with_result(invocation, result));
     }

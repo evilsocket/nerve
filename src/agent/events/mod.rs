@@ -7,6 +7,7 @@ mod channel;
 
 pub use channel::*;
 
+use super::namespaces::ActionOutput;
 use super::task::tasklet::Tasklet;
 use super::{
     generator::ChatOptions,
@@ -47,7 +48,7 @@ pub enum EventType {
     ActionExecuted {
         invocation: Invocation,
         error: Option<String>,
-        result: Option<String>,
+        result: Option<ActionOutput>,
         elapsed: std::time::Duration,
         complete_task: bool,
     },

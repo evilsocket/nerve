@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::agent::namespaces::ActionOutput;
+
 use super::Message;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
@@ -82,8 +84,8 @@ impl ChatHistory {
                             // TODO: find a more explicative message possibly hinting at the memory namespace
                             let compressed = "<output removed>";
                             Message::Feedback(
-                                if compressed.len() < content.len() {
-                                    compressed.to_string()
+                                if compressed.len() < content.to_string().len() {
+                                    ActionOutput::text(compressed.to_string())
                                 } else {
                                     content.clone()
                                 },

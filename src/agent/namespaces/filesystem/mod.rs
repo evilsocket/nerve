@@ -10,7 +10,7 @@ use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOT
 use anyhow::Result;
 use serde::Serialize;
 
-use super::{Action, Namespace};
+use super::{Action, ActionOutput, Namespace};
 use crate::agent::state::SharedState;
 use crate::agent::task::variables::get_variable;
 
@@ -80,7 +80,7 @@ impl Action for ReadFolder {
         _: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         // adapted from https://gist.github.com/mre/91ebb841c34df69671bd117ead621a8b
         let folder = payload.unwrap();
         let ret = fs::read_dir(&folder);
@@ -113,7 +113,7 @@ impl Action for ReadFolder {
                 }
             }
 
-            Ok(Some(output))
+            Ok(Some(output.into()))
         } else {
             Err(anyhow!("can't read {}: {:?}", folder, ret))
         }
@@ -142,11 +142,11 @@ impl Action for ReadFile {
         _: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         let filepath = payload.unwrap();
         let ret = std::fs::read_to_string(&filepath);
         if let Ok(contents) = ret {
-            Ok(Some(contents))
+            Ok(Some(contents.into()))
         } else {
             let err = ret.err().unwrap();
             Err(anyhow!(err))
@@ -188,7 +188,7 @@ impl Action for AppendToFile {
         _: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         let payload = payload.unwrap();
 
         let filepath = match get_variable("filesystem.append_to_file.target") {

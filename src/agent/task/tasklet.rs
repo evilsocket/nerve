@@ -13,6 +13,7 @@ use serde_trim::*;
 
 use super::Evaluator;
 use super::{variables::interpolate_variables, Task};
+use crate::agent::namespaces::ActionOutput;
 use crate::agent::task::robopages;
 use crate::agent::task::variables::define_variable;
 use crate::agent::{get_user_input, namespaces};
@@ -46,6 +47,7 @@ pub struct TaskletAction {
     store_to: Option<String>,
     example_payload: Option<String>,
     timeout: Option<String>,
+    mime_type: Option<String>,
 
     judge: Option<String>,
     #[serde(skip_deserializing, skip_serializing)]
@@ -264,7 +266,7 @@ impl TaskletAction {
             log::debug!("exit_code={}", exit_code);
             if exit_code == STATE_COMPLETE_EXIT_CODE {
                 state.lock().await.on_complete(false, Some(out))?;
-                return Ok(Some("task complete".to_string()));
+                return Ok(Some("task complete".into()));
             }
 
             if !err.is_empty() {
@@ -330,34 +332,51 @@ impl Action for TaskletAction {
         state: SharedState,
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
-        let output = if self.robopages_server_address.is_some() {
-            // run via robopages server
-            self.run_via_robopages(attributes).await?
-        } else if let Some(aliased_to) = &self.aliased_to {
+    ) -> Result<Option<ActionOutput>> {
+        let action_output = if let Some(aliased_to) = &self.aliased_to {
             // run as alias of a builtin namespace.action, here we can unwrap as everything is validated earlier
             aliased_to.run(state.clone(), attributes, payload).await?
-        } else if self.judge_path.is_some() {
-            // run as another instance of nerve for the judge tool
-            self.run_as_judge(payload).await?
-        } else if self.tool.is_some() {
-            // run as a command line tool
-            self.run_as_command_line(state.clone(), attributes, payload)
-                .await?
         } else {
-            // just return the payload
-            payload
+            let output = if self.robopages_server_address.is_some() {
+                // run via robopages server
+                self.run_via_robopages(attributes).await?
+            } else if self.judge_path.is_some() {
+                // run as another instance of nerve for the judge tool
+                self.run_as_judge(payload).await?
+            } else if self.tool.is_some() {
+                // run as a command line tool
+                self.run_as_command_line(state.clone(), attributes, payload)
+                    .await?
+            } else {
+                // just return the payload
+                payload
+            };
+
+            if let Some(output) = output {
+                if let Some(mime_type) = &self.mime_type {
+                    Some(ActionOutput::image(output, mime_type.to_string()))
+                } else {
+                    Some(ActionOutput::text(output))
+                }
+            } else {
+                None
+            }
         };
 
         if let Some(store_to) = &self.store_to {
             log::debug!("storing output to {}", store_to);
-            state
-                .lock()
-                .await
-                .set_variable(store_to.to_string(), output.clone().unwrap_or_default());
+
+            state.lock().await.set_variable(
+                store_to.to_string(),
+                if let Some(output) = &action_output {
+                    output.to_string()
+                } else {
+                    "".to_string()
+                },
+            );
         }
 
-        Ok(output)
+        Ok(action_output)
     }
 }
 

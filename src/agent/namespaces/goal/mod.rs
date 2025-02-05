@@ -3,7 +3,7 @@ use async_trait::async_trait;
 
 use std::collections::HashMap;
 
-use super::{Action, Namespace, StorageDescriptor};
+use super::{Action, ActionOutput, Namespace, StorageDescriptor};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
@@ -28,13 +28,13 @@ impl Action for UpdateGoal {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         state
             .lock()
             .await
             .get_storage_mut("goal")?
             .set_current(payload.as_ref().unwrap());
-        Ok(Some("goal updated".to_string()))
+        Ok(Some("goal updated".into()))
     }
 }
 

@@ -3,7 +3,7 @@ use async_trait::async_trait;
 
 use std::{collections::HashMap, time::Duration};
 
-use super::{Action, Namespace, StorageDescriptor};
+use super::{Action, ActionOutput, Namespace, StorageDescriptor};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
@@ -28,7 +28,7 @@ impl Action for Wait {
         _: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         let secs = payload.unwrap().parse::<u64>()?;
 
         log::info!("sleeping for {secs} seconds ...");

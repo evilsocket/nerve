@@ -1,9 +1,13 @@
 use std::collections::HashMap;
 
-use crate::api::groq::completion::{
-    client::Groq,
-    request::{builder, Function, Tool},
-    response::ErrorResponse,
+use crate::{
+    agent::namespaces::ActionOutput,
+    api::groq::completion::{
+        client::Groq,
+        message::{ImageContent, ImageUrl},
+        request::{builder, Function, Tool},
+        response::ErrorResponse,
+    },
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -69,6 +73,7 @@ impl Client for GroqClient {
             crate::api::groq::completion::message::Message::UserMessage {
                 role: Some("user".to_string()),
                 content: Some("Call the test function.".to_string()),
+                image_content: None,
                 name: None,
                 tool_call_id: None,
             },
@@ -130,6 +135,7 @@ impl Client for GroqClient {
                     content: Some(options.prompt.trim().to_string()),
                     name: None,
                     tool_call_id: None,
+                    image_content: None,
                 },
             ],
             None => vec![
@@ -138,6 +144,7 @@ impl Client for GroqClient {
                     content: Some(options.prompt.trim().to_string()),
                     name: None,
                     tool_call_id: None,
+                    image_content: None,
                 },
             ],
         };
@@ -167,18 +174,69 @@ impl Client for GroqClient {
                         tool_call_id = Some(format!("{}-{}", inv.action, call_idx));
                     }
                     if tool_call_id.is_some() {
-                        crate::api::groq::completion::message::Message::ToolMessage {
-                            role: Some("tool".to_string()),
-                            content: Some(data.trim().to_string()),
-                            name: None,
-                            tool_call_id,
+                        match data {
+                            ActionOutput::Text(text) => {
+                                crate::api::groq::completion::message::Message::ToolMessage {
+                                    role: Some("tool".to_string()),
+                                    content: Some(text.to_string()),
+                                    name: None,
+                                    tool_call_id,
+                                    image_content: None,
+                                }
+                            }
+                            ActionOutput::Image { data, mime_type } => {
+                                // can't use images for ToolMessage
+                                crate::api::groq::completion::message::Message::UserMessage {
+                                    role: Some("user".to_string()),
+                                    content: None,
+                                    name: None,
+                                    tool_call_id,
+                                    image_content: Some(vec![ImageContent {
+                                        image_url: ImageUrl {
+                                            url: if data.starts_with("http://")
+                                                || data.starts_with("https://")
+                                            {
+                                                data.to_string()
+                                            } else {
+                                                format!("data:{};base64,{}", mime_type, data)
+                                            },
+                                        },
+                                        the_type: "image_url".to_string(),
+                                    }]),
+                                }
+                            }
                         }
                     } else {
-                        crate::api::groq::completion::message::Message::UserMessage {
-                            role: Some("user".to_string()),
-                            content: Some(data.trim().to_string()),
-                            name: None,
-                            tool_call_id,
+                        match data {
+                            ActionOutput::Text(text) => {
+                                crate::api::groq::completion::message::Message::UserMessage {
+                                    role: Some("user".to_string()),
+                                    content: Some(text.to_string()),
+                                    name: None,
+                                    tool_call_id,
+                                    image_content: None,
+                                }
+                            }
+                            ActionOutput::Image { data, mime_type } => {
+                                crate::api::groq::completion::message::Message::UserMessage {
+                                    role: Some("user".to_string()),
+                                    content: None,
+                                    name: None,
+                                    tool_call_id,
+                                    image_content: Some(vec![ImageContent {
+                                        image_url: ImageUrl {
+                                            url: if data.starts_with("http://")
+                                                || data.starts_with("https://")
+                                            {
+                                                data.to_string()
+                                            } else {
+                                                format!("data:{};base64,{}", mime_type, data)
+                                            },
+                                        },
+                                        the_type: "image_url".to_string(),
+                                    }]),
+                                }
+                            }
                         }
                     }
                 }

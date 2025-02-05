@@ -1,17 +1,21 @@
 use std::collections::HashMap;
 
-use crate::api::ollama::{
-    generation::{
-        chat::{
-            request::{
-                ChatMessageRequest, Tool, ToolFunction, ToolFunctionParameterProperty,
-                ToolFunctionParameters,
+use crate::{
+    agent::namespaces::ActionOutput,
+    api::ollama::{
+        generation::{
+            chat::{
+                request::{
+                    ChatMessageRequest, Tool, ToolFunction, ToolFunctionParameterProperty,
+                    ToolFunctionParameters,
+                },
+                ChatMessage,
             },
-            ChatMessage,
+            images::Image,
+            options::GenerationOptions,
         },
-        options::GenerationOptions,
+        Ollama,
     },
-    Ollama,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -119,7 +123,11 @@ impl Client for OllamaClient {
         for m in options.history.iter() {
             chat_history.push(match m {
                 Message::Agent(data, _) => ChatMessage::assistant(data.trim().to_string()),
-                Message::Feedback(data, _) => ChatMessage::user(data.trim().to_string()),
+                Message::Feedback(data, _) => match data {
+                    ActionOutput::Text(text) => ChatMessage::user(text.to_string()),
+                    ActionOutput::Image { data, mime_type: _ } => ChatMessage::user("".to_string())
+                        .with_images(vec![Image::from_base64(data)]),
+                },
             });
         }
 

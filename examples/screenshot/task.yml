@@ -1,0 +1,21 @@
+using: []
+
+system_prompt: You are an helpful assistant that can take screenshots and describe them.
+
+guidance:
+  - Take a screenshot and provide a description of it.
+
+prompt: Take a screenshot and describe it.
+
+functions:
+  - name: Desktop
+    actions:
+      - name: take_screenshot
+        description: Take a screenshot of the current screen.
+        tool: ./screenshot.py
+        mime_type: image/png
+  
+      - name: describe_screenshot
+        description: Describe the screenshot.
+        complete_task: true
+        example_payload: "The screenshot is of a desktop with a cat on the screen."

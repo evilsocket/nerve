@@ -15,7 +15,7 @@ use url::Url;
 
 use crate::agent::state::SharedState;
 
-use super::{Action, Namespace, StorageDescriptor};
+use super::{Action, ActionOutput, Namespace, StorageDescriptor};
 
 const DEFAULT_HTTP_SCHEMA: &str = "https";
 
@@ -59,9 +59,9 @@ impl Action for ClearHeaders {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         _: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         state.lock().await.get_storage_mut("http-headers")?.clear();
-        Ok(Some("http headers cleared".to_string()))
+        Ok(Some("http headers cleared".into()))
     }
 }
 
@@ -95,7 +95,7 @@ impl Action for SetHeader {
         state: SharedState,
         attrs: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         let attrs = attrs.unwrap();
         let key = attrs.get("name").unwrap();
         let data = payload.unwrap();
@@ -106,7 +106,7 @@ impl Action for SetHeader {
             .get_storage_mut("http-headers")?
             .add_tagged(key, &data);
 
-        Ok(Some("header set".to_string()))
+        Ok(Some("header set".into()))
     }
 }
 
@@ -235,7 +235,7 @@ impl Action for Request {
         state: SharedState,
         attrs: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         // create a parsed Url from the attributes, payload and HTTP_TARGET variable
         let attrs = attrs.unwrap();
         let method = attrs.get("method").unwrap();
@@ -269,7 +269,7 @@ impl Action for Request {
                 resp.len()
             );
 
-            Ok(Some(resp))
+            Ok(Some(resp.into()))
         } else {
             let reason = res.status().canonical_reason().unwrap();
             let resp = format!("{} {}", res.status().as_u16(), &reason);

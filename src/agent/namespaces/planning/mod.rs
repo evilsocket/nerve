@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use super::{Action, Namespace, StorageDescriptor};
+use super::{Action, ActionOutput, Namespace, StorageDescriptor};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
@@ -28,13 +28,13 @@ impl Action for AddStep {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         state
             .lock()
             .await
             .get_storage_mut("plan")?
             .add_completion(&payload.unwrap());
-        Ok(Some("step added to the plan".to_string()))
+        Ok(Some("step added to the plan".into()))
     }
 }
 
@@ -60,13 +60,13 @@ impl Action for DeleteStep {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         state
             .lock()
             .await
             .get_storage_mut("plan")?
             .del_completion(payload.unwrap().parse::<usize>()?);
-        Ok(Some("step removed from the plan".to_string()))
+        Ok(Some("step removed from the plan".into()))
     }
 }
 
@@ -92,7 +92,7 @@ impl Action for SetComplete {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         let pos = payload.unwrap().parse::<usize>()?;
         if state
             .lock()
@@ -101,7 +101,7 @@ impl Action for SetComplete {
             .set_complete(pos)
             .is_some()
         {
-            Ok(Some(format!("step {} marked as completed", pos)))
+            Ok(Some(format!("step {} marked as completed", pos).into()))
         } else {
             Err(anyhow!("no plan step at position {}", pos))
         }
@@ -130,7 +130,7 @@ impl Action for SetIncomplete {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         let pos = payload.unwrap().parse::<usize>()?;
         if state
             .lock()
@@ -139,7 +139,7 @@ impl Action for SetIncomplete {
             .set_incomplete(pos)
             .is_some()
         {
-            Ok(Some(format!("step {} marked as incomplete", pos)))
+            Ok(Some(format!("step {} marked as incomplete", pos).into()))
         } else {
             Err(anyhow!("no plan step at position {}", pos))
         }
@@ -164,9 +164,9 @@ impl Action for Clear {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         _: Option<String>,
-    ) -> Result<Option<String>> {
+    ) -> Result<Option<ActionOutput>> {
         state.lock().await.get_storage_mut("plan")?.clear();
-        Ok(Some("plan cleared".to_string()))
+        Ok(Some("plan cleared".into()))
     }
 }
 

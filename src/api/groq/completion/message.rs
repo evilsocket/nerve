@@ -2,6 +2,18 @@ use std::hash::Hash;
 
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Serialize, Deserialize, Clone, Hash)]
+pub struct ImageUrl {
+    pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Hash)]
+pub struct ImageContent {
+    #[serde(rename(serialize = "type", deserialize = "type"))]
+    pub the_type: String,
+    pub image_url: ImageUrl,
+}
+
 /// 1:1 Mapping for Message Object used in the `messages` field groq completion API.
 ///
 /// Refer to [the official documentations](https://console.groq.com/docs/api-reference#chat-create)
@@ -24,6 +36,9 @@ pub enum Message {
         #[serde(skip_serializing_if = "Option::is_none")]
         content: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(rename(serialize = "content", deserialize = "content"))]
+        image_content: Option<Vec<ImageContent>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         name: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         role: Option<String>,
@@ -45,6 +60,9 @@ pub enum Message {
     ToolMessage {
         #[serde(skip_serializing_if = "Option::is_none")]
         content: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(rename(serialize = "content", deserialize = "content"))]
+        image_content: Option<Vec<ImageContent>>,
         #[serde(skip_serializing_if = "Option::is_none")]
         name: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]

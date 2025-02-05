@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::api::openai::chat::*;
 use crate::api::openai::*;
+use crate::{agent::namespaces::ActionOutput, api::openai::chat::*};
 use anyhow::Result;
 use async_trait::async_trait;
 use embeddings::EmbeddingsApi;
@@ -132,16 +132,8 @@ impl Client for OpenAIClient {
 
     async fn check_supported_features(&self) -> Result<SupportedFeatures> {
         let chat_history = vec![
-            crate::api::openai::Message {
-                role: Role::System,
-                content: Some("You are an helpful assistant.".to_string()),
-                tool_calls: None,
-            },
-            crate::api::openai::Message {
-                role: Role::User,
-                content: Some("Execute the test function.".to_string()),
-                tool_calls: None,
-            },
+            crate::api::openai::Message::text("You are an helpful assistant.", Role::System),
+            crate::api::openai::Message::text("Execute the test function.", Role::User),
         ];
 
         let tools = Some(vec![FunctionTool {
@@ -213,43 +205,33 @@ impl Client for OpenAIClient {
     ) -> anyhow::Result<ChatResponse> {
         let mut chat_history = match &options.system_prompt {
             Some(sp) => vec![
-                crate::api::openai::Message {
-                    role: Role::System,
-                    content: Some(sp.trim().to_string()),
-                    tool_calls: None,
-                },
-                crate::api::openai::Message {
-                    role: Role::User,
-                    content: Some(options.prompt.trim().to_string()),
-                    tool_calls: None,
-                },
+                crate::api::openai::Message::text(sp.trim(), Role::System),
+                crate::api::openai::Message::text(options.prompt.trim(), Role::User),
             ],
-            None => vec![crate::api::openai::Message {
-                role: Role::User,
-                content: Some(options.prompt.trim().to_string()),
-                tool_calls: None,
-            }],
+            None => vec![crate::api::openai::Message::text(
+                options.prompt.trim(),
+                Role::User,
+            )],
         };
 
         for m in options.history.iter() {
             chat_history.push(match m {
-                Message::Agent(data, _) => crate::api::openai::Message {
-                    role: Role::Assistant,
-                    content: Some(data.trim().to_string()),
-                    tool_calls: None,
-                },
-                Message::Feedback(data, _) => {
-                    // handles string_too_short cases (NIM)
-                    let mut content = data.trim().to_string();
-                    if content.is_empty() {
-                        content = "<no output>".to_string();
-                    }
-                    crate::api::openai::Message {
-                        role: Role::User,
-                        content: Some(content),
-                        tool_calls: None,
-                    }
+                Message::Agent(data, _) => {
+                    crate::api::openai::Message::text(data.trim(), Role::Assistant)
                 }
+                Message::Feedback(data, _) => match data {
+                    ActionOutput::Text(text) => {
+                        // handles string_too_short cases (NIM)
+                        let mut content = text.trim().to_string();
+                        if content.is_empty() {
+                            content = "<no output>".to_string();
+                        }
+                        crate::api::openai::Message::text(&content, Role::User)
+                    }
+                    ActionOutput::Image { data, mime_type } => {
+                        crate::api::openai::Message::image(data, mime_type, Role::User)
+                    }
+                },
             });
         }
 

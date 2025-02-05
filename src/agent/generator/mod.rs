@@ -8,7 +8,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use super::{state::SharedState, Invocation};
+use super::{namespaces::ActionOutput, state::SharedState, Invocation};
 
 mod anthropic;
 mod deepseek;
@@ -61,7 +61,7 @@ impl ChatOptions {
 #[serde(tag = "type", content = "data", rename_all = "lowercase")]
 pub enum Message {
     Agent(String, Option<Invocation>),
-    Feedback(String, Option<Invocation>),
+    Feedback(ActionOutput, Option<Invocation>),
 }
 
 impl Display for Message {
