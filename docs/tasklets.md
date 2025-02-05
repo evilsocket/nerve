@@ -3,10 +3,12 @@
 * [Prompts](#prompts)
 * [Guidance](#guidance)
 * [Task Timeout](#task-timeout)
+* [AutoRAG](#autorag)
 * [Tools](#tools)
     * [Predefined Tools](#predefined-tools)
     * [Custom Tools](#custom-tools)
         * [Additional Fields](#additional-fields)
+* [Evaluators](#evaluators)
 
 Tasklets are the building blocks of agents. They are defined in YAML files and provide the system and user prompts, what the agent can do and optional guidelines on how to perform the task. A tasklet defines dynamically the chat history that will be used to generate the agent's response in the agent loop:
 
@@ -65,6 +67,26 @@ timeout: 10
 
 # ... snippet ...
 ```
+
+## AutoRAG
+
+It is possible to use a `rag` directive to automatically generate an index from a set of documents. This will allow the agent to use the RAG index to answer questions and use it to perform the task at hand.
+
+```yaml
+# ... snippet ...
+
+rag:
+  # documents to import
+  source_path: ./docs
+  # rag persistent data path
+  data_path: ./data
+  # uncomment to enable chunking
+  # chunk_size: 1023
+
+# ... snippet ...
+```
+
+See the [auto_rag example](https://github.com/dreadnode/nerve/tree/main/examples/auto_rag) for a complete example.
 
 ## Tools
 
@@ -172,3 +194,14 @@ In addition to the ones already mentioned, tools can optionally define the follo
 - `complete_task`: if set to `true`, the task will be marked as complete after the tool is executed.
 - `judge`: uses another tasklet as a judge to validate the output of the tool (see [examples/code_auditor_with_judge](https://github.com/dreadnode/nerve/tree/main/examples/code_auditor_with_judge))
 - `alias`: use to create a tool that's an alias to one of the predefined ones (see [examples/docker-agent](https://github.com/dreadnode/nerve/tree/main/examples/docker-agent))
+
+## Evaluators
+
+An evaluator is a command line that receives the current state of the agent via standard input and performs some evaluation, at the end of which it can:
+
+1. Exit with a 42 status code if the task is completed successfully.
+2. Exit with any other status code if the task is not completed successfully.
+3. Return via stdout anything, that'll go to the chat history itself as feedback for the agent.
+
+Check the [eval_test](https://github.com/dreadnode/nerve/tree/main/examples/eval_test) and [ab_problem](https://github.com/dreadnode/nerve/tree/main/examples/ab_problem) tasklets for complete examples.
+
