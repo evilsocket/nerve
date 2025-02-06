@@ -1,5 +1,6 @@
 # Tasklets
 
+* [Agent Loop and Conversation Window](#agent-loop-and-conversation-window)
 * [Prompts](#prompts)
 * [Guidance](#guidance)
 * [Task Timeout](#task-timeout)
@@ -10,7 +11,11 @@
         * [Additional Fields](#additional-fields)
 * [Evaluators](#evaluators)
 
-Tasklets are the building blocks of agents. They are defined in YAML files and provide the system and user prompts, what the agent can do and optional guidelines on how to perform the task. A tasklet defines dynamically the chat history that will be used to generate the agent's response in the agent loop:
+---
+
+## Agent Loop and Conversation Window
+
+Tasklets are the building blocks of agents. They are defined in YAML files (several [examples are available here](https://github.com/nerve-ai/nerve/tree/main/examples)) and provide the system and user prompts, what the agent can do and optional guidelines on how to perform the task. A tasklet defines dynamically the chat history that will be used to generate the agent's response in the agent loop:
 
 ```python
 # pseudo code
@@ -19,14 +24,18 @@ while not task.done:
     agent.step(history)
 ```
 
-The agent will keep running until one of the following conditions is met:
+The agent will keep running and take decisions at each step until one of the following conditions is met:
 
 - the task is complete and has been set as such
 - the task is impossible and has been set as such
 - the task times out
 - one of the tools with the `complete_task` flag set to `true` is executed
 
-Several examples of tasklets can be found in the [examples](https://github.com/nerve-ai/nerve/tree/main/examples) directory.
+At each step the agent will receive a conversation history, composed of the initial prompts, the model tool calls and their outputs. The size of this window is determined by the `--window` argument:
+
+- if the window is set to a number `N`, the most recent `N` messages will be shown. **This is the default behaviour with N=15.**
+- if the window is set to `full`, the entire conversation history will be shown to the agent.
+- if the window is set to `summary`, the most recent messages will be shown, while the previous ones will be stripped down.
 
 ## Prompts
 
