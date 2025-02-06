@@ -56,35 +56,32 @@ fn on_action_executed(
 
     let mut view = String::new();
 
-    view.push_str("🧠 ");
-    view.push_str(&invocation.action.bold().to_string());
-    view.push('(');
-    if let Some(payload) = &invocation.payload {
-        view.push_str(&payload.dimmed().to_string());
-    }
-    if let Some(attributes) = &invocation.attributes {
-        view.push_str(", ");
-        view.push_str(
-            &attributes
-                .iter()
-                .map(|(k, v)| format!("{}={}", k, v).dimmed().to_string())
-                .collect::<Vec<String>>()
-                .join(", "),
-        );
-    }
-    view.push(')');
+    view.push_str("🛠️  ");
+    view.push_str(&invocation.action.dimmed().to_string());
+    view.push_str(
+        &format!(
+            "({})",
+            if invocation.payload.is_some() {
+                "..."
+            } else {
+                ""
+            }
+        )
+        .dimmed()
+        .to_string(),
+    );
 
     if let Some(err) = error {
         log::error!("{}: {}", view, err);
     } else if let Some(res) = result {
-        log::debug!(
+        log::info!(
             "{} -> {} bytes in {:?}",
             view,
             res.to_string().as_bytes().len(),
             elapsed
         );
     } else {
-        log::debug!("{} {} in {:?}", view, "no output".dimmed(), elapsed);
+        log::info!("{} {} in {:?}", view, "no output".dimmed(), elapsed);
     }
 }
 
