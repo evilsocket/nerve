@@ -31,7 +31,7 @@ impl Action for Wait {
     ) -> Result<Option<ActionOutput>> {
         let secs = payload.unwrap().parse::<u64>()?;
 
-        log::info!("sleeping for {secs} seconds ...");
+        log::info!("💤 sleeping for {secs} seconds ...");
 
         tokio::time::sleep(Duration::from_secs(secs)).await;
 

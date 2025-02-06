@@ -46,6 +46,9 @@ pub enum EventType {
         invocation: Invocation,
         elapsed: std::time::Duration,
     },
+    ActionExecuting {
+        invocation: Invocation,
+    },
     ActionExecuted {
         invocation: Invocation,
         error: Option<String>,

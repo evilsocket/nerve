@@ -54,6 +54,7 @@ pub struct TaskletAction {
     judge_path: Option<PathBuf>,
 
     complete_task: Option<bool>,
+    ignore_stderr: Option<bool>,
 
     tool: Option<String>,
 
@@ -195,30 +196,6 @@ impl TaskletAction {
             }
         }
 
-        log::info!(
-            "{}{}{}",
-            self.name.bold(),
-            if payload.is_some() {
-                format!(" {}", payload.as_ref().unwrap().red())
-            } else {
-                "".to_string()
-            },
-            if attributes.is_some() {
-                format!(
-                    " {}",
-                    attributes
-                        .as_ref()
-                        .unwrap()
-                        .iter()
-                        .map(|(key, value)| format!("{key}{}{}", "=".dimmed(), value.bright_blue()))
-                        .collect::<Vec<String>>()
-                        .join(" ")
-                )
-            } else {
-                "".to_string()
-            },
-        );
-
         log::debug!("! {:?}", &cmd);
 
         let output = cmd.output();
@@ -226,7 +203,8 @@ impl TaskletAction {
             let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
             let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
-            if !err.is_empty() {
+            if !err.is_empty() && self.max_shown_output > 0 && !self.ignore_stderr.unwrap_or(false)
+            {
                 log::error!(
                     "{}",
                     if err.len() > self.max_shown_output {
@@ -269,7 +247,7 @@ impl TaskletAction {
                 return Ok(Some("task complete".into()));
             }
 
-            if !err.is_empty() {
+            if !err.is_empty() && !self.ignore_stderr.unwrap_or(false) {
                 Err(anyhow!(err))
             } else {
                 Ok(Some(out))

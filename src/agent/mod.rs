@@ -363,8 +363,13 @@ impl Agent {
             .unwrap();
     }
 
-    async fn on_valid_action(&self) {
+    async fn on_valid_action(&self, invocation: &Invocation) {
         self.state.lock().await.metrics.valid_actions += 1;
+
+        let invocation = invocation.clone();
+
+        self.on_event(Event::new(EventType::ActionExecuting { invocation }))
+            .unwrap();
     }
 
     async fn on_timed_out_action(&self, invocation: Invocation, start: &std::time::Instant) {
@@ -525,7 +530,7 @@ impl Agent {
                     self.on_invalid_action(inv.clone(), Some(err.to_string()))
                         .await;
                 } else {
-                    self.on_valid_action().await;
+                    self.on_valid_action(&inv).await;
 
                     // determine if we have a timeout
                     let timeout = if let Some(action_tm) = action.timeout().as_ref() {

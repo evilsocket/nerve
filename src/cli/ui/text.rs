@@ -11,6 +11,30 @@ use crate::{
     cli::Args,
 };
 
+fn on_action_about_to_execute(invocation: Invocation) {
+    let mut view = String::new();
+
+    view.push_str("🧠 ");
+    view.push_str(&invocation.action.bold().to_string());
+    view.push('(');
+    if let Some(payload) = &invocation.payload {
+        view.push_str(&payload.dimmed().to_string());
+    }
+    if let Some(attributes) = &invocation.attributes {
+        view.push_str(", ");
+        view.push_str(
+            &attributes
+                .iter()
+                .map(|(k, v)| format!("{}={}", k, v).dimmed().to_string())
+                .collect::<Vec<String>>()
+                .join(", "),
+        );
+    }
+    view.push(')');
+
+    log::info!("{} ...", view);
+}
+
 fn on_action_executed(
     judge_mode: bool,
     error: Option<String>,
@@ -53,14 +77,14 @@ fn on_action_executed(
     if let Some(err) = error {
         log::error!("{}: {}", view, err);
     } else if let Some(res) = result {
-        log::info!(
+        log::debug!(
             "{} -> {} bytes in {:?}",
             view,
             res.to_string().as_bytes().len(),
             elapsed
         );
     } else {
-        log::info!("{} {} in {:?}", view, "no output".dimmed(), elapsed);
+        log::debug!("{} {} in {:?}", view, "no output".dimmed(), elapsed);
     }
 }
 
@@ -83,9 +107,7 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
                 log::info!("💤 sleeping for {} seconds ...", seconds);
             }
             EventType::MetricsUpdate(metrics) => {
-                if !is_workflow {
-                    println!("{}", metrics.to_string().dimmed());
-                }
+                log::debug!("{}", metrics.to_string());
             }
             EventType::StateUpdate(_state) => {}
             EventType::Thinking(thinking) => {
@@ -112,6 +134,9 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
                     invocation.action,
                     elapsed
                 );
+            }
+            EventType::ActionExecuting { invocation } => {
+                on_action_about_to_execute(invocation);
             }
             EventType::ActionExecuted {
                 invocation,

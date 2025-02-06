@@ -203,6 +203,7 @@ In addition to the ones already mentioned, tools can optionally define the follo
 - `complete_task`: if set to `true`, the task will be marked as complete after the tool is executed.
 - `judge`: uses another tasklet as a judge to validate the output of the tool (see [examples/code_auditor_with_judge](https://github.com/dreadnode/nerve/tree/main/examples/code_auditor_with_judge))
 - `alias`: use to create a tool that's an alias to one of the predefined ones (see [examples/docker-agent](https://github.com/dreadnode/nerve/tree/main/examples/docker-agent))
+- `ignore_stderr`: if set to `true`, the stderr of the tool will be ignored.
 
 ## Evaluators
 
