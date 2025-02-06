@@ -114,13 +114,10 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
                 log::info!("🧠 thinking: {}", thinking.dimmed());
             }
             EventType::EmptyResponse => {
-                log::warn!("agent did not provide valid instructions: empty response");
+                log::warn!("🧠 empty response");
             }
             EventType::InvalidResponse(response) => {
-                log::warn!(
-                    "agent did not provide valid instructions: \n\n{}\n\n",
-                    response.dimmed()
-                );
+                log::info!("🧠 {}", response.trim().dimmed());
             }
             EventType::InvalidAction { invocation, error } => {
                 log::warn!("invalid action {} : {:?}", &invocation.action, error);
