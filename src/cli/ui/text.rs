@@ -57,31 +57,34 @@ fn on_action_executed(
     let mut view = String::new();
 
     view.push_str("🛠️  ");
-    view.push_str(&invocation.action.dimmed().to_string());
-    view.push_str(
-        &format!(
-            "({})",
-            if invocation.payload.is_some() {
-                "..."
-            } else {
-                ""
-            }
-        )
-        .dimmed()
-        .to_string(),
-    );
+    view.push_str(&invocation.action);
+    view.push_str(&format!(
+        "({})",
+        if invocation.payload.is_some() {
+            "..."
+        } else {
+            ""
+        }
+    ));
 
     if let Some(err) = error {
         log::error!("{}: {}", view, err);
     } else if let Some(res) = result {
         log::info!(
-            "{} -> {} bytes in {:?}",
-            view,
-            res.to_string().as_bytes().len(),
-            elapsed
+            "{}",
+            format!(
+                "{} -> {} bytes in {:?}",
+                view,
+                res.to_string().as_bytes().len(),
+                elapsed
+            )
+            .dimmed()
         );
     } else {
-        log::info!("{} {} in {:?}", view, "no output".dimmed(), elapsed);
+        log::info!(
+            "{}",
+            format!("{} {} in {:?}", view, "no output", elapsed).dimmed()
+        );
     }
 }
 
