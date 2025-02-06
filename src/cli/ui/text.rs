@@ -107,7 +107,7 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
                 log::info!("💤 sleeping for {} seconds ...", seconds);
             }
             EventType::MetricsUpdate(metrics) => {
-                log::debug!("{}", metrics.to_string());
+                log::info!("📊 {}", metrics.to_string().dimmed());
             }
             EventType::StateUpdate(_state) => {}
             EventType::Thinking(thinking) => {
