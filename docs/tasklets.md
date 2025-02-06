@@ -199,7 +199,7 @@ In addition to the ones already mentioned, tools can optionally define the follo
 - `max_shown_output`: the maximum number of characters to be shown in the output of the tool.
 - `store_to`: save the output of the tool in a named variable used to pass data between different tasks (see the [example workflows](https://github.com/search?q=repo%3Adreadnode%2Fnerve+store_to+language%3AYAML&type=code)).
 - `timeout`: timeout for the specific tool.
-- `mime_type`: if set to `image/<any valid format>`, like `image/png`, the output of the tool will be considered as a base64 encoded image for vision models (see [examples/screenshot](https://github.com/dreadnode/nerve/tree/main/examples/screenshot)).
+- `mime_type`: if set to `image/<any valid format>`, like `image/png`, the output of the tool will be considered as a base64 encoded image for vision models (see [examples/screenshot](https://github.com/dreadnode/nerve/tree/main/examples/screenshot) and [examples/webcam](https://github.com/dreadnode/nerve/tree/main/examples/webcam)).
 - `complete_task`: if set to `true`, the task will be marked as complete after the tool is executed.
 - `judge`: uses another tasklet as a judge to validate the output of the tool (see [examples/code_auditor_with_judge](https://github.com/dreadnode/nerve/tree/main/examples/code_auditor_with_judge))
 - `alias`: use to create a tool that's an alias to one of the predefined ones (see [examples/docker-agent](https://github.com/dreadnode/nerve/tree/main/examples/docker-agent))
