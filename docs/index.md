@@ -75,10 +75,13 @@ Nerve features integrations for any model accessible via the following providers
 | **xAI** | `XAI_API_KEY` | `xai://grok-beta` |
 | **Mistral.ai** | `MISTRAL_API_KEY` | `mistral://mistral-large-latest` |
 | **Novita** | `NOVITA_API_KEY` | `novita://meta-llama/llama-3.1-70b-instruct` |
+| **Google Gemini**³ | `GEMINI_API_KEY` | `gemini://gemini-2.0-flash` |
 
 ¹ **o1-preview and o1 models do not support function calling directly** and do not support a system prompt. Nerve will try to detect this and fallback to user prompt. It is possible to force this behaviour by adding the `--user-only` flag to the command line.
 
 ² Refer to [this document](https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries) for how to configure a custom Huggingface endpoint.
+
+³ Google Gemini OpenAI endpoint [breaks with multiple tools](https://discuss.ai.google.dev/t/invalid-argument-error-using-openai-compatible/51788). While this bug won't be fixed, Nerve will detect this and use its own xml based tooling prompt to work around this issue.
 
 ### Using with Robopages
 

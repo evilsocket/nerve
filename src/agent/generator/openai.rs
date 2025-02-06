@@ -27,6 +27,7 @@ pub struct OpenAiToolFunctionParameters {
 }
 
 pub struct OpenAIClient {
+    ident: String,
     model: String,
     client: OpenAI,
 }
@@ -38,21 +39,35 @@ impl OpenAIClient {
     {
         let model = model.to_string();
         let api_key = std::env::var(api_key_env).map_err(|_| anyhow!("Missing {api_key_env}"))?;
+        let ident = api_key_env
+            .split('_')
+            .next()
+            .unwrap_or("openai")
+            .to_string();
         let auth = Auth::new(&api_key);
         let client = OpenAI::new(auth, endpoint);
 
-        Ok(Self { model, client })
+        Ok(Self {
+            ident,
+            model,
+            client,
+        })
     }
 
     pub fn custom_no_auth(model: &str, endpoint: &str) -> anyhow::Result<Self>
     where
         Self: Sized,
     {
+        let ident = "http".to_string();
         let model = model.to_string();
         let auth = Auth::new("");
         let client = OpenAI::new(auth, endpoint);
 
-        Ok(Self { model, client })
+        Ok(Self {
+            ident,
+            model,
+            client,
+        })
     }
 
     async fn get_tools_if_supported(&self, state: &SharedState) -> Vec<FunctionTool> {
@@ -187,6 +202,14 @@ impl Client for OpenAIClient {
                 && api_error.contains("does not support 'system' with this model")
             {
                 system_prompt_support = false;
+            } else if self.ident == "GEMINI" && api_error.contains("INVALID_ARGUMENT") {
+                // Gemini openai endpoint breaks with multiple tools:
+                //
+                //  https://discuss.ai.google.dev/t/invalid-argument-error-using-openai-compatible/51788
+                //  https://discuss.ai.google.dev/t/gemini-openai-compatibility-multiple-functions-support-in-function-calling-error-400/49431
+                //
+                // Never can overcome this bug by providing its own xml based tooling prompt.
+                log::warn!("this is a documented bug of Google Gemini OpenAI endpoint: https://discuss.ai.google.dev/t/invalid-argument-error-using-openai-compatible/51788");
             } else {
                 log::error!("openai.check_tools_support.error = {}", api_error);
             }

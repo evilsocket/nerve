@@ -13,6 +13,7 @@ use super::{namespaces::ActionOutput, state::SharedState, Invocation};
 mod anthropic;
 mod deepseek;
 mod fireworks;
+mod google;
 mod groq;
 mod huggingface;
 mod mistral;
@@ -233,6 +234,12 @@ macro_rules! factory_body {
                 $context_window,
             )?)),
             "mistral" => Ok(Box::new(mistral::MistralClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            "google" | "gemini" => Ok(Box::new(google::GoogleClient::new(
                 $url,
                 $port,
                 $model_name,
