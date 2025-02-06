@@ -33,6 +33,9 @@ pub struct Args {
     /// Force specified serialization format even if the model supports native tools calling.
     #[arg(long)]
     pub force_format: bool,
+    /// Chain-of-Thought xml tags.
+    #[arg(long, value_parser, num_args = 1.., value_delimiter = ' ', default_values_t = ["think".to_string(), "thinking".to_string(), "reasoning".to_string()])]
+    pub cot_tags: Vec<String>,
     /// Tasklet file.
     #[arg(short = 'T', long)]
     pub tasklet: Option<String>,

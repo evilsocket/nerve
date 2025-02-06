@@ -176,6 +176,7 @@ pub async fn setup_agent_for_task(
         force_strategy: args.force_format,
         user_only: args.user_only,
         max_iterations: args.max_iterations,
+        cot_tags: args.cot_tags.clone(),
     };
 
     // create the agent

@@ -106,6 +106,7 @@ pub struct Config {
     pub force_strategy: bool,
     pub user_only: bool,
     pub max_iterations: usize,
+    pub cot_tags: Vec<String>,
 }
 
 pub struct TaskSpecs {
@@ -340,7 +341,7 @@ impl Agent {
     }
 
     async fn on_invalid_action(&self, invocation: Invocation, error: Option<String>) {
-        if invocation.action == "thinking" || invocation.action == "think" {
+        if self.config.cot_tags.contains(&invocation.action) {
             self.on_event(Event::new(EventType::Thinking(invocation.payload.unwrap())))
                 .unwrap();
             return;
