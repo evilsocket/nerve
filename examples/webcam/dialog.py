@@ -10,7 +10,7 @@ text = sys.argv[1]
 # read the current webcam image from disk
 script_path = os.path.abspath(__file__)
 script_dir = os.path.dirname(script_path)
-screenshot_path = os.path.join(script_dir, "webcam.png")
+screenshot_path = os.path.join(script_dir, "webcam.jpg")
 image = cv2.imread(screenshot_path)
 
 # add text with wrapping
@@ -40,7 +40,7 @@ for i, line in enumerate(wrapped_text):
     )
 
 # save the image to another file to preserve it
-output_path = os.path.join(script_dir, f"{time.time()}.png")
+output_path = os.path.join(script_dir, f"{time.time()}.jpg")
 cv2.imwrite(output_path, image)
 
 # show the image on a UI

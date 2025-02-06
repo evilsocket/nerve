@@ -28,7 +28,7 @@ image = fetch_webcam_image(webcam_url)
 # save the image to a file in the same directory as the script
 script_path = os.path.abspath(__file__)
 script_dir = os.path.dirname(script_path)
-screenshot_path = os.path.join(script_dir, "webcam.png")
+screenshot_path = os.path.join(script_dir, "webcam.jpg")
 
 cv2.imwrite(screenshot_path, image)
 
