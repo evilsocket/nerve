@@ -9,6 +9,7 @@ guidance:
   - Use the read_webcam_image tool to get the image from the webcam.
   - Use the inform_user tool to inform the user about interesting activity.
   - If you see pets, focus on them and on what they are doing.
+  - If no significant changes happen for a while, feel free to sleep.
   - Do NOT inform the user for every image, only do it if you see something interesting.
   - Do NOT inform the user if you see nothing interesting or no state changes are happening.
 
