@@ -241,7 +241,7 @@ impl TaskletAction {
                 );
             }
 
-            if !out.is_empty() {
+            if !out.is_empty() && self.max_shown_output > 0 {
                 let lines = if out.len() > self.max_shown_output {
                     let end = out
                         .char_indices()
