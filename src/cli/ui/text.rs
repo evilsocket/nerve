@@ -79,6 +79,9 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
 
         match event.event {
             EventType::TaskStarted(_task) => {}
+            EventType::Sleeping(seconds) => {
+                log::info!("💤 sleeping for {} seconds ...", seconds);
+            }
             EventType::MetricsUpdate(metrics) => {
                 if !is_workflow {
                     println!("{}", metrics.to_string().dimmed());

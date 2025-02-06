@@ -470,6 +470,10 @@ impl Agent {
         self.events_chan.send(event).map_err(|e| anyhow!(e))
     }
 
+    pub fn on_event_type(&self, event_type: EventType) -> Result<()> {
+        self.on_event(Event::new(event_type))
+    }
+
     pub async fn step(&mut self) -> Result<()> {
         let options = self.prepare_step().await?;
 

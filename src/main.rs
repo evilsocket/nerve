@@ -11,7 +11,7 @@ mod cli;
 use std::{collections::HashMap, path::PathBuf};
 
 use agent::{
-    events::{Event, EventType},
+    events::EventType,
     task::variables::{define_variable, interpolate_variables},
     workflow::Workflow,
 };
@@ -34,7 +34,7 @@ async fn run_task(args: Args, for_workflow: bool) -> Result<HashMap<String, Stri
     ));
 
     // signal the task start
-    agent.on_event(Event::new(EventType::TaskStarted(tasklet)))?;
+    agent.on_event_type(EventType::TaskStarted(tasklet))?;
 
     // keep going until the task is complete or a fatal error is reached
     while !agent.is_done().await {
@@ -42,6 +42,13 @@ async fn run_task(args: Args, for_workflow: bool) -> Result<HashMap<String, Stri
         if let Err(error) = agent.step().await {
             log::error!("{}", error.to_string());
             return Err(error);
+        }
+
+        if let Some(sleep_seconds) = args.sleep {
+            // signal the agent is sleeping
+            agent.on_event_type(EventType::Sleeping(sleep_seconds))?;
+            // sleep for the given number of seconds
+            tokio::time::sleep(std::time::Duration::from_secs(sleep_seconds as u64)).await;
         }
     }
 

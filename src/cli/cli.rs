@@ -57,6 +57,9 @@ pub struct Args {
     /// Maximum number of steps to complete the task or 0 for no limit.
     #[arg(long, default_value_t = 0)]
     pub max_iterations: usize,
+    /// If set, the agent will sleep for the given number of seconds between each step.
+    #[arg(long)]
+    pub sleep: Option<usize>,
     /// Record every event of the session to a JSONL file.
     #[arg(long)]
     pub record_to: Option<String>,
