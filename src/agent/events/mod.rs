@@ -37,7 +37,7 @@ pub enum EventType {
     EmptyResponse,
     Thinking(String),
     Sleeping(usize),
-    InvalidResponse(String),
+    ChatResponse(String),
     InvalidAction {
         invocation: Invocation,
         error: Option<String>,

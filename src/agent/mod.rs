@@ -325,14 +325,14 @@ impl Agent {
         self.on_event(Event::new(EventType::EmptyResponse)).unwrap();
     }
 
-    async fn on_invalid_response(&self, response: &str) {
+    async fn on_chat_response(&self, response: &str) {
         let mut mut_state = self.state.lock().await;
         mut_state.metrics.errors.unparsed_responses += 1;
         mut_state.add_unparsed_response_to_history(
         response,
         "I could not parse any valid actions from your response, please correct it according to the instructions.".to_string(),
     );
-        self.on_event(Event::new(EventType::InvalidResponse(response.to_string())))
+        self.on_event(Event::new(EventType::ChatResponse(response.to_string())))
             .unwrap();
     }
 
@@ -509,7 +509,7 @@ impl Agent {
             if response.content.is_empty() {
                 self.on_empty_response().await;
             } else {
-                self.on_invalid_response(&response.content).await;
+                self.on_chat_response(&response.content).await;
             }
         } else {
             self.on_valid_response().await;

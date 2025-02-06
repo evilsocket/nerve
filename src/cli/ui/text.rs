@@ -111,13 +111,13 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
             }
             EventType::StateUpdate(_state) => {}
             EventType::Thinking(thinking) => {
-                log::info!("🧠 thinking: {}", thinking.dimmed());
+                log::info!("🧠 thinking: {}", thinking.italic());
             }
             EventType::EmptyResponse => {
-                log::warn!("🧠 empty response");
+                log::warn!("🧠 {}", "...".dimmed());
             }
-            EventType::InvalidResponse(response) => {
-                log::info!("🧠 {}", response.trim().dimmed());
+            EventType::ChatResponse(response) => {
+                log::info!("🧠 {}", response.trim().italic());
             }
             EventType::InvalidAction { invocation, error } => {
                 log::warn!("invalid action {} : {:?}", &invocation.action, error);
