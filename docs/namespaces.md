@@ -15,7 +15,7 @@ Use these memory-related actions to store and retrieve meaningful information ob
 
 ## Time
 
-<!-- Let's add a snippet here about why a user would want to use a time-related action (like you did in the Memory section above). It's best if headers have a bit of context below them before going right into the code/details! -->
+Use time-related actions to give the agent awareness of the current time, track elapsed time between messages, and allow it to autonomously pause its loop for a specified duration.
 
 * To pause for a given amount of seconds: `<wait>5</wait>`
 
