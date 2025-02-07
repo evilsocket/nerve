@@ -22,9 +22,10 @@ cargo install nerve-ai
 
 ### Installing from DockerHub
 
-Alternatively, a Docker image is available on [Docker Hub](https://hub.docker.com/r/dreadnode/nerve). In order to run it, you'll probably want the same network as the host in order to reach the OLLAMA server, and remember to share in a volume the tasklet files:
+Alternatively, a Docker image is available on [Docker Hub](https://hub.docker.com/r/dreadnode/nerve). When running the container, you'll likely want it to share the same network as the host in order to connect to the OLLAMA server. To allow Nerve to reach network endpoints like OLLAMA, use the command below. This ensures the container runs without network isolation and can access the same resources on the network as your host computer.
 
-<!-- This snippet needs a bit more clarity. Perhaps splitting the sentences would help? The piece about "remember to share in a volume the tasklet files" is a little confusing. Does the user need to share the network? I think I need some help understanding this piece! -->
+Additionally, remember to share the tasklet files by mounting a volume when running the container.
+
 
 ```sh
 docker run -it --network=host -v ./examples:/root/.nerve/tasklets dreadnode/nerve -h
@@ -32,7 +33,7 @@ docker run -it --network=host -v ./examples:/root/.nerve/tasklets dreadnode/nerv
 
 ### Building from sources
 
-To build from source:
+To build from source code:
 
 <!-- Is "source" a standard term that our users are comfortable with? Do we need to explain what we mean by "sources" a bit more here? -->
 
@@ -58,7 +59,7 @@ Some tasklets require additional arguments that can be passed with `-D name=valu
 nerve -G "openai://gpt-4o" -T examples/code_auditor -D TARGET_PATH=/path/to/code
 ```
 
-In case of a workflow, you can specify the workflow file with the `-W`/`--workflow` argument:
+When you use a workflow file, you can specify it with the `-W`/`--workflow` argument:
 
 <!-- "In case of a workflow", does this mean "when creating a workflow", "when using a workflow"? needs a tab more clarity here! -->
 
