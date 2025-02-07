@@ -1,6 +1,6 @@
 # Workflows
 
-Workflows are a way to orchestrate multiple [tasklets](tasklets.md) as a sequence of steps, each can be executed, optionally, by a different model and they pass data between them by setting variables and interpolating them in the prompt of the next tasklet. Each agent will have its own prompt, guidance and functions, acting as an independent functional unit.
+Workflows allow you to orchestrate multiple [tasklets](tasklets.md) as a sequence of steps. Each tasklet can be executed by a different model, if desired, and data is passed between them by setting variables and interpolating them into the prompt of the next tasklet. Each agent will have its own prompt, guidance, and functions, acting as an independent functional unit.
 
 For instance, the [recipe workflow example](https://github.com/dreadnode/nerve/tree/main/examples/recipe_workflow) shows how to orchestrate four different agents to:
 
@@ -9,7 +9,7 @@ For instance, the [recipe workflow example](https://github.com/dreadnode/nerve/t
 - Estimate the preparation time (GPT-4o-mini)
 - Rewrite the recipe in a more engaging and interesting way (GPT-4o)
 
-The YAML definition of the workflow is the following:
+The YAML definition of the workflow is:
 
 ```yaml
 name: "Write a Recipe"
@@ -36,7 +36,7 @@ Each element of the `tasks` array is a tasklet that will be executed in the orde
 
 **create_list_of_ingredients.yml**
 
-This first agent will create a list of ingredients that will be saved in the `ingredients` variable. Once the tool is executed, the task will be marked as complete and the next tasklet will be executed.
+This first agent will create a list of ingredients that will be saved in the `ingredients` variable. Once the tool is executed, the task will be marked as complete and the next tasklet will execute.
 
 ```yaml
 system_prompt: You are a talented chef.
