@@ -35,7 +35,6 @@ docker run -it --network=host -v ./examples:/root/.nerve/tasklets dreadnode/nerv
 
 To build from source code:
 
-<!-- Is "source" a standard term that our users are comfortable with? Do we need to explain what we mean by "sources" a bit more here? -->
 
 ```sh
 cargo build --release
@@ -61,7 +60,6 @@ nerve -G "openai://gpt-4o" -T examples/code_auditor -D TARGET_PATH=/path/to/code
 
 When you use a workflow file, you can specify it with the `-W`/`--workflow` argument:
 
-<!-- "In case of a workflow", does this mean "when creating a workflow", "when using a workflow"? needs a tab more clarity here! -->
 
 ```sh
 nerve -W examples/recipe_workflow 

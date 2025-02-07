@@ -12,7 +12,6 @@ Use these memory-related actions to store and retrieve meaningful information ob
 * To store a memory with any key: `<save_memory key="my-note">put here the custom data you want to keep for later</save_memory>`
 * To delete a memory you previously stored given its key: `<delete_memory key="my-note"/>`
 
-<!-- Is there a reason the second bullet point says "given its key" but the first one doesn't? It looks like both code snippets mention the `key` - just checking! -->
 
 ## Time
 
