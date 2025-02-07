@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use crate::agent::{
     generator::{ChatResponse, Message},
     state::SharedState,
-    Invocation,
+    ToolCall,
 };
 
 use super::{ChatOptions, Client, SupportedFeatures};
@@ -334,7 +334,7 @@ impl Client for GroqClient {
         log::debug!("groq.choice.message={:?}", &choice.message);
 
         let content = choice.message.content.unwrap_or_default().to_string();
-        let mut invocations = vec![];
+        let mut tool_calls = vec![];
 
         if let Some(calls) = choice.message.tool_calls {
             for call in calls {
@@ -359,7 +359,7 @@ impl Client for GroqClient {
                     }
                 }
 
-                let inv = Invocation {
+                tool_calls.push(ToolCall {
                     tool_name: call.function.name.unwrap_or_default().to_string(),
                     named_arguments: if attributes.is_empty() {
                         None
@@ -367,15 +367,13 @@ impl Client for GroqClient {
                         Some(attributes)
                     },
                     argument,
-                };
-
-                invocations.push(inv);
+                });
             }
         }
 
         Ok(ChatResponse {
             content,
-            invocations,
+            tool_calls,
             usage: Some(super::Usage {
                 input_tokens: response.usage.prompt_tokens,
                 output_tokens: response.usage.completion_tokens,

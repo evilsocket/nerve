@@ -1,13 +1,13 @@
 use anyhow::Result;
 
-use crate::agent::{generator::Message, namespaces::ActionOutput, serialization, Invocation};
+use crate::agent::{generator::Message, namespaces::ActionOutput, serialization, ToolCall};
 
 #[derive(Debug, Clone, Default)]
 pub struct Execution {
     // unparsed response caused an error
     response: Option<String>,
-    // parsed invocation
-    invocation: Option<Invocation>,
+    // parsed tool call
+    tool_call: Option<ToolCall>,
 
     result: Option<ActionOutput>,
     error: Option<String>,
@@ -16,7 +16,7 @@ pub struct Execution {
 impl Execution {
     pub fn with_unparsed_response(response: &str, error: String) -> Self {
         Self {
-            invocation: None,
+            tool_call: None,
             response: Some(response.to_string()),
             result: None,
             error: Some(error),
@@ -25,25 +25,25 @@ impl Execution {
 
     pub fn with_feedback(message: String) -> Self {
         Self {
-            invocation: None,
+            tool_call: None,
             response: None,
             result: Some(message.into()),
             error: None,
         }
     }
 
-    pub fn with_error(invocation: Invocation, error: String) -> Self {
+    pub fn with_error(tool_call: ToolCall, error: String) -> Self {
         Self {
-            invocation: Some(invocation),
+            tool_call: Some(tool_call),
             response: None,
             result: None,
             error: Some(error),
         }
     }
 
-    pub fn with_result(invocation: Invocation, result: Option<ActionOutput>) -> Self {
+    pub fn with_result(tool_call: ToolCall, result: Option<ActionOutput>) -> Self {
         Self {
-            invocation: Some(invocation),
+            tool_call: Some(tool_call),
             response: None,
             result,
             error: None,
@@ -58,10 +58,10 @@ impl Execution {
                 content: response.to_string(),
                 tool_call: None,
             });
-        } else if let Some(invocation) = self.invocation.as_ref() {
+        } else if let Some(tool_call) = self.tool_call.as_ref() {
             messages.push(Message::Agent {
-                content: serializer.serialize_invocation(invocation),
-                tool_call: Some(invocation.clone()),
+                content: serializer.serialize_tool_call(tool_call),
+                tool_call: Some(tool_call.clone()),
             });
         }
 
@@ -73,7 +73,7 @@ impl Execution {
             } else {
                 ActionOutput::text("")
             },
-            tool_call: self.invocation.clone(),
+            tool_call: self.tool_call.clone(),
         });
 
         messages

@@ -118,7 +118,7 @@ impl ChatHistory {
 
 #[cfg(test)]
 mod tests {
-    use crate::agent::Invocation;
+    use crate::agent::ToolCall;
 
     use super::*;
 
@@ -350,23 +350,23 @@ mod tests {
     }
 
     #[test]
-    fn test_summary_strategy_preserves_invocations() {
-        let invocation = Some(Invocation::new("test".to_string(), None, None));
+    fn test_summary_strategy_preserves_tool_calls() {
+        let tool_call = Some(ToolCall::new("test".to_string(), None, None));
         let conv = vec![
             Message::Agent {
                 content: "test1".to_string(),
-                tool_call: invocation.clone(),
+                tool_call: tool_call.clone(),
             },
             Message::Feedback {
-                tool_call: invocation.clone(),
+                tool_call: tool_call.clone(),
                 result: ActionOutput::text("very very very very long feedback"),
             },
             Message::Agent {
                 content: "test3".to_string(),
-                tool_call: invocation.clone(),
+                tool_call: tool_call.clone(),
             },
             Message::Feedback {
-                tool_call: invocation.clone(),
+                tool_call: tool_call.clone(),
                 result: ActionOutput::text("final"),
             },
         ];
@@ -374,18 +374,18 @@ mod tests {
         let expected = vec![
             Message::Agent {
                 content: "test1".to_string(),
-                tool_call: invocation.clone(),
+                tool_call: tool_call.clone(),
             },
             Message::Feedback {
-                tool_call: invocation.clone(),
+                tool_call: tool_call.clone(),
                 result: ActionOutput::text("<output removed>"),
             },
             Message::Agent {
                 content: "test3".to_string(),
-                tool_call: invocation.clone(),
+                tool_call: tool_call.clone(),
             },
             Message::Feedback {
-                tool_call: invocation.clone(),
+                tool_call: tool_call.clone(),
                 result: ActionOutput::text("final"),
             },
         ];

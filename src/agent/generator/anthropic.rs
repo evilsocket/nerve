@@ -4,7 +4,7 @@ use crate::agent::{
     generator::{ChatResponse, SupportedFeatures, Usage},
     namespaces::ActionOutput,
     state::SharedState,
-    Invocation,
+    ToolCall,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -240,7 +240,7 @@ impl Client for AnthropicClient {
             Err(_) => None,
         };
 
-        let mut invocations = vec![];
+        let mut tool_calls = vec![];
 
         log::debug!("tool_use={:?}", &tool_use);
 
@@ -272,7 +272,7 @@ impl Client for AnthropicClient {
                 }
             }
 
-            let inv = Invocation {
+            let tool_call = ToolCall {
                 tool_name: tool_use.name.to_string(),
                 named_arguments: if attributes.is_empty() {
                     None
@@ -282,19 +282,19 @@ impl Client for AnthropicClient {
                 argument,
             };
 
-            invocations.push(inv);
+            tool_calls.push(tool_call);
 
             log::debug!("tool_use={:?}", tool_use);
-            log::debug!("invocations={:?}", &invocations);
+            log::debug!("tool_calls={:?}", &tool_calls);
         }
 
-        if invocations.is_empty() && content.is_empty() {
+        if tool_calls.is_empty() && content.is_empty() {
             log::warn!("empty tool calls and content in response: {:?}", response);
         }
 
         Ok(ChatResponse {
             content: content.to_string(),
-            invocations,
+            tool_calls,
             usage: Some(Usage {
                 input_tokens: response.usage.input_tokens,
                 output_tokens: response.usage.output_tokens,

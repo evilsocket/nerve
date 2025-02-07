@@ -1,24 +1,24 @@
 use crate::agent::{
     namespaces::Action,
     state::storage::{Storage, StorageType, CURRENT_TAG, PREVIOUS_TAG},
-    Invocation,
+    ToolCall,
 };
 
-pub fn invocation(inv: &Invocation) -> String {
-    let mut xml = format!("<{}", inv.tool_name);
-    if let Some(attrs) = &inv.named_arguments {
+pub fn tool_call(tool_call: &ToolCall) -> String {
+    let mut xml = format!("<{}", tool_call.tool_name);
+    if let Some(attrs) = &tool_call.named_arguments {
         for (key, value) in attrs {
             xml += &format!(" {key}=\"{value}\"");
         }
     }
     xml += &format!(
         ">{}</{}>",
-        if let Some(data) = inv.argument.as_ref() {
+        if let Some(data) = tool_call.argument.as_ref() {
             data
         } else {
             ""
         },
-        inv.tool_name
+        tool_call.tool_name
     );
 
     xml

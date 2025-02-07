@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use embeddings::EmbeddingsApi;
 use serde::{Deserialize, Serialize};
 
-use crate::agent::{state::SharedState, Invocation};
+use crate::agent::{state::SharedState, ToolCall};
 
 use super::{ChatOptions, ChatResponse, Client, Message, SupportedFeatures};
 
@@ -300,7 +300,7 @@ impl Client for OpenAIClient {
             ("".to_string(), None)
         };
 
-        let mut invocations = vec![];
+        let mut resolved_tool_calls = vec![];
 
         log::debug!("openai.tool_calls={:?}", &tool_calls);
 
@@ -333,7 +333,7 @@ impl Client for OpenAIClient {
                     }
                 }
 
-                let inv = Invocation {
+                resolved_tool_calls.push(ToolCall {
                     tool_name: call.function.name.to_string(),
                     named_arguments: if attributes.is_empty() {
                         None
@@ -341,15 +341,13 @@ impl Client for OpenAIClient {
                         Some(attributes)
                     },
                     argument,
-                };
-
-                invocations.push(inv);
+                });
             }
         }
 
         Ok(ChatResponse {
             content: content.to_string(),
-            invocations,
+            tool_calls: resolved_tool_calls,
             usage: match resp.usage.prompt_tokens {
                 Some(prompt_tokens) => Some(super::Usage {
                     input_tokens: prompt_tokens,

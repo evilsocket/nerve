@@ -11,7 +11,7 @@ use super::{
     namespaces::{self, ActionOutput, Namespace},
     serialization,
     task::Task,
-    Invocation,
+    ToolCall,
 };
 use history::{Execution, History};
 use storage::Storage;
@@ -248,13 +248,12 @@ impl State {
         &self.namespaces
     }
 
-    pub fn add_success_to_history(&mut self, invocation: Invocation, result: Option<ActionOutput>) {
-        self.history
-            .push(Execution::with_result(invocation, result));
+    pub fn add_success_to_history(&mut self, tool_call: ToolCall, result: Option<ActionOutput>) {
+        self.history.push(Execution::with_result(tool_call, result));
     }
 
-    pub fn add_error_to_history(&mut self, invocation: Invocation, error: String) {
-        self.history.push(Execution::with_error(invocation, error));
+    pub fn add_error_to_history(&mut self, tool_call: ToolCall, error: String) {
+        self.history.push(Execution::with_error(tool_call, error));
     }
 
     pub fn add_unparsed_response_to_history(&mut self, response: &str, error: String) {

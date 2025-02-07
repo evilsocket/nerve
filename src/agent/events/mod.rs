@@ -13,7 +13,7 @@ use super::workflow::Workflow;
 use super::{
     generator::ChatOptions,
     state::{metrics::Metrics, storage::StorageType},
-    Invocation,
+    ToolCall,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -43,18 +43,18 @@ pub enum EventType {
     Sleeping(usize),
     TextResponse(String),
     InvalidAction {
-        invocation: Invocation,
+        tool_call: ToolCall,
         error: Option<String>,
     },
     ActionTimeout {
-        invocation: Invocation,
+        tool_call: ToolCall,
         elapsed: std::time::Duration,
     },
     ActionExecuting {
-        invocation: Invocation,
+        tool_call: ToolCall,
     },
     ActionExecuted {
-        invocation: Invocation,
+        tool_call: ToolCall,
         error: Option<String>,
         result: Option<ActionOutput>,
         elapsed: std::time::Duration,

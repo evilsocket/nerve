@@ -20,7 +20,7 @@ use crate::{
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::agent::{state::SharedState, Invocation};
+use crate::agent::{state::SharedState, ToolCall};
 
 use super::{ChatOptions, ChatResponse, Client, Message, SupportedFeatures};
 
@@ -208,7 +208,7 @@ impl Client for OllamaClient {
 
         if let Some(msg) = res.message {
             let content = msg.content.to_owned();
-            let mut invocations = vec![];
+            let mut resolved_tool_calls = vec![];
 
             if let Some(tool_calls) = msg.tool_calls.as_ref() {
                 log::debug!("ollama.tool.calls = {:?}", tool_calls);
@@ -233,7 +233,7 @@ impl Client for OllamaClient {
                         }
                     }
 
-                    let inv = Invocation {
+                    resolved_tool_calls.push(ToolCall {
                         tool_name: call.function.name.to_string(),
                         named_arguments: if attributes.is_empty() {
                             None
@@ -241,16 +241,14 @@ impl Client for OllamaClient {
                             Some(attributes)
                         },
                         argument,
-                    };
-
-                    invocations.push(inv);
+                    });
                 }
             }
 
-            log::debug!("ollama.invocations = {:?}", &invocations);
+            log::debug!("ollama.tool_calls = {:?}", &resolved_tool_calls);
             Ok(ChatResponse {
                 content,
-                invocations,
+                tool_calls: resolved_tool_calls,
                 usage: res.final_data.map(|final_data| super::Usage {
                     input_tokens: final_data.prompt_eval_count as u32,
                     output_tokens: final_data.eval_count as u32,
@@ -260,7 +258,7 @@ impl Client for OllamaClient {
             log::warn!("model returned an empty message.");
             Ok(ChatResponse {
                 content: "".to_string(),
-                invocations: vec![],
+                tool_calls: vec![],
                 usage: res.final_data.map(|final_data| super::Usage {
                     input_tokens: final_data.prompt_eval_count as u32,
                     output_tokens: final_data.eval_count as u32,

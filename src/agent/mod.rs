@@ -28,6 +28,7 @@ pub mod task;
 pub mod workflow;
 
 pub fn get_user_input(prompt: &str) -> String {
+    // TODO: handle this better and add to the events logic
     print!("\n{}", prompt);
     let _ = io::stdout().flush();
 
@@ -56,7 +57,7 @@ pub fn data_path(path: &str) -> Result<PathBuf> {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Invocation {
+pub struct ToolCall {
     pub tool_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub named_arguments: Option<HashMap<String, String>>,
@@ -64,7 +65,7 @@ pub struct Invocation {
     pub argument: Option<String>,
 }
 
-impl std::hash::Hash for Invocation {
+impl std::hash::Hash for ToolCall {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.tool_name.hash(state);
         state.write(format!("{:?}", &self.named_arguments).as_bytes());
@@ -72,7 +73,7 @@ impl std::hash::Hash for Invocation {
     }
 }
 
-impl Invocation {
+impl ToolCall {
     pub fn new(
         action: String,
         attributes: Option<HashMap<String, String>>,
@@ -195,12 +196,12 @@ impl Agent {
     }
 
     #[allow(clippy::borrowed_box)]
-    pub fn validate(&self, invocation: &mut Invocation, action: &Box<dyn Action>) -> Result<()> {
+    pub fn validate(&self, tool_call: &mut ToolCall, action: &Box<dyn Action>) -> Result<()> {
         // validate prerequisites
         let payload_required = action.example_payload().is_some();
         let attrs_required = action.example_attributes().is_some();
-        let mut has_payload = invocation.argument.is_some();
-        let mut has_attributes = invocation.named_arguments.is_some();
+        let mut has_payload = tool_call.argument.is_some();
+        let mut has_attributes = tool_call.named_arguments.is_some();
 
         // sometimes when the tool expects a json payload, the model returns it as separate arguments
         // in this case we need to convert it back to a single json string
@@ -208,8 +209,8 @@ impl Agent {
             log::warn!(
                 "model returned the payload as separate arguments, converting back to payload"
             );
-            invocation.argument = Some(serde_json::to_string(&invocation.named_arguments).unwrap());
-            invocation.named_arguments = None;
+            tool_call.argument = Some(serde_json::to_string(&tool_call.named_arguments).unwrap());
+            tool_call.named_arguments = None;
             has_payload = true;
             has_attributes = false;
         }
@@ -218,22 +219,22 @@ impl Agent {
             // payload required and not specified
             return Err(anyhow!(
                 "no content specified for '{}'",
-                invocation.tool_name
+                tool_call.tool_name
             ));
         } else if attrs_required && !has_attributes {
             // attributes required and not specified at all
             return Err(anyhow!(
                 "no attributes specified for '{}'",
-                invocation.tool_name
+                tool_call.tool_name
             ));
         } else if !payload_required && has_payload {
             // payload not required but specified
-            return Err(anyhow!("no content needed for '{}'", invocation.tool_name));
+            return Err(anyhow!("no content needed for '{}'", tool_call.tool_name));
         } else if !attrs_required && has_attributes {
             // attributes not required but specified
             return Err(anyhow!(
                 "no attributes needed for '{}'",
-                invocation.tool_name
+                tool_call.tool_name
             ));
         }
 
@@ -245,7 +246,7 @@ impl Agent {
                 .keys()
                 .map(|s| s.to_owned())
                 .collect();
-            let passed_attrs: Vec<String> = invocation
+            let passed_attrs: Vec<String> = tool_call
                 .clone()
                 .named_arguments
                 .unwrap()
@@ -258,7 +259,7 @@ impl Agent {
                     return Err(anyhow!(
                         "no '{}' attribute specified for '{}'",
                         required,
-                        invocation.tool_name
+                        tool_call.tool_name
                     ));
                 }
             }
@@ -348,49 +349,47 @@ impl Agent {
         self.state.lock().await.metrics.valid_responses += 1;
     }
 
-    async fn on_invalid_action(&self, invocation: Invocation, error: Option<String>) {
-        if self.config.cot_tags.contains(&invocation.tool_name) {
-            self.on_event(Event::new(EventType::Thinking(
-                invocation.argument.unwrap(),
-            )))
-            .unwrap();
+    async fn on_invalid_action(&self, tool_call: ToolCall, error: Option<String>) {
+        if self.config.cot_tags.contains(&tool_call.tool_name) {
+            self.on_event(Event::new(EventType::Thinking(tool_call.argument.unwrap())))
+                .unwrap();
             return;
         }
 
         let mut mut_state = self.state.lock().await;
         mut_state.metrics.errors.unknown_actions += 1;
         // tell the model that the action name is wrong
-        let name = invocation.tool_name.clone();
+        let name = tool_call.tool_name.clone();
 
         mut_state.add_error_to_history(
-            invocation.clone(),
+            tool_call.clone(),
             error
                 .clone()
                 .unwrap_or(format!("'{name}' is not a valid action name")),
         );
 
-        self.on_event(Event::new(EventType::InvalidAction { invocation, error }))
+        self.on_event(Event::new(EventType::InvalidAction { tool_call, error }))
             .unwrap();
     }
 
-    async fn on_valid_action(&self, invocation: &Invocation) {
+    async fn on_valid_action(&self, tool_call: &ToolCall) {
         self.state.lock().await.metrics.valid_actions += 1;
 
-        let invocation = invocation.clone();
+        let tool_call = tool_call.clone();
 
-        self.on_event(Event::new(EventType::ActionExecuting { invocation }))
+        self.on_event(Event::new(EventType::ActionExecuting { tool_call }))
             .unwrap();
     }
 
-    async fn on_timed_out_action(&self, invocation: Invocation, start: &std::time::Instant) {
+    async fn on_timed_out_action(&self, tool_call: ToolCall, start: &std::time::Instant) {
         let mut mut_state = self.state.lock().await;
         mut_state.metrics.errors.timedout_actions += 1;
         // tell the model about the timeout
-        mut_state.add_error_to_history(invocation.clone(), "action timed out".to_string());
+        mut_state.add_error_to_history(tool_call.clone(), "action timed out".to_string());
 
         self.events_chan
             .send(Event::new(EventType::ActionTimeout {
-                invocation,
+                tool_call,
                 elapsed: start.elapsed(),
             }))
             .unwrap();
@@ -399,7 +398,7 @@ impl Agent {
     async fn on_executed_action(
         &self,
         action: &Box<dyn Action>,
-        invocation: Invocation,
+        tool_call: ToolCall,
         ret: Result<Option<ActionOutput>>,
         start: &std::time::Instant,
     ) {
@@ -410,20 +409,20 @@ impl Agent {
         if let Err(err) = ret {
             mut_state.metrics.errors.errored_actions += 1;
             // tell the model about the error
-            mut_state.add_error_to_history(invocation.clone(), err.to_string());
+            mut_state.add_error_to_history(tool_call.clone(), err.to_string());
 
             error = Some(err.to_string());
         } else {
             let ret = ret.unwrap();
             mut_state.metrics.success_actions += 1;
             // tell the model about the output
-            mut_state.add_success_to_history(invocation.clone(), ret.clone());
+            mut_state.add_success_to_history(tool_call.clone(), ret.clone());
 
             result = ret;
         }
 
         self.on_event(Event::new(EventType::ActionExecuted {
-            invocation,
+            tool_call,
             result,
             error,
             elapsed: start.elapsed(),
@@ -500,8 +499,8 @@ impl Agent {
         // update tokens usage
         self.on_completion(&response).await;
 
-        // parse the model response into invocations
-        let invocations = if self.use_native_tools_format && response.invocations.is_empty() {
+        // parse the model response into tool calls
+        let tool_calls = if self.use_native_tools_format && response.tool_calls.is_empty() {
             // no tool calls, attempt to parse the content anyway
             self.config
                 .serializer
@@ -511,11 +510,11 @@ impl Agent {
             // use our own parsing strategy
             self.config.serializer.try_parse(response.content.trim())?
         } else {
-            response.invocations
+            response.tool_calls
         };
 
         // nothing parsed, report the problem to the model
-        if invocations.is_empty() {
+        if tool_calls.is_empty() {
             if response.content.is_empty() {
                 self.on_empty_response().await;
             } else {
@@ -527,20 +526,20 @@ impl Agent {
 
         let mut any_state_updates = false;
 
-        // for each parsed invocation
-        for mut inv in invocations {
+        // for each parsed call
+        for mut call in tool_calls {
             // lookup action
-            let action = self.state.lock().await.get_action(&inv.tool_name);
+            let action = self.state.lock().await.get_action(&call.tool_name);
             if action.is_none() {
-                self.on_invalid_action(inv.clone(), None).await;
+                self.on_invalid_action(call.clone(), None).await;
             } else {
                 // validate prerequisites
                 let action = action.unwrap();
-                if let Err(err) = self.validate(&mut inv, &action) {
-                    self.on_invalid_action(inv.clone(), Some(err.to_string()))
+                if let Err(err) = self.validate(&mut call, &action) {
+                    self.on_invalid_action(call.clone(), Some(err.to_string()))
                         .await;
                 } else {
-                    self.on_valid_action(&inv).await;
+                    self.on_valid_action(&call).await;
 
                     // determine if we have a timeout
                     let timeout = if let Some(action_tm) = action.timeout().as_ref() {
@@ -560,16 +559,18 @@ impl Agent {
                         let start = std::time::Instant::now();
                         let mut inp = "nope".to_string();
                         while !inp.is_empty() && inp != "n" && inp != "y" {
-                            inp =
-                                get_user_input(&format!("{} [Yn] ", inv.as_function_call_string()))
-                                    .to_ascii_lowercase();
+                            inp = get_user_input(&format!(
+                                "{} [Yn] ",
+                                call.as_function_call_string()
+                            ))
+                            .to_ascii_lowercase();
                         }
 
                         if inp == "n" {
-                            log::warn!("invocation rejected by user");
+                            log::warn!("action rejected by user");
                             self.on_executed_action(
                                 &action,
-                                inv.clone(),
+                                call.clone(),
                                 Err(anyhow!("rejected by user".to_owned())),
                                 &start,
                             )
@@ -586,16 +587,16 @@ impl Agent {
                             timeout,
                             action.run(
                                 self.state.clone(),
-                                inv.named_arguments.to_owned(),
-                                inv.argument.to_owned(),
+                                call.named_arguments.to_owned(),
+                                call.argument.to_owned(),
                             ),
                         )
                         .await;
 
                         if ret.is_err() {
-                            self.on_timed_out_action(inv, &start).await;
+                            self.on_timed_out_action(call, &start).await;
                         } else {
-                            self.on_executed_action(&action, inv, ret.unwrap(), &start)
+                            self.on_executed_action(&action, call, ret.unwrap(), &start)
                                 .await;
                         }
 

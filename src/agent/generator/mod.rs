@@ -8,7 +8,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use super::{namespaces::ActionOutput, state::SharedState, Invocation};
+use super::{namespaces::ActionOutput, state::SharedState, ToolCall};
 
 mod anthropic;
 mod deepseek;
@@ -64,11 +64,11 @@ pub enum Message {
     Agent {
         content: String,
         #[serde(skip_serializing_if = "Option::is_none")]
-        tool_call: Option<Invocation>,
+        tool_call: Option<ToolCall>,
     },
     Feedback {
         #[serde(skip_serializing_if = "Option::is_none")]
-        tool_call: Option<Invocation>,
+        tool_call: Option<ToolCall>,
         result: ActionOutput,
     },
 }
@@ -103,7 +103,7 @@ pub struct Usage {
 
 pub struct ChatResponse {
     pub content: String,
-    pub invocations: Vec<Invocation>,
+    pub tool_calls: Vec<ToolCall>,
     pub usage: Option<Usage>,
 }
 

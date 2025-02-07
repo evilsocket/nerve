@@ -6,22 +6,22 @@ use crate::{
     agent::{
         events::{EventType, Receiver},
         namespaces::ActionOutput,
-        Invocation,
+        ToolCall,
     },
     cli::Args,
     APP_NAME, APP_VERSION,
 };
 
-fn on_action_about_to_execute(invocation: Invocation) {
+fn on_action_about_to_execute(tool_call: ToolCall) {
     let mut view = String::new();
 
     view.push_str("🧠 ");
-    view.push_str(&invocation.tool_name.bold().to_string());
+    view.push_str(&tool_call.tool_name.bold().to_string());
     view.push('(');
-    if let Some(payload) = &invocation.argument {
+    if let Some(payload) = &tool_call.argument {
         view.push_str(&payload.dimmed().to_string());
     }
-    if let Some(attributes) = &invocation.named_arguments {
+    if let Some(attributes) = &tool_call.named_arguments {
         view.push_str(", ");
         view.push_str(
             &attributes
@@ -39,7 +39,7 @@ fn on_action_about_to_execute(invocation: Invocation) {
 fn on_action_executed(
     judge_mode: bool,
     error: Option<String>,
-    invocation: Invocation,
+    tool_call: ToolCall,
     result: Option<ActionOutput>,
     elapsed: Duration,
     complete_task: bool,
@@ -58,10 +58,10 @@ fn on_action_executed(
     let mut view = String::new();
 
     view.push_str("🛠️  ");
-    view.push_str(&invocation.tool_name);
+    view.push_str(&tool_call.tool_name);
     view.push_str(&format!(
         "({})",
-        if invocation.argument.is_some() {
+        if tool_call.argument.is_some() {
             "..."
         } else {
             ""
@@ -134,24 +134,21 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
             EventType::TextResponse(response) => {
                 log::info!("🧠 {}", response.trim().italic());
             }
-            EventType::InvalidAction { invocation, error } => {
-                log::warn!("invalid action {} : {:?}", &invocation.tool_name, error);
+            EventType::InvalidAction { tool_call, error } => {
+                log::warn!("invalid action {} : {:?}", &tool_call.tool_name, error);
             }
-            EventType::ActionTimeout {
-                invocation,
-                elapsed,
-            } => {
+            EventType::ActionTimeout { tool_call, elapsed } => {
                 log::warn!(
                     "action '{}' timed out after {:?}",
-                    invocation.tool_name,
+                    tool_call.tool_name,
                     elapsed
                 );
             }
-            EventType::ActionExecuting { invocation } => {
-                on_action_about_to_execute(invocation);
+            EventType::ActionExecuting { tool_call } => {
+                on_action_about_to_execute(tool_call);
             }
             EventType::ActionExecuted {
-                invocation,
+                tool_call,
                 error,
                 result,
                 elapsed,
@@ -160,7 +157,7 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
                 on_action_executed(
                     args.judge_mode,
                     error,
-                    invocation,
+                    tool_call,
                     result,
                     elapsed,
                     complete_task,

@@ -4,19 +4,19 @@ use anyhow::Result;
 use itertools::Itertools;
 use xml::{reader::XmlEvent, EventReader};
 
-use crate::agent::Invocation;
+use crate::agent::ToolCall;
 
 #[derive(Default, Debug)]
 pub struct Parsed {
     pub processed: usize,
-    pub invocations: Vec<Invocation>,
+    pub tool_calls: Vec<ToolCall>,
 }
 
-fn build_invocation(
+fn build_tool_call(
     closing_name: String,
     element: &XmlEvent,
     payload: &Option<String>,
-) -> Result<Invocation> {
+) -> Result<ToolCall> {
     let (name, attrs) = match element {
         xml::reader::XmlEvent::StartElement {
             name,
@@ -49,7 +49,7 @@ fn build_invocation(
     };
     let payload = payload.as_ref().map(|data| data.to_owned());
 
-    Ok(Invocation::new(action, attributes, payload))
+    Ok(ToolCall::new(action, attributes, payload))
 }
 
 fn preprocess_block(ptr: &str) -> String {
@@ -128,13 +128,13 @@ fn try_parse_block(ptr: &str) -> Parsed {
                     curr_payload = Some(data);
                 }
                 xml::reader::XmlEvent::EndElement { name } => {
-                    let ret = build_invocation(
+                    let ret = build_tool_call(
                         name.to_string(),
                         curr_element.as_ref().unwrap(),
                         &curr_payload,
                     );
-                    if let Ok(inv) = ret {
-                        parsed.invocations.push(inv);
+                    if let Ok(call) = ret {
+                        parsed.tool_calls.push(call);
                     } else {
                         log::error!("{:?}", ret.err().unwrap());
                     }
@@ -157,7 +157,7 @@ fn try_parse_block(ptr: &str) -> Parsed {
     parsed
 }
 
-pub(crate) fn try_parse(raw: &str) -> Result<Vec<Invocation>> {
+pub(crate) fn try_parse(raw: &str) -> Result<Vec<ToolCall>> {
     let mut ptr = raw;
     let mut parsed = vec![];
 
@@ -176,7 +176,7 @@ pub(crate) fn try_parse(raw: &str) -> Result<Vec<Invocation>> {
         if parsed_block.processed == 0 {
             break;
         } else {
-            parsed.extend(parsed_block.invocations);
+            parsed.extend(parsed_block.tool_calls);
 
             // update offset
             ptr = &ptr[parsed_block.processed..];
@@ -197,11 +197,11 @@ mod tests {
         let parsed = try_parse_block(ptr);
 
         assert_eq!(ptr.len(), parsed.processed);
-        assert_eq!(parsed.invocations.len(), 1);
+        assert_eq!(parsed.tool_calls.len(), 1);
 
-        assert_eq!(&parsed.invocations[0].tool_name, "clear-plan");
-        assert_eq!(&parsed.invocations[0].argument, &None);
-        assert_eq!(&parsed.invocations[0].named_arguments, &None);
+        assert_eq!(&parsed.tool_calls[0].tool_name, "clear-plan");
+        assert_eq!(&parsed.tool_calls[0].argument, &None);
+        assert_eq!(&parsed.tool_calls[0].named_arguments, &None);
     }
 
     #[test]
@@ -210,11 +210,11 @@ mod tests {
         let parsed = try_parse_block(ptr);
 
         assert_eq!(ptr.len(), parsed.processed);
-        assert_eq!(parsed.invocations.len(), 1);
+        assert_eq!(parsed.tool_calls.len(), 1);
 
-        assert_eq!(&parsed.invocations[0].tool_name, "yo");
-        assert_eq!(&parsed.invocations[0].argument, &None);
-        assert_eq!(&parsed.invocations[0].named_arguments, &None);
+        assert_eq!(&parsed.tool_calls[0].tool_name, "yo");
+        assert_eq!(&parsed.tool_calls[0].argument, &None);
+        assert_eq!(&parsed.tool_calls[0].named_arguments, &None);
     }
 
     #[test]
@@ -223,11 +223,11 @@ mod tests {
         let parsed = try_parse_block(ptr);
 
         assert_eq!(ptr.len(), parsed.processed);
-        assert_eq!(parsed.invocations.len(), 1);
+        assert_eq!(parsed.tool_calls.len(), 1);
 
-        assert_eq!(&parsed.invocations[0].tool_name, "do");
-        assert_eq!(parsed.invocations[0].argument, Some("this!".to_string()));
-        assert_eq!(&parsed.invocations[0].named_arguments, &None);
+        assert_eq!(&parsed.tool_calls[0].tool_name, "do");
+        assert_eq!(parsed.tool_calls[0].argument, Some("this!".to_string()));
+        assert_eq!(&parsed.tool_calls[0].named_arguments, &None);
     }
 
     #[test]
@@ -242,17 +242,17 @@ mod tests {
         };
 
         assert_eq!(ptr.len(), parsed.processed);
-        assert_eq!(parsed.invocations.len(), 1);
+        assert_eq!(parsed.tool_calls.len(), 1);
 
-        assert_eq!(&parsed.invocations[0].tool_name, "do");
-        assert_eq!(parsed.invocations[0].argument, Some("this!".to_string()));
-        assert_eq!(parsed.invocations[0].named_arguments, Some(attrs));
+        assert_eq!(&parsed.tool_calls[0].tool_name, "do");
+        assert_eq!(parsed.tool_calls[0].argument, Some("this!".to_string()));
+        assert_eq!(parsed.tool_calls[0].named_arguments, Some(attrs));
     }
 
     #[test]
     fn test_parse_mixed_stuff() {
         let ptr = "irhg3984h92fh4f2 <do foo=\"bar\">this!</do> no! whaaaaat, nope ok <clear-plan></clear-plan> and then <do/> ... or not!";
-        let invocations = try_parse(ptr).unwrap();
+        let tool_calls = try_parse(ptr).unwrap();
 
         let attrs = {
             let mut m = HashMap::new();
@@ -260,43 +260,43 @@ mod tests {
             m
         };
 
-        assert_eq!(invocations.len(), 3);
+        assert_eq!(tool_calls.len(), 3);
 
-        assert_eq!(&invocations[0].tool_name, "do");
-        assert_eq!(invocations[0].argument, Some("this!".to_string()));
-        assert_eq!(invocations[0].named_arguments, Some(attrs));
+        assert_eq!(&tool_calls[0].tool_name, "do");
+        assert_eq!(tool_calls[0].argument, Some("this!".to_string()));
+        assert_eq!(tool_calls[0].named_arguments, Some(attrs));
 
-        assert_eq!(&invocations[1].tool_name, "clear-plan");
-        assert_eq!(&invocations[1].argument, &None);
-        assert_eq!(&invocations[1].named_arguments, &None);
+        assert_eq!(&tool_calls[1].tool_name, "clear-plan");
+        assert_eq!(&tool_calls[1].argument, &None);
+        assert_eq!(&tool_calls[1].named_arguments, &None);
 
-        assert_eq!(&invocations[2].tool_name, "do");
-        assert_eq!(&invocations[2].argument, &None);
-        assert_eq!(&invocations[2].named_arguments, &None);
+        assert_eq!(&tool_calls[2].tool_name, "do");
+        assert_eq!(&tool_calls[2].argument, &None);
+        assert_eq!(&tool_calls[2].named_arguments, &None);
     }
 
     #[test]
     fn test_parse_multiple_with_newline() {
         let ptr = "<clear-plan></clear-plan>
 <update-goal>test</update-goal>";
-        let invocations = try_parse(ptr).unwrap();
+        let tool_calls = try_parse(ptr).unwrap();
 
-        assert_eq!(invocations.len(), 2);
+        assert_eq!(tool_calls.len(), 2);
 
-        assert_eq!(&invocations[0].tool_name, "clear-plan");
-        assert_eq!(&invocations[1].tool_name, "update-goal");
+        assert_eq!(&tool_calls[0].tool_name, "clear-plan");
+        assert_eq!(&tool_calls[1].tool_name, "update-goal");
     }
 
     #[test]
     fn test_parse_unquoted() {
         let ptr = "<command>ls -la && pwd</command>  <other>yes < no</other>";
-        let invocations = try_parse(ptr).unwrap();
-        assert_eq!(invocations.len(), 2);
+        let tool_calls = try_parse(ptr).unwrap();
+        assert_eq!(tool_calls.len(), 2);
 
-        assert_eq!(&invocations[0].tool_name, "command");
-        assert_eq!(invocations[0].argument, Some("ls -la && pwd".to_string()));
-        assert_eq!(&invocations[1].tool_name, "other");
-        assert_eq!(invocations[1].argument, Some("yes < no".to_string()));
+        assert_eq!(&tool_calls[0].tool_name, "command");
+        assert_eq!(tool_calls[0].argument, Some("ls -la && pwd".to_string()));
+        assert_eq!(&tool_calls[1].tool_name, "other");
+        assert_eq!(tool_calls[1].argument, Some("yes < no".to_string()));
     }
 
     #[test]

@@ -2,7 +2,7 @@ use anyhow::Result;
 use tera::Tera;
 
 use super::{namespaces::NAMESPACES, state::State};
-use crate::agent::{namespaces::Action, state::storage::Storage, Invocation};
+use crate::agent::{namespaces::Action, state::storage::Storage, ToolCall};
 
 mod xml;
 
@@ -38,7 +38,7 @@ impl Strategy {
         md.trim().to_string()
     }
 
-    pub fn try_parse(&self, raw: &str) -> Result<Vec<Invocation>> {
+    pub fn try_parse(&self, raw: &str) -> Result<Vec<ToolCall>> {
         match self {
             Strategy::XML => xml::parsing::try_parse(raw),
         }
@@ -56,9 +56,9 @@ impl Strategy {
         }
     }
 
-    pub fn serialize_invocation(&self, invocation: &Invocation) -> String {
+    pub fn serialize_tool_call(&self, tool_call: &ToolCall) -> String {
         match self {
-            Strategy::XML => xml::serialize::invocation(invocation),
+            Strategy::XML => xml::serialize::tool_call(tool_call),
         }
     }
 
