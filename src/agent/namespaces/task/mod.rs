@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use super::{Action, ActionOutput, Namespace};
+use super::{Tool, ToolOutput, Namespace};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
 struct Complete {}
 
 #[async_trait]
-impl Action for Complete {
+impl Tool for Complete {
     fn name(&self) -> &str {
         "task_complete"
     }
@@ -28,7 +28,7 @@ impl Action for Complete {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         state.lock().await.on_complete(false, payload)?;
         Ok(None)
     }
@@ -38,7 +38,7 @@ impl Action for Complete {
 struct Impossible {}
 
 #[async_trait]
-impl Action for Impossible {
+impl Tool for Impossible {
     fn name(&self) -> &str {
         "task_impossible"
     }
@@ -56,7 +56,7 @@ impl Action for Impossible {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         state.lock().await.on_complete(true, payload)?;
         Ok(None)
     }

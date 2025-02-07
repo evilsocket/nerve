@@ -12,9 +12,9 @@ guidance:
 prompt: >
   confirm by using the judge tool whether or not this is a vulnerability: $STDIN
 
-functions:
+tool_box:
   - name: Judge
-    actions:
+    tools:
       - name: confirm_vulnerability
         description: Use this tool to confirm whether or not the finding is a vulnerability.
         complete_task: true

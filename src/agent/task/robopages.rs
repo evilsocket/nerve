@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::tasklet::FunctionGroup;
+use super::tasklet::ToolBox;
 
 #[derive(Debug, Serialize, Clone)]
 struct FunctionCall {
@@ -50,7 +50,7 @@ impl Client {
         }
     }
 
-    pub async fn get_functions(&self) -> anyhow::Result<Vec<FunctionGroup>> {
+    pub async fn get_functions(&self) -> anyhow::Result<Vec<ToolBox>> {
         let api_url = format!(
             "http://{}{}?flavor=nerve",
             &self.server_address, &self.server_path
@@ -67,7 +67,7 @@ impl Client {
         }
 
         response
-            .json::<Vec<FunctionGroup>>()
+            .json::<Vec<ToolBox>>()
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }

@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::agent::{generator::Message, namespaces::ActionOutput, serialization, ToolCall};
+use crate::agent::{generator::Message, namespaces::ToolOutput, serialization, ToolCall};
 
 #[derive(Debug, Clone, Default)]
 pub struct Execution {
@@ -9,7 +9,7 @@ pub struct Execution {
     // parsed tool call
     tool_call: Option<ToolCall>,
 
-    result: Option<ActionOutput>,
+    result: Option<ToolOutput>,
     error: Option<String>,
 }
 
@@ -41,7 +41,7 @@ impl Execution {
         }
     }
 
-    pub fn with_result(tool_call: ToolCall, result: Option<ActionOutput>) -> Self {
+    pub fn with_result(tool_call: ToolCall, result: Option<ToolOutput>) -> Self {
         Self {
             tool_call: Some(tool_call),
             response: None,
@@ -67,11 +67,11 @@ impl Execution {
 
         messages.push(Message::Feedback {
             result: if let Some(err) = &self.error {
-                ActionOutput::text(format!("ERROR: {err}"))
+                ToolOutput::text(format!("ERROR: {err}"))
             } else if let Some(out) = &self.result {
                 out.clone()
             } else {
-                ActionOutput::text("")
+                ToolOutput::text("")
             },
             tool_call: self.tool_call.clone(),
         });

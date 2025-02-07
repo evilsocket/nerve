@@ -3,14 +3,14 @@ use async_trait::async_trait;
 
 use std::collections::HashMap;
 
-use super::{Action, ActionOutput, Namespace, StorageDescriptor};
+use super::{Tool, ToolOutput, Namespace, StorageDescriptor};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
 struct UpdateGoal {}
 
 #[async_trait]
-impl Action for UpdateGoal {
+impl Tool for UpdateGoal {
     fn name(&self) -> &str {
         "update_goal"
     }
@@ -28,7 +28,7 @@ impl Action for UpdateGoal {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         state
             .lock()
             .await

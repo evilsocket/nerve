@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    agent::namespaces::ActionOutput,
+    agent::namespaces::ToolOutput,
     api::groq::completion::{
         client::Groq,
         message::{ImageContent, ImageUrl},
@@ -175,7 +175,7 @@ impl Client for GroqClient {
                     }
                     if tool_call_id.is_some() {
                         match result {
-                            ActionOutput::Text(text) => {
+                            ToolOutput::Text(text) => {
                                 crate::api::groq::completion::message::Message::ToolMessage {
                                     role: Some("tool".to_string()),
                                     content: Some(text.to_string()),
@@ -184,7 +184,7 @@ impl Client for GroqClient {
                                     image_content: None,
                                 }
                             }
-                            ActionOutput::Image { data, mime_type } => {
+                            ToolOutput::Image { data, mime_type } => {
                                 // can't use images for ToolMessage
                                 crate::api::groq::completion::message::Message::UserMessage {
                                     role: Some("user".to_string()),
@@ -208,7 +208,7 @@ impl Client for GroqClient {
                         }
                     } else {
                         match result {
-                            ActionOutput::Text(text) => {
+                            ToolOutput::Text(text) => {
                                 crate::api::groq::completion::message::Message::UserMessage {
                                     role: Some("user".to_string()),
                                     content: Some(text.to_string()),
@@ -217,7 +217,7 @@ impl Client for GroqClient {
                                     image_content: None,
                                 }
                             }
-                            ActionOutput::Image { data, mime_type } => {
+                            ToolOutput::Image { data, mime_type } => {
                                 crate::api::groq::completion::message::Message::UserMessage {
                                     role: Some("user".to_string()),
                                     content: None,
@@ -249,11 +249,11 @@ impl Client for GroqClient {
             let mut tools = vec![];
 
             for group in state.lock().await.get_namespaces() {
-                for action in &group.actions {
+                for tool in &group.tools {
                     let mut required = vec![];
                     let mut properties = HashMap::new();
 
-                    if let Some(example) = action.example_payload() {
+                    if let Some(example) = tool.example_payload() {
                         required.push("payload".to_string());
                         properties.insert(
                             "payload".to_string(),
@@ -267,7 +267,7 @@ impl Client for GroqClient {
                         );
                     }
 
-                    if let Some(attrs) = action.example_attributes() {
+                    if let Some(attrs) = tool.example_attributes() {
                         for name in attrs.keys() {
                             required.push(name.to_string());
                             properties.insert(
@@ -281,8 +281,8 @@ impl Client for GroqClient {
                     }
 
                     let function = Function {
-                        name: Some(action.name().to_string()),
-                        description: Some(action.description().to_string()),
+                        name: Some(tool.name().to_string()),
+                        description: Some(tool.description().to_string()),
                         parameters: Some(serde_json::json!(GroqFunctionParameters {
                             the_type: "object".to_string(),
                             required,

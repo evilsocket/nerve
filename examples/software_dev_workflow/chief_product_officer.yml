@@ -9,9 +9,9 @@ prompt: Prepare a list of high level requirements for $product
 guidance:
   - Once you have made a list of requirements, use the create_list_of_requirements tool to confirm the decision.
 
-functions:
+tool_box:
   - name: Tools
-    actions:
+    tools:
       - name: create_list_of_requirements
         description: "To provide the requirements one per line as an organized list:"
         store_to: requirements

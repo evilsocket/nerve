@@ -17,18 +17,5 @@ if __name__ == "__main__":
     if "42" in raw:
         exit(42)
 
-    state = json.loads(raw)
-
-    # uncomment this to validate the output of a tool in the history
-    """
-    # in this case we're looping the chat history, we could just do substring matching really ...
-    for message in state["chat"]["history"]["conversation"]:
-        if message["type"] == "feedback":
-            invocation = message["data"][1]
-            if invocation is not None:
-                if invocation["action"] == "solution" and "42" in invocation["payload"]:
-                    exit(42)
-    """
-
     # add a feedback message to the chat history
     print("try thinking about a funny book reference to answer")

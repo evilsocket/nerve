@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use super::{Action, ActionOutput, Namespace, StorageDescriptor};
+use super::{Tool, ToolOutput, Namespace, StorageDescriptor};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
 struct AddStep {}
 
 #[async_trait]
-impl Action for AddStep {
+impl Tool for AddStep {
     fn name(&self) -> &str {
         "add_plan_step"
     }
@@ -28,7 +28,7 @@ impl Action for AddStep {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         state
             .lock()
             .await
@@ -42,7 +42,7 @@ impl Action for AddStep {
 struct DeleteStep {}
 
 #[async_trait]
-impl Action for DeleteStep {
+impl Tool for DeleteStep {
     fn name(&self) -> &str {
         "delete_plan_step"
     }
@@ -60,7 +60,7 @@ impl Action for DeleteStep {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         state
             .lock()
             .await
@@ -74,7 +74,7 @@ impl Action for DeleteStep {
 struct SetComplete {}
 
 #[async_trait]
-impl Action for SetComplete {
+impl Tool for SetComplete {
     fn name(&self) -> &str {
         "set_step_completed"
     }
@@ -92,7 +92,7 @@ impl Action for SetComplete {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         let pos = payload.unwrap().parse::<usize>()?;
         if state
             .lock()
@@ -112,7 +112,7 @@ impl Action for SetComplete {
 struct SetIncomplete {}
 
 #[async_trait]
-impl Action for SetIncomplete {
+impl Tool for SetIncomplete {
     fn name(&self) -> &str {
         "set_step_incomplete"
     }
@@ -130,7 +130,7 @@ impl Action for SetIncomplete {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         let pos = payload.unwrap().parse::<usize>()?;
         if state
             .lock()
@@ -150,7 +150,7 @@ impl Action for SetIncomplete {
 struct Clear {}
 
 #[async_trait]
-impl Action for Clear {
+impl Tool for Clear {
     fn name(&self) -> &str {
         "clear_plan"
     }
@@ -164,7 +164,7 @@ impl Action for Clear {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         _: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         state.lock().await.get_storage_mut("plan")?.clear();
         Ok(Some("plan cleared".into()))
     }

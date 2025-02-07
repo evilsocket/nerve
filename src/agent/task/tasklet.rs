@@ -13,12 +13,12 @@ use serde_trim::*;
 
 use super::Evaluator;
 use super::{variables::interpolate_variables, Task};
-use crate::agent::namespaces::ActionOutput;
+use crate::agent::namespaces::ToolOutput;
 use crate::agent::task::robopages;
 use crate::agent::task::variables::define_variable;
 use crate::agent::{get_user_input, namespaces};
 use crate::agent::{
-    namespaces::{Action, Namespace},
+    namespaces::{Namespace, Tool},
     state::SharedState,
     task::variables::{parse_pre_defined_values, parse_variable_expr},
 };
@@ -30,7 +30,7 @@ fn default_max_shown_output() -> usize {
 }
 
 #[derive(Default, Deserialize, Serialize, Debug, Clone)]
-pub struct TaskletAction {
+pub struct TaskletTool {
     #[serde(skip_deserializing, skip_serializing)]
     working_directory: String,
     #[serde(skip_deserializing, skip_serializing)]
@@ -60,10 +60,10 @@ pub struct TaskletAction {
 
     alias: Option<String>,
     #[serde(skip_deserializing, skip_serializing)]
-    aliased_to: Option<Box<dyn Action>>,
+    aliased_to: Option<Box<dyn Tool>>,
 }
 
-impl TaskletAction {
+impl TaskletTool {
     async fn run_via_robopages(
         &self,
         attributes: Option<HashMap<String, String>>,
@@ -150,9 +150,9 @@ impl TaskletAction {
             return Err(anyhow!("no tool defined"));
         }
 
-        // TODO: each action should have its own variables ... ?
+        // TODO: each tool should have its own variables ... ?
 
-        // define action specific variables
+        // define tool specific variables
         if let Some(payload) = &payload {
             define_variable("PAYLOAD", payload);
         }
@@ -261,7 +261,7 @@ impl TaskletAction {
 }
 
 #[async_trait]
-impl Action for TaskletAction {
+impl Tool for TaskletTool {
     fn name(&self) -> &str {
         &self.name
     }
@@ -310,9 +310,9 @@ impl Action for TaskletAction {
         state: SharedState,
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
-        let action_output = if let Some(aliased_to) = &self.aliased_to {
-            // run as alias of a builtin namespace.action, here we can unwrap as everything is validated earlier
+    ) -> Result<Option<ToolOutput>> {
+        let tool_output = if let Some(aliased_to) = &self.aliased_to {
+            // run as alias of a builtin namespace.tool, here we can unwrap as everything is validated earlier
             aliased_to.run(state.clone(), attributes, payload).await?
         } else {
             let output = if self.robopages_server_address.is_some() {
@@ -332,9 +332,9 @@ impl Action for TaskletAction {
 
             if let Some(output) = output {
                 if let Some(mime_type) = &self.mime_type {
-                    Some(ActionOutput::image(output, mime_type.to_string()))
+                    Some(ToolOutput::image(output, mime_type.to_string()))
                 } else {
-                    Some(ActionOutput::text(output))
+                    Some(ToolOutput::text(output))
                 }
             } else {
                 None
@@ -346,7 +346,7 @@ impl Action for TaskletAction {
 
             state.lock().await.set_variable(
                 store_to.to_string(),
-                if let Some(output) = &action_output {
+                if let Some(output) = &tool_output {
                     output.to_string()
                 } else {
                     "".to_string()
@@ -354,30 +354,33 @@ impl Action for TaskletAction {
             );
         }
 
-        Ok(action_output)
+        Ok(tool_output)
     }
 }
 
 #[derive(Default, Deserialize, Serialize, Debug, Clone)]
-pub struct FunctionGroup {
+pub struct ToolBox {
     #[serde(deserialize_with = "string_trim")]
     pub name: String,
     pub description: Option<String>,
-    pub actions: Vec<TaskletAction>,
+
+    // for backwards compatibility
+    #[serde(alias = "actions")]
+    pub tools: Vec<TaskletTool>,
 }
 
-impl FunctionGroup {
+impl ToolBox {
     fn compile(
         &self,
         working_directory: &str,
         robopages_server_address: Option<String>,
     ) -> Result<Namespace> {
-        let mut actions: Vec<Box<dyn Action>> = vec![];
-        for tasklet_action in &self.actions {
-            let mut action = tasklet_action.clone();
-            action.working_directory = working_directory.to_string();
-            action.robopages_server_address = robopages_server_address.clone();
-            actions.push(Box::new(action));
+        let mut tools: Vec<Box<dyn Tool>> = vec![];
+        for tasklet_tool in &self.tools {
+            let mut tool = tasklet_tool.clone();
+            tool.working_directory = working_directory.to_string();
+            tool.robopages_server_address = robopages_server_address.clone();
+            tools.push(Box::new(tool));
         }
 
         Ok(Namespace::new_default(
@@ -387,7 +390,7 @@ impl FunctionGroup {
             } else {
                 "".to_string()
             },
-            actions,
+            tools,
             None, // TODO: let tasklets declare custom storages?
         ))
     }
@@ -406,11 +409,15 @@ pub struct Tasklet {
     timeout: Option<String>,
     using: Option<Vec<String>>,
     guidance: Option<Vec<String>>,
-    functions: Option<Vec<FunctionGroup>>,
+
+    // for backwards compatibility
+    #[serde(alias = "functions")]
+    tool_box: Option<Vec<ToolBox>>,
+
     evaluator: Option<Evaluator>,
 
     #[serde(skip_deserializing, skip_serializing)]
-    robopages: Vec<FunctionGroup>,
+    robopages: Vec<ToolBox>,
     #[serde(skip_deserializing, skip_serializing)]
     robopages_server_address: Option<String>,
 }
@@ -479,26 +486,26 @@ impl Tasklet {
             };
 
             // check any tool definied as alias of a builtin namespace and perform some preprocessing and validation
-            if let Some(functions) = tasklet.functions.as_mut() {
+            if let Some(functions) = tasklet.tool_box.as_mut() {
                 // for each group of functions
                 for group in functions {
-                    // for each action in the group
-                    for action in &mut group.actions {
-                        if let Some(defines) = &action.define {
+                    // for each tool in the group
+                    for tool in &mut group.tools {
+                        if let Some(defines) = &tool.define {
                             for (key, value) in defines {
                                 log::debug!(
                                     "defining variable {} = '{}' for {}.{}",
                                     key,
                                     value,
                                     group.name,
-                                    action.name
+                                    tool.name
                                 );
                                 define_variable(key, value);
                             }
                         }
 
-                        // if the action is a judge, validate the judge file
-                        if let Some(judge) = &action.judge {
+                        // if the tool is a judge, validate the judge file
+                        if let Some(judge) = &tool.judge {
                             let judge_path = if judge.starts_with('/') {
                                 PathBuf::from_str(judge)?
                             } else {
@@ -515,41 +522,39 @@ impl Tasklet {
                                     judge_path.display()
                                 ));
                             }
-                            action.judge_path = Some(judge_path);
+                            tool.judge_path = Some(judge_path);
                         }
 
-                        // if the action has an alias perform some validation
-                        if let Some(alias) = &action.alias {
-                            if action.tool.is_some() {
+                        // if the tool has an alias perform some validation
+                        if let Some(alias) = &tool.alias {
+                            if tool.tool.is_some() {
                                 return Err(anyhow!("can't define both tool and alias"));
                             }
 
-                            let (namespace_name, action_name) = alias
+                            let (namespace_name, tool_name) = alias
                                 .split_once('.')
-                                .ok_or_else(|| anyhow!("invalid alias format '{}', aliases must be provided as 'namespace.action'", alias))?;
+                                .ok_or_else(|| anyhow!("invalid alias format '{}', aliases must be provided as 'namespace.tool'", alias))?;
 
                             if let Some(get_namespace_fn) =
                                 namespaces::NAMESPACES.get(namespace_name)
                             {
                                 let le_namespace = get_namespace_fn();
-                                let le_action = le_namespace
-                                    .actions
-                                    .iter()
-                                    .find(|a| a.name() == action_name);
+                                let le_tool =
+                                    le_namespace.tools.iter().find(|a| a.name() == tool_name);
 
-                                if let Some(le_action) = le_action {
+                                if let Some(le_tool) = le_tool {
                                     log::debug!(
                                         "aliased {}.{} to {}.{}",
                                         group.name,
-                                        action.name,
+                                        tool.name,
                                         le_namespace.name,
-                                        le_action.name()
+                                        le_tool.name()
                                     );
-                                    action.aliased_to = Some(le_action.clone());
+                                    tool.aliased_to = Some(le_tool.clone());
                                 } else {
                                     return Err(anyhow!(
-                                        "action '{}' not found in namespace '{}'",
-                                        action_name,
+                                        "tool '{}' not found in namespace '{}'",
+                                        tool_name,
                                         namespace_name
                                     ));
                                 }
@@ -602,7 +607,7 @@ impl Tasklet {
         Ok(())
     }
 
-    pub fn set_robopages(&mut self, server_address: &str, robopages: Vec<FunctionGroup>) {
+    pub fn set_robopages(&mut self, server_address: &str, robopages: Vec<ToolBox>) {
         let mut host_port = if server_address.contains("://") {
             server_address.split("://").last().unwrap().to_string()
         } else {
@@ -667,7 +672,7 @@ impl Task for Tasklet {
     fn get_functions(&self) -> Vec<Namespace> {
         let mut groups = vec![];
 
-        if let Some(custom_functions) = self.functions.as_ref() {
+        if let Some(custom_functions) = self.tool_box.as_ref() {
             for group in custom_functions {
                 groups.push(group.compile(&self.folder, None).unwrap());
             }

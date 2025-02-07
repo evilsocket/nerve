@@ -10,7 +10,7 @@ use libc::{S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR, S_IXGRP, S_IXOT
 use anyhow::Result;
 use serde::Serialize;
 
-use super::{Action, ActionOutput, Namespace};
+use super::{Tool, ToolOutput, Namespace};
 use crate::agent::state::SharedState;
 use crate::agent::task::variables::get_variable;
 
@@ -62,7 +62,7 @@ fn triplet(mode: u32, read: u32, write: u32, execute: u32) -> String {
 struct ReadFolder {}
 
 #[async_trait]
-impl Action for ReadFolder {
+impl Tool for ReadFolder {
     fn name(&self) -> &str {
         "list_folder_contents"
     }
@@ -80,7 +80,7 @@ impl Action for ReadFolder {
         _: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         // adapted from https://gist.github.com/mre/91ebb841c34df69671bd117ead621a8b
         let folder = payload.unwrap();
         let ret = fs::read_dir(&folder);
@@ -124,7 +124,7 @@ impl Action for ReadFolder {
 struct ReadFile {}
 
 #[async_trait]
-impl Action for ReadFile {
+impl Tool for ReadFile {
     fn name(&self) -> &str {
         "read_file"
     }
@@ -142,7 +142,7 @@ impl Action for ReadFile {
         _: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         let filepath = payload.unwrap();
         let ret = std::fs::read_to_string(&filepath);
         if let Ok(contents) = ret {
@@ -165,7 +165,7 @@ struct InvalidJSON {
 struct AppendToFile {}
 
 #[async_trait]
-impl Action for AppendToFile {
+impl Tool for AppendToFile {
     fn name(&self) -> &str {
         "append_to_file"
     }
@@ -188,7 +188,7 @@ impl Action for AppendToFile {
         _: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         let payload = payload.unwrap();
 
         let filepath = match get_variable("filesystem.append_to_file.target") {

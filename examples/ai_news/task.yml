@@ -12,14 +12,11 @@ prompt: >
 guidance:
   - You will first use the read_news command and then write the bullet points to your memory.
 
-functions:
+tool_box:
   - name: News
-    decription: You will use this action to read the recent news.
-    actions:
+    decription: You will use this tools to read the recent news.
+    tools:
       - name: read_news
         description: "To read the recent news:"
         max_shown_output: 4096
         tool: curl -s getnews.tech/ai,nocolor
-     
-        
-        

@@ -7,7 +7,7 @@ mod channel;
 
 pub use channel::*;
 
-use super::namespaces::ActionOutput;
+use super::namespaces::ToolOutput;
 use super::task::tasklet::Tasklet;
 use super::workflow::Workflow;
 use super::{
@@ -42,21 +42,21 @@ pub enum EventType {
     Thinking(String),
     Sleeping(usize),
     TextResponse(String),
-    InvalidAction {
+    InvalidToolCall {
         tool_call: ToolCall,
         error: Option<String>,
     },
-    ActionTimeout {
+    ToolCallTimeout {
         tool_call: ToolCall,
         elapsed: std::time::Duration,
     },
-    ActionExecuting {
+    BeforeToolCall {
         tool_call: ToolCall,
     },
-    ActionExecuted {
+    AfterToolCall {
         tool_call: ToolCall,
         error: Option<String>,
-        result: Option<ActionOutput>,
+        result: Option<ToolOutput>,
         elapsed: std::time::Duration,
         complete_task: bool,
     },

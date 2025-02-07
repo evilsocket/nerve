@@ -46,10 +46,10 @@ evaluator:
     - python3
     - eval.py
 
-functions:
+tool_box:
   - name: Solve
-    description: You will use these actions to provide final answer to the problem.
-    actions:
+    description: You will use these tools to provide the final answer to the problem.
+    tools:
       - name: solution
         description: "To provide final result:"
         example_payload: B#

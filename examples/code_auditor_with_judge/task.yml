@@ -23,9 +23,9 @@ guidance:
 prompt: >
   find vulnerabilities in source code in $TARGET_PATH and report your findings.
 
-functions:
+tool_box:
   - name: Report
-    actions:
+    tools:
       - name: judge_finding
         description: Use this tool to ask an external expert to judge if a finding is a vulnerability or not. If the expert confirms it is a vulnerability, use the report_finding tool to report it.
         example_payload: >

@@ -36,7 +36,7 @@ fn build_tool_call(
         ));
     }
 
-    let action = name.to_string();
+    let tool_name = name.to_string();
     let attributes = if !attrs.is_empty() {
         let mut map = HashMap::new();
         for attr in attrs {
@@ -49,7 +49,7 @@ fn build_tool_call(
     };
     let payload = payload.as_ref().map(|data| data.to_owned());
 
-    Ok(ToolCall::new(action, attributes, payload))
+    Ok(ToolCall::new(tool_name, attributes, payload))
 }
 
 fn preprocess_block(ptr: &str) -> String {

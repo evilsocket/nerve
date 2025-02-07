@@ -16,11 +16,11 @@ guidance:
   - Try to use different lines each time and adapt them to the context of the conversation.
 
 # the agent toolbox
-functions:
+tool_box:
   # divided in action groups
   - name: Conversation
     description: You will use these actions to create conversational entries.
-    actions:
+    tools:
       - name: talk
         # show up to 4096 output characters
         max_shown_output: 4096
@@ -33,5 +33,3 @@ functions:
         # in case the command requires arguments, declare them with an example value
         args:
           character_name: NameOfTheSpeakingCharacter
-        
-        

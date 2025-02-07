@@ -1,5 +1,5 @@
 use crate::agent::{
-    namespaces::Action,
+    namespaces::Tool,
     state::storage::{Storage, StorageType, CURRENT_TAG, PREVIOUS_TAG},
     ToolCall,
 };
@@ -25,18 +25,18 @@ pub fn tool_call(tool_call: &ToolCall) -> String {
 }
 
 #[allow(clippy::borrowed_box)]
-pub fn action(action: &Box<dyn Action>) -> String {
-    let mut xml = format!("`<{}", action.name());
+pub fn tool(tool: &Box<dyn Tool>) -> String {
+    let mut xml = format!("`<{}", tool.name());
 
-    if let Some(attrs) = action.example_attributes() {
+    if let Some(attrs) = tool.example_attributes() {
         for (name, example_value) in &attrs {
             xml += &format!(" {}=\"{}\"", name, example_value);
         }
     }
 
-    if let Some(payload) = action.example_payload() {
+    if let Some(payload) = tool.example_payload() {
         // TODO: escape payload?
-        xml += &format!(">{}</{}>`", payload, action.name());
+        xml += &format!(">{}</{}>`", payload, tool.name());
     } else {
         xml += "/>`";
     }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::api::openai::*;
-use crate::{agent::namespaces::ActionOutput, api::openai::chat::*};
+use crate::{agent::namespaces::ToolOutput, api::openai::chat::*};
 use anyhow::Result;
 use async_trait::async_trait;
 use embeddings::EmbeddingsApi;
@@ -77,12 +77,12 @@ impl OpenAIClient {
         if state.lock().await.use_native_tools_format {
             // for every namespace available to the model
             for group in state.lock().await.get_namespaces() {
-                // for every action of the namespace
-                for action in &group.actions {
+                // for every tool of the namespace
+                for tool in &group.tools {
                     let mut required = vec![];
                     let mut properties = HashMap::new();
 
-                    if let Some(example) = action.example_payload() {
+                    if let Some(example) = tool.example_payload() {
                         required.push("payload".to_string());
                         properties.insert(
                             "payload".to_string(),
@@ -96,7 +96,7 @@ impl OpenAIClient {
                         );
                     }
 
-                    if let Some(attrs) = action.example_attributes() {
+                    if let Some(attrs) = tool.example_attributes() {
                         for name in attrs.keys() {
                             required.push(name.to_string());
                             properties.insert(
@@ -110,8 +110,8 @@ impl OpenAIClient {
                     }
 
                     let function = FunctionDefinition {
-                        name: action.name().to_string(),
-                        description: Some(action.description().to_string()),
+                        name: tool.name().to_string(),
+                        description: Some(tool.description().to_string()),
                         parameters: Some(serde_json::json!(OpenAiToolFunctionParameters {
                             the_type: "object".to_string(),
                             required,
@@ -247,7 +247,7 @@ impl Client for OpenAIClient {
                     result,
                     tool_call: _,
                 } => match result {
-                    ActionOutput::Text(text) => {
+                    ToolOutput::Text(text) => {
                         // handles string_too_short cases (NIM)
                         let mut content = text.trim().to_string();
                         if content.is_empty() {
@@ -255,7 +255,7 @@ impl Client for OpenAIClient {
                         }
                         crate::api::openai::Message::text(&content, Role::User)
                     }
-                    ActionOutput::Image { data, mime_type } => {
+                    ToolOutput::Image { data, mime_type } => {
                         crate::api::openai::Message::image(data, mime_type, Role::User)
                     }
                 },

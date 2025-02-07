@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::agent::{
     generator::{ChatResponse, SupportedFeatures, Usage},
-    namespaces::ActionOutput,
+    namespaces::ToolOutput,
     state::SharedState,
     ToolCall,
 };
@@ -46,12 +46,12 @@ impl AnthropicClient {
         if state.lock().await.use_native_tools_format {
             // for every namespace available to the model
             for group in state.lock().await.get_namespaces() {
-                // for every action of the namespace
-                for action in &group.actions {
+                // for every tool of the namespace
+                for tool in &group.tools {
                     let mut required = vec![];
                     let mut properties = HashMap::new();
 
-                    if let Some(example) = action.example_payload() {
+                    if let Some(example) = tool.example_payload() {
                         required.push("payload".to_string());
                         properties.insert(
                             "payload".to_string(),
@@ -65,7 +65,7 @@ impl AnthropicClient {
                         );
                     }
 
-                    if let Some(attrs) = action.example_attributes() {
+                    if let Some(attrs) = tool.example_attributes() {
                         for name in attrs.keys() {
                             required.push(name.to_string());
                             properties.insert(
@@ -85,8 +85,8 @@ impl AnthropicClient {
                     });
 
                     tools.push(ToolDefinition::new(
-                        action.name(),
-                        Some(action.description().to_string()),
+                        tool.name(),
+                        Some(tool.description().to_string()),
                         input_schema,
                     ));
                 }
@@ -178,10 +178,10 @@ impl Client for AnthropicClient {
                     result,
                     tool_call: _,
                 } => match result {
-                    ActionOutput::Image { data, mime_type } => messages.push(Message::user(
+                    ToolOutput::Image { data, mime_type } => messages.push(Message::user(
                         Content::from(ImageContentSource::base64(get_media_type(mime_type), data)),
                     )),
-                    ActionOutput::Text(text) => {
+                    ToolOutput::Text(text) => {
                         let trimmed = text.trim();
                         if !trimmed.is_empty() {
                             messages.push(Message::user(trimmed))

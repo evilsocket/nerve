@@ -136,15 +136,15 @@ For more information about the default namespaces see [the namespaces documentat
 
 ### Custom Tools
 
-Additional tools can be defined in the tasklet's `functions` section, and each is a group of actions that can be used by the agent, defining a `name`, `description` and a `tool` field with the command to be executed:
+Additional tools can be defined in the tasklet's `tool_box` section, and each is a group of tools that can be used by the agent, defining a `name`, `description` and a `tool` field with the command to be executed:
 
 ```yaml
 # ... snippet ...
 
-functions:
+tool_box:
   - name: News
     decription: You will use this action to read the recent news.
-    actions:
+    tools:
       - name: read_news
         description: "To read the recent news:"
         # the output of this command will be returned to the agent
@@ -157,9 +157,9 @@ If the agent must provide arguments to the tool, it is possible to define an exa
 
 ```yaml
 # ... snippet ...
-functions:
+tool_box:
   - name: Environment
-    actions:
+    tools:
       - name: report_finding
         description: When you are ready to report findings, use this tool for each finding.
         example_payload: >
@@ -178,10 +178,10 @@ If the tool requires named arguments it is possible to define them in the `args`
 
 ```yaml
 # ... snippet ...
-functions:
+tool_box:
   - name: Conversation
     description: You will use these actions to create conversational entries.
-    actions:
+    tools:
       - name: talk
         description: "To have one of the characters say a specific sentence:"
         example_payload: hi, how are you doing today?

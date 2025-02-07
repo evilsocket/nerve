@@ -15,7 +15,7 @@ use generator::{
     history::{ChatHistory, ConversationWindow},
     ChatOptions, ChatResponse, Client,
 };
-use namespaces::{Action, ActionOutput};
+use namespaces::{Tool, ToolOutput};
 use state::{SharedState, State};
 use task::{eval::Evaluator, Task};
 
@@ -75,12 +75,12 @@ impl std::hash::Hash for ToolCall {
 
 impl ToolCall {
     pub fn new(
-        action: String,
+        tool_name: String,
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Self {
         Self {
-            tool_name: action,
+            tool_name,
             named_arguments: attributes,
             argument: payload,
         }
@@ -196,10 +196,10 @@ impl Agent {
     }
 
     #[allow(clippy::borrowed_box)]
-    pub fn validate(&self, tool_call: &mut ToolCall, action: &Box<dyn Action>) -> Result<()> {
+    pub fn validate(&self, tool_call: &mut ToolCall, tool: &Box<dyn Tool>) -> Result<()> {
         // validate prerequisites
-        let payload_required = action.example_payload().is_some();
-        let attrs_required = action.example_attributes().is_some();
+        let payload_required = tool.example_payload().is_some();
+        let attrs_required = tool.example_attributes().is_some();
         let mut has_payload = tool_call.argument.is_some();
         let mut has_attributes = tool_call.named_arguments.is_some();
 
@@ -240,7 +240,7 @@ impl Agent {
 
         if attrs_required {
             // validate each required attribute
-            let required_attrs: Vec<String> = action
+            let required_attrs: Vec<String> = tool
                 .example_attributes()
                 .unwrap()
                 .keys()
@@ -339,7 +339,7 @@ impl Agent {
         mut_state.metrics.errors.unparsed_responses += 1;
         mut_state.add_unparsed_response_to_history(
         response,
-        "I could not parse any valid actions from your response, please correct it according to the instructions.".to_string(),
+        "I could not parse any valid tool calls from your response, please correct it according to the instructions.".to_string(),
     );
         self.on_event(Event::new(EventType::TextResponse(response.to_string())))
             .unwrap();
@@ -349,7 +349,7 @@ impl Agent {
         self.state.lock().await.metrics.valid_responses += 1;
     }
 
-    async fn on_invalid_action(&self, tool_call: ToolCall, error: Option<String>) {
+    async fn on_invalid_tool_call(&self, tool_call: ToolCall, error: Option<String>) {
         if self.config.cot_tags.contains(&tool_call.tool_name) {
             self.on_event(Event::new(EventType::Thinking(tool_call.argument.unwrap())))
                 .unwrap();
@@ -357,49 +357,49 @@ impl Agent {
         }
 
         let mut mut_state = self.state.lock().await;
-        mut_state.metrics.errors.unknown_actions += 1;
-        // tell the model that the action name is wrong
+        mut_state.metrics.errors.unknown_tool_calls += 1;
+        // tell the model that the tool name is wrong
         let name = tool_call.tool_name.clone();
 
         mut_state.add_error_to_history(
             tool_call.clone(),
             error
                 .clone()
-                .unwrap_or(format!("'{name}' is not a valid action name")),
+                .unwrap_or(format!("'{name}' is not a valid tool name")),
         );
 
-        self.on_event(Event::new(EventType::InvalidAction { tool_call, error }))
+        self.on_event(Event::new(EventType::InvalidToolCall { tool_call, error }))
             .unwrap();
     }
 
-    async fn on_valid_action(&self, tool_call: &ToolCall) {
-        self.state.lock().await.metrics.valid_actions += 1;
+    async fn on_valid_tool_call(&self, tool_call: &ToolCall) {
+        self.state.lock().await.metrics.valid_tool_calls += 1;
 
         let tool_call = tool_call.clone();
 
-        self.on_event(Event::new(EventType::ActionExecuting { tool_call }))
+        self.on_event(Event::new(EventType::BeforeToolCall { tool_call }))
             .unwrap();
     }
 
-    async fn on_timed_out_action(&self, tool_call: ToolCall, start: &std::time::Instant) {
+    async fn on_tool_time_out(&self, tool_call: ToolCall, start: &std::time::Instant) {
         let mut mut_state = self.state.lock().await;
-        mut_state.metrics.errors.timedout_actions += 1;
+        mut_state.metrics.errors.timedout_tool_calls += 1;
         // tell the model about the timeout
-        mut_state.add_error_to_history(tool_call.clone(), "action timed out".to_string());
+        mut_state.add_error_to_history(tool_call.clone(), "tool call timed out".to_string());
 
         self.events_chan
-            .send(Event::new(EventType::ActionTimeout {
+            .send(Event::new(EventType::ToolCallTimeout {
                 tool_call,
                 elapsed: start.elapsed(),
             }))
             .unwrap();
     }
 
-    async fn on_executed_action(
+    async fn on_executed_tool_call(
         &self,
-        action: &Box<dyn Action>,
+        tool: &Box<dyn Tool>,
         tool_call: ToolCall,
-        ret: Result<Option<ActionOutput>>,
+        ret: Result<Option<ToolOutput>>,
         start: &std::time::Instant,
     ) {
         let mut mut_state = self.state.lock().await;
@@ -407,26 +407,26 @@ impl Agent {
         let mut result = None;
 
         if let Err(err) = ret {
-            mut_state.metrics.errors.errored_actions += 1;
+            mut_state.metrics.errors.errored_tool_calls += 1;
             // tell the model about the error
             mut_state.add_error_to_history(tool_call.clone(), err.to_string());
 
             error = Some(err.to_string());
         } else {
             let ret = ret.unwrap();
-            mut_state.metrics.success_actions += 1;
+            mut_state.metrics.success_tool_calls += 1;
             // tell the model about the output
             mut_state.add_success_to_history(tool_call.clone(), ret.clone());
 
             result = ret;
         }
 
-        self.on_event(Event::new(EventType::ActionExecuted {
+        self.on_event(Event::new(EventType::AfterToolCall {
             tool_call,
             result,
             error,
             elapsed: start.elapsed(),
-            complete_task: action.complete_task(),
+            complete_task: tool.complete_task(),
         }))
         .unwrap();
     }
@@ -528,24 +528,24 @@ impl Agent {
 
         // for each parsed call
         for mut call in tool_calls {
-            // lookup action
-            let action = self.state.lock().await.get_action(&call.tool_name);
-            if action.is_none() {
-                self.on_invalid_action(call.clone(), None).await;
+            // lookup tool
+            let tool = self.state.lock().await.get_tool_by_name(&call.tool_name);
+            if tool.is_none() {
+                self.on_invalid_tool_call(call.clone(), None).await;
             } else {
                 // validate prerequisites
-                let action = action.unwrap();
-                if let Err(err) = self.validate(&mut call, &action) {
-                    self.on_invalid_action(call.clone(), Some(err.to_string()))
+                let tool = tool.unwrap();
+                if let Err(err) = self.validate(&mut call, &tool) {
+                    self.on_invalid_tool_call(call.clone(), Some(err.to_string()))
                         .await;
                 } else {
-                    self.on_valid_action(&call).await;
+                    self.on_valid_tool_call(&call).await;
 
                     // determine if we have a timeout
-                    let timeout = if let Some(action_tm) = action.timeout().as_ref() {
-                        *action_tm
-                    } else if let Some(task_tm) = self.task_specs.timeout.as_ref() {
-                        *task_tm
+                    let timeout = if let Some(tool_call_timeout) = tool.timeout().as_ref() {
+                        *tool_call_timeout
+                    } else if let Some(task_timeout) = self.task_specs.timeout.as_ref() {
+                        *task_timeout
                     } else {
                         // one month by default :D
                         Duration::from_secs(60 * 60 * 24 * 30)
@@ -553,7 +553,7 @@ impl Agent {
 
                     let mut execute = true;
 
-                    if action.requires_user_confirmation() {
+                    if tool.requires_user_confirmation() {
                         log::warn!("user confirmation required");
 
                         let start = std::time::Instant::now();
@@ -567,9 +567,9 @@ impl Agent {
                         }
 
                         if inp == "n" {
-                            log::warn!("action rejected by user");
-                            self.on_executed_action(
-                                &action,
+                            log::warn!("tool call rejected by user");
+                            self.on_executed_tool_call(
+                                &tool,
                                 call.clone(),
                                 Err(anyhow!("rejected by user".to_owned())),
                                 &start,
@@ -585,7 +585,7 @@ impl Agent {
                         let start = std::time::Instant::now();
                         let ret = tokio::time::timeout(
                             timeout,
-                            action.run(
+                            tool.run(
                                 self.state.clone(),
                                 call.named_arguments.to_owned(),
                                 call.argument.to_owned(),
@@ -594,13 +594,13 @@ impl Agent {
                         .await;
 
                         if ret.is_err() {
-                            self.on_timed_out_action(call, &start).await;
+                            self.on_tool_time_out(call, &start).await;
                         } else {
-                            self.on_executed_action(&action, call, ret.unwrap(), &start)
+                            self.on_executed_tool_call(&tool, call, ret.unwrap(), &start)
                                 .await;
                         }
 
-                        if action.complete_task() {
+                        if tool.complete_task() {
                             log::debug!("! task complete");
                             self.state.lock().await.on_complete(false, None)?;
                         }

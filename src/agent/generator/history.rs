@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::agent::namespaces::ActionOutput;
+use crate::agent::namespaces::ToolOutput;
 
 use super::Message;
 
@@ -87,7 +87,7 @@ impl ChatHistory {
                             Message::Feedback {
                                 tool_call: tool_call.clone(),
                                 result: if compressed.len() < result.to_string().len() {
-                                    ActionOutput::text(compressed.to_string())
+                                    ToolOutput::text(compressed.to_string())
                                 } else {
                                     result.clone()
                                 },
@@ -198,7 +198,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("test2"),
+                result: ToolOutput::text("test2"),
             },
         ];
         let history = ChatHistory::create(conv.clone(), ConversationWindow::Full);
@@ -213,7 +213,7 @@ mod tests {
                 tool_call: None,
             },
             Message::Feedback {
-                result: ActionOutput::text("test2"),
+                result: ToolOutput::text("test2"),
                 tool_call: None,
             },
             Message::Agent {
@@ -221,7 +221,7 @@ mod tests {
                 tool_call: None,
             },
             Message::Feedback {
-                result: ActionOutput::text("test4"),
+                result: ToolOutput::text("test4"),
                 tool_call: None,
             },
         ];
@@ -254,7 +254,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("test2"),
+                result: ToolOutput::text("test2"),
             },
         ];
         let history = ChatHistory::create(conv.clone(), ConversationWindow::Summary);
@@ -270,7 +270,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("long feedback that should be compressed"),
+                result: ToolOutput::text("long feedback that should be compressed"),
             },
             Message::Agent {
                 content: "test3".to_string(),
@@ -278,7 +278,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("final very very very very long feedback"),
+                result: ToolOutput::text("final very very very very long feedback"),
             },
         ];
 
@@ -289,7 +289,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("<output removed>"),
+                result: ToolOutput::text("<output removed>"),
             },
             Message::Agent {
                 content: "test3".to_string(),
@@ -297,7 +297,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("final very very very very long feedback"),
+                result: ToolOutput::text("final very very very very long feedback"),
             },
         ];
 
@@ -314,7 +314,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("ok"),
+                result: ToolOutput::text("ok"),
             },
             Message::Agent {
                 content: "test3".to_string(),
@@ -322,7 +322,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("final"),
+                result: ToolOutput::text("final"),
             },
         ];
 
@@ -333,7 +333,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("ok"),
+                result: ToolOutput::text("ok"),
             },
             Message::Agent {
                 content: "test3".to_string(),
@@ -341,7 +341,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("final"),
+                result: ToolOutput::text("final"),
             },
         ];
 
@@ -359,7 +359,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: tool_call.clone(),
-                result: ActionOutput::text("very very very very long feedback"),
+                result: ToolOutput::text("very very very very long feedback"),
             },
             Message::Agent {
                 content: "test3".to_string(),
@@ -367,7 +367,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: tool_call.clone(),
-                result: ActionOutput::text("final"),
+                result: ToolOutput::text("final"),
             },
         ];
 
@@ -378,7 +378,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: tool_call.clone(),
-                result: ActionOutput::text("<output removed>"),
+                result: ToolOutput::text("<output removed>"),
             },
             Message::Agent {
                 content: "test3".to_string(),
@@ -386,7 +386,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: tool_call.clone(),
-                result: ActionOutput::text("final"),
+                result: ToolOutput::text("final"),
             },
         ];
 
@@ -403,7 +403,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback1"),
+                result: ToolOutput::text("feedback1"),
             },
             Message::Agent {
                 content: "test2".to_string(),
@@ -411,7 +411,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback2"),
+                result: ToolOutput::text("feedback2"),
             },
             Message::Agent {
                 content: "test3".to_string(),
@@ -419,7 +419,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback3"),
+                result: ToolOutput::text("feedback3"),
             },
             Message::Agent {
                 content: "test4".to_string(),
@@ -427,7 +427,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback4"),
+                result: ToolOutput::text("feedback4"),
             },
         ];
 
@@ -438,7 +438,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback3"),
+                result: ToolOutput::text("feedback3"),
             },
             Message::Agent {
                 content: "test4".to_string(),
@@ -446,7 +446,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback4"),
+                result: ToolOutput::text("feedback4"),
             },
         ];
 
@@ -463,7 +463,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback1"),
+                result: ToolOutput::text("feedback1"),
             },
         ];
 
@@ -474,7 +474,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback1"),
+                result: ToolOutput::text("feedback1"),
             },
         ];
 
@@ -491,7 +491,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback1"),
+                result: ToolOutput::text("feedback1"),
             },
             Message::Agent {
                 content: "test2".to_string(),
@@ -499,7 +499,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback2"),
+                result: ToolOutput::text("feedback2"),
             },
             Message::Agent {
                 content: "test3".to_string(),
@@ -507,7 +507,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback3"),
+                result: ToolOutput::text("feedback3"),
             },
             Message::Agent {
                 content: "test4".to_string(),
@@ -515,14 +515,14 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback4"),
+                result: ToolOutput::text("feedback4"),
             },
         ];
 
         let expected = vec![
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback1"),
+                result: ToolOutput::text("feedback1"),
             },
             Message::Agent {
                 content: "test2".to_string(),
@@ -530,7 +530,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback2"),
+                result: ToolOutput::text("feedback2"),
             },
             Message::Agent {
                 content: "test3".to_string(),
@@ -538,7 +538,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback3"),
+                result: ToolOutput::text("feedback3"),
             },
             Message::Agent {
                 content: "test4".to_string(),
@@ -546,7 +546,7 @@ mod tests {
             },
             Message::Feedback {
                 tool_call: None,
-                result: ActionOutput::text("feedback4"),
+                result: ToolOutput::text("feedback4"),
             },
         ];
 

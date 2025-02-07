@@ -8,7 +8,7 @@ use crate::agent::task::variables::parse_variable_expr;
 use super::{
     events::{Event, EventType},
     generator::Message,
-    namespaces::{self, ActionOutput, Namespace},
+    namespaces::{self, Namespace, ToolOutput},
     serialization,
     task::Task,
     ToolCall,
@@ -27,9 +27,9 @@ pub struct State {
     variables: HashMap<String, String>,
     // model memories, goals and other storages
     storages: HashMap<String, Storage>,
-    // available actions and execution history
+    // available tools
     namespaces: Vec<Namespace>,
-    // list of executed actions
+    // chat history including tool calls and feedback
     history: History,
     // optional rag engine
     rag: Option<mini_rag::VectorStore>,
@@ -94,10 +94,10 @@ impl State {
         }
 
         for namespace in &namespaces {
-            for action in &namespace.actions {
-                // check if the action requires some variable
-                if let Some(required_vars) = action.required_variables() {
-                    log::debug!("action {} requires {:?}", action.name(), &required_vars);
+            for tool in &namespace.tools {
+                // check if the tool requires some variable
+                if let Some(required_vars) = tool.required_variables() {
+                    log::debug!("tool {} requires {:?}", tool.name(), &required_vars);
                     for var_name in required_vars {
                         let var_expr = format!("${var_name}");
                         let (var_name, var_value) = parse_variable_expr(&var_expr)?;
@@ -121,7 +121,7 @@ impl State {
             None
         };
 
-        // add task defined actions
+        // add task defined tools
         namespaces.append(&mut task.get_functions());
 
         // if any namespace requires a specific storage, create it
@@ -248,7 +248,7 @@ impl State {
         &self.namespaces
     }
 
-    pub fn add_success_to_history(&mut self, tool_call: ToolCall, result: Option<ActionOutput>) {
+    pub fn add_success_to_history(&mut self, tool_call: ToolCall, result: Option<ToolOutput>) {
         self.history.push(Execution::with_result(tool_call, result));
     }
 
@@ -265,11 +265,11 @@ impl State {
         self.history.push(Execution::with_feedback(feedback));
     }
 
-    pub fn get_action(&self, name: &str) -> Option<Box<dyn namespaces::Action>> {
+    pub fn get_tool_by_name(&self, name: &str) -> Option<Box<dyn namespaces::Tool>> {
         for group in &self.namespaces {
-            for action in &group.actions {
-                if name == action.name() {
-                    return Some(action.clone());
+            for tool in &group.tools {
+                if name == tool.name() {
+                    return Some(tool.clone());
                 }
             }
         }

@@ -18,9 +18,9 @@ prompt: >
 guidance:
   - Once you have made a list of tasks, use the create_list_of_tasks tool to confirm the decision.
 
-functions:
+tool_box:
   - name: Tools
-    actions:
+    tools:
       - name: create_list_of_tasks
         description: "To provide the tasks one per line as an organized list:"
         store_to: tasks

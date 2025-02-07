@@ -8,7 +8,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use super::{namespaces::ActionOutput, state::SharedState, ToolCall};
+use super::{namespaces::ToolOutput, state::SharedState, ToolCall};
 
 mod anthropic;
 mod deepseek;
@@ -69,7 +69,7 @@ pub enum Message {
     Feedback {
         #[serde(skip_serializing_if = "Option::is_none")]
         tool_call: Option<ToolCall>,
-        result: ActionOutput,
+        result: ToolOutput,
     },
 }
 

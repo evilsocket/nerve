@@ -43,8 +43,8 @@ pub async fn setup_arguments() -> Result<Args> {
     }
 
     if args.generate_doc {
-        // generate action namespaces documentation and exit
-        println!("{}", agent::serialization::Strategy::available_actions());
+        // generate tool namespaces documentation and exit
+        println!("{}", agent::serialization::Strategy::available_tools());
         std::process::exit(0);
     }
 

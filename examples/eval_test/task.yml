@@ -19,10 +19,10 @@ evaluator:
 
 # tools are not needed here, the evaluator will just check the chat history
 
-# functions:
+# tool_box:
 #   - name: Solve
 #     description: You will use these actions to provide the answer to the problem.
-#     actions:
+#     tools:
 #       - name: solution
 #         description: "To provide the answer to the problem:"
 #         example_payload: foobar

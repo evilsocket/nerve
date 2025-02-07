@@ -15,10 +15,10 @@ guidance:
   - Continue providing commands and processing outputs until you believe you have completed the task.
   - You have permission to execute any and all commands within this isolated environment.
 
-functions:
+tool_box:
   - name: Environment
     description: You have permission to execute any and all commands within this isolated environment.
-    actions:
+    tools:
       - name: execute_command
         description: The command will be executed on your host and the output will be returned to you.
         example_payload: "ls -la"

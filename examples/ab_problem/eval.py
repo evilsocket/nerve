@@ -66,13 +66,11 @@ def solve(xs):
 def get_solution(message):
     if (
         message["type"] == "agent"
-        and "data" in message
-        and message["data"] is not None
-        and message["data"][1] is not None
-        and message["data"][1]["action"] == "solution"
-        and message["data"][1]["payload"] is not None
+        and "tool_call" in message["data"]
+        and message["data"]["tool_call"] is not None
+        and message["data"]["tool_call"]["tool_name"] == "solution"
     ):
-        return message["data"][1]["payload"].strip().split(" ")
+        return message["data"]["tool_call"]["argument"].strip().split(" ")
 
     return None
 
@@ -90,7 +88,7 @@ if __name__ == "__main__":
     solution = None
 
     # find the most recent solution in the chat history
-    for message in reversed(state["chat"]["history"]["conversation"]):
+    for message in reversed(state["chat"]["history"]["messages"]):
         solution = get_solution(message)
         if solution is not None:
             if actual == solution:

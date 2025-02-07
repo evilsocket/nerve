@@ -5,14 +5,14 @@ use colored::Colorize;
 use crate::{
     agent::{
         events::{EventType, Receiver},
-        namespaces::ActionOutput,
+        namespaces::ToolOutput,
         ToolCall,
     },
     cli::Args,
     APP_NAME, APP_VERSION,
 };
 
-fn on_action_about_to_execute(tool_call: ToolCall) {
+fn on_tool_call_about_to_execute(tool_call: ToolCall) {
     let mut view = String::new();
 
     view.push_str("🧠 ");
@@ -36,11 +36,11 @@ fn on_action_about_to_execute(tool_call: ToolCall) {
     log::info!("{} ...", view);
 }
 
-fn on_action_executed(
+fn on_tool_call_executed(
     judge_mode: bool,
     error: Option<String>,
     tool_call: ToolCall,
-    result: Option<ActionOutput>,
+    result: Option<ToolOutput>,
     elapsed: Duration,
     complete_task: bool,
 ) {
@@ -134,27 +134,27 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
             EventType::TextResponse(response) => {
                 log::info!("🧠 {}", response.trim().italic());
             }
-            EventType::InvalidAction { tool_call, error } => {
-                log::warn!("invalid action {} : {:?}", &tool_call.tool_name, error);
+            EventType::InvalidToolCall { tool_call, error } => {
+                log::warn!("invalid tool call {} : {:?}", &tool_call.tool_name, error);
             }
-            EventType::ActionTimeout { tool_call, elapsed } => {
+            EventType::ToolCallTimeout { tool_call, elapsed } => {
                 log::warn!(
-                    "action '{}' timed out after {:?}",
+                    "tool call '{}' timed out after {:?}",
                     tool_call.tool_name,
                     elapsed
                 );
             }
-            EventType::ActionExecuting { tool_call } => {
-                on_action_about_to_execute(tool_call);
+            EventType::BeforeToolCall { tool_call } => {
+                on_tool_call_about_to_execute(tool_call);
             }
-            EventType::ActionExecuted {
+            EventType::AfterToolCall {
                 tool_call,
                 error,
                 result,
                 elapsed,
                 complete_task,
             } => {
-                on_action_executed(
+                on_tool_call_executed(
                     args.judge_mode,
                     error,
                     tool_call,

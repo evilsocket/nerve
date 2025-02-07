@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    agent::namespaces::ActionOutput,
+    agent::namespaces::ToolOutput,
     api::ollama::{
         generation::{
             chat::{
@@ -103,8 +103,6 @@ impl Client for OllamaClient {
         state: SharedState,
         options: &ChatOptions,
     ) -> anyhow::Result<ChatResponse> {
-        // TODO: images for multimodal (see todo for screenshot action)
-
         // build chat history:
         //    - system prompt
         //    - user prompt
@@ -130,8 +128,8 @@ impl Client for OllamaClient {
                     result,
                     tool_call: _,
                 } => match result {
-                    ActionOutput::Text(text) => ChatMessage::user(text.to_string()),
-                    ActionOutput::Image { data, mime_type: _ } => ChatMessage::user("".to_string())
+                    ToolOutput::Text(text) => ChatMessage::user(text.to_string()),
+                    ToolOutput::Image { data, mime_type: _ } => ChatMessage::user("".to_string())
                         .with_images(vec![Image::from_base64(data)]),
                 },
             });
@@ -142,11 +140,11 @@ impl Client for OllamaClient {
 
         if state.lock().await.use_native_tools_format {
             for group in state.lock().await.get_namespaces() {
-                for action in &group.actions {
+                for tool in &group.tools {
                     let mut required = vec![];
                     let mut properties = HashMap::new();
 
-                    if let Some(example) = action.example_payload() {
+                    if let Some(example) = tool.example_payload() {
                         required.push("payload".to_string());
                         properties.insert(
                             "payload".to_string(),
@@ -161,7 +159,7 @@ impl Client for OllamaClient {
                         );
                     }
 
-                    if let Some(attrs) = action.example_attributes() {
+                    if let Some(attrs) = tool.example_attributes() {
                         for name in attrs.keys() {
                             required.push(name.to_string());
                             properties.insert(
@@ -176,8 +174,8 @@ impl Client for OllamaClient {
                     }
 
                     let function = ToolFunction {
-                        name: action.name().to_string(),
-                        description: action.description().to_string(),
+                        name: tool.name().to_string(),
+                        description: tool.description().to_string(),
                         parameters: ToolFunctionParameters {
                             the_type: "object".to_string(),
                             required,
