@@ -239,10 +239,14 @@ impl Client for OpenAIClient {
 
         for m in options.history.iter() {
             chat_history.push(match m {
-                Message::Agent(data, _) => {
-                    crate::api::openai::Message::text(data.trim(), Role::Assistant)
-                }
-                Message::Feedback(data, _) => match data {
+                Message::Agent {
+                    content,
+                    tool_call: _,
+                } => crate::api::openai::Message::text(content.trim(), Role::Assistant),
+                Message::Feedback {
+                    result,
+                    tool_call: _,
+                } => match result {
                     ActionOutput::Text(text) => {
                         // handles string_too_short cases (NIM)
                         let mut content = text.trim().to_string();
@@ -303,7 +307,7 @@ impl Client for OpenAIClient {
         if let Some(calls) = tool_calls {
             for call in calls {
                 let mut attributes = HashMap::new();
-                let mut payload = None;
+                let mut argument = None;
 
                 let map: HashMap<String, serde_json::Value> =
                     serde_json::from_str(&call.function.arguments).map_err(|e| {
@@ -323,20 +327,20 @@ impl Client for OpenAIClient {
 
                     let str_val = content.trim_matches('"').to_string();
                     if name == "payload" {
-                        payload = Some(str_val);
+                        argument = Some(str_val);
                     } else {
                         attributes.insert(name.to_string(), str_val);
                     }
                 }
 
                 let inv = Invocation {
-                    action: call.function.name.to_string(),
-                    attributes: if attributes.is_empty() {
+                    tool_name: call.function.name.to_string(),
+                    named_arguments: if attributes.is_empty() {
                         None
                     } else {
                         Some(attributes)
                     },
-                    payload,
+                    argument,
                 };
 
                 invocations.push(inv);

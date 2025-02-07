@@ -11,27 +11,23 @@ mod cli;
 use std::{collections::HashMap, path::PathBuf};
 
 use agent::{
-    events::EventType,
+    events::{Event, EventType},
     task::variables::{define_variable, interpolate_variables},
     workflow::Workflow,
 };
 use anyhow::Result;
 use cli::{setup, ui, Args};
-use colored::Colorize;
 
 const APP_NAME: &str = env!("CARGO_BIN_NAME");
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-async fn run_task(args: Args, for_workflow: bool) -> Result<HashMap<String, String>> {
+async fn run_task(
+    args: Args,
+    for_workflow: bool,
+    tx: agent::events::Sender,
+) -> Result<HashMap<String, String>> {
     // single task
-    let (mut agent, tasklet, events_rx) = setup::setup_agent_for_task(&args, for_workflow).await?;
-
-    // spawn the events consumer
-    tokio::spawn(ui::text::consume_events(
-        events_rx,
-        args.clone(),
-        for_workflow,
-    ));
+    let (mut agent, tasklet) = setup::setup_agent_for_task(&args, for_workflow, tx).await?;
 
     // signal the task start
     agent.on_event_type(EventType::TaskStarted(tasklet))?;
@@ -80,20 +76,16 @@ fn get_workflow_task_args(
     task_args
 }
 
-async fn run_workflow(args: Args, workflow: &str) -> Result<()> {
-    let workflow = Workflow::from_path(workflow)?;
-    println!(
-        "{} v{} 🧠 | executing workflow {}\n",
-        APP_NAME,
-        APP_VERSION,
-        workflow.name.green().bold(),
-    );
+async fn run_workflow(args: Args, workflow: &str, tx: agent::events::Sender) -> Result<()> {
+    let mut workflow = Workflow::from_path(workflow)?;
+
+    tx.send(Event::new(EventType::WorkflowStarted(workflow.clone())))?;
 
     for (task_name, task) in &workflow.tasks {
         // create the task specific arguments
         let task_args = get_workflow_task_args(&args, task_name, &workflow, task.generator.clone());
         // run the task as part of the workflow
-        let variables = run_task(task_args, true).await?;
+        let variables = run_task(task_args, true, tx.clone()).await?;
         // define variables for the next task
         for (key, value) in variables {
             define_variable(&key, &value);
@@ -101,11 +93,11 @@ async fn run_workflow(args: Args, workflow: &str) -> Result<()> {
         println!();
     }
 
-    log::info!("workflow {} completed\n", workflow.name.green().bold());
-
     if let Some(report) = workflow.report {
-        println!("\n{}", interpolate_variables(&report).unwrap());
+        workflow.report = Some(interpolate_variables(&report).unwrap());
     }
+
+    tx.send(Event::new(EventType::WorkflowCompleted(workflow.clone())))?;
 
     Ok(())
 }
@@ -114,12 +106,22 @@ async fn run_workflow(args: Args, workflow: &str) -> Result<()> {
 async fn main() -> Result<()> {
     let args = setup::setup_arguments().await?;
 
+    // create main communication channel
+    let (tx, rx) = agent::events::create_channel();
+
+    // spawn the events consumer
+    tokio::spawn(ui::text::consume_events(
+        rx,
+        args.clone(),
+        args.workflow.is_some(),
+    ));
+
     if let Some(workflow) = &args.workflow {
         // workflow
-        run_workflow(args.clone(), workflow).await?;
+        run_workflow(args.clone(), workflow, tx).await?;
     } else {
         // single task
-        run_task(args, false).await?;
+        run_task(args, false, tx).await?;
     }
 
     Ok(())

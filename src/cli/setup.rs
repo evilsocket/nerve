@@ -3,8 +3,7 @@ use clap::Parser;
 use colored::Colorize;
 
 use crate::agent::{
-    self,
-    events::{self, create_channel},
+    self, events,
     generator::{self, history::ConversationWindow},
     task::{robopages, tasklet::Tasklet},
     Agent,
@@ -117,7 +116,8 @@ fn setup_models(
 pub async fn setup_agent_for_task(
     args: &cli::Args,
     workflow_mode: bool,
-) -> Result<(Agent, Tasklet, events::Receiver)> {
+    tx: events::Sender,
+) -> Result<(Agent, Tasklet)> {
     // create generator and embedder
     let (gen_options, generator, embedder) = setup_models(args)?;
 
@@ -166,9 +166,6 @@ pub async fn setup_agent_for_task(
         );
     }
 
-    let task = Box::new(tasklet.clone());
-    let (tx, rx) = create_channel();
-
     // create the agent configuration
     let agent_config = agent::Config {
         serializer: args.serialization.clone(),
@@ -180,7 +177,14 @@ pub async fn setup_agent_for_task(
     };
 
     // create the agent
-    let agent = Agent::new(tx, generator, embedder, task, agent_config).await?;
+    let agent = Agent::new(
+        tx,
+        generator,
+        embedder,
+        Box::new(tasklet.clone()),
+        agent_config,
+    )
+    .await?;
 
-    Ok((agent, tasklet, rx))
+    Ok((agent, tasklet))
 }

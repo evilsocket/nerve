@@ -199,9 +199,9 @@ mod tests {
         assert_eq!(ptr.len(), parsed.processed);
         assert_eq!(parsed.invocations.len(), 1);
 
-        assert_eq!(&parsed.invocations[0].action, "clear-plan");
-        assert_eq!(&parsed.invocations[0].payload, &None);
-        assert_eq!(&parsed.invocations[0].attributes, &None);
+        assert_eq!(&parsed.invocations[0].tool_name, "clear-plan");
+        assert_eq!(&parsed.invocations[0].argument, &None);
+        assert_eq!(&parsed.invocations[0].named_arguments, &None);
     }
 
     #[test]
@@ -212,9 +212,9 @@ mod tests {
         assert_eq!(ptr.len(), parsed.processed);
         assert_eq!(parsed.invocations.len(), 1);
 
-        assert_eq!(&parsed.invocations[0].action, "yo");
-        assert_eq!(&parsed.invocations[0].payload, &None);
-        assert_eq!(&parsed.invocations[0].attributes, &None);
+        assert_eq!(&parsed.invocations[0].tool_name, "yo");
+        assert_eq!(&parsed.invocations[0].argument, &None);
+        assert_eq!(&parsed.invocations[0].named_arguments, &None);
     }
 
     #[test]
@@ -225,9 +225,9 @@ mod tests {
         assert_eq!(ptr.len(), parsed.processed);
         assert_eq!(parsed.invocations.len(), 1);
 
-        assert_eq!(&parsed.invocations[0].action, "do");
-        assert_eq!(parsed.invocations[0].payload, Some("this!".to_string()));
-        assert_eq!(&parsed.invocations[0].attributes, &None);
+        assert_eq!(&parsed.invocations[0].tool_name, "do");
+        assert_eq!(parsed.invocations[0].argument, Some("this!".to_string()));
+        assert_eq!(&parsed.invocations[0].named_arguments, &None);
     }
 
     #[test]
@@ -244,9 +244,9 @@ mod tests {
         assert_eq!(ptr.len(), parsed.processed);
         assert_eq!(parsed.invocations.len(), 1);
 
-        assert_eq!(&parsed.invocations[0].action, "do");
-        assert_eq!(parsed.invocations[0].payload, Some("this!".to_string()));
-        assert_eq!(parsed.invocations[0].attributes, Some(attrs));
+        assert_eq!(&parsed.invocations[0].tool_name, "do");
+        assert_eq!(parsed.invocations[0].argument, Some("this!".to_string()));
+        assert_eq!(parsed.invocations[0].named_arguments, Some(attrs));
     }
 
     #[test]
@@ -262,17 +262,17 @@ mod tests {
 
         assert_eq!(invocations.len(), 3);
 
-        assert_eq!(&invocations[0].action, "do");
-        assert_eq!(invocations[0].payload, Some("this!".to_string()));
-        assert_eq!(invocations[0].attributes, Some(attrs));
+        assert_eq!(&invocations[0].tool_name, "do");
+        assert_eq!(invocations[0].argument, Some("this!".to_string()));
+        assert_eq!(invocations[0].named_arguments, Some(attrs));
 
-        assert_eq!(&invocations[1].action, "clear-plan");
-        assert_eq!(&invocations[1].payload, &None);
-        assert_eq!(&invocations[1].attributes, &None);
+        assert_eq!(&invocations[1].tool_name, "clear-plan");
+        assert_eq!(&invocations[1].argument, &None);
+        assert_eq!(&invocations[1].named_arguments, &None);
 
-        assert_eq!(&invocations[2].action, "do");
-        assert_eq!(&invocations[2].payload, &None);
-        assert_eq!(&invocations[2].attributes, &None);
+        assert_eq!(&invocations[2].tool_name, "do");
+        assert_eq!(&invocations[2].argument, &None);
+        assert_eq!(&invocations[2].named_arguments, &None);
     }
 
     #[test]
@@ -283,8 +283,8 @@ mod tests {
 
         assert_eq!(invocations.len(), 2);
 
-        assert_eq!(&invocations[0].action, "clear-plan");
-        assert_eq!(&invocations[1].action, "update-goal");
+        assert_eq!(&invocations[0].tool_name, "clear-plan");
+        assert_eq!(&invocations[1].tool_name, "update-goal");
     }
 
     #[test]
@@ -293,10 +293,10 @@ mod tests {
         let invocations = try_parse(ptr).unwrap();
         assert_eq!(invocations.len(), 2);
 
-        assert_eq!(&invocations[0].action, "command");
-        assert_eq!(invocations[0].payload, Some("ls -la && pwd".to_string()));
-        assert_eq!(&invocations[1].action, "other");
-        assert_eq!(invocations[1].payload, Some("yes < no".to_string()));
+        assert_eq!(&invocations[0].tool_name, "command");
+        assert_eq!(invocations[0].argument, Some("ls -la && pwd".to_string()));
+        assert_eq!(&invocations[1].tool_name, "other");
+        assert_eq!(invocations[1].argument, Some("yes < no".to_string()));
     }
 
     #[test]

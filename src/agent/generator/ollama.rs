@@ -122,8 +122,14 @@ impl Client for OllamaClient {
 
         for m in options.history.iter() {
             chat_history.push(match m {
-                Message::Agent(data, _) => ChatMessage::assistant(data.trim().to_string()),
-                Message::Feedback(data, _) => match data {
+                Message::Agent {
+                    content,
+                    tool_call: _,
+                } => ChatMessage::assistant(content.trim().to_string()),
+                Message::Feedback {
+                    result,
+                    tool_call: _,
+                } => match result {
                     ActionOutput::Text(text) => ChatMessage::user(text.to_string()),
                     ActionOutput::Image { data, mime_type: _ } => ChatMessage::user("".to_string())
                         .with_images(vec![Image::from_base64(data)]),
@@ -209,7 +215,7 @@ impl Client for OllamaClient {
 
                 for call in tool_calls {
                     let mut attributes = HashMap::new();
-                    let mut payload = None;
+                    let mut argument = None;
 
                     if let Some(args) = call.function.arguments.as_ref() {
                         for (name, value) in args {
@@ -220,7 +226,7 @@ impl Client for OllamaClient {
 
                             let str_val = content.trim_matches('"').to_string();
                             if name == "payload" {
-                                payload = Some(str_val);
+                                argument = Some(str_val);
                             } else {
                                 attributes.insert(name.to_string(), str_val);
                             }
@@ -228,13 +234,13 @@ impl Client for OllamaClient {
                     }
 
                     let inv = Invocation {
-                        action: call.function.name.to_string(),
-                        attributes: if attributes.is_empty() {
+                        tool_name: call.function.name.to_string(),
+                        named_arguments: if attributes.is_empty() {
                             None
                         } else {
                             Some(attributes)
                         },
-                        payload,
+                        argument,
                     };
 
                     invocations.push(inv);

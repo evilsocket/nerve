@@ -9,18 +9,19 @@ use crate::{
         Invocation,
     },
     cli::Args,
+    APP_NAME, APP_VERSION,
 };
 
 fn on_action_about_to_execute(invocation: Invocation) {
     let mut view = String::new();
 
     view.push_str("🧠 ");
-    view.push_str(&invocation.action.bold().to_string());
+    view.push_str(&invocation.tool_name.bold().to_string());
     view.push('(');
-    if let Some(payload) = &invocation.payload {
+    if let Some(payload) = &invocation.argument {
         view.push_str(&payload.dimmed().to_string());
     }
-    if let Some(attributes) = &invocation.attributes {
+    if let Some(attributes) = &invocation.named_arguments {
         view.push_str(", ");
         view.push_str(
             &attributes
@@ -57,10 +58,10 @@ fn on_action_executed(
     let mut view = String::new();
 
     view.push_str("🛠️  ");
-    view.push_str(&invocation.action);
+    view.push_str(&invocation.tool_name);
     view.push_str(&format!(
         "({})",
-        if invocation.payload.is_some() {
+        if invocation.argument.is_some() {
             "..."
         } else {
             ""
@@ -102,6 +103,20 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
         }
 
         match event.event {
+            EventType::WorkflowStarted(workflow) => {
+                println!(
+                    "{} v{} 🧠 | executing workflow {}\n",
+                    APP_NAME,
+                    APP_VERSION,
+                    workflow.name.green().bold(),
+                );
+            }
+            EventType::WorkflowCompleted(workflow) => {
+                log::info!("workflow {} completed", workflow.name.green().bold());
+                if let Some(report) = workflow.report {
+                    println!("\n{}", report);
+                }
+            }
             EventType::TaskStarted(_task) => {}
             EventType::Sleeping(seconds) => {
                 log::info!("💤 sleeping for {} seconds ...", seconds);
@@ -116,11 +131,11 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
             EventType::EmptyResponse => {
                 log::warn!("🧠 {}", "...".dimmed());
             }
-            EventType::ChatResponse(response) => {
+            EventType::TextResponse(response) => {
                 log::info!("🧠 {}", response.trim().italic());
             }
             EventType::InvalidAction { invocation, error } => {
-                log::warn!("invalid action {} : {:?}", &invocation.action, error);
+                log::warn!("invalid action {} : {:?}", &invocation.tool_name, error);
             }
             EventType::ActionTimeout {
                 invocation,
@@ -128,7 +143,7 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
             } => {
                 log::warn!(
                     "action '{}' timed out after {:?}",
-                    invocation.action,
+                    invocation.tool_name,
                     elapsed
                 );
             }
@@ -159,12 +174,10 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
                         } else {
                             log::error!("{}", "task is impossible".bold().red());
                         }
+                    } else if let Some(reason) = reason {
+                        log::info!("{}: '{}'", "task complete".bold().green(), reason);
                     } else {
-                        if let Some(reason) = reason {
-                            log::info!("{}: '{}'", "task complete".bold().green(), reason);
-                        } else {
-                            log::info!("{}", "task complete".bold().green());
-                        }
+                        log::info!("{}", "task complete".bold().green());
                     }
                 }
             }

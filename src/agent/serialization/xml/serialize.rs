@@ -5,20 +5,20 @@ use crate::agent::{
 };
 
 pub fn invocation(inv: &Invocation) -> String {
-    let mut xml = format!("<{}", inv.action);
-    if let Some(attrs) = &inv.attributes {
+    let mut xml = format!("<{}", inv.tool_name);
+    if let Some(attrs) = &inv.named_arguments {
         for (key, value) in attrs {
             xml += &format!(" {key}=\"{value}\"");
         }
     }
     xml += &format!(
         ">{}</{}>",
-        if let Some(data) = inv.payload.as_ref() {
+        if let Some(data) = inv.argument.as_ref() {
             data
         } else {
             ""
         },
-        inv.action
+        inv.tool_name
     );
 
     xml

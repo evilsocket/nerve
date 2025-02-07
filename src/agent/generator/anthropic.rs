@@ -163,15 +163,21 @@ impl Client for AnthropicClient {
         for m in options.history.iter() {
             // all messages must have non-empty content except for the optional final assistant messag
             match m {
-                super::Message::Agent(data, _) => {
-                    let trimmed = data.trim();
+                super::Message::Agent {
+                    content,
+                    tool_call: _,
+                } => {
+                    let trimmed = content.trim();
                     if !trimmed.is_empty() {
-                        messages.push(Message::assistant(data.trim()))
+                        messages.push(Message::assistant(trimmed))
                     } else {
                         log::warn!("ignoring empty assistant message: {:?}", m);
                     }
                 }
-                super::Message::Feedback(data, _) => match data {
+                super::Message::Feedback {
+                    result,
+                    tool_call: _,
+                } => match result {
                     ActionOutput::Image { data, mime_type } => messages.push(Message::user(
                         Content::from(ImageContentSource::base64(get_media_type(mime_type), data)),
                     )),
@@ -240,7 +246,7 @@ impl Client for AnthropicClient {
 
         if let Some(tool_use) = tool_use {
             let mut attributes = HashMap::new();
-            let mut payload = None;
+            let mut argument = None;
 
             let object = match tool_use.input.as_object() {
                 Some(o) => o,
@@ -260,20 +266,20 @@ impl Client for AnthropicClient {
 
                 let str_val = value_content.trim_matches('"').to_string();
                 if name == "payload" {
-                    payload = Some(str_val);
+                    argument = Some(str_val);
                 } else {
                     attributes.insert(name.to_string(), str_val);
                 }
             }
 
             let inv = Invocation {
-                action: tool_use.name.to_string(),
-                attributes: if attributes.is_empty() {
+                tool_name: tool_use.name.to_string(),
+                named_arguments: if attributes.is_empty() {
                     None
                 } else {
                     Some(attributes)
                 },
-                payload,
+                argument,
             };
 
             invocations.push(inv);

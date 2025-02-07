@@ -57,16 +57,18 @@ pub fn data_path(path: &str) -> Result<PathBuf> {
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Invocation {
-    pub action: String,
-    pub attributes: Option<HashMap<String, String>>,
-    pub payload: Option<String>,
+    pub tool_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub named_arguments: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub argument: Option<String>,
 }
 
 impl std::hash::Hash for Invocation {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.action.hash(state);
-        state.write(format!("{:?}", &self.attributes).as_bytes());
-        self.payload.hash(state);
+        self.tool_name.hash(state);
+        state.write(format!("{:?}", &self.named_arguments).as_bytes());
+        self.argument.hash(state);
     }
 }
 
@@ -77,26 +79,26 @@ impl Invocation {
         payload: Option<String>,
     ) -> Self {
         Self {
-            action,
-            attributes,
-            payload,
+            tool_name: action,
+            named_arguments: attributes,
+            argument: payload,
         }
     }
 
     pub fn as_function_call_string(&self) -> String {
         let mut parts = vec![];
 
-        if let Some(payload) = &self.payload {
+        if let Some(payload) = &self.argument {
             parts.push(payload.to_owned());
         }
 
-        if let Some(attributes) = &self.attributes {
+        if let Some(attributes) = &self.named_arguments {
             for (name, value) in attributes {
                 parts.push(format!("{}={}", name, value))
             }
         }
 
-        format!("{}({})", &self.action, parts.join(", "))
+        format!("{}({})", &self.tool_name, parts.join(", "))
     }
 }
 
@@ -197,8 +199,8 @@ impl Agent {
         // validate prerequisites
         let payload_required = action.example_payload().is_some();
         let attrs_required = action.example_attributes().is_some();
-        let mut has_payload = invocation.payload.is_some();
-        let mut has_attributes = invocation.attributes.is_some();
+        let mut has_payload = invocation.argument.is_some();
+        let mut has_attributes = invocation.named_arguments.is_some();
 
         // sometimes when the tool expects a json payload, the model returns it as separate arguments
         // in this case we need to convert it back to a single json string
@@ -206,27 +208,33 @@ impl Agent {
             log::warn!(
                 "model returned the payload as separate arguments, converting back to payload"
             );
-            invocation.payload = Some(serde_json::to_string(&invocation.attributes).unwrap());
-            invocation.attributes = None;
+            invocation.argument = Some(serde_json::to_string(&invocation.named_arguments).unwrap());
+            invocation.named_arguments = None;
             has_payload = true;
             has_attributes = false;
         }
 
         if payload_required && !has_payload {
             // payload required and not specified
-            return Err(anyhow!("no content specified for '{}'", invocation.action));
+            return Err(anyhow!(
+                "no content specified for '{}'",
+                invocation.tool_name
+            ));
         } else if attrs_required && !has_attributes {
             // attributes required and not specified at all
             return Err(anyhow!(
                 "no attributes specified for '{}'",
-                invocation.action
+                invocation.tool_name
             ));
         } else if !payload_required && has_payload {
             // payload not required but specified
-            return Err(anyhow!("no content needed for '{}'", invocation.action));
+            return Err(anyhow!("no content needed for '{}'", invocation.tool_name));
         } else if !attrs_required && has_attributes {
             // attributes not required but specified
-            return Err(anyhow!("no attributes needed for '{}'", invocation.action));
+            return Err(anyhow!(
+                "no attributes needed for '{}'",
+                invocation.tool_name
+            ));
         }
 
         if attrs_required {
@@ -239,7 +247,7 @@ impl Agent {
                 .collect();
             let passed_attrs: Vec<String> = invocation
                 .clone()
-                .attributes
+                .named_arguments
                 .unwrap()
                 .keys()
                 .map(|s| s.to_owned())
@@ -250,7 +258,7 @@ impl Agent {
                     return Err(anyhow!(
                         "no '{}' attribute specified for '{}'",
                         required,
-                        invocation.action
+                        invocation.tool_name
                     ));
                 }
             }
@@ -332,7 +340,7 @@ impl Agent {
         response,
         "I could not parse any valid actions from your response, please correct it according to the instructions.".to_string(),
     );
-        self.on_event(Event::new(EventType::ChatResponse(response.to_string())))
+        self.on_event(Event::new(EventType::TextResponse(response.to_string())))
             .unwrap();
     }
 
@@ -341,16 +349,18 @@ impl Agent {
     }
 
     async fn on_invalid_action(&self, invocation: Invocation, error: Option<String>) {
-        if self.config.cot_tags.contains(&invocation.action) {
-            self.on_event(Event::new(EventType::Thinking(invocation.payload.unwrap())))
-                .unwrap();
+        if self.config.cot_tags.contains(&invocation.tool_name) {
+            self.on_event(Event::new(EventType::Thinking(
+                invocation.argument.unwrap(),
+            )))
+            .unwrap();
             return;
         }
 
         let mut mut_state = self.state.lock().await;
         mut_state.metrics.errors.unknown_actions += 1;
         // tell the model that the action name is wrong
-        let name = invocation.action.clone();
+        let name = invocation.tool_name.clone();
 
         mut_state.add_error_to_history(
             invocation.clone(),
@@ -520,7 +530,7 @@ impl Agent {
         // for each parsed invocation
         for mut inv in invocations {
             // lookup action
-            let action = self.state.lock().await.get_action(&inv.action);
+            let action = self.state.lock().await.get_action(&inv.tool_name);
             if action.is_none() {
                 self.on_invalid_action(inv.clone(), None).await;
             } else {
@@ -576,8 +586,8 @@ impl Agent {
                             timeout,
                             action.run(
                                 self.state.clone(),
-                                inv.attributes.to_owned(),
-                                inv.payload.to_owned(),
+                                inv.named_arguments.to_owned(),
+                                inv.argument.to_owned(),
                             ),
                         )
                         .await;

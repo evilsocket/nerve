@@ -153,28 +153,28 @@ impl Client for GroqClient {
 
         for m in options.history.iter() {
             chat_history.push(match m {
-                Message::Agent(data, invocation) => {
+                Message::Agent { content, tool_call } => {
                     let mut tool_call_id = None;
-                    if let Some(inv) = invocation {
-                        tool_call_id = Some(format!("{}-{}", inv.action, call_idx));
+                    if let Some(inv) = tool_call {
+                        tool_call_id = Some(format!("{}-{}", inv.tool_name, call_idx));
                         call_idx += 1;
                     }
 
                     crate::api::groq::completion::message::Message::AssistantMessage {
                         role: Some("assistant".to_string()),
-                        content: Some(data.trim().to_string()),
+                        content: Some(content.trim().to_string()),
                         name: None,
                         tool_call_id,
                         tool_calls: None,
                     }
                 }
-                Message::Feedback(data, invocation) => {
+                Message::Feedback { result, tool_call } => {
                     let mut tool_call_id: Option<String> = None;
-                    if let Some(inv) = invocation {
-                        tool_call_id = Some(format!("{}-{}", inv.action, call_idx));
+                    if let Some(inv) = tool_call {
+                        tool_call_id = Some(format!("{}-{}", inv.tool_name, call_idx));
                     }
                     if tool_call_id.is_some() {
-                        match data {
+                        match result {
                             ActionOutput::Text(text) => {
                                 crate::api::groq::completion::message::Message::ToolMessage {
                                     role: Some("tool".to_string()),
@@ -207,7 +207,7 @@ impl Client for GroqClient {
                             }
                         }
                     } else {
-                        match data {
+                        match result {
                             ActionOutput::Text(text) => {
                                 crate::api::groq::completion::message::Message::UserMessage {
                                     role: Some("user".to_string()),
@@ -339,7 +339,7 @@ impl Client for GroqClient {
         if let Some(calls) = choice.message.tool_calls {
             for call in calls {
                 let mut attributes = HashMap::new();
-                let mut payload = None;
+                let mut argument = None;
 
                 if let Some(args) = call.function.arguments.as_ref() {
                     let map: HashMap<String, serde_json::Value> = serde_json::from_str(args)?;
@@ -352,7 +352,7 @@ impl Client for GroqClient {
 
                         let str_val = content.trim_matches('"').to_string();
                         if name == "payload" {
-                            payload = Some(str_val);
+                            argument = Some(str_val);
                         } else {
                             attributes.insert(name.to_string(), str_val);
                         }
@@ -360,13 +360,13 @@ impl Client for GroqClient {
                 }
 
                 let inv = Invocation {
-                    action: call.function.name.unwrap_or_default().to_string(),
-                    attributes: if attributes.is_empty() {
+                    tool_name: call.function.name.unwrap_or_default().to_string(),
+                    named_arguments: if attributes.is_empty() {
                         None
                     } else {
                         Some(attributes)
                     },
-                    payload,
+                    argument,
                 };
 
                 invocations.push(inv);

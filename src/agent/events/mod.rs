@@ -9,6 +9,7 @@ pub use channel::*;
 
 use super::namespaces::ActionOutput;
 use super::task::tasklet::Tasklet;
+use super::workflow::Workflow;
 use super::{
     generator::ChatOptions,
     state::{metrics::Metrics, storage::StorageType},
@@ -23,7 +24,10 @@ pub struct StateUpdate {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data", rename_all = "snake_case")]
 pub enum EventType {
+    WorkflowStarted(Workflow),
+    WorkflowCompleted(Workflow),
     TaskStarted(Tasklet),
     MetricsUpdate(Metrics),
     StorageUpdate {
@@ -37,7 +41,7 @@ pub enum EventType {
     EmptyResponse,
     Thinking(String),
     Sleeping(usize),
-    ChatResponse(String),
+    TextResponse(String),
     InvalidAction {
         invocation: Invocation,
         error: Option<String>,
@@ -64,7 +68,8 @@ pub enum EventType {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Event {
-    pub timestamp: u64,
+    pub timestamp: u128,
+    #[serde(flatten)]
     pub event: EventType,
 }
 
@@ -74,7 +79,7 @@ impl Event {
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
-                .as_secs(),
+                .as_nanos(),
             event,
         }
     }

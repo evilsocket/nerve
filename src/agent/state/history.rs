@@ -54,24 +54,27 @@ impl Execution {
         let mut messages = vec![];
 
         if let Some(response) = self.response.as_ref() {
-            messages.push(Message::Agent(response.to_string(), None));
+            messages.push(Message::Agent {
+                content: response.to_string(),
+                tool_call: None,
+            });
         } else if let Some(invocation) = self.invocation.as_ref() {
-            messages.push(Message::Agent(
-                serializer.serialize_invocation(invocation),
-                Some(invocation.clone()),
-            ));
+            messages.push(Message::Agent {
+                content: serializer.serialize_invocation(invocation),
+                tool_call: Some(invocation.clone()),
+            });
         }
 
-        messages.push(Message::Feedback(
-            if let Some(err) = &self.error {
+        messages.push(Message::Feedback {
+            result: if let Some(err) = &self.error {
                 ActionOutput::text(format!("ERROR: {err}"))
             } else if let Some(out) = &self.result {
                 out.clone()
             } else {
                 ActionOutput::text("")
             },
-            self.invocation.clone(),
-        ));
+            tool_call: self.invocation.clone(),
+        });
 
         messages
     }
