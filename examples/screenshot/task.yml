@@ -7,9 +7,9 @@ guidance:
 
 prompt: Take a screenshot and describe it.
 
-tool_box:
+functions:
   - name: Desktop
-    tools:
+    actions:
       - name: take_screenshot
         description: Take a screenshot of the current screen.
         tool: ./screenshot.py

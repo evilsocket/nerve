@@ -19,9 +19,9 @@ guidance:
   - If a page returns a "not found" error stop requesting it and try another page.
   - Use exclusively the report_findings tool to report your findings.
 
-tool_box:
+functions:
   - name: Report
-    tools:
+    actions:
       - name: report_finding
         description: Use this tool to report EACH of your findings.
         example_payload: >

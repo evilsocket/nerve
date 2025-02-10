@@ -18,9 +18,9 @@ prompt: >
 guidance:
   - Once you have completed the task, use the rewrite tool to confirm the decision.
 
-tool_box:
+functions:
   - name: Tools
-    tools:
+    actions:
       - name: rewrite
         description: "To confirm your version of the recipe:"
         store_to: report

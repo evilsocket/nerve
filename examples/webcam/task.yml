@@ -13,9 +13,9 @@ guidance:
   - Do NOT inform the user for every image, only do it if you see something interesting.
   - Do NOT inform the user if you see nothing interesting or no state changes are happening.
 
-tool_box:
+functions:
   - name: Enviroment
-    tools:
+    actions:
       - name: read_webcam_image
         description: Check the image from the webcam.
         tool: ./webcam.py

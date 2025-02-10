@@ -8,9 +8,9 @@ guidance:
   - Use the describe_preparation_steps tool to describe each step in the preparation.
   - Once you have described each step in the preparation of the pie set your task as complete.
 
-tool_box:
+functions:
   - name: Tools
-    tools:
+    actions:
       - name: describe_preparation_steps
         description: "To provide the preparation steps one per line as an organized list:"
         store_to: steps

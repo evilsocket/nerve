@@ -12,9 +12,9 @@ prompt: >
 guidance:
   - Once you have made an estimation, use the estimate_time tool to confirm the decision.
 
-tool_box:
+functions:
   - name: Tools
-    tools:
+    actions:
       - name: estimate_time
         description: "To provide the time it will take to prepare the food:"
         store_to: preparation_time

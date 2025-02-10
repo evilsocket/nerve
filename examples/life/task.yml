@@ -17,9 +17,9 @@ guidance:
   - Create life forms that can build and use structures.
   - Create life forms that can build and use machines.
 
-tool_box:
+functions:
   - name: World
-    tools:
+    actions:
       - name: observe
         description: "To observe the world:"
         max_shown_output: 10000

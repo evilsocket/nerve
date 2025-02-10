@@ -21,9 +21,9 @@ guidance:
 prompt: >
   find vulnerabilities in source code in $TARGET_PATH and report your findings.
 
-tool_box:
+functions:
   - name: Report
-    tools:
+    actions:
       - name: report_finding
         description: Use this tool to report your findings.
         example_payload: >

@@ -28,10 +28,10 @@ guidance:
 timeout: 120s
 
 # the agent toolbox
-tool_box:
+functions:
   # divided in namespaces
   - name: Commands
-    tools:
+    actions:
       - name: ssh
         # explains to the model when to use this action
         description: "To execute a bash command on the remote host via SSH:"

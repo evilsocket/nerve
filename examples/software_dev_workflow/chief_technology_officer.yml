@@ -14,9 +14,9 @@ prompt: >
 guidance:
   - Once you have made a list of technologies, use the create_list_of_technologies tool to confirm the decision.
 
-tool_box:
+functions:
   - name: Tools
-    tools:
+    actions:
       - name: create_list_of_technologies
         description: "To provide the technologies one per line as an organized list:"
         store_to: tech_stack
