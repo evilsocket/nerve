@@ -100,7 +100,7 @@ impl State {
                     log::debug!("tool {} requires {:?}", tool.name(), &required_vars);
                     for var_name in required_vars {
                         let var_expr = format!("${var_name}");
-                        let (var_name, var_value) = parse_variable_expr(&var_expr)?;
+                        let (var_name, var_value) = parse_variable_expr(&var_expr).await?;
                         variables.insert(var_name, var_value);
                     }
                 }

@@ -169,7 +169,7 @@ impl TaskletTool {
             // more complex command line
             for part in &parts[1..] {
                 if part.as_bytes()[0] == b'$' {
-                    let (var_name, var_value) = parse_variable_expr(part)?;
+                    let (var_name, var_value) = parse_variable_expr(part).await?;
                     if var_name == "PAYLOAD" {
                         payload_consumed = true;
                     }
@@ -572,7 +572,7 @@ impl Tasklet {
         }
     }
 
-    pub fn prepare(&mut self, user_prompt: &Option<String>) -> Result<()> {
+    pub async fn prepare(&mut self, user_prompt: &Option<String>) -> Result<()> {
         if self.prompt.is_none() {
             self.prompt = Some(if let Some(prompt) = &user_prompt {
                 // if passed by command line
@@ -584,7 +584,7 @@ impl Tasklet {
         }
 
         // parse any variable
-        self.prompt = Some(interpolate_variables(self.prompt.as_ref().unwrap().trim())?);
+        self.prompt = Some(interpolate_variables(self.prompt.as_ref().unwrap().trim()).await?);
 
         // fix paths
         if let Some(rag) = self.rag.as_mut() {

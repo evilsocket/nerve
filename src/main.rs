@@ -94,7 +94,7 @@ async fn run_workflow(args: Args, workflow: &str, tx: agent::events::Sender) -> 
     }
 
     if let Some(report) = workflow.report {
-        workflow.report = Some(interpolate_variables(&report).unwrap());
+        workflow.report = Some(interpolate_variables(&report).await?);
     }
 
     tx.send(Event::new(EventType::WorkflowCompleted(workflow.clone())))?;

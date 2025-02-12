@@ -155,7 +155,7 @@ pub async fn setup_agent_for_task(
         );
     }
 
-    tasklet.prepare(&args.prompt)?;
+    tasklet.prepare(&args.prompt).await?;
 
     if let Some(server_address) = &args.robopages {
         tasklet.set_robopages(
