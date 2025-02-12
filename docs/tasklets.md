@@ -121,6 +121,8 @@ tool_box:
   $https://your-server.com/tools.yml
 ```
 
+Check the [the examples folder](https://github.com/search?q=repo%3Adreadnode%2Fnerve+%24+path%3A%2F%5Eexamples%5C%2F%2F+language%3AYAML&type=code&l=YAML) for more variables usage examples.
+
 ## Timeouts
 
 It is possible to set a timeout for the entire task. If the agent does not complete the task within the timeout, it will be interrupted and the task will be marked as failed:
