@@ -3,7 +3,8 @@
 * [Agent Loop and Conversation Window](#agent-loop-and-conversation-window)
 * [Prompts](#prompts)
 * [Guidance](#guidance)
-* [Task Timeout](#task-timeout)
+* [Variables](#variables)
+* [Timeouts](#timeouts)
 * [AutoRAG](#autorag)
 * [Tools](#tools)
     * [Predefined Tools](#predefined-tools)
@@ -64,15 +65,88 @@ guidance:
     - Be always polite and professional.
 ```
 
-## Task Timeout
+## Variables
 
-It is possible to set a timeout for the task. If the agent does not complete the task within the timeout, it will be interrupted and the task will be marked as failed:
+Variables are a way to use dynamic values in the tasklet. You can declare them in any part of the tasklet using the `$` prefix:
+
+```yaml
+# ... snippet ...
+
+prompt: Visit $URL
+
+# ... snippet ...
+```
+
+Values for these variables can be provided via the command line with the `-D` / `--define` flag:
+
+```bash
+nerve run task.yml -D URL=https://example.com
+```
+
+Or by defining them as environment variables:
+
+```bash
+URL=https://example.com nerve run task.yml
+```
+
+If they are not provided, the agent will ask the user for them.
+
+It is also possible to define default fallback values that will be used if the variable is not provided via the `||` operator:
+
+```yaml
+# ... snippet ...
+
+prompt: Visit $URL||https://example.com
+
+# ... snippet ...
+```
+
+Moreover, it is possible to use this mechanism to "include" contents of files or urls in the tasklet by using the `$file` or `$http` / `$https` scheme prefixes:
+
+```yaml
+# ... snippet ...
+prompt: >
+  Visit every page in this list:
+
+  $file:///path/to/file.txt
+# ... snippet ...
+```
+
+These contents will be preprocessed before the tasklet is executed, making any aspect of the agent dynamic if needed:
+
+```yaml
+# ... snippet ...
+
+tool_box:
+  $https://your-server.com/tools.yml
+```
+
+## Timeouts
+
+It is possible to set a timeout for the entire task. If the agent does not complete the task within the timeout, it will be interrupted and the task will be marked as failed:
 
 ```yaml
 # ... snippet ...
 
 # timeout in seconds
 timeout: 10 
+
+# ... snippet ...
+```
+
+It is also possible to set a timeout for each tool. If the tool does not complete within the timeout, it will be interrupted and the tool will be marked as failed:
+
+```yaml
+# ... snippet ...
+
+tool_box:
+  - name: Commands
+    tools:
+      - name: ssh
+        description: "To execute a bash command on the remote host via SSH:"
+        example_payload: whoami
+        timeout: 30s
+        tool: ssh $SSH_USER_HOST_STRING
 
 # ... snippet ...
 ```
