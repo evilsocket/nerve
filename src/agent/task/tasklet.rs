@@ -423,7 +423,7 @@ pub struct Tasklet {
 }
 
 impl Tasklet {
-    pub fn from_path(tasklet_path: &str, defines: &Vec<String>) -> Result<Self> {
+    pub async fn from_path(tasklet_path: &str, defines: &Vec<String>) -> Result<Self> {
         parse_pre_defined_values(defines)?;
 
         let mut tasklet_path = PathBuf::from_str(tasklet_path)?;
@@ -436,22 +436,22 @@ impl Tasklet {
         }
 
         if tasklet_path.is_dir() {
-            Self::from_folder(tasklet_path.to_str().unwrap())
+            Self::from_folder(tasklet_path.to_str().unwrap()).await
         } else {
-            Self::from_yaml_file(tasklet_path.to_str().unwrap())
+            Self::from_yaml_file(tasklet_path.to_str().unwrap()).await
         }
     }
 
-    fn from_folder(path: &str) -> Result<Self> {
+    async fn from_folder(path: &str) -> Result<Self> {
         let filepath = PathBuf::from_str(path);
         if let Err(err) = filepath {
             Err(anyhow!("could not read {path}: {err}"))
         } else {
-            Self::from_yaml_file(filepath.unwrap().join("task.yml").to_str().unwrap())
+            Self::from_yaml_file(filepath.unwrap().join("task.yml").to_str().unwrap()).await
         }
     }
 
-    fn from_yaml_file(filepath: &str) -> Result<Self> {
+    async fn from_yaml_file(filepath: &str) -> Result<Self> {
         let canon = std::fs::canonicalize(filepath);
         if let Err(err) = canon {
             Err(anyhow!("could not read {filepath}: {err}"))
@@ -463,7 +463,16 @@ impl Tasklet {
                 return Err(anyhow!("can't find parent folder of {}", canon.display()));
             };
 
+            // read the tasklet contents
             let yaml = std::fs::read_to_string(&canon)?;
+
+            // preprocess the tasklet contents by interpolating $file and
+            // $http/$https schema variables in order to avoid doing it at
+            // every agent step. Other variables will be left untouched and
+            // resolved at runtime.
+            let yaml = crate::agent::task::variables::preprocess_content(&yaml).await?;
+
+            // parse the yaml
             let mut tasklet: Self = serde_yaml::from_str(&yaml)?;
 
             // used to set the working directory while running the task
@@ -689,5 +698,138 @@ impl Task for Tasklet {
         }
 
         groups
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::agent::task::variables::define_variable;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[tokio::test]
+    async fn test_tasklet_preprocessing_should_not_interpolate_variables() -> Result<()> {
+        let temp_dir = tempdir()?;
+        let task_dir = temp_dir.path().join("test_task");
+        fs::create_dir(&task_dir)?;
+
+        // Create a task.yml with variables
+        let task_yaml = r#"
+system_prompt: "Inline variables $VAR1"
+prompt: "Should not be preprocessed $VAR2"
+"#;
+        fs::write(task_dir.join("task.yml"), task_yaml)?;
+
+        // Define variables before loading
+        define_variable("VAR1", "value1");
+        define_variable("VAR2", "value2");
+
+        let tasklet = Tasklet::from_yaml_file(task_dir.join("task.yml").to_str().unwrap()).await?;
+
+        assert_eq!(tasklet.to_system_prompt()?, "Inline variables $VAR1");
+        assert_eq!(tasklet.to_prompt()?, "Should not be preprocessed $VAR2");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_tasklet_preprocessing_should_interpolate_file_variables() -> Result<()> {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let task_path = temp_dir.path().join("task.yml");
+
+        let file_path = temp_dir.path().join("test.txt");
+        std::fs::write(&file_path, "hello from file").unwrap();
+
+        // Create task.yml referencing the file
+        let task_yaml = format!(
+            r#"
+system_prompt: "System prompt with $file://{}"
+prompt: "Regular prompt"
+"#,
+            file_path.display()
+        );
+        fs::write(&task_path, &task_yaml)?;
+
+        let tasklet = Tasklet::from_yaml_file(task_path.to_str().unwrap()).await?;
+
+        assert_eq!(
+            tasklet.to_system_prompt()?,
+            "System prompt with hello from file"
+        );
+        assert_eq!(tasklet.to_prompt()?, "Regular prompt");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_tasklet_preprocessing_should_interpolate_missing_file_variables_with_default(
+    ) -> Result<()> {
+        let temp_dir = tempdir()?;
+        let task_dir = temp_dir.path().join("test_task");
+        fs::create_dir(&task_dir)?;
+
+        // Create task.yml referencing non-existent file with default
+        let task_yaml = r#"
+system_prompt: "System prompt with $file:///nonexistent.txt||fallback"
+prompt: "Regular prompt"
+"#;
+        fs::write(task_dir.join("task.yml"), task_yaml)?;
+
+        let tasklet = Tasklet::from_yaml_file(task_dir.join("task.yml").to_str().unwrap()).await?;
+
+        assert_eq!(tasklet.to_system_prompt()?, "System prompt with fallback");
+        assert_eq!(tasklet.to_prompt()?, "Regular prompt");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_tasklet_preprocessing_should_interpolate_tool_box_from_file() -> Result<()> {
+        let temp_dir = tempdir()?;
+        let task_dir = temp_dir.path().join("test_task");
+        fs::create_dir(&task_dir)?;
+
+        // Create a file containing the entire tool_box definition
+        let tool_box_file = task_dir.join("tool_box.yml");
+        fs::write(
+            &tool_box_file,
+            r#"
+- name: test_group_1
+  tools:
+    - name: tool_1
+      description: "First test tool"
+- name: test_group_2
+  tools:
+    - name: tool_2
+      description: "Second test tool"
+"#,
+        )?;
+
+        // Create task.yml referencing the tool box file
+        let task_yaml = format!(
+            r#"
+system_prompt: "System prompt"
+tool_box: $file://{}
+"#,
+            tool_box_file.display()
+        );
+        fs::write(task_dir.join("task.yml"), &task_yaml)?;
+
+        let tasklet = Tasklet::from_yaml_file(task_dir.join("task.yml").to_str().unwrap()).await?;
+
+        // Verify the tool_box was interpolated correctly
+        let tool_box = tasklet.tool_box.unwrap();
+        assert_eq!(tool_box.len(), 2);
+
+        assert_eq!(tool_box[0].name, "test_group_1");
+        assert_eq!(tool_box[0].tools[0].name, "tool_1");
+        assert_eq!(tool_box[0].tools[0].description, "First test tool");
+
+        assert_eq!(tool_box[1].name, "test_group_2");
+        assert_eq!(tool_box[1].tools[0].name, "tool_2");
+        assert_eq!(tool_box[1].tools[0].description, "Second test tool");
+
+        Ok(())
     }
 }

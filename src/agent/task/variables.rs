@@ -9,7 +9,7 @@ use crate::agent::get_user_input;
 
 lazy_static! {
     static ref VAR_CACHE: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
-    static ref VAR_PARSER: Regex = Regex::new(r"(?m)(\$[^\s]+)(\|\|[^\s]+)?").unwrap();
+    static ref VAR_PARSER: Regex = Regex::new(r#"(?m)(\$[^\s"']+)(\|\|[^\s"']+)?"#).unwrap();
 }
 
 pub fn define_variable(name: &str, value: &str) {
@@ -43,20 +43,35 @@ pub fn parse_pre_defined_values(defines: &Vec<String>) -> Result<()> {
     Ok(())
 }
 
+pub async fn preprocess_content(expr: &str) -> Result<String> {
+    let matches = VAR_PARSER.captures_iter(expr);
+    let mut interpolated = expr.to_string();
+
+    for m in matches {
+        let var_expr = m.get(0).unwrap().as_str();
+        let (var_name, var_value) = parse_expression(var_expr, true).await?;
+        if !var_name.is_empty() {
+            interpolated = interpolated.replace(var_expr, &var_value);
+        }
+    }
+
+    Ok(interpolated)
+}
+
 pub async fn interpolate_variables(expr: &str) -> Result<String> {
     let matches = VAR_PARSER.captures_iter(expr);
     let mut interpolated = expr.to_string();
 
     for m in matches {
         let var_expr = m.get(0).unwrap().as_str();
-        let (_, var_value) = parse_variable_expr(var_expr).await?;
+        let (_, var_value) = parse_expression(var_expr, false).await?;
         interpolated = interpolated.replace(var_expr, &var_value);
     }
 
     Ok(interpolated)
 }
 
-pub async fn parse_variable_expr(expr: &str) -> Result<(String, String)> {
+async fn parse_expression(expr: &str, schema_only: bool) -> Result<(String, String)> {
     if expr.as_bytes()[0] != b'$' {
         return Err(anyhow!("'{}' is not a valid variable expression", expr));
     }
@@ -82,6 +97,11 @@ pub async fn parse_variable_expr(expr: &str) -> Result<(String, String)> {
     let var_value = match var_scheme {
         // no scheme, get from env, cache, default or from user
         None => {
+            // we are in preprocessing mode, we're only parsing variables with a schema
+            if schema_only {
+                return Ok(("".to_string(), "".to_string()));
+            }
+
             let mut var_cache = VAR_CACHE.lock().unwrap();
             if let Ok(value) = std::env::var(var_name) {
                 // get from env
@@ -129,6 +149,10 @@ pub async fn parse_variable_expr(expr: &str) -> Result<(String, String)> {
     };
 
     Ok((var_name.to_string(), var_value))
+}
+
+pub async fn parse_variable_expr(expr: &str) -> Result<(String, String)> {
+    parse_expression(expr, false).await
 }
 
 #[cfg(test)]
@@ -200,6 +224,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_file_interpolation_with_valid_file() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let file_path = temp_dir.path().join("test.txt");
+        std::fs::write(&file_path, "hello from file").unwrap();
+
+        assert_eq!(
+            interpolate_variables(&format!("Value is $file://{}", file_path.display()))
+                .await
+                .unwrap(),
+            "Value is hello from file"
+        );
+    }
+
+    #[tokio::test]
     async fn test_file_interpolation_with_non_existing_file() {
         let ret = interpolate_variables("Value is $file:///idonotexist.txt");
         assert!(ret.await.is_err());
@@ -239,5 +277,60 @@ mod tests {
     async fn test_http_interpolation_with_default() {
         let ret = interpolate_variables("Value is $http://localhost:1234/notfound||default");
         assert_eq!(ret.await.unwrap(), "Value is default");
+    }
+
+    #[tokio::test]
+    async fn test_preprocess_only_schema_variables() {
+        let mock_server = wiremock::MockServer::start().await;
+
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path("/test"))
+            .respond_with(wiremock::ResponseTemplate::new(200).set_body_string("hello"))
+            .mount(&mock_server)
+            .await;
+
+        // Test that schema variables are interpolated but regular variables are left alone
+        let input = format!(
+            "HTTP value is $http://{}/test and regular $var should be untouched",
+            mock_server.address()
+        );
+        assert_eq!(
+            preprocess_content(&input).await.unwrap(),
+            "HTTP value is hello and regular $var should be untouched"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_preprocess_ignores_non_schema_variables() {
+        // Define a regular variable
+        define_variable("test", "value");
+
+        // Test that regular variables are not interpolated during preprocessing
+        let input = "$test and $another_var";
+        assert_eq!(
+            preprocess_content(input).await.unwrap(),
+            "$test and $another_var"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_preprocess_multiple_variables() {
+        let mock_server = wiremock::MockServer::start().await;
+
+        wiremock::Mock::given(wiremock::matchers::method("GET"))
+            .and(wiremock::matchers::path("/test"))
+            .respond_with(wiremock::ResponseTemplate::new(200).set_body_string("hello"))
+            .mount(&mock_server)
+            .await;
+
+        // Test multiple variables of different types
+        let input = format!(
+            "$regular_var $file:///test.txt||default $http://{}/test $another_var",
+            mock_server.address()
+        );
+        assert_eq!(
+            preprocess_content(&input).await.unwrap(),
+            "$regular_var default hello $another_var"
+        );
     }
 }

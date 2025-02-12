@@ -63,4 +63,5 @@ panic = 'abort'   # Abort on panic
 strip = true      # Strip symbols from binary*
 
 [dev-dependencies]
+tempfile = "3.16.0"
 wiremock = "0.6.2"

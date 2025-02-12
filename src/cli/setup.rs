@@ -131,7 +131,7 @@ pub async fn setup_agent_for_task(
         return Err(anyhow!("--tasklet/-T not specified"));
     };
 
-    let mut tasklet = Tasklet::from_path(tasklet, &args.define)?;
+    let mut tasklet = Tasklet::from_path(tasklet, &args.define).await?;
     let tasklet_name = tasklet.name.clone();
 
     if !args.judge_mode {
