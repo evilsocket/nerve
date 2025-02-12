@@ -1,5 +1,5 @@
 {{ system_prompt }}
-{% if storages or iterations or available_tools %}
+{% if iterations or available_tools %}
 
 # Context
 
@@ -16,3 +16,9 @@
 - {{ rule }}{% endfor %}
 {% endif %}
 Call a new tool in your response. Prior tool results are displayed in the chat history.
+
+{% if storages %}
+
+{{ storages }}
+
+{% endif %}

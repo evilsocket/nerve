@@ -8,14 +8,13 @@ use serde::{Deserialize, Serialize};
 
 use super::state::{storage::StorageType, SharedState};
 
-// TODO: add more namespaces of tools: take screenshot (multimodal), move mouse, ui interactions, etc
-
 pub mod filesystem;
 pub mod goal;
 pub mod http;
 pub mod memory;
 pub mod planning;
 pub mod rag;
+pub mod reasoning;
 pub mod shell;
 pub mod task;
 pub mod time;
@@ -26,6 +25,7 @@ lazy_static! {
         let mut map = IndexMap::new();
 
         map.insert("memory".to_string(), memory::get_namespace as fn() -> Namespace);
+        map.insert("reasoning".to_string(), reasoning::get_namespace as fn() -> Namespace);
         map.insert("time".to_string(), time::get_namespace as fn() -> Namespace);
         map.insert("goal".to_string(), goal::get_namespace as fn() -> Namespace);
         map.insert("planning".to_string(), planning::get_namespace as fn() -> Namespace);
@@ -48,6 +48,17 @@ pub struct StorageDescriptor {
 
 #[allow(dead_code)]
 impl StorageDescriptor {
+    pub fn text(name: &str) -> Self {
+        let name = name.to_string();
+        let type_ = StorageType::Text;
+        let predefined = None;
+        Self {
+            name,
+            type_,
+            predefined,
+        }
+    }
+
     pub fn tagged(name: &str) -> Self {
         let name = name.to_string();
         let type_ = StorageType::Tagged;
