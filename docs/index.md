@@ -42,7 +42,7 @@ cargo build --release
 
 ## Usage
 
-In order to use Nerve, you must specify which model to use through a generator string and a tasklet file.
+In order to use Nerve, you must specify which model to use through a generator string and what task to perform through a tasklet file.
 
 To specify the model, refer to the [LLM Support](#llm-support) and [tasklets](tasklets.md) documentation.
 
