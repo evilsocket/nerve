@@ -213,7 +213,7 @@ An evaluator is a command line that receives the current state of the agent thro
 
 1. Exit with a 42 status code if the task is completed successfully.
 2. Exit with any other status code if the task is not completed successfully.
-3. Print your output to stdout. The evaluation script will automatically add your console output to the chat history as agent feedback.
+3. Print your output to stdout. The evaluation script will automatically add your console output to the chat history as feedback to the agent.
 
 Review the [eval_test](https://github.com/dreadnode/nerve/tree/main/examples/eval_test) and [ab_problem](https://github.com/dreadnode/nerve/tree/main/examples/ab_problem) tasklets for complete examples.
 
