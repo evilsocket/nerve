@@ -50,6 +50,13 @@ pub fn storage(storage: &Storage) -> String {
     }
 
     match storage.get_type() {
+        StorageType::Text => {
+            if let Some(text) = storage.get_text() {
+                format!("## Reasoning\n\n{}\n", text)
+            } else {
+                "".to_string()
+            }
+        }
         StorageType::Time => {
             let started_at = storage.get_started_at();
 

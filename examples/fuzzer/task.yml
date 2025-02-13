@@ -2,8 +2,7 @@
 # so it won't be using the task namespace
 using:
   # can store memories and plan
-  - memory
-  - planning
+  - reasoning
 
 # agent background story
 system_prompt: > 

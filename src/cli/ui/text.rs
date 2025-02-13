@@ -124,7 +124,9 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
             EventType::MetricsUpdate(metrics) => {
                 log::info!("📊 {}", metrics.to_string().dimmed());
             }
-            EventType::StateUpdate(_state) => {}
+            EventType::StateUpdate(state) => {
+                log::debug!("{}", state.chat.system_prompt.unwrap_or_default());
+            }
             EventType::Thinking(thinking) => {
                 log::info!("🧠 thinking: {}", thinking.italic());
             }
