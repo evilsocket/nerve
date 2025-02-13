@@ -16,7 +16,9 @@
 
 ## Agent Loop and Conversation Window
 
-Tasklets are the building blocks of agents. They are defined in YAML files (several [examples are available here](https://github.com/nerve-ai/nerve/tree/main/examples)) and provide the system and user prompts, what the agent can do and optional guidelines on how to perform the task. A tasklet defines dynamically the chat history that will be used to generate the agent's response in the agent loop:
+Tasklets are the building blocks of agents. They are defined in YAML files and specify the system and user prompts, the tasks the agent can perform, and optional guidelines for completing those tasks. Tasklet examples are available ([here](https://github.com/nerve-ai/nerve/tree/main/examples)).
+
+A tasklet dynamically defines the chat history used to generate the agent's response in the agent loop:
 
 ```python
 # pseudo code
@@ -25,22 +27,22 @@ while not task.done:
     agent.step(history)
 ```
 
-The agent will keep running and take decisions at each step until one of the following conditions is met:
+The agent will continue running and make decisions at each step until one of the following conditions is met:
 
-- the task is complete and has been set as such
-- the task is impossible and has been set as such
-- the task times out
-- one of the tools with the `complete_task` flag set to `true` is executed
+- The task is complete and has been set as such.
+- The task is impossible and has been set as such.
+- The task times out.
+- One of the tools with the `complete_task` flag set to `true` is executed.
 
-At each step the agent will receive a conversation history, composed of the initial prompts, the model tool calls and their outputs. The size of this window is determined by the `--window` argument:
+At each step the agent will receive a conversation history, composed of the initial prompts, the model tool calls, and their outputs. The size of this window is determined by the `--window` argument:
 
-- if the window is set to a number `N`, the most recent `N` messages will be shown. **This is the default behaviour with N=15.**
-- if the window is set to `full`, the entire conversation history will be shown to the agent.
-- if the window is set to `summary`, the most recent messages will be shown, while the previous ones will be stripped down.
+- If the window is set to a number `N`, the most recent `N` messages will be shown. **This is the default behaviour with N=15.**
+- If the window is set to `full`, the entire conversation history will be shown to the agent.
+- If the window is set to `summary`, the most recent messages will be shown, while the previous ones will be stripped down.
 
 ## Prompts
 
-The two essential blocks of a tasklet are the system and user prompts. The system prompt is a description of the agent's role, while the user prompt defines the specific task to be performed:
+The two essential blocks of a tasklet are the system and user prompts. The system prompt is a description of the agent's role, while the user prompt defines the specific task the agent will perform:
 
 ```yaml
 system_prompt: You are a helpful assistant.
@@ -48,11 +50,11 @@ system_prompt: You are a helpful assistant.
 prompt: How much is 2 + 2?
 ```
 
-If the prompt is not provided it will be asked to the user at runtime.
+If you don't provide a user prompt, the agent will ask for the prompt at runtime.
 
 ## Guidance
 
-It is possible to provide a set of rules to help the agent to perform the task. These are called guidance:
+You can provide a set of rules to help the agent to perform the task. These rules are called guidance:
 
 ```yaml
 system_prompt: You are a helpful assistant.
@@ -62,7 +64,7 @@ prompt: How much is 2 + 2?
 guidance:
     - Reason step by step.
     - Make sure your answer is correct.
-    - Be always polite and professional.
+    - Always be polite and professional.
 ```
 
 ## Variables
@@ -125,7 +127,7 @@ Check the [the examples folder](https://github.com/search?q=repo%3Adreadnode%2Fn
 
 ## Timeouts
 
-It is possible to set a timeout for the entire task. If the agent does not complete the task within the timeout, it will be interrupted and the task will be marked as failed:
+You can set a timeout for the task. If the agent does not complete the task within the time period, the agent will be interrupted and the task will be marked as failed:
 
 ```yaml
 # ... snippet ...
@@ -155,7 +157,7 @@ tool_box:
 
 ## AutoRAG
 
-It is possible to use a `rag` directive to automatically generate an index from a set of documents. This will allow the agent to use the RAG index to answer questions and use it to perform the task at hand.
+You can use a `rag` directive to automatically generate an index from a set of documents. This will allow the agent to use the RAG index to answer questions and use it to perform the specified task.
 
 ```yaml
 # ... snippet ...
@@ -179,7 +181,7 @@ One of the main characteristics of an agent is the ability to use tools.
 
 ### Predefined Tools
 
-Nerve offers a rich set of predefined tools, organized in [namespaces](namespaces.md), that the agent can import via the using directive:
+Nerve offers a rich set of predefined tools, organized in [namespaces](namespaces.md), that the agent can import with the `using` directive:
 
 ```yaml
 using:
@@ -206,13 +208,13 @@ using:
 # ... snippet ...
 ```
 
-While it might be tempting to use all of them, it is important to remember that the more tools you use, the more tokens will be used in the prompt. Smaller models especially tend to get confused if too much information is provided at once, so it is recommended to use only the necessary ones.
+Although it may be tempting to include all items in the directive, it's important to remember that using more tools increases the number of tokens in the prompt. Smaller models, in particular, can become confused if too much information is provided at once. Therefore, it's best to use only the essential tools.
 
-For more information about the default namespaces see [the namespaces documentation](namespaces.md).
+For more information about the default namespaces view the [namespaces documentation](namespaces.md).
 
 ### Custom Tools
 
-Additional tools can be defined in the tasklet's `tool_box` section, and each is a group of tools that can be used by the agent, defining a `name`, `description` and a `tool` field with the command to be executed:
+Additional tools can be defined in the tasklet's `functions` section. Each tool is a set of actions that the agent can use, consisting of a `name`, a `description`, and a `tool` field that specifies the command to be executed:
 
 ```yaml
 # ... snippet ...
@@ -229,7 +231,7 @@ tool_box:
 # ... snippet ...
 ```
 
-If the agent must provide arguments to the tool, it is possible to define an example_payload to instruct the agent on how to use the tool:
+If the agent must provide arguments to the tool, you can define an `example_payload` to instruct the agent on how to use the tool:
 
 ```yaml
 # ... snippet ...
@@ -250,7 +252,7 @@ tool_box:
 # ... snippet ...
 ```
 
-If the tool requires named arguments it is possible to define them in the `args` field:
+If the tool requires named arguments, you can define them in the `args` field:
 
 ```yaml
 # ... snippet ...
@@ -272,22 +274,22 @@ tool_box:
 
 In addition to the ones already mentioned, tools can optionally define the following fields:
 
-- `max_shown_output`: the maximum number of characters to be shown in the output of the tool.
-- `store_to`: save the output of the tool in a named variable used to pass data between different tasks (see the [example workflows](https://github.com/search?q=repo%3Adreadnode%2Fnerve+store_to+language%3AYAML&type=code)).
-- `timeout`: timeout for the specific tool.
-- `mime_type`: if set to `image/<any valid format>`, like `image/png`, the output of the tool will be considered as a base64 encoded image for vision models (see [examples/screenshot](https://github.com/dreadnode/nerve/tree/main/examples/screenshot) and [examples/webcam](https://github.com/dreadnode/nerve/tree/main/examples/webcam)).
-- `complete_task`: if set to `true`, the task will be marked as complete after the tool is executed.
-- `judge`: uses another tasklet as a judge to validate the output of the tool (see [examples/code_auditor_with_judge](https://github.com/dreadnode/nerve/tree/main/examples/code_auditor_with_judge))
-- `alias`: use to create a tool that's an alias to one of the predefined ones (see [examples/docker-agent](https://github.com/dreadnode/nerve/tree/main/examples/docker-agent))
-- `ignore_stderr`: if set to `true`, the stderr of the tool will be ignored.
+- `max_shown_output`: The maximum number of characters to be shown in the output of the tool.
+- `store_to`: Save the output of the tool in a named variable used to pass data between different tasks. View [example workflows](https://github.com/search?q=repo%3Adreadnode%2Fnerve+store_to+language%3AYAML&type=code).
+- `timeout`: Timeout for the specific tool.
+- `mime_type`: If set to `image/<any valid format>`, like `image/png`, the output of the tool will be considered as a base64 encoded image for vision models. View examples for [screenshots](https://github.com/dreadnode/nerve/tree/main/examples/screenshot) and [webcams](https://github.com/dreadnode/nerve/tree/main/examples/webcam).
+- `complete_task`: If set to `true`, the task will be marked as complete after the tool is executed.
+- `judge`: Use another tasklet as a judge to validate the output of the tool. View an example of a [code auditor with judge](https://github.com/dreadnode/nerve/tree/main/examples/code_auditor_with_judge).
+- `alias`: Create a tool that's an alias to one of the predefined ones. View examples of a [docker agent](https://github.com/dreadnode/nerve/tree/main/examples/docker-agent).
+- `ignore_stderr`: If set to `true`, the `stderr` of the tool will be ignored.
 
 ## Evaluators
 
-An evaluator is a command line that receives the current state of the agent via standard input and performs some evaluation, at the end of which it can:
+An evaluator is a command line that receives the current state of the agent through standard input and performs some evaluation. At the end of evaluation, the evaluator can:
 
 1. Exit with a 42 status code if the task is completed successfully.
 2. Exit with any other status code if the task is not completed successfully.
-3. Return via stdout anything, that'll go to the chat history itself as feedback for the agent.
+3. Print your output to stdout. The evaluation script will automatically add your console output to the chat history as feedback to the agent.
 
-Check the [eval_test](https://github.com/dreadnode/nerve/tree/main/examples/eval_test) and [ab_problem](https://github.com/dreadnode/nerve/tree/main/examples/ab_problem) tasklets for complete examples.
+Review the [eval_test](https://github.com/dreadnode/nerve/tree/main/examples/eval_test) and [ab_problem](https://github.com/dreadnode/nerve/tree/main/examples/ab_problem) tasklets for complete examples.
 
