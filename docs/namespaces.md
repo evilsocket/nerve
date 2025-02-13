@@ -15,7 +15,7 @@ Use these memory-related actions to store and retrieve meaningful information ob
 
 ## Time
 
-Use time-related actions to give the agent awareness of the current time, track elapsed time between messages, and allow it to autonomously pause its loop for a specified duration.
+Include time-related actions to give the agent awareness of the current time, track elapsed time between messages, and allow it to autonomously pause its loop for a specified duration.
 
 * To pause for a given amount of seconds: `<wait>5</wait>`
 
