@@ -3,14 +3,14 @@ use async_trait::async_trait;
 
 use std::{collections::HashMap, time::Duration};
 
-use super::{Action, ActionOutput, Namespace, StorageDescriptor};
+use super::{Tool, ToolOutput, Namespace, StorageDescriptor};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
 struct Wait {}
 
 #[async_trait]
-impl Action for Wait {
+impl Tool for Wait {
     fn name(&self) -> &str {
         "wait"
     }
@@ -28,7 +28,7 @@ impl Action for Wait {
         _: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         let secs = payload.unwrap().parse::<u64>()?;
 
         log::info!("💤 sleeping for {secs} seconds ...");

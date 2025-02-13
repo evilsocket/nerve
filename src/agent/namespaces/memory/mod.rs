@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use super::{Action, ActionOutput, Namespace, StorageDescriptor};
+use super::{Namespace, StorageDescriptor, Tool, ToolOutput};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
 struct SaveMemory {}
 
 #[async_trait]
-impl Action for SaveMemory {
+impl Tool for SaveMemory {
     fn name(&self) -> &str {
         "save_memory"
     }
@@ -36,7 +36,7 @@ impl Action for SaveMemory {
         state: SharedState,
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         let attrs = attributes.unwrap();
         let key = attrs.get("key").unwrap();
 
@@ -54,7 +54,7 @@ impl Action for SaveMemory {
 struct DeleteMemory {}
 
 #[async_trait]
-impl Action for DeleteMemory {
+impl Tool for DeleteMemory {
     fn name(&self) -> &str {
         "delete_memory"
     }
@@ -76,7 +76,7 @@ impl Action for DeleteMemory {
         state: SharedState,
         attributes: Option<HashMap<String, String>>,
         _: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         let attrs = attributes.unwrap();
         let key = attrs.get("key").unwrap();
         if state
@@ -98,7 +98,7 @@ impl Action for DeleteMemory {
 struct RecallMemory {}
 
 #[async_trait]
-impl Action for RecallMemory {
+impl Tool for RecallMemory {
     fn name(&self) -> &str {
         "recall_memory"
     }

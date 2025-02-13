@@ -33,5 +33,3 @@ functions:
         # in case the command requires arguments, declare them with an example value
         args:
           character_name: NameOfTheSpeakingCharacter
-        
-        

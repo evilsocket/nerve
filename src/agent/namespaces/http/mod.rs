@@ -15,7 +15,7 @@ use url::Url;
 
 use crate::agent::state::SharedState;
 
-use super::{Action, ActionOutput, Namespace, StorageDescriptor};
+use super::{Tool, ToolOutput, Namespace, StorageDescriptor};
 
 const DEFAULT_HTTP_SCHEMA: &str = "https";
 
@@ -45,7 +45,7 @@ lazy_static! {
 struct ClearHeaders {}
 
 #[async_trait]
-impl Action for ClearHeaders {
+impl Tool for ClearHeaders {
     fn name(&self) -> &str {
         "http_clear_headers"
     }
@@ -59,7 +59,7 @@ impl Action for ClearHeaders {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         _: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         state.lock().await.get_storage_mut("http-headers")?.clear();
         Ok(Some("http headers cleared".into()))
     }
@@ -69,7 +69,7 @@ impl Action for ClearHeaders {
 struct SetHeader {}
 
 #[async_trait]
-impl Action for SetHeader {
+impl Tool for SetHeader {
     fn name(&self) -> &str {
         "http_set_header"
     }
@@ -95,7 +95,7 @@ impl Action for SetHeader {
         state: SharedState,
         attrs: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         let attrs = attrs.unwrap();
         let key = attrs.get("name").unwrap();
         let data = payload.unwrap();
@@ -201,7 +201,7 @@ impl Request {
 }
 
 #[async_trait]
-impl Action for Request {
+impl Tool for Request {
     fn name(&self) -> &str {
         "http_request"
     }
@@ -235,7 +235,7 @@ impl Action for Request {
         state: SharedState,
         attrs: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         // create a parsed Url from the attributes, payload and HTTP_TARGET variable
         let attrs = attrs.unwrap();
         let method = attrs.get("method").unwrap();

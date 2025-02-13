@@ -23,7 +23,7 @@
     </strong>
 </p>
 
-- 🧑‍💻 **User-Defined Agents:** Agents are defined using a YAML based files called [tasklets](https://github.com/dreadnode/nerve/blob/main/docs/tasklets.md). _The sky is the limit!_ You can define an agent for any task you desire — check out the [existing examples](https://github.com/dreadnode/nerve/tree/main/examples) for inspiration.
+- 🧑‍💻 **Agents Made Simple:** Agents are defined using YAML based files called [tasklets](https://github.com/dreadnode/nerve/blob/main/docs/tasklets.md). _The sky is the limit!_ You can define an agent for any task you desire — check out the [existing examples](https://github.com/dreadnode/nerve/tree/main/examples) for inspiration.
 - 🧠 **Automated Problem Solving:** Nerve provides [a standard library of actions](https://github.com/dreadnode/nerve/blob/main/docs/namespaces.md) the agent uses autonomously to inform and enhance its performance. These include identifying specific goals required to complete the task, devising and revising a plan to achieve those goals, and creating and recalling memories comprised of pertinent information gleaned during previous actions.
 - 🛠️ **Simple and Universal Tool Calling:** Nerve will automatically detect if the selected model natively supports function calling. If not, it will provide a compatibility layer that empowers the LLM to perform function calling anyway.
 - 🤖 **Works with any LLM:** Nerve is an [LLM-agnostic tool](https://github.com/dreadnode/nerve/blob/main/docs/index.md#llm-support).

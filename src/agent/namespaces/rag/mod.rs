@@ -5,13 +5,13 @@ use async_trait::async_trait;
 
 use crate::agent::state::SharedState;
 
-use super::{Action, ActionOutput, Namespace};
+use super::{Tool, ToolOutput, Namespace};
 
 #[derive(Debug, Default, Clone)]
 struct Search {}
 
 #[async_trait]
-impl Action for Search {
+impl Tool for Search {
     fn name(&self) -> &str {
         "search"
     }
@@ -29,7 +29,7 @@ impl Action for Search {
         state: SharedState,
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
+    ) -> Result<Option<ToolOutput>> {
         let query = payload.unwrap();
         let start = Instant::now();
         // TODO: make top_k configurable?

@@ -3,7 +3,8 @@
 * [Agent Loop and Conversation Window](#agent-loop-and-conversation-window)
 * [Prompts](#prompts)
 * [Guidance](#guidance)
-* [Task Timeout](#task-timeout)
+* [Variables](#variables)
+* [Timeouts](#timeouts)
 * [AutoRAG](#autorag)
 * [Tools](#tools)
     * [Predefined Tools](#predefined-tools)
@@ -66,7 +67,65 @@ guidance:
     - Always be polite and professional.
 ```
 
-## Task Timeout
+## Variables
+
+Variables are a way to use dynamic values in the tasklet. You can declare them in any part of the tasklet using the `$` prefix:
+
+```yaml
+# ... snippet ...
+
+prompt: Visit $URL
+
+# ... snippet ...
+```
+
+Values for these variables can be provided via the command line with the `-D` / `--define` flag:
+
+```bash
+nerve run task.yml -D URL=https://example.com
+```
+
+Or by defining them as environment variables:
+
+```bash
+URL=https://example.com nerve run task.yml
+```
+
+If they are not provided, the agent will ask the user for them.
+
+It is also possible to define default fallback values that will be used if the variable is not provided via the `||` operator:
+
+```yaml
+# ... snippet ...
+
+prompt: Visit $URL||https://example.com
+
+# ... snippet ...
+```
+
+Moreover, it is possible to use this mechanism to "include" contents of files or urls in the tasklet by using the `$file` or `$http` / `$https` scheme prefixes:
+
+```yaml
+# ... snippet ...
+prompt: >
+  Visit every page in this list:
+
+  $file:///path/to/file.txt
+# ... snippet ...
+```
+
+These contents will be preprocessed before the tasklet is executed, making any aspect of the agent dynamic if needed:
+
+```yaml
+# ... snippet ...
+
+tool_box:
+  $https://your-server.com/tools.yml
+```
+
+Check the [the examples folder](https://github.com/search?q=repo%3Adreadnode%2Fnerve+%24+path%3A%2F%5Eexamples%5C%2F%2F+language%3AYAML&type=code&l=YAML) for more variables usage examples.
+
+## Timeouts
 
 You can set a timeout for the task. If the agent does not complete the task within the time period, the agent will be interrupted and the task will be marked as failed:
 
@@ -75,6 +134,23 @@ You can set a timeout for the task. If the agent does not complete the task with
 
 # timeout in seconds
 timeout: 10 
+
+# ... snippet ...
+```
+
+It is also possible to set a timeout for each tool. If the tool does not complete within the timeout, it will be interrupted and the tool will be marked as failed:
+
+```yaml
+# ... snippet ...
+
+tool_box:
+  - name: Commands
+    tools:
+      - name: ssh
+        description: "To execute a bash command on the remote host via SSH:"
+        example_payload: whoami
+        timeout: 30s
+        tool: ssh $SSH_USER_HOST_STRING
 
 # ... snippet ...
 ```
@@ -143,10 +219,10 @@ Additional tools can be defined in the tasklet's `functions` section. Each tool 
 ```yaml
 # ... snippet ...
 
-functions:
+tool_box:
   - name: News
     decription: You will use this action to read the recent news.
-    actions:
+    tools:
       - name: read_news
         description: "To read the recent news:"
         # the output of this command will be returned to the agent
@@ -159,9 +235,9 @@ If the agent must provide arguments to the tool, you can define an `example_payl
 
 ```yaml
 # ... snippet ...
-functions:
+tool_box:
   - name: Environment
-    actions:
+    tools:
       - name: report_finding
         description: When you are ready to report findings, use this tool for each finding.
         example_payload: >
@@ -180,10 +256,10 @@ If the tool requires named arguments, you can define them in the `args` field:
 
 ```yaml
 # ... snippet ...
-functions:
+tool_box:
   - name: Conversation
     description: You will use these actions to create conversational entries.
-    actions:
+    tools:
       - name: talk
         description: "To have one of the characters say a specific sentence:"
         example_payload: hi, how are you doing today?

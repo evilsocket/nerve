@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use crate::agent::{
     generator::{ChatResponse, SupportedFeatures, Usage},
-    namespaces::ActionOutput,
+    namespaces::ToolOutput,
     state::SharedState,
-    Invocation,
+    ToolCall,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -46,12 +46,12 @@ impl AnthropicClient {
         if state.lock().await.use_native_tools_format {
             // for every namespace available to the model
             for group in state.lock().await.get_namespaces() {
-                // for every action of the namespace
-                for action in &group.actions {
+                // for every tool of the namespace
+                for tool in &group.tools {
                     let mut required = vec![];
                     let mut properties = HashMap::new();
 
-                    if let Some(example) = action.example_payload() {
+                    if let Some(example) = tool.example_payload() {
                         required.push("payload".to_string());
                         properties.insert(
                             "payload".to_string(),
@@ -65,7 +65,7 @@ impl AnthropicClient {
                         );
                     }
 
-                    if let Some(attrs) = action.example_attributes() {
+                    if let Some(attrs) = tool.example_attributes() {
                         for name in attrs.keys() {
                             required.push(name.to_string());
                             properties.insert(
@@ -85,8 +85,8 @@ impl AnthropicClient {
                     });
 
                     tools.push(ToolDefinition::new(
-                        action.name(),
-                        Some(action.description().to_string()),
+                        tool.name(),
+                        Some(tool.description().to_string()),
                         input_schema,
                     ));
                 }
@@ -163,19 +163,25 @@ impl Client for AnthropicClient {
         for m in options.history.iter() {
             // all messages must have non-empty content except for the optional final assistant messag
             match m {
-                super::Message::Agent(data, _) => {
-                    let trimmed = data.trim();
+                super::Message::Agent {
+                    content,
+                    tool_call: _,
+                } => {
+                    let trimmed = content.trim();
                     if !trimmed.is_empty() {
-                        messages.push(Message::assistant(data.trim()))
+                        messages.push(Message::assistant(trimmed))
                     } else {
                         log::warn!("ignoring empty assistant message: {:?}", m);
                     }
                 }
-                super::Message::Feedback(data, _) => match data {
-                    ActionOutput::Image { data, mime_type } => messages.push(Message::user(
+                super::Message::Feedback {
+                    result,
+                    tool_call: _,
+                } => match result {
+                    ToolOutput::Image { data, mime_type } => messages.push(Message::user(
                         Content::from(ImageContentSource::base64(get_media_type(mime_type), data)),
                     )),
-                    ActionOutput::Text(text) => {
+                    ToolOutput::Text(text) => {
                         let trimmed = text.trim();
                         if !trimmed.is_empty() {
                             messages.push(Message::user(trimmed))
@@ -234,13 +240,13 @@ impl Client for AnthropicClient {
             Err(_) => None,
         };
 
-        let mut invocations = vec![];
+        let mut tool_calls = vec![];
 
         log::debug!("tool_use={:?}", &tool_use);
 
         if let Some(tool_use) = tool_use {
             let mut attributes = HashMap::new();
-            let mut payload = None;
+            let mut argument = None;
 
             let object = match tool_use.input.as_object() {
                 Some(o) => o,
@@ -260,35 +266,35 @@ impl Client for AnthropicClient {
 
                 let str_val = value_content.trim_matches('"').to_string();
                 if name == "payload" {
-                    payload = Some(str_val);
+                    argument = Some(str_val);
                 } else {
                     attributes.insert(name.to_string(), str_val);
                 }
             }
 
-            let inv = Invocation {
-                action: tool_use.name.to_string(),
-                attributes: if attributes.is_empty() {
+            let tool_call = ToolCall {
+                tool_name: tool_use.name.to_string(),
+                named_arguments: if attributes.is_empty() {
                     None
                 } else {
                     Some(attributes)
                 },
-                payload,
+                argument,
             };
 
-            invocations.push(inv);
+            tool_calls.push(tool_call);
 
             log::debug!("tool_use={:?}", tool_use);
-            log::debug!("invocations={:?}", &invocations);
+            log::debug!("tool_calls={:?}", &tool_calls);
         }
 
-        if invocations.is_empty() && content.is_empty() {
+        if tool_calls.is_empty() && content.is_empty() {
             log::warn!("empty tool calls and content in response: {:?}", response);
         }
 
         Ok(ChatResponse {
             content: content.to_string(),
-            invocations,
+            tool_calls,
             usage: Some(Usage {
                 input_tokens: response.usage.input_tokens,
                 output_tokens: response.usage.output_tokens,

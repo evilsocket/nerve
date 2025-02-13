@@ -7,12 +7,13 @@ mod channel;
 
 pub use channel::*;
 
-use super::namespaces::ActionOutput;
+use super::namespaces::ToolOutput;
 use super::task::tasklet::Tasklet;
+use super::workflow::Workflow;
 use super::{
     generator::ChatOptions,
     state::{metrics::Metrics, storage::StorageType},
-    Invocation,
+    ToolCall,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -23,48 +24,75 @@ pub struct StateUpdate {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data", rename_all = "snake_case")]
 pub enum EventType {
+    // the workflow has been started
+    WorkflowStarted(Workflow),
+    // the workflow has been completed
+    WorkflowCompleted(Workflow),
+    // the task has been started
     TaskStarted(Tasklet),
+    // new metrics are available
     MetricsUpdate(Metrics),
+    // storage (memory or other parts of the prompt) state update
     StorageUpdate {
+        // storage name and type
         storage_name: String,
         storage_type: StorageType,
+        // key of the object that changed
         key: String,
+        // previous value if pre-existed
         prev: Option<String>,
+        // new value
         new: Option<String>,
     },
+    // the state of the agent (system prompt, user prompt, conversation) has been updated
     StateUpdate(StateUpdate),
+    // the agent provided an empty response
     EmptyResponse,
+    // the agent is thinking (R1 and any reasoning model)
     Thinking(String),
+    // the agent is sleeping for a given amount of seconds
     Sleeping(usize),
-    InvalidResponse(String),
-    InvalidAction {
-        invocation: Invocation,
+    // the agent provided a text response without tool calls
+    TextResponse(String),
+    // the agent tried to execute an invalid tool
+    InvalidToolCall {
+        tool_call: ToolCall,
         error: Option<String>,
     },
-    ActionTimeout {
-        invocation: Invocation,
+    // the tool call timed out
+    ToolCallTimeout {
+        tool_call: ToolCall,
         elapsed: std::time::Duration,
     },
-    ActionExecuting {
-        invocation: Invocation,
+    // a tool call is about to execute
+    BeforeToolCall {
+        tool_call: ToolCall,
     },
-    ActionExecuted {
-        invocation: Invocation,
+    // a tool call has been executed
+    AfterToolCall {
+        tool_call: ToolCall,
         error: Option<String>,
-        result: Option<ActionOutput>,
+        result: Option<ToolOutput>,
         elapsed: std::time::Duration,
         complete_task: bool,
     },
+    // the task has been completed
     TaskComplete {
+        // set to true if the agent determined the task was impossible
         impossible: bool,
+        // the reason why task was set as complete
         reason: Option<String>,
     },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Event {
-    pub timestamp: u64,
+    // event timestamp in nanoseconds
+    pub timestamp: u128,
+    // the actual event data
+    #[serde(flatten)]
     pub event: EventType,
 }
 
@@ -74,7 +102,7 @@ impl Event {
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
-                .as_secs(),
+                .as_nanos(),
             event,
         }
     }

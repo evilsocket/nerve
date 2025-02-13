@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
 use crate::api::openai::*;
-use crate::{agent::namespaces::ActionOutput, api::openai::chat::*};
+use crate::{agent::namespaces::ToolOutput, api::openai::chat::*};
 use anyhow::Result;
 use async_trait::async_trait;
 use embeddings::EmbeddingsApi;
 use serde::{Deserialize, Serialize};
 
-use crate::agent::{state::SharedState, Invocation};
+use crate::agent::{state::SharedState, ToolCall};
 
 use super::{ChatOptions, ChatResponse, Client, Message, SupportedFeatures};
 
@@ -77,12 +77,12 @@ impl OpenAIClient {
         if state.lock().await.use_native_tools_format {
             // for every namespace available to the model
             for group in state.lock().await.get_namespaces() {
-                // for every action of the namespace
-                for action in &group.actions {
+                // for every tool of the namespace
+                for tool in &group.tools {
                     let mut required = vec![];
                     let mut properties = HashMap::new();
 
-                    if let Some(example) = action.example_payload() {
+                    if let Some(example) = tool.example_payload() {
                         required.push("payload".to_string());
                         properties.insert(
                             "payload".to_string(),
@@ -96,7 +96,7 @@ impl OpenAIClient {
                         );
                     }
 
-                    if let Some(attrs) = action.example_attributes() {
+                    if let Some(attrs) = tool.example_attributes() {
                         for name in attrs.keys() {
                             required.push(name.to_string());
                             properties.insert(
@@ -110,8 +110,8 @@ impl OpenAIClient {
                     }
 
                     let function = FunctionDefinition {
-                        name: action.name().to_string(),
-                        description: Some(action.description().to_string()),
+                        name: tool.name().to_string(),
+                        description: Some(tool.description().to_string()),
                         parameters: Some(serde_json::json!(OpenAiToolFunctionParameters {
                             the_type: "object".to_string(),
                             required,
@@ -239,11 +239,15 @@ impl Client for OpenAIClient {
 
         for m in options.history.iter() {
             chat_history.push(match m {
-                Message::Agent(data, _) => {
-                    crate::api::openai::Message::text(data.trim(), Role::Assistant)
-                }
-                Message::Feedback(data, _) => match data {
-                    ActionOutput::Text(text) => {
+                Message::Agent {
+                    content,
+                    tool_call: _,
+                } => crate::api::openai::Message::text(content.trim(), Role::Assistant),
+                Message::Feedback {
+                    result,
+                    tool_call: _,
+                } => match result {
+                    ToolOutput::Text(text) => {
                         // handles string_too_short cases (NIM)
                         let mut content = text.trim().to_string();
                         if content.is_empty() {
@@ -251,7 +255,7 @@ impl Client for OpenAIClient {
                         }
                         crate::api::openai::Message::text(&content, Role::User)
                     }
-                    ActionOutput::Image { data, mime_type } => {
+                    ToolOutput::Image { data, mime_type } => {
                         crate::api::openai::Message::image(data, mime_type, Role::User)
                     }
                 },
@@ -296,14 +300,14 @@ impl Client for OpenAIClient {
             ("".to_string(), None)
         };
 
-        let mut invocations = vec![];
+        let mut resolved_tool_calls = vec![];
 
         log::debug!("openai.tool_calls={:?}", &tool_calls);
 
         if let Some(calls) = tool_calls {
             for call in calls {
                 let mut attributes = HashMap::new();
-                let mut payload = None;
+                let mut argument = None;
 
                 let map: HashMap<String, serde_json::Value> =
                     serde_json::from_str(&call.function.arguments).map_err(|e| {
@@ -323,29 +327,27 @@ impl Client for OpenAIClient {
 
                     let str_val = content.trim_matches('"').to_string();
                     if name == "payload" {
-                        payload = Some(str_val);
+                        argument = Some(str_val);
                     } else {
                         attributes.insert(name.to_string(), str_val);
                     }
                 }
 
-                let inv = Invocation {
-                    action: call.function.name.to_string(),
-                    attributes: if attributes.is_empty() {
+                resolved_tool_calls.push(ToolCall {
+                    tool_name: call.function.name.to_string(),
+                    named_arguments: if attributes.is_empty() {
                         None
                     } else {
                         Some(attributes)
                     },
-                    payload,
-                };
-
-                invocations.push(inv);
+                    argument,
+                });
             }
         }
 
         Ok(ChatResponse {
             content: content.to_string(),
-            invocations,
+            tool_calls: resolved_tool_calls,
             usage: match resp.usage.prompt_tokens {
                 Some(prompt_tokens) => Some(super::Usage {
                     input_tokens: prompt_tokens,

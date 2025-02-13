@@ -8,7 +8,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use super::{namespaces::ActionOutput, state::SharedState, Invocation};
+use super::{namespaces::ToolOutput, state::SharedState, ToolCall};
 
 mod anthropic;
 mod deepseek;
@@ -61,8 +61,16 @@ impl ChatOptions {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", content = "data", rename_all = "lowercase")]
 pub enum Message {
-    Agent(String, Option<Invocation>),
-    Feedback(ActionOutput, Option<Invocation>),
+    Agent {
+        content: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        tool_call: Option<ToolCall>,
+    },
+    Feedback {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        tool_call: Option<ToolCall>,
+        result: ToolOutput,
+    },
 }
 
 impl Display for Message {
@@ -71,8 +79,16 @@ impl Display for Message {
             f,
             "{}",
             match self {
-                Message::Agent(data, _) => format!("[agent]\n\n{}\n", data),
-                Message::Feedback(data, _) => format!("[feedback]\n\n{}\n", data),
+                Message::Agent {
+                    content,
+                    tool_call: _,
+                } => {
+                    format!("[agent]\n\n{}\n", content)
+                }
+                Message::Feedback {
+                    tool_call: _,
+                    result,
+                } => format!("[feedback]\n\n{}\n", result),
             }
         )
     }
@@ -87,7 +103,7 @@ pub struct Usage {
 
 pub struct ChatResponse {
     pub content: String,
-    pub invocations: Vec<Invocation>,
+    pub tool_calls: Vec<ToolCall>,
     pub usage: Option<Usage>,
 }
 

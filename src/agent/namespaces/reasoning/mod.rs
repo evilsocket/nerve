@@ -3,24 +3,24 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use super::{Tool, ToolOutput, Namespace};
+use super::{Namespace, StorageDescriptor, Tool, ToolOutput};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
-struct Complete {}
+struct Think {}
 
 #[async_trait]
-impl Tool for Complete {
+impl Tool for Think {
     fn name(&self) -> &str {
-        "task_complete"
+        "think"
     }
 
     fn description(&self) -> &str {
-        include_str!("complete.prompt")
+        include_str!("think.prompt")
     }
 
     fn example_payload(&self) -> Option<&str> {
-        Some("a brief report about why the task is complete")
+        Some(include_str!("think_example.prompt"))
     }
 
     async fn run(
@@ -29,44 +29,46 @@ impl Tool for Complete {
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<ToolOutput>> {
-        state.lock().await.on_complete(false, payload)?;
+        state
+            .lock()
+            .await
+            .get_storage_mut("reasoning")?
+            .add_text(payload.unwrap().as_str());
+
         Ok(None)
     }
 }
 
 #[derive(Debug, Default, Clone)]
-struct Impossible {}
+struct ClearThoughts {}
 
 #[async_trait]
-impl Tool for Impossible {
+impl Tool for ClearThoughts {
     fn name(&self) -> &str {
-        "task_impossible"
+        "clear_thoughts"
     }
 
     fn description(&self) -> &str {
-        include_str!("impossible.prompt")
-    }
-
-    fn example_payload(&self) -> Option<&str> {
-        Some("a brief report about why the task is impossible")
+        include_str!("clear_thoughts.prompt")
     }
 
     async fn run(
         &self,
         state: SharedState,
         _: Option<HashMap<String, String>>,
-        payload: Option<String>,
+        _: Option<String>,
     ) -> Result<Option<ToolOutput>> {
-        state.lock().await.on_complete(true, payload)?;
+        state.lock().await.get_storage_mut("reasoning")?.clear();
+
         Ok(None)
     }
 }
 
 pub fn get_namespace() -> Namespace {
-    Namespace::new_default(
-        "Task".to_string(),
+    Namespace::new_non_default(
+        "Reasoning".to_string(),
         include_str!("ns.prompt").to_string(),
-        vec![Box::<Complete>::default(), Box::<Impossible>::default()],
-        None,
+        vec![Box::<Think>::default(), Box::<ClearThoughts>::default()],
+        Some(vec![StorageDescriptor::text("reasoning")]),
     )
 }

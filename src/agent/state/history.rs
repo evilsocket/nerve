@@ -1,22 +1,22 @@
 use anyhow::Result;
 
-use crate::agent::{generator::Message, namespaces::ActionOutput, serialization, Invocation};
+use crate::agent::{generator::Message, namespaces::ToolOutput, serialization, ToolCall};
 
 #[derive(Debug, Clone, Default)]
 pub struct Execution {
     // unparsed response caused an error
     response: Option<String>,
-    // parsed invocation
-    invocation: Option<Invocation>,
+    // parsed tool call
+    tool_call: Option<ToolCall>,
 
-    result: Option<ActionOutput>,
+    result: Option<ToolOutput>,
     error: Option<String>,
 }
 
 impl Execution {
     pub fn with_unparsed_response(response: &str, error: String) -> Self {
         Self {
-            invocation: None,
+            tool_call: None,
             response: Some(response.to_string()),
             result: None,
             error: Some(error),
@@ -25,25 +25,25 @@ impl Execution {
 
     pub fn with_feedback(message: String) -> Self {
         Self {
-            invocation: None,
+            tool_call: None,
             response: None,
             result: Some(message.into()),
             error: None,
         }
     }
 
-    pub fn with_error(invocation: Invocation, error: String) -> Self {
+    pub fn with_error(tool_call: ToolCall, error: String) -> Self {
         Self {
-            invocation: Some(invocation),
+            tool_call: Some(tool_call),
             response: None,
             result: None,
             error: Some(error),
         }
     }
 
-    pub fn with_result(invocation: Invocation, result: Option<ActionOutput>) -> Self {
+    pub fn with_result(tool_call: ToolCall, result: Option<ToolOutput>) -> Self {
         Self {
-            invocation: Some(invocation),
+            tool_call: Some(tool_call),
             response: None,
             result,
             error: None,
@@ -54,24 +54,27 @@ impl Execution {
         let mut messages = vec![];
 
         if let Some(response) = self.response.as_ref() {
-            messages.push(Message::Agent(response.to_string(), None));
-        } else if let Some(invocation) = self.invocation.as_ref() {
-            messages.push(Message::Agent(
-                serializer.serialize_invocation(invocation),
-                Some(invocation.clone()),
-            ));
+            messages.push(Message::Agent {
+                content: response.to_string(),
+                tool_call: None,
+            });
+        } else if let Some(tool_call) = self.tool_call.as_ref() {
+            messages.push(Message::Agent {
+                content: serializer.serialize_tool_call(tool_call),
+                tool_call: Some(tool_call.clone()),
+            });
         }
 
-        messages.push(Message::Feedback(
-            if let Some(err) = &self.error {
-                ActionOutput::text(format!("ERROR: {err}"))
+        messages.push(Message::Feedback {
+            result: if let Some(err) = &self.error {
+                ToolOutput::text(format!("ERROR: {err}"))
             } else if let Some(out) = &self.result {
                 out.clone()
             } else {
-                ActionOutput::text("")
+                ToolOutput::text("")
             },
-            self.invocation.clone(),
-        ));
+            tool_call: self.tool_call.clone(),
+        });
 
         messages
     }

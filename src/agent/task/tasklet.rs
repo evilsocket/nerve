@@ -13,12 +13,12 @@ use serde_trim::*;
 
 use super::Evaluator;
 use super::{variables::interpolate_variables, Task};
-use crate::agent::namespaces::ActionOutput;
+use crate::agent::namespaces::ToolOutput;
 use crate::agent::task::robopages;
 use crate::agent::task::variables::define_variable;
 use crate::agent::{get_user_input, namespaces};
 use crate::agent::{
-    namespaces::{Action, Namespace},
+    namespaces::{Namespace, Tool},
     state::SharedState,
     task::variables::{parse_pre_defined_values, parse_variable_expr},
 };
@@ -30,7 +30,7 @@ fn default_max_shown_output() -> usize {
 }
 
 #[derive(Default, Deserialize, Serialize, Debug, Clone)]
-pub struct TaskletAction {
+pub struct TaskletTool {
     #[serde(skip_deserializing, skip_serializing)]
     working_directory: String,
     #[serde(skip_deserializing, skip_serializing)]
@@ -60,10 +60,10 @@ pub struct TaskletAction {
 
     alias: Option<String>,
     #[serde(skip_deserializing, skip_serializing)]
-    aliased_to: Option<Box<dyn Action>>,
+    aliased_to: Option<Box<dyn Tool>>,
 }
 
-impl TaskletAction {
+impl TaskletTool {
     async fn run_via_robopages(
         &self,
         attributes: Option<HashMap<String, String>>,
@@ -150,9 +150,9 @@ impl TaskletAction {
             return Err(anyhow!("no tool defined"));
         }
 
-        // TODO: each action should have its own variables ... ?
+        // TODO: each tool should have its own variables ... ?
 
-        // define action specific variables
+        // define tool specific variables
         if let Some(payload) = &payload {
             define_variable("PAYLOAD", payload);
         }
@@ -169,7 +169,7 @@ impl TaskletAction {
             // more complex command line
             for part in &parts[1..] {
                 if part.as_bytes()[0] == b'$' {
-                    let (var_name, var_value) = parse_variable_expr(part)?;
+                    let (var_name, var_value) = parse_variable_expr(part).await?;
                     if var_name == "PAYLOAD" {
                         payload_consumed = true;
                     }
@@ -261,7 +261,7 @@ impl TaskletAction {
 }
 
 #[async_trait]
-impl Action for TaskletAction {
+impl Tool for TaskletTool {
     fn name(&self) -> &str {
         &self.name
     }
@@ -310,9 +310,9 @@ impl Action for TaskletAction {
         state: SharedState,
         attributes: Option<HashMap<String, String>>,
         payload: Option<String>,
-    ) -> Result<Option<ActionOutput>> {
-        let action_output = if let Some(aliased_to) = &self.aliased_to {
-            // run as alias of a builtin namespace.action, here we can unwrap as everything is validated earlier
+    ) -> Result<Option<ToolOutput>> {
+        let tool_output = if let Some(aliased_to) = &self.aliased_to {
+            // run as alias of a builtin namespace.tool, here we can unwrap as everything is validated earlier
             aliased_to.run(state.clone(), attributes, payload).await?
         } else {
             let output = if self.robopages_server_address.is_some() {
@@ -332,9 +332,9 @@ impl Action for TaskletAction {
 
             if let Some(output) = output {
                 if let Some(mime_type) = &self.mime_type {
-                    Some(ActionOutput::image(output, mime_type.to_string()))
+                    Some(ToolOutput::image(output, mime_type.to_string()))
                 } else {
-                    Some(ActionOutput::text(output))
+                    Some(ToolOutput::text(output))
                 }
             } else {
                 None
@@ -346,7 +346,7 @@ impl Action for TaskletAction {
 
             state.lock().await.set_variable(
                 store_to.to_string(),
-                if let Some(output) = &action_output {
+                if let Some(output) = &tool_output {
                     output.to_string()
                 } else {
                     "".to_string()
@@ -354,30 +354,33 @@ impl Action for TaskletAction {
             );
         }
 
-        Ok(action_output)
+        Ok(tool_output)
     }
 }
 
 #[derive(Default, Deserialize, Serialize, Debug, Clone)]
-pub struct FunctionGroup {
+pub struct ToolBox {
     #[serde(deserialize_with = "string_trim")]
     pub name: String,
     pub description: Option<String>,
-    pub actions: Vec<TaskletAction>,
+
+    // for backwards compatibility
+    #[serde(alias = "actions")]
+    pub tools: Vec<TaskletTool>,
 }
 
-impl FunctionGroup {
+impl ToolBox {
     fn compile(
         &self,
         working_directory: &str,
         robopages_server_address: Option<String>,
     ) -> Result<Namespace> {
-        let mut actions: Vec<Box<dyn Action>> = vec![];
-        for tasklet_action in &self.actions {
-            let mut action = tasklet_action.clone();
-            action.working_directory = working_directory.to_string();
-            action.robopages_server_address = robopages_server_address.clone();
-            actions.push(Box::new(action));
+        let mut tools: Vec<Box<dyn Tool>> = vec![];
+        for tasklet_tool in &self.tools {
+            let mut tool = tasklet_tool.clone();
+            tool.working_directory = working_directory.to_string();
+            tool.robopages_server_address = robopages_server_address.clone();
+            tools.push(Box::new(tool));
         }
 
         Ok(Namespace::new_default(
@@ -387,7 +390,7 @@ impl FunctionGroup {
             } else {
                 "".to_string()
             },
-            actions,
+            tools,
             None, // TODO: let tasklets declare custom storages?
         ))
     }
@@ -406,17 +409,21 @@ pub struct Tasklet {
     timeout: Option<String>,
     using: Option<Vec<String>>,
     guidance: Option<Vec<String>>,
-    functions: Option<Vec<FunctionGroup>>,
+
+    // for backwards compatibility
+    #[serde(alias = "functions")]
+    tool_box: Option<Vec<ToolBox>>,
+
     evaluator: Option<Evaluator>,
 
     #[serde(skip_deserializing, skip_serializing)]
-    robopages: Vec<FunctionGroup>,
+    robopages: Vec<ToolBox>,
     #[serde(skip_deserializing, skip_serializing)]
     robopages_server_address: Option<String>,
 }
 
 impl Tasklet {
-    pub fn from_path(tasklet_path: &str, defines: &Vec<String>) -> Result<Self> {
+    pub async fn from_path(tasklet_path: &str, defines: &Vec<String>) -> Result<Self> {
         parse_pre_defined_values(defines)?;
 
         let mut tasklet_path = PathBuf::from_str(tasklet_path)?;
@@ -429,22 +436,22 @@ impl Tasklet {
         }
 
         if tasklet_path.is_dir() {
-            Self::from_folder(tasklet_path.to_str().unwrap())
+            Self::from_folder(tasklet_path.to_str().unwrap()).await
         } else {
-            Self::from_yaml_file(tasklet_path.to_str().unwrap())
+            Self::from_yaml_file(tasklet_path.to_str().unwrap()).await
         }
     }
 
-    fn from_folder(path: &str) -> Result<Self> {
+    async fn from_folder(path: &str) -> Result<Self> {
         let filepath = PathBuf::from_str(path);
         if let Err(err) = filepath {
             Err(anyhow!("could not read {path}: {err}"))
         } else {
-            Self::from_yaml_file(filepath.unwrap().join("task.yml").to_str().unwrap())
+            Self::from_yaml_file(filepath.unwrap().join("task.yml").to_str().unwrap()).await
         }
     }
 
-    fn from_yaml_file(filepath: &str) -> Result<Self> {
+    async fn from_yaml_file(filepath: &str) -> Result<Self> {
         let canon = std::fs::canonicalize(filepath);
         if let Err(err) = canon {
             Err(anyhow!("could not read {filepath}: {err}"))
@@ -456,7 +463,16 @@ impl Tasklet {
                 return Err(anyhow!("can't find parent folder of {}", canon.display()));
             };
 
+            // read the tasklet contents
             let yaml = std::fs::read_to_string(&canon)?;
+
+            // preprocess the tasklet contents by interpolating $file and
+            // $http/$https schema variables in order to avoid doing it at
+            // every agent step. Other variables will be left untouched and
+            // resolved at runtime.
+            let yaml = crate::agent::task::variables::preprocess_content(&yaml).await?;
+
+            // parse the yaml
             let mut tasklet: Self = serde_yaml::from_str(&yaml)?;
 
             // used to set the working directory while running the task
@@ -479,26 +495,26 @@ impl Tasklet {
             };
 
             // check any tool definied as alias of a builtin namespace and perform some preprocessing and validation
-            if let Some(functions) = tasklet.functions.as_mut() {
+            if let Some(functions) = tasklet.tool_box.as_mut() {
                 // for each group of functions
                 for group in functions {
-                    // for each action in the group
-                    for action in &mut group.actions {
-                        if let Some(defines) = &action.define {
+                    // for each tool in the group
+                    for tool in &mut group.tools {
+                        if let Some(defines) = &tool.define {
                             for (key, value) in defines {
                                 log::debug!(
                                     "defining variable {} = '{}' for {}.{}",
                                     key,
                                     value,
                                     group.name,
-                                    action.name
+                                    tool.name
                                 );
                                 define_variable(key, value);
                             }
                         }
 
-                        // if the action is a judge, validate the judge file
-                        if let Some(judge) = &action.judge {
+                        // if the tool is a judge, validate the judge file
+                        if let Some(judge) = &tool.judge {
                             let judge_path = if judge.starts_with('/') {
                                 PathBuf::from_str(judge)?
                             } else {
@@ -515,41 +531,39 @@ impl Tasklet {
                                     judge_path.display()
                                 ));
                             }
-                            action.judge_path = Some(judge_path);
+                            tool.judge_path = Some(judge_path);
                         }
 
-                        // if the action has an alias perform some validation
-                        if let Some(alias) = &action.alias {
-                            if action.tool.is_some() {
+                        // if the tool has an alias perform some validation
+                        if let Some(alias) = &tool.alias {
+                            if tool.tool.is_some() {
                                 return Err(anyhow!("can't define both tool and alias"));
                             }
 
-                            let (namespace_name, action_name) = alias
+                            let (namespace_name, tool_name) = alias
                                 .split_once('.')
-                                .ok_or_else(|| anyhow!("invalid alias format '{}', aliases must be provided as 'namespace.action'", alias))?;
+                                .ok_or_else(|| anyhow!("invalid alias format '{}', aliases must be provided as 'namespace.tool'", alias))?;
 
                             if let Some(get_namespace_fn) =
                                 namespaces::NAMESPACES.get(namespace_name)
                             {
                                 let le_namespace = get_namespace_fn();
-                                let le_action = le_namespace
-                                    .actions
-                                    .iter()
-                                    .find(|a| a.name() == action_name);
+                                let le_tool =
+                                    le_namespace.tools.iter().find(|a| a.name() == tool_name);
 
-                                if let Some(le_action) = le_action {
+                                if let Some(le_tool) = le_tool {
                                     log::debug!(
                                         "aliased {}.{} to {}.{}",
                                         group.name,
-                                        action.name,
+                                        tool.name,
                                         le_namespace.name,
-                                        le_action.name()
+                                        le_tool.name()
                                     );
-                                    action.aliased_to = Some(le_action.clone());
+                                    tool.aliased_to = Some(le_tool.clone());
                                 } else {
                                     return Err(anyhow!(
-                                        "action '{}' not found in namespace '{}'",
-                                        action_name,
+                                        "tool '{}' not found in namespace '{}'",
+                                        tool_name,
                                         namespace_name
                                     ));
                                 }
@@ -567,7 +581,7 @@ impl Tasklet {
         }
     }
 
-    pub fn prepare(&mut self, user_prompt: &Option<String>) -> Result<()> {
+    pub async fn prepare(&mut self, user_prompt: &Option<String>) -> Result<()> {
         if self.prompt.is_none() {
             self.prompt = Some(if let Some(prompt) = &user_prompt {
                 // if passed by command line
@@ -579,7 +593,7 @@ impl Tasklet {
         }
 
         // parse any variable
-        self.prompt = Some(interpolate_variables(self.prompt.as_ref().unwrap().trim())?);
+        self.prompt = Some(interpolate_variables(self.prompt.as_ref().unwrap().trim()).await?);
 
         // fix paths
         if let Some(rag) = self.rag.as_mut() {
@@ -602,7 +616,7 @@ impl Tasklet {
         Ok(())
     }
 
-    pub fn set_robopages(&mut self, server_address: &str, robopages: Vec<FunctionGroup>) {
+    pub fn set_robopages(&mut self, server_address: &str, robopages: Vec<ToolBox>) {
         let mut host_port = if server_address.contains("://") {
             server_address.split("://").last().unwrap().to_string()
         } else {
@@ -667,7 +681,7 @@ impl Task for Tasklet {
     fn get_functions(&self) -> Vec<Namespace> {
         let mut groups = vec![];
 
-        if let Some(custom_functions) = self.functions.as_ref() {
+        if let Some(custom_functions) = self.tool_box.as_ref() {
             for group in custom_functions {
                 groups.push(group.compile(&self.folder, None).unwrap());
             }
@@ -684,5 +698,138 @@ impl Task for Tasklet {
         }
 
         groups
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::agent::task::variables::define_variable;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[tokio::test]
+    async fn test_tasklet_preprocessing_should_not_interpolate_variables() -> Result<()> {
+        let temp_dir = tempdir()?;
+        let task_dir = temp_dir.path().join("test_task");
+        fs::create_dir(&task_dir)?;
+
+        // Create a task.yml with variables
+        let task_yaml = r#"
+system_prompt: "Inline variables $VAR1"
+prompt: "Should not be preprocessed $VAR2"
+"#;
+        fs::write(task_dir.join("task.yml"), task_yaml)?;
+
+        // Define variables before loading
+        define_variable("VAR1", "value1");
+        define_variable("VAR2", "value2");
+
+        let tasklet = Tasklet::from_yaml_file(task_dir.join("task.yml").to_str().unwrap()).await?;
+
+        assert_eq!(tasklet.to_system_prompt()?, "Inline variables $VAR1");
+        assert_eq!(tasklet.to_prompt()?, "Should not be preprocessed $VAR2");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_tasklet_preprocessing_should_interpolate_file_variables() -> Result<()> {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let task_path = temp_dir.path().join("task.yml");
+
+        let file_path = temp_dir.path().join("test.txt");
+        std::fs::write(&file_path, "hello from file").unwrap();
+
+        // Create task.yml referencing the file
+        let task_yaml = format!(
+            r#"
+system_prompt: "System prompt with $file://{}"
+prompt: "Regular prompt"
+"#,
+            file_path.display()
+        );
+        fs::write(&task_path, &task_yaml)?;
+
+        let tasklet = Tasklet::from_yaml_file(task_path.to_str().unwrap()).await?;
+
+        assert_eq!(
+            tasklet.to_system_prompt()?,
+            "System prompt with hello from file"
+        );
+        assert_eq!(tasklet.to_prompt()?, "Regular prompt");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_tasklet_preprocessing_should_interpolate_missing_file_variables_with_default(
+    ) -> Result<()> {
+        let temp_dir = tempdir()?;
+        let task_dir = temp_dir.path().join("test_task");
+        fs::create_dir(&task_dir)?;
+
+        // Create task.yml referencing non-existent file with default
+        let task_yaml = r#"
+system_prompt: "System prompt with $file:///nonexistent.txt||fallback"
+prompt: "Regular prompt"
+"#;
+        fs::write(task_dir.join("task.yml"), task_yaml)?;
+
+        let tasklet = Tasklet::from_yaml_file(task_dir.join("task.yml").to_str().unwrap()).await?;
+
+        assert_eq!(tasklet.to_system_prompt()?, "System prompt with fallback");
+        assert_eq!(tasklet.to_prompt()?, "Regular prompt");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_tasklet_preprocessing_should_interpolate_tool_box_from_file() -> Result<()> {
+        let temp_dir = tempdir()?;
+        let task_dir = temp_dir.path().join("test_task");
+        fs::create_dir(&task_dir)?;
+
+        // Create a file containing the entire tool_box definition
+        let tool_box_file = task_dir.join("tool_box.yml");
+        fs::write(
+            &tool_box_file,
+            r#"
+- name: test_group_1
+  tools:
+    - name: tool_1
+      description: "First test tool"
+- name: test_group_2
+  tools:
+    - name: tool_2
+      description: "Second test tool"
+"#,
+        )?;
+
+        // Create task.yml referencing the tool box file
+        let task_yaml = format!(
+            r#"
+system_prompt: "System prompt"
+tool_box: $file://{}
+"#,
+            tool_box_file.display()
+        );
+        fs::write(task_dir.join("task.yml"), &task_yaml)?;
+
+        let tasklet = Tasklet::from_yaml_file(task_dir.join("task.yml").to_str().unwrap()).await?;
+
+        // Verify the tool_box was interpolated correctly
+        let tool_box = tasklet.tool_box.unwrap();
+        assert_eq!(tool_box.len(), 2);
+
+        assert_eq!(tool_box[0].name, "test_group_1");
+        assert_eq!(tool_box[0].tools[0].name, "tool_1");
+        assert_eq!(tool_box[0].tools[0].description, "First test tool");
+
+        assert_eq!(tool_box[1].name, "test_group_2");
+        assert_eq!(tool_box[1].tools[0].name, "tool_2");
+        assert_eq!(tool_box[1].tools[0].description, "Second test tool");
+
+        Ok(())
     }
 }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    agent::namespaces::ActionOutput,
+    agent::namespaces::ToolOutput,
     api::ollama::{
         generation::{
             chat::{
@@ -20,7 +20,7 @@ use crate::{
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::agent::{state::SharedState, Invocation};
+use crate::agent::{state::SharedState, ToolCall};
 
 use super::{ChatOptions, ChatResponse, Client, Message, SupportedFeatures};
 
@@ -103,8 +103,6 @@ impl Client for OllamaClient {
         state: SharedState,
         options: &ChatOptions,
     ) -> anyhow::Result<ChatResponse> {
-        // TODO: images for multimodal (see todo for screenshot action)
-
         // build chat history:
         //    - system prompt
         //    - user prompt
@@ -122,10 +120,16 @@ impl Client for OllamaClient {
 
         for m in options.history.iter() {
             chat_history.push(match m {
-                Message::Agent(data, _) => ChatMessage::assistant(data.trim().to_string()),
-                Message::Feedback(data, _) => match data {
-                    ActionOutput::Text(text) => ChatMessage::user(text.to_string()),
-                    ActionOutput::Image { data, mime_type: _ } => ChatMessage::user("".to_string())
+                Message::Agent {
+                    content,
+                    tool_call: _,
+                } => ChatMessage::assistant(content.trim().to_string()),
+                Message::Feedback {
+                    result,
+                    tool_call: _,
+                } => match result {
+                    ToolOutput::Text(text) => ChatMessage::user(text.to_string()),
+                    ToolOutput::Image { data, mime_type: _ } => ChatMessage::user("".to_string())
                         .with_images(vec![Image::from_base64(data)]),
                 },
             });
@@ -136,11 +140,11 @@ impl Client for OllamaClient {
 
         if state.lock().await.use_native_tools_format {
             for group in state.lock().await.get_namespaces() {
-                for action in &group.actions {
+                for tool in &group.tools {
                     let mut required = vec![];
                     let mut properties = HashMap::new();
 
-                    if let Some(example) = action.example_payload() {
+                    if let Some(example) = tool.example_payload() {
                         required.push("payload".to_string());
                         properties.insert(
                             "payload".to_string(),
@@ -155,7 +159,7 @@ impl Client for OllamaClient {
                         );
                     }
 
-                    if let Some(attrs) = action.example_attributes() {
+                    if let Some(attrs) = tool.example_attributes() {
                         for name in attrs.keys() {
                             required.push(name.to_string());
                             properties.insert(
@@ -170,8 +174,8 @@ impl Client for OllamaClient {
                     }
 
                     let function = ToolFunction {
-                        name: action.name().to_string(),
-                        description: action.description().to_string(),
+                        name: tool.name().to_string(),
+                        description: tool.description().to_string(),
                         parameters: ToolFunctionParameters {
                             the_type: "object".to_string(),
                             required,
@@ -202,14 +206,14 @@ impl Client for OllamaClient {
 
         if let Some(msg) = res.message {
             let content = msg.content.to_owned();
-            let mut invocations = vec![];
+            let mut resolved_tool_calls = vec![];
 
             if let Some(tool_calls) = msg.tool_calls.as_ref() {
                 log::debug!("ollama.tool.calls = {:?}", tool_calls);
 
                 for call in tool_calls {
                     let mut attributes = HashMap::new();
-                    let mut payload = None;
+                    let mut argument = None;
 
                     if let Some(args) = call.function.arguments.as_ref() {
                         for (name, value) in args {
@@ -220,31 +224,29 @@ impl Client for OllamaClient {
 
                             let str_val = content.trim_matches('"').to_string();
                             if name == "payload" {
-                                payload = Some(str_val);
+                                argument = Some(str_val);
                             } else {
                                 attributes.insert(name.to_string(), str_val);
                             }
                         }
                     }
 
-                    let inv = Invocation {
-                        action: call.function.name.to_string(),
-                        attributes: if attributes.is_empty() {
+                    resolved_tool_calls.push(ToolCall {
+                        tool_name: call.function.name.to_string(),
+                        named_arguments: if attributes.is_empty() {
                             None
                         } else {
                             Some(attributes)
                         },
-                        payload,
-                    };
-
-                    invocations.push(inv);
+                        argument,
+                    });
                 }
             }
 
-            log::debug!("ollama.invocations = {:?}", &invocations);
+            log::debug!("ollama.tool_calls = {:?}", &resolved_tool_calls);
             Ok(ChatResponse {
                 content,
-                invocations,
+                tool_calls: resolved_tool_calls,
                 usage: res.final_data.map(|final_data| super::Usage {
                     input_tokens: final_data.prompt_eval_count as u32,
                     output_tokens: final_data.eval_count as u32,
@@ -254,7 +256,7 @@ impl Client for OllamaClient {
             log::warn!("model returned an empty message.");
             Ok(ChatResponse {
                 content: "".to_string(),
-                invocations: vec![],
+                tool_calls: vec![],
                 usage: res.final_data.map(|final_data| super::Usage {
                     input_tokens: final_data.prompt_eval_count as u32,
                     output_tokens: final_data.eval_count as u32,

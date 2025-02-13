@@ -1,42 +1,42 @@
 use crate::agent::{
-    namespaces::Action,
+    namespaces::Tool,
     state::storage::{Storage, StorageType, CURRENT_TAG, PREVIOUS_TAG},
-    Invocation,
+    ToolCall,
 };
 
-pub fn invocation(inv: &Invocation) -> String {
-    let mut xml = format!("<{}", inv.action);
-    if let Some(attrs) = &inv.attributes {
+pub fn tool_call(tool_call: &ToolCall) -> String {
+    let mut xml = format!("<{}", tool_call.tool_name);
+    if let Some(attrs) = &tool_call.named_arguments {
         for (key, value) in attrs {
             xml += &format!(" {key}=\"{value}\"");
         }
     }
     xml += &format!(
         ">{}</{}>",
-        if let Some(data) = inv.payload.as_ref() {
+        if let Some(data) = tool_call.argument.as_ref() {
             data
         } else {
             ""
         },
-        inv.action
+        tool_call.tool_name
     );
 
     xml
 }
 
 #[allow(clippy::borrowed_box)]
-pub fn action(action: &Box<dyn Action>) -> String {
-    let mut xml = format!("`<{}", action.name());
+pub fn tool(tool: &Box<dyn Tool>) -> String {
+    let mut xml = format!("`<{}", tool.name());
 
-    if let Some(attrs) = action.example_attributes() {
+    if let Some(attrs) = tool.example_attributes() {
         for (name, example_value) in &attrs {
             xml += &format!(" {}=\"{}\"", name, example_value);
         }
     }
 
-    if let Some(payload) = action.example_payload() {
+    if let Some(payload) = tool.example_payload() {
         // TODO: escape payload?
-        xml += &format!(">{}</{}>`", payload, action.name());
+        xml += &format!(">{}</{}>`", payload, tool.name());
     } else {
         xml += "/>`";
     }
@@ -50,6 +50,13 @@ pub fn storage(storage: &Storage) -> String {
     }
 
     match storage.get_type() {
+        StorageType::Text => {
+            if let Some(text) = storage.get_text() {
+                format!("## Reasoning\n\n{}\n", text)
+            } else {
+                "".to_string()
+            }
+        }
         StorageType::Time => {
             let started_at = storage.get_started_at();
 

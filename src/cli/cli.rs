@@ -63,7 +63,7 @@ pub struct Args {
     /// Record every event of the session to a JSONL file.
     #[arg(long)]
     pub record_to: Option<String>,
-    /// Print the documentation of the available action namespaces.
+    /// Print the documentation of the available tool namespaces.
     #[arg(long)]
     pub generate_doc: bool,
 }

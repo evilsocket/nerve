@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    agent::namespaces::ActionOutput,
+    agent::namespaces::ToolOutput,
     api::groq::completion::{
         client::Groq,
         message::{ImageContent, ImageUrl},
@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use crate::agent::{
     generator::{ChatResponse, Message},
     state::SharedState,
-    Invocation,
+    ToolCall,
 };
 
 use super::{ChatOptions, Client, SupportedFeatures};
@@ -153,29 +153,29 @@ impl Client for GroqClient {
 
         for m in options.history.iter() {
             chat_history.push(match m {
-                Message::Agent(data, invocation) => {
+                Message::Agent { content, tool_call } => {
                     let mut tool_call_id = None;
-                    if let Some(inv) = invocation {
-                        tool_call_id = Some(format!("{}-{}", inv.action, call_idx));
+                    if let Some(inv) = tool_call {
+                        tool_call_id = Some(format!("{}-{}", inv.tool_name, call_idx));
                         call_idx += 1;
                     }
 
                     crate::api::groq::completion::message::Message::AssistantMessage {
                         role: Some("assistant".to_string()),
-                        content: Some(data.trim().to_string()),
+                        content: Some(content.trim().to_string()),
                         name: None,
                         tool_call_id,
                         tool_calls: None,
                     }
                 }
-                Message::Feedback(data, invocation) => {
+                Message::Feedback { result, tool_call } => {
                     let mut tool_call_id: Option<String> = None;
-                    if let Some(inv) = invocation {
-                        tool_call_id = Some(format!("{}-{}", inv.action, call_idx));
+                    if let Some(inv) = tool_call {
+                        tool_call_id = Some(format!("{}-{}", inv.tool_name, call_idx));
                     }
                     if tool_call_id.is_some() {
-                        match data {
-                            ActionOutput::Text(text) => {
+                        match result {
+                            ToolOutput::Text(text) => {
                                 crate::api::groq::completion::message::Message::ToolMessage {
                                     role: Some("tool".to_string()),
                                     content: Some(text.to_string()),
@@ -184,7 +184,7 @@ impl Client for GroqClient {
                                     image_content: None,
                                 }
                             }
-                            ActionOutput::Image { data, mime_type } => {
+                            ToolOutput::Image { data, mime_type } => {
                                 // can't use images for ToolMessage
                                 crate::api::groq::completion::message::Message::UserMessage {
                                     role: Some("user".to_string()),
@@ -207,8 +207,8 @@ impl Client for GroqClient {
                             }
                         }
                     } else {
-                        match data {
-                            ActionOutput::Text(text) => {
+                        match result {
+                            ToolOutput::Text(text) => {
                                 crate::api::groq::completion::message::Message::UserMessage {
                                     role: Some("user".to_string()),
                                     content: Some(text.to_string()),
@@ -217,7 +217,7 @@ impl Client for GroqClient {
                                     image_content: None,
                                 }
                             }
-                            ActionOutput::Image { data, mime_type } => {
+                            ToolOutput::Image { data, mime_type } => {
                                 crate::api::groq::completion::message::Message::UserMessage {
                                     role: Some("user".to_string()),
                                     content: None,
@@ -249,11 +249,11 @@ impl Client for GroqClient {
             let mut tools = vec![];
 
             for group in state.lock().await.get_namespaces() {
-                for action in &group.actions {
+                for tool in &group.tools {
                     let mut required = vec![];
                     let mut properties = HashMap::new();
 
-                    if let Some(example) = action.example_payload() {
+                    if let Some(example) = tool.example_payload() {
                         required.push("payload".to_string());
                         properties.insert(
                             "payload".to_string(),
@@ -267,7 +267,7 @@ impl Client for GroqClient {
                         );
                     }
 
-                    if let Some(attrs) = action.example_attributes() {
+                    if let Some(attrs) = tool.example_attributes() {
                         for name in attrs.keys() {
                             required.push(name.to_string());
                             properties.insert(
@@ -281,8 +281,8 @@ impl Client for GroqClient {
                     }
 
                     let function = Function {
-                        name: Some(action.name().to_string()),
-                        description: Some(action.description().to_string()),
+                        name: Some(tool.name().to_string()),
+                        description: Some(tool.description().to_string()),
                         parameters: Some(serde_json::json!(GroqFunctionParameters {
                             the_type: "object".to_string(),
                             required,
@@ -334,12 +334,12 @@ impl Client for GroqClient {
         log::debug!("groq.choice.message={:?}", &choice.message);
 
         let content = choice.message.content.unwrap_or_default().to_string();
-        let mut invocations = vec![];
+        let mut tool_calls = vec![];
 
         if let Some(calls) = choice.message.tool_calls {
             for call in calls {
                 let mut attributes = HashMap::new();
-                let mut payload = None;
+                let mut argument = None;
 
                 if let Some(args) = call.function.arguments.as_ref() {
                     let map: HashMap<String, serde_json::Value> = serde_json::from_str(args)?;
@@ -352,30 +352,28 @@ impl Client for GroqClient {
 
                         let str_val = content.trim_matches('"').to_string();
                         if name == "payload" {
-                            payload = Some(str_val);
+                            argument = Some(str_val);
                         } else {
                             attributes.insert(name.to_string(), str_val);
                         }
                     }
                 }
 
-                let inv = Invocation {
-                    action: call.function.name.unwrap_or_default().to_string(),
-                    attributes: if attributes.is_empty() {
+                tool_calls.push(ToolCall {
+                    tool_name: call.function.name.unwrap_or_default().to_string(),
+                    named_arguments: if attributes.is_empty() {
                         None
                     } else {
                         Some(attributes)
                     },
-                    payload,
-                };
-
-                invocations.push(inv);
+                    argument,
+                });
             }
         }
 
         Ok(ChatResponse {
             content,
-            invocations,
+            tool_calls,
             usage: Some(super::Usage {
                 input_tokens: response.usage.prompt_tokens,
                 output_tokens: response.usage.completion_tokens,

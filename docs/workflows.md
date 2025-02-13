@@ -46,9 +46,9 @@ prompt: prepare a list of ingredients for $food
 guidance:
   - Once you have made a list of ingredients, use the create_list_of_ingredients tool to confirm the decision.
 
-functions:
+tool_box:
   - name: Tools
-    actions:
+    tools:
       - name: create_list_of_ingredients
         description: "To provide the ingredients one per line as an organized list:"
         store_to: ingredients
@@ -75,9 +75,9 @@ guidance:
   - Use the describe_preparation_steps tool to describe each step in the preparation.
   - Once you have described each step in the preparation of the pie set your task as complete.
 
-functions:
+tool_box:
   - name: Tools
-    actions:
+    tools:
       - name: describe_preparation_steps
         description: "To provide the preparation steps one per line as an organized list:"
         store_to: steps
@@ -108,9 +108,9 @@ prompt: >
 guidance:
   - Once you have made an estimation, use the estimate_time tool to confirm the decision.
 
-functions:
+tool_box:
   - name: Tools
-    actions:
+    tools:
       - name: estimate_time
         description: "To provide the time it will take to prepare the food:"
         store_to: preparation_time
@@ -142,9 +142,9 @@ prompt: >
 guidance:
   - Once you have completed the task, use the rewrite tool to confirm the decision.
 
-functions:
+tool_box:
   - name: Tools
-    actions:
+    tools:
       - name: rewrite
         description: "To confirm your version of the recipe:"
         store_to: report

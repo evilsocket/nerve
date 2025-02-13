@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::agent::namespaces::ActionOutput;
+use crate::agent::namespaces::ToolOutput;
 
 use super::Message;
 
@@ -47,11 +47,11 @@ impl std::fmt::Display for ConversationWindow {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct ChatHistory {
     // full list of messages as is
-    conversation: Vec<Message>,
+    messages: Vec<Message>,
     // history to be sent to the model
-    history: Vec<Message>,
+    agent_window: Vec<Message>,
     // strategy used to build the history for the conversation
-    window: ConversationWindow,
+    conversation_window_strategy: ConversationWindow,
 }
 
 impl ChatHistory {
@@ -71,26 +71,27 @@ impl ChatHistory {
                 // get the index of the last Feedback message
                 let last_feedback_idx = conversation
                     .iter()
-                    .rposition(|m| matches!(m, Message::Feedback(..)))
+                    .rposition(|m| matches!(m, Message::Feedback { .. }))
                     .unwrap_or(0);
 
                 // all messages before the last feedback message get compressed
                 for m in conversation[..last_feedback_idx].iter() {
                     summarized.push(match m {
-                        Message::Agent(content, invocation) => {
-                            Message::Agent(content.clone(), invocation.clone())
-                        }
-                        Message::Feedback(content, invocation) => {
+                        Message::Agent { content, tool_call } => Message::Agent {
+                            content: content.clone(),
+                            tool_call: tool_call.clone(),
+                        },
+                        Message::Feedback { tool_call, result } => {
                             // TODO: find a more explicative message possibly hinting at the memory namespace
                             let compressed = "<output removed>";
-                            Message::Feedback(
-                                if compressed.len() < content.to_string().len() {
-                                    ActionOutput::text(compressed.to_string())
+                            Message::Feedback {
+                                tool_call: tool_call.clone(),
+                                result: if compressed.len() < result.to_string().len() {
+                                    ToolOutput::text(compressed.to_string())
                                 } else {
-                                    content.clone()
+                                    result.clone()
                                 },
-                                invocation.clone(),
-                            )
+                            }
                         }
                     });
                 }
@@ -104,20 +105,20 @@ impl ChatHistory {
         };
 
         Self {
-            window,
-            conversation,
-            history,
+            conversation_window_strategy: window,
+            messages: conversation,
+            agent_window: history,
         }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &Message> {
-        self.history.iter()
+        self.agent_window.iter()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::agent::Invocation;
+    use crate::agent::ToolCall;
 
     use super::*;
 
@@ -175,198 +176,381 @@ mod tests {
     #[test]
     fn test_full_strategy_empty() {
         let history = ChatHistory::create(vec![], ConversationWindow::Full);
-        assert_eq!(history.history.len(), 0);
+        assert_eq!(history.agent_window.len(), 0);
     }
 
     #[test]
     fn test_full_strategy_single_agent() {
-        let conv = vec![Message::Agent("test".to_string(), None)];
+        let conv = vec![Message::Agent {
+            content: "test".to_string(),
+            tool_call: None,
+        }];
         let history = ChatHistory::create(conv.clone(), ConversationWindow::Full);
-        assert_eq!(history.history, conv);
+        assert_eq!(history.agent_window, conv);
     }
 
     #[test]
     fn test_full_strategy_agent_feedback() {
         let conv = vec![
-            Message::Agent("test1".to_string(), None),
-            Message::Feedback(ActionOutput::text("test2"), None),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("test2"),
+            },
         ];
         let history = ChatHistory::create(conv.clone(), ConversationWindow::Full);
-        assert_eq!(history.history, conv);
+        assert_eq!(history.agent_window, conv);
     }
 
     #[test]
     fn test_full_strategy_multiple_messages() {
         let conv = vec![
-            Message::Agent("test1".to_string(), None),
-            Message::Feedback(ActionOutput::text("test2"), None),
-            Message::Agent("test3".to_string(), None),
-            Message::Feedback(ActionOutput::text("test4"), None),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                result: ToolOutput::text("test2"),
+                tool_call: None,
+            },
+            Message::Agent {
+                content: "test3".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                result: ToolOutput::text("test4"),
+                tool_call: None,
+            },
         ];
         let history = ChatHistory::create(conv.clone(), ConversationWindow::Full);
-        assert_eq!(history.history, conv);
+        assert_eq!(history.agent_window, conv);
     }
 
     #[test]
     fn test_summary_strategy_empty() {
         let history = ChatHistory::create(vec![], ConversationWindow::Summary);
-        assert_eq!(history.history.len(), 0);
+        assert_eq!(history.agent_window.len(), 0);
     }
 
     #[test]
     fn test_summary_strategy_single_agent() {
-        let conv = vec![Message::Agent("test".to_string(), None)];
+        let conv = vec![Message::Agent {
+            content: "test".to_string(),
+            tool_call: None,
+        }];
         let history = ChatHistory::create(conv.clone(), ConversationWindow::Summary);
-        assert_eq!(history.history, conv);
+        assert_eq!(history.agent_window, conv);
     }
 
     #[test]
     fn test_summary_strategy_agent_feedback() {
         let conv = vec![
-            Message::Agent("test1".to_string(), None),
-            Message::Feedback(ActionOutput::text("test2"), None),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("test2"),
+            },
         ];
         let history = ChatHistory::create(conv.clone(), ConversationWindow::Summary);
-        assert_eq!(history.history, conv);
+        assert_eq!(history.agent_window, conv);
     }
 
     #[test]
     fn test_summary_strategy_compresses_old_feedback() {
         let conv = vec![
-            Message::Agent("test1".to_string(), None),
-            Message::Feedback(
-                ActionOutput::text("long feedback that should be compressed"),
-                None,
-            ),
-            Message::Agent("test3".to_string(), None),
-            Message::Feedback(
-                ActionOutput::text("final very very very very long feedback"),
-                None,
-            ),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("long feedback that should be compressed"),
+            },
+            Message::Agent {
+                content: "test3".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("final very very very very long feedback"),
+            },
         ];
 
         let expected = vec![
-            Message::Agent("test1".to_string(), None),
-            Message::Feedback(ActionOutput::text("<output removed>"), None),
-            Message::Agent("test3".to_string(), None),
-            Message::Feedback(
-                ActionOutput::text("final very very very very long feedback"),
-                None,
-            ),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("<output removed>"),
+            },
+            Message::Agent {
+                content: "test3".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("final very very very very long feedback"),
+            },
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::Summary);
-        assert_eq!(history.history, expected);
+        assert_eq!(history.agent_window, expected);
     }
 
     #[test]
     fn test_summary_strategy_keeps_short_feedback() {
         let conv = vec![
-            Message::Agent("test1".to_string(), None),
-            Message::Feedback(ActionOutput::text("ok"), None), // shorter than "<output removed>"
-            Message::Agent("test3".to_string(), None),
-            Message::Feedback(ActionOutput::text("final"), None),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("ok"),
+            },
+            Message::Agent {
+                content: "test3".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("final"),
+            },
         ];
 
         let expected = vec![
-            Message::Agent("test1".to_string(), None),
-            Message::Feedback(ActionOutput::text("ok"), None),
-            Message::Agent("test3".to_string(), None),
-            Message::Feedback(ActionOutput::text("final"), None),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("ok"),
+            },
+            Message::Agent {
+                content: "test3".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("final"),
+            },
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::Summary);
-        assert_eq!(history.history, expected);
+        assert_eq!(history.agent_window, expected);
     }
 
     #[test]
-    fn test_summary_strategy_preserves_invocations() {
-        let invocation = Some(Invocation::new("test".to_string(), None, None));
+    fn test_summary_strategy_preserves_tool_calls() {
+        let tool_call = Some(ToolCall::new("test".to_string(), None, None));
         let conv = vec![
-            Message::Agent("test1".to_string(), invocation.clone()),
-            Message::Feedback(
-                ActionOutput::text("very very very very long feedback"),
-                invocation.clone(),
-            ),
-            Message::Agent("test3".to_string(), invocation.clone()),
-            Message::Feedback(ActionOutput::text("final"), invocation.clone()),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: tool_call.clone(),
+            },
+            Message::Feedback {
+                tool_call: tool_call.clone(),
+                result: ToolOutput::text("very very very very long feedback"),
+            },
+            Message::Agent {
+                content: "test3".to_string(),
+                tool_call: tool_call.clone(),
+            },
+            Message::Feedback {
+                tool_call: tool_call.clone(),
+                result: ToolOutput::text("final"),
+            },
         ];
 
         let expected = vec![
-            Message::Agent("test1".to_string(), invocation.clone()),
-            Message::Feedback(ActionOutput::text("<output removed>"), invocation.clone()),
-            Message::Agent("test3".to_string(), invocation.clone()),
-            Message::Feedback(ActionOutput::text("final"), invocation.clone()),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: tool_call.clone(),
+            },
+            Message::Feedback {
+                tool_call: tool_call.clone(),
+                result: ToolOutput::text("<output removed>"),
+            },
+            Message::Agent {
+                content: "test3".to_string(),
+                tool_call: tool_call.clone(),
+            },
+            Message::Feedback {
+                tool_call: tool_call.clone(),
+                result: ToolOutput::text("final"),
+            },
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::Summary);
-        assert_eq!(history.history, expected);
+        assert_eq!(history.agent_window, expected);
     }
 
     #[test]
     fn test_last_n_strategy() {
         let conv = vec![
-            Message::Agent("test1".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback1"), None),
-            Message::Agent("test2".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback2"), None),
-            Message::Agent("test3".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback3"), None),
-            Message::Agent("test4".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback4"), None),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback1"),
+            },
+            Message::Agent {
+                content: "test2".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback2"),
+            },
+            Message::Agent {
+                content: "test3".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback3"),
+            },
+            Message::Agent {
+                content: "test4".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback4"),
+            },
         ];
 
         let expected = vec![
-            Message::Agent("test3".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback3"), None),
-            Message::Agent("test4".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback4"), None),
+            Message::Agent {
+                content: "test3".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback3"),
+            },
+            Message::Agent {
+                content: "test4".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback4"),
+            },
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::LastN(4));
-        assert_eq!(history.history, expected);
+        assert_eq!(history.agent_window, expected);
     }
 
     #[test]
     fn test_last_n_strategy_with_small_conv() {
         let conv = vec![
-            Message::Agent("test1".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback1"), None),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback1"),
+            },
         ];
 
         let expected = vec![
-            Message::Agent("test1".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback1"), None),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback1"),
+            },
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::LastN(10));
-        assert_eq!(history.history, expected);
+        assert_eq!(history.agent_window, expected);
     }
 
     #[test]
     fn test_last_n_strategy_with_just_enough() {
         let conv = vec![
-            Message::Agent("test1".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback1"), None),
-            Message::Agent("test2".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback2"), None),
-            Message::Agent("test3".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback3"), None),
-            Message::Agent("test4".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback4"), None),
+            Message::Agent {
+                content: "test1".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback1"),
+            },
+            Message::Agent {
+                content: "test2".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback2"),
+            },
+            Message::Agent {
+                content: "test3".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback3"),
+            },
+            Message::Agent {
+                content: "test4".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback4"),
+            },
         ];
 
         let expected = vec![
-            Message::Feedback(ActionOutput::text("feedback1"), None),
-            Message::Agent("test2".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback2"), None),
-            Message::Agent("test3".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback3"), None),
-            Message::Agent("test4".to_string(), None),
-            Message::Feedback(ActionOutput::text("feedback4"), None),
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback1"),
+            },
+            Message::Agent {
+                content: "test2".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback2"),
+            },
+            Message::Agent {
+                content: "test3".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback3"),
+            },
+            Message::Agent {
+                content: "test4".to_string(),
+                tool_call: None,
+            },
+            Message::Feedback {
+                tool_call: None,
+                result: ToolOutput::text("feedback4"),
+            },
         ];
 
         let history = ChatHistory::create(conv, ConversationWindow::LastN(7));
-        assert_eq!(history.history, expected);
+        assert_eq!(history.agent_window, expected);
     }
 }

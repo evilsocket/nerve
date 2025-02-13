@@ -2,8 +2,6 @@
 import json
 import sys
 
-# evaluation ported from https://github.com/VictorTaelin/ab_challenge_eval/blob/main/main.mjs
-
 HA = "#A"
 HB = "#B"
 AH = "A#"
@@ -11,99 +9,101 @@ BH = "B#"
 
 TOKENS = [HA, HB, AH, BH]
 
-
-def reduce(xs):
-    ys = []
-    rwts = 0
-    tot_len = len(xs)
-    i = 0
-
-    while i < tot_len:
-        next = None if i == tot_len - 1 else xs[i + 1]
-
-        if xs[i] == AH and next == HB:
-            # A# #B ... becomes ... #B A#
-            ys.append(HB)
-            ys.append(AH)
-            i += 2
-            rwts += 1
-        elif xs[i] == BH and next == HA:
-            # B# #A ... becomes ... #A B#
-            ys.append(HA)
-            ys.append(BH)
-            i += 2
-            rwts += 1
-        elif xs[i] == AH and next == HA:
-            # A# #A ... becomes ... nothing
-            i += 2
-            rwts += 1
-        elif xs[i] == BH and next == HB:
-            # B# #B ... becomes ... nothing
-            i += 2
-            rwts += 1
-        else:
-            ys.append(xs[i])
-            i += 1
-
-    return [ys, rwts]
+RULES = (
+    # A# #A ... becomes ... nothing
+    ((AH, HA), None),
+    # A# #B ... becomes ... #B A#
+    ((AH, HB), (HB, AH)),
+    # B# #A ... becomes ... #A B#
+    ((BH, HA), (HA, BH)),
+    # B# #B ... becomes ... nothing
+    ((BH, HB), None),
+)
 
 
-def solve(xs):
-    steps = 0
-    term = xs
-    work = True
-
-    while True:
-        term, work = reduce(term)
-        if work > 0:
-            steps += work
-        else:
-            break
-
-    return [term, steps]
-
-
-def get_solution(message):
+def get_solution_from_message(message):
     if (
         message["type"] == "agent"
-        and "data" in message
-        and message["data"] is not None
-        and message["data"][1] is not None
-        and message["data"][1]["action"] == "solution"
-        and message["data"][1]["payload"] is not None
+        and "tool_call" in message["data"]
+        and "argument" in message["data"]["tool_call"]
+        and message["data"]["tool_call"] is not None
+        and message["data"]["tool_call"]["tool_name"] == "provide_solution"
     ):
-        return message["data"][1]["payload"].strip().split(" ")
+        return message["data"]["tool_call"]["argument"].strip().split(" ")
 
     return None
+
+
+def get_solution_from_conversation(state):
+    for message in reversed(state["chat"]["history"]["messages"]):
+        solution = get_solution_from_message(message)
+        if solution is not None:
+            return solution
+
+    return None
+
+
+def find_subsequence(arr, target_tuple):
+    target = list(target_tuple)
+    target_len = len(target)
+
+    for i in range(len(arr) - target_len + 1):
+        if arr[i : i + target_len] == target:
+            return i
+    return None
+
+
+def solve(program):
+    while True:
+        rule_found = False
+        # find first matching rule
+        for source, target in RULES:
+            idx = find_subsequence(program, source)
+            if idx is not None:
+                rule_found = True
+                # reduce program by applying substitution
+                if target is None:
+                    program = program[:idx] + program[idx + len(source) :]
+                else:
+                    program = (
+                        program[:idx] + list(target) + program[idx + len(source) :]
+                    )
+                break
+
+        # if program can't be further reduced
+        if not rule_found:
+            break
+
+    return program
 
 
 if __name__ == "__main__":
     raw = sys.stdin.read()
     state = json.loads(raw)
 
-    program = state["globals"]["program"].strip().split(" ")
+    raw_program_string = state["globals"]["program"].strip()
+    program = raw_program_string.split(" ")
     if any(token not in TOKENS for token in program):
         print("Invalid program")
         exit(1)
 
-    actual, _ = solve(program)
-    solution = None
+    solution = solve(program)
 
-    # find the most recent solution in the chat history
-    for message in reversed(state["chat"]["history"]["conversation"]):
-        solution = get_solution(message)
-        if solution is not None:
-            if actual == solution:
-                # exit code 42 is a special exit code that indicates the solution is correct
-                exit(42)
-            elif any(token not in TOKENS for token in solution):
-                # anything that goes to stdout will be added to the chat history, as feedback to the model
-                print(
-                    "Invalid solution, provide a single string of tokens separated by spaceswith the solution"
-                )
-            else:
-                print("Solution is incorrect")
-            break
+    with open("spoilers.txt", "w+t") as f:
+        f.write(f"program: {raw_program_string}\n")
+        f.write(f"solution: {solution}\n")
 
-    if solution is None:
+    agent_solution = get_solution_from_conversation(state)
+
+    if agent_solution is None:
         print("No solution provided")
+    elif any(token not in TOKENS for token in agent_solution):
+        # anything that goes to stdout will be added to the chat history, as feedback to the model
+        print(
+            f"{agent_solution} is an invalid solution: provide a single string of tokens separated by spaces with the solution"
+        )
+    elif solution == agent_solution:
+        # exit code 42 is a special exit code that indicates the solution is correct
+        exit(42)
+    else:
+        print("Solution is incorrect")

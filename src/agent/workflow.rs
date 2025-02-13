@@ -2,14 +2,14 @@ use std::{path::PathBuf, str::FromStr};
 
 use anyhow::Result;
 use indexmap::IndexMap;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default, Deserialize, Debug, Clone)]
+#[derive(Default, Deserialize, Serialize, Debug, Clone)]
 pub struct WorkflowTask {
     pub generator: Option<String>,
 }
 
-#[derive(Default, Deserialize, Debug, Clone)]
+#[derive(Default, Deserialize, Serialize, Debug, Clone)]
 pub struct Workflow {
     #[serde(skip_deserializing, skip_serializing)]
     pub folder: String,

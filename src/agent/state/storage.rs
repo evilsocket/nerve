@@ -27,6 +27,8 @@ impl Entry {
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum StorageType {
+    // a single text entry
+    Text,
     // a list indexed by element position
     Untagged,
     // a key=value store
@@ -47,19 +49,21 @@ impl StorageType {
             StorageType::Completion => 2,
             StorageType::Untagged => 3,
             StorageType::Tagged => 4,
+            StorageType::Text => 5,
         }
     }
 }
 
 impl Default for StorageType {
     fn default() -> Self {
-        Self::Untagged
+        Self::Text
     }
 }
 
 pub const CURRENT_TAG: &str = "__current";
 pub const PREVIOUS_TAG: &str = "__previous";
 pub const STARTED_AT_TAG: &str = "__started_at";
+pub const TEXT_TAG: &str = "__text";
 
 #[derive(Debug)]
 pub struct Storage {
@@ -110,6 +114,45 @@ impl Storage {
     pub fn get_started_at(&self) -> Instant {
         assert!(matches!(self.type_, StorageType::Time));
         self.inner.get(STARTED_AT_TAG).unwrap().time
+    }
+
+    pub fn get_text(&self) -> Option<String> {
+        assert!(matches!(self.type_, StorageType::Text));
+        self.inner.get(TEXT_TAG).map(|va| va.data.to_string())
+    }
+
+    pub fn set_text(&mut self, data: &str) {
+        assert!(matches!(self.type_, StorageType::Text));
+        self.inner
+            .insert(TEXT_TAG.to_string(), Entry::new(data.to_string()));
+        self.on_event(Event::new(EventType::StorageUpdate {
+            storage_name: self.name.to_string(),
+            storage_type: self.type_,
+            key: TEXT_TAG.to_string(),
+            prev: None,
+            new: Some(data.to_string()),
+        }));
+    }
+
+    pub fn add_text(&mut self, data: &str) {
+        assert!(matches!(self.type_, StorageType::Text));
+
+        let old = self.get_text();
+        let new = old
+            .as_ref()
+            .map(|old| format!("{}\n{}", old, data))
+            .unwrap_or(data.to_string());
+
+        self.inner
+            .insert(TEXT_TAG.to_string(), Entry::new(new.to_string()));
+
+        self.on_event(Event::new(EventType::StorageUpdate {
+            storage_name: self.name.to_string(),
+            storage_type: self.type_,
+            key: TEXT_TAG.to_string(),
+            prev: old,
+            new: Some(new),
+        }));
     }
 
     pub fn add_data(&mut self, key: &str, data: &str) {

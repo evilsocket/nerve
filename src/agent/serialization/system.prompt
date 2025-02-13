@@ -1,5 +1,5 @@
 {{ system_prompt }}
-{% if storages or iterations or available_actions %}
+{% if iterations or available_tools %}
 
 # Context
 
@@ -7,7 +7,7 @@
 
 {{ iterations }}
 
-{{ available_actions }}
+{{ available_tools }}
 
 ---
 {% endif %}{% if guidance %}
@@ -15,4 +15,10 @@
 {% for rule in guidance %}  
 - {{ rule }}{% endfor %}
 {% endif %}
-Output a new action in your response. Prior action results are displayed in the chat history.
+Call a new tool in your response. Prior tool results are displayed in the chat history.
+
+{% if storages %}
+
+{{ storages }}
+
+{% endif %}

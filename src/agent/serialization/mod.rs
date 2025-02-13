@@ -2,7 +2,7 @@ use anyhow::Result;
 use tera::Tera;
 
 use super::{namespaces::NAMESPACES, state::State};
-use crate::agent::{namespaces::Action, state::storage::Storage, Invocation};
+use crate::agent::{namespaces::Tool, state::storage::Storage, ToolCall};
 
 mod xml;
 
@@ -15,7 +15,7 @@ pub enum Strategy {
 }
 
 impl Strategy {
-    pub fn available_actions() -> String {
+    pub fn available_tools() -> String {
         let default_serializer = Self::default();
 
         let mut md = "".to_string();
@@ -26,11 +26,11 @@ impl Strategy {
             if !group.description.is_empty() {
                 md += &format!("{}\n\n", group.description);
             }
-            for action in &group.actions {
+            for tool in &group.tools {
                 md += &format!(
                     "* {} {}\n",
-                    action.description(),
-                    default_serializer.serialize_action(action)
+                    tool.description(),
+                    default_serializer.serialize_tool(tool)
                 );
             }
         }
@@ -38,7 +38,7 @@ impl Strategy {
         md.trim().to_string()
     }
 
-    pub fn try_parse(&self, raw: &str) -> Result<Vec<Invocation>> {
+    pub fn try_parse(&self, raw: &str) -> Result<Vec<ToolCall>> {
         match self {
             Strategy::XML => xml::parsing::try_parse(raw),
         }
@@ -50,19 +50,19 @@ impl Strategy {
         }
     }
 
-    pub fn serialize_action(&self, action: &Box<dyn Action>) -> String {
+    pub fn serialize_tool(&self, tool: &Box<dyn Tool>) -> String {
         match self {
-            Strategy::XML => xml::serialize::action(action),
+            Strategy::XML => xml::serialize::tool(tool),
         }
     }
 
-    pub fn serialize_invocation(&self, invocation: &Invocation) -> String {
+    pub fn serialize_tool_call(&self, tool_call: &ToolCall) -> String {
         match self {
-            Strategy::XML => xml::serialize::invocation(invocation),
+            Strategy::XML => xml::serialize::tool_call(tool_call),
         }
     }
 
-    fn actions_for_state(&self, state: &State) -> Result<String> {
+    fn tools_for_state(&self, state: &State) -> Result<String> {
         let mut md = "".to_string();
 
         for group in state.get_namespaces() {
@@ -70,12 +70,8 @@ impl Strategy {
             if !group.description.is_empty() {
                 md += &format!("{}\n\n", group.description);
             }
-            for action in &group.actions {
-                md += &format!(
-                    "{} {}\n\n",
-                    action.description(),
-                    self.serialize_action(action)
-                );
+            for tool in &group.tools {
+                md += &format!("{} {}\n\n", tool.description(), self.serialize_tool(tool));
             }
         }
 
@@ -97,15 +93,15 @@ impl Strategy {
         let storages = storages.join("\n\n");
         let guidance = task.guidance()?;
 
-        let available_actions = if state.use_native_tools_format {
-            // model supports tool calls, no need to add actions to the system prompt
+        let available_tools = if state.use_native_tools_format {
+            // model supports tool calls, no need to add tools to the system prompt
             "".to_string()
         } else {
-            // model does not support tool calls, we need to provide the actions in its system prompt
-            let mut raw = include_str!("actions.prompt").to_owned();
+            // model does not support tool calls, we need to provide the tools in its system prompt
+            let mut raw = include_str!("tools.prompt").to_owned();
 
             raw.push('\n');
-            raw.push_str(&self.actions_for_state(state)?);
+            raw.push_str(&self.tools_for_state(state)?);
 
             raw
         };
@@ -125,7 +121,7 @@ impl Strategy {
         context.insert("system_prompt", &system_prompt);
         context.insert("storages", &storages);
         context.insert("iterations", &iterations);
-        context.insert("available_actions", &available_actions);
+        context.insert("available_tools", &available_tools);
         context.insert("guidance", &guidance);
 
         Tera::one_off(include_str!("system.prompt"), &context, false)

@@ -1,4 +1,5 @@
-using: []
+using: 
+  - reasoning
 
 system_prompt: You are an useful assistant that solves problems.
 
@@ -38,8 +39,9 @@ prompt: >
   Fully compute it, step by step and then submit the final result.
 
 guidance:
-  - Once you have computed the program, submit the final result via the `solution` action.
   - Do NOT submit the steps, ONLY the final solution.
+  - At the end of your reasoning process, ALWAYS use the `provide_solution` tool to submit the final result.
+
 
 evaluator: 
   command:
@@ -48,9 +50,9 @@ evaluator:
 
 functions:
   - name: Solve
-    description: You will use these actions to provide final answer to the problem.
+    description: You will use these tools to provide the final answer to the problem.
     actions:
-      - name: solution
+      - name: provide_solution
         description: "To provide final result:"
         example_payload: B#
         # if no tool is provided, the input payload will be returned as the output

@@ -14,12 +14,9 @@ guidance:
 
 functions:
   - name: News
-    decription: You will use this action to read the recent news.
+    description: You will use this tools to read the recent news.
     actions:
       - name: read_news
         description: "To read the recent news:"
         max_shown_output: 4096
         tool: curl -s getnews.tech/ai,nocolor
-     
-        
-        

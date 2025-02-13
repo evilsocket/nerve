@@ -6,10 +6,10 @@ use serde::{Deserialize, Serialize};
 pub struct ErrorMetrics {
     pub empty_responses: usize,
     pub unparsed_responses: usize,
-    pub unknown_actions: usize,
-    pub invalid_actions: usize,
-    pub errored_actions: usize,
-    pub timedout_actions: usize,
+    pub unknown_tool_calls: usize,
+    pub invalid_tool_calls: usize,
+    pub errored_tool_calls: usize,
+    pub timedout_tool_calls: usize,
 }
 
 impl ErrorMetrics {
@@ -17,8 +17,8 @@ impl ErrorMetrics {
         self.empty_responses > 0 || self.unparsed_responses > 0
     }
 
-    fn has_action_errors(&self) -> bool {
-        self.unknown_actions > 0 || self.invalid_actions > 0 || self.errored_actions > 0
+    fn has_tool_errors(&self) -> bool {
+        self.unknown_tool_calls > 0 || self.invalid_tool_calls > 0 || self.errored_tool_calls > 0
     }
 }
 
@@ -35,8 +35,8 @@ pub struct Metrics {
     pub max_steps: usize,
     pub current_step: usize,
     pub valid_responses: usize,
-    pub valid_actions: usize,
-    pub success_actions: usize,
+    pub valid_tool_calls: usize,
+    pub success_tool_calls: usize,
     pub errors: ErrorMetrics,
     pub usage: Usage,
 }
@@ -60,18 +60,18 @@ impl Display for Metrics {
             write!(f, "responses:{} ", self.valid_responses)?;
         }
 
-        if self.errors.has_action_errors() {
+        if self.errors.has_tool_errors() {
             write!(
                 f,
-                "actions(valid:{} ok:{} errored:{} unknown:{} invalid:{}) ",
-                self.valid_actions,
-                self.success_actions,
-                self.errors.errored_actions,
-                self.errors.unknown_actions,
-                self.errors.invalid_actions
+                "tool_calls(valid:{} ok:{} errored:{} unknown:{} invalid:{}) ",
+                self.valid_tool_calls,
+                self.success_tool_calls,
+                self.errors.errored_tool_calls,
+                self.errors.unknown_tool_calls,
+                self.errors.invalid_tool_calls
             )?;
-        } else if self.valid_actions > 0 {
-            write!(f, "actions:{} ", self.valid_actions,)?;
+        } else if self.valid_tool_calls > 0 {
+            write!(f, "tool_calls:{} ", self.valid_tool_calls,)?;
         }
 
         if self.usage.last_input_tokens > 0 {

@@ -3,6 +3,7 @@ using:
   - filesystem
   # allows the agent to set the task as complete
   - task
+  - reasoning
 
 system_prompt: > 
   You are an expert application security professional.
