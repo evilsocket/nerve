@@ -105,6 +105,8 @@ async fn parse_expression(expr: &str, schema_only: bool) -> Result<(String, Stri
 
             let mut var_cache = VAR_CACHE.lock().unwrap();
             if let Ok(value) = std::env::var(var_name) {
+                // also define as a variable for caching and state updates
+                var_cache.insert(var_name.to_owned(), value.clone());
                 // get from env
                 value
             } else if let Some(cached) = var_cache.get(var_name) {
