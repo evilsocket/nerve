@@ -29,13 +29,13 @@ if sys.argv[1] == "observe":
     pass
 elif sys.argv[1] == "set_energy":
     energy = json.loads(sys.argv[2])
-    world[energy["x"]][energy["y"]] = energy["energy"]
+    world[int(energy["x"])][int(energy["y"])] = energy["energy"]
 elif sys.argv[1] == "set_life":
     life = json.loads(sys.argv[2])
-    world[life["x"]][life["y"]] = life["life"]
+    world[int(life["x"])][int(life["y"])] = life["life"]
 elif sys.argv[1] == "set_cell":
     cell = json.loads(sys.argv[2])
-    world[cell["x"]][cell["y"]] = cell["value"]
+    world[int(cell["x"])][int(cell["y"])] = cell["value"]
 
 os.system("clear")
 

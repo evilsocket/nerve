@@ -87,7 +87,7 @@ impl WebUI {
         Ok(())
     }
 
-    async fn start_websocket_server(&self) -> Result<()> {
+    async fn start_websocket_server(&self) -> Result<tokio::task::JoinHandle<()>> {
         let ws_listener = TcpListener::bind(&self.args.ws_address).await?;
 
         log::info!("websocket server started on: {}", self.args.ws_address);
@@ -95,7 +95,7 @@ impl WebUI {
         // accept new connections
         let tx = self.events_tx.clone();
         let remote = self.remote.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             while let Ok((stream, addr)) = ws_listener.accept().await {
                 // serve each connection in a separate task
                 tokio::spawn(Self::on_connection(
@@ -107,22 +107,32 @@ impl WebUI {
             }
         });
 
-        Ok(())
+        Ok(handle)
     }
 
-    async fn start_http_server(&self) -> Result<()> {
+    async fn start_http_server(&self) -> Result<tokio::task::JoinHandle<()>> {
         log::info!("http server started on: http://{}", &self.args.web_address);
 
         let address = self.args.web_address.clone();
         let body = include_str!("web.html");
         let body = body.replace("{WEBSOCKET_SERVER_ADDRESS}", &self.args.ws_address);
+        let body = body.replace(
+            "{TASK_NAME}",
+            if let Some(workflow) = &self.args.workflow {
+                workflow
+            } else {
+                self.args.tasklet.as_deref().unwrap_or("task")
+            },
+        );
+        let body = body.replace("{GENERATOR}", &self.args.generator);
 
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             HttpServer::new(move || {
                 App::new()
                     .app_data(web::Data::new(body.clone()))
                     .route("/", web::get().to(webui_path))
             })
+            .disable_signals()
             .bind(&address)
             .unwrap()
             .run()
@@ -130,14 +140,14 @@ impl WebUI {
             .unwrap();
         });
 
-        Ok(())
+        Ok(handle)
     }
 
-    async fn start_control_state_streamer(&self) -> Result<()> {
+    async fn start_control_state_streamer(&self) -> Result<tokio::task::JoinHandle<()>> {
         let tx = self.events_tx.clone();
         let remote = self.remote.clone();
 
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             loop {
                 let state = remote.get_state().await;
 
@@ -152,14 +162,33 @@ impl WebUI {
             }
         });
 
-        Ok(())
+        Ok(handle)
     }
 
-    pub async fn start(&self) -> Result<()> {
-        self.start_websocket_server().await?;
-        self.start_http_server().await?;
-        self.start_control_state_streamer().await?;
-        Ok(())
+    async fn wait_for_handles<T: Send + 'static>(
+        handles: Vec<tokio::task::JoinHandle<T>>,
+    ) -> Vec<T> {
+        let mut results = Vec::new();
+        for handle in handles {
+            results.push(handle.await.unwrap());
+        }
+        results
+    }
+
+    async fn merge_handles<T: Send + 'static>(
+        handles: Vec<tokio::task::JoinHandle<T>>,
+    ) -> tokio::task::JoinHandle<Vec<T>> {
+        tokio::spawn(Self::wait_for_handles(handles))
+    }
+
+    pub async fn start(&self) -> Result<tokio::task::JoinHandle<Vec<()>>> {
+        let handles = vec![
+            self.start_websocket_server().await?,
+            self.start_http_server().await?,
+            self.start_control_state_streamer().await?,
+        ];
+
+        Ok(Self::merge_handles(handles).await)
     }
 }
 
@@ -168,10 +197,8 @@ pub async fn start(
     events_tx: Sender,
     remote: Control,
     args: Args,
-) -> Result<()> {
+) -> Result<tokio::task::JoinHandle<Vec<()>>> {
     let web_ui = WebUI::new(args, events_rx, events_tx, remote).await?;
 
-    web_ui.start().await?;
-
-    Ok(())
+    web_ui.start().await
 }

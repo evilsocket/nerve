@@ -1,5 +1,6 @@
 using: 
   - time
+  - reasoning
 
 system_prompt: You are an helpful assistant with access to a webcam.
 

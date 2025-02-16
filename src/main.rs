@@ -62,7 +62,7 @@ impl Control {
     async fn set_state(&self, new_state: ControlState) {
         let mut state = self.state.lock().await;
         *state = new_state.clone();
-        log::error!("control state changed to {:?}", &new_state);
+        log::info!("control state changed to {:?}", &new_state);
     }
 }
 
@@ -167,21 +167,22 @@ async fn main() -> Result<()> {
     let args = setup::setup_arguments().await?;
 
     // create main communication channel
-    let (tx, rx) = agent::events::create_channel();
+    let (tx, _) = agent::events::create_channel();
 
     // spawn the terminal UI events consumer
     ui::text::start(tx.subscribe(), args.clone()).await?;
 
-    let remote = if args.web_ui {
+    let (remote, web_ui_handle) = if args.web_ui {
+        // start in a paused state
         let remote = Control::new(ControlState::Paused);
 
         // start the webui
-        // FIXME: TODO: This disables recording, move it to dedicated listener.
-        ui::web::start(tx.subscribe(), tx.clone(), remote.clone(), args.clone()).await?;
+        let handle =
+            ui::web::start(tx.subscribe(), tx.clone(), remote.clone(), args.clone()).await?;
 
-        remote
+        (remote, Some(handle))
     } else {
-        Control::new(ControlState::Running)
+        (Control::new(ControlState::Running), None)
     };
 
     if let Some(workflow) = &args.workflow {
@@ -190,6 +191,10 @@ async fn main() -> Result<()> {
     } else {
         // single task
         run_task(args, false, tx, remote.clone()).await?;
+    }
+
+    if let Some(handle) = web_ui_handle {
+        handle.await?;
     }
 
     Ok(())

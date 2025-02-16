@@ -5,6 +5,7 @@ use crate::agent::events::StateUpdate;
 
 const SUCCESS_CODE: i32 = 42;
 
+#[derive(Default, Deserialize, Serialize, Debug, Clone)]
 pub struct Evaluation {
     pub completed: bool,
     pub feedback: Option<String>,

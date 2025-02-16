@@ -311,6 +311,10 @@ impl Agent {
                     log::error!("error evaluating task: {}", e);
                 } else {
                     let evaluation = evaluation.unwrap();
+
+                    self.on_event(Event::new(EventType::Evaluation(evaluation.clone())))
+                        .await?;
+
                     if evaluation.completed {
                         self.state
                             .lock()

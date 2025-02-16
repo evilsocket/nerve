@@ -7,3 +7,4 @@
 /examples/test
 .DS_Store
 /nerve-cli/target
+/findings.jsonl

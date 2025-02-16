@@ -10,6 +10,7 @@ pub use channel::*;
 use crate::ControlState;
 
 use super::namespaces::ToolOutput;
+use super::task::eval::Evaluation;
 use super::task::tasklet::Tasklet;
 use super::workflow::Workflow;
 use super::{
@@ -58,6 +59,8 @@ pub enum EventType {
     Thinking(String),
     // the agent is sleeping for a given amount of seconds
     Sleeping(usize),
+    // evaluation result
+    Evaluation(Evaluation),
     // the agent provided a text response without tool calls
     TextResponse(String),
     // the agent tried to execute an invalid tool

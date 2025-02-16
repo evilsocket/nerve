@@ -112,6 +112,15 @@ async fn consume_events(mut events_rx: Receiver, args: Args) {
             EventType::ControlStateChanged(state) => {
                 log::debug!("control state: {:?}", state);
             }
+            EventType::Evaluation(evaluation) => {
+                if evaluation.completed {
+                    log::info!("{}", "evaluation complete".bold().green());
+                } else if let Some(feedback) = evaluation.feedback {
+                    log::warn!("evaluation failed: {}", feedback.italic());
+                } else {
+                    log::warn!("evaluation failed");
+                }
+            }
             EventType::WorkflowStarted(workflow) => {
                 println!(
                     "{} v{} 🧠 | executing workflow {}\n",
