@@ -3,7 +3,7 @@ use async_trait::async_trait;
 
 use std::collections::HashMap;
 
-use super::{Tool, ToolOutput, Namespace, StorageDescriptor};
+use super::{Namespace, StorageDescriptor, Tool, ToolOutput};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
@@ -33,7 +33,8 @@ impl Tool for UpdateGoal {
             .lock()
             .await
             .get_storage_mut("goal")?
-            .set_current(payload.as_ref().unwrap());
+            .set_current(payload.as_ref().unwrap())
+            .await;
         Ok(Some("goal updated".into()))
     }
 }

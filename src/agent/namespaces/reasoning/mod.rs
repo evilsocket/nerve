@@ -33,7 +33,8 @@ impl Tool for Think {
             .lock()
             .await
             .get_storage_mut("reasoning")?
-            .add_text(payload.unwrap().as_str());
+            .add_text(payload.unwrap().as_str())
+            .await;
 
         Ok(None)
     }
@@ -58,7 +59,12 @@ impl Tool for ClearThoughts {
         _: Option<HashMap<String, String>>,
         _: Option<String>,
     ) -> Result<Option<ToolOutput>> {
-        state.lock().await.get_storage_mut("reasoning")?.clear();
+        state
+            .lock()
+            .await
+            .get_storage_mut("reasoning")?
+            .clear()
+            .await;
 
         Ok(None)
     }

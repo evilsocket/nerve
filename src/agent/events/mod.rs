@@ -7,6 +7,8 @@ mod channel;
 
 pub use channel::*;
 
+use crate::ControlState;
+
 use super::namespaces::ToolOutput;
 use super::task::tasklet::Tasklet;
 use super::workflow::Workflow;
@@ -26,6 +28,8 @@ pub struct StateUpdate {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
 pub enum EventType {
+    // the control state has been updated
+    ControlStateChanged(ControlState),
     // the workflow has been started
     WorkflowStarted(Workflow),
     // the workflow has been completed

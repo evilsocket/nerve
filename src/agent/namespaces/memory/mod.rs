@@ -44,7 +44,8 @@ impl Tool for SaveMemory {
             .lock()
             .await
             .get_storage_mut("memories")?
-            .add_tagged(key, payload.unwrap().as_str());
+            .add_tagged(key, payload.unwrap().as_str())
+            .await;
 
         Ok(Some("memory saved".into()))
     }
@@ -84,6 +85,7 @@ impl Tool for DeleteMemory {
             .await
             .get_storage_mut("memories")?
             .del_tagged(key)
+            .await
             .is_some()
         {
             Ok(Some("memory deleted".into()))

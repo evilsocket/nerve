@@ -1,6 +1,8 @@
-pub type Sender = tokio::sync::mpsc::UnboundedSender<super::Event>;
-pub type Receiver = tokio::sync::mpsc::UnboundedReceiver<super::Event>;
+use tokio::sync::broadcast;
+
+pub type Sender = broadcast::Sender<super::Event>;
+pub type Receiver = broadcast::Receiver<super::Event>;
 
 pub fn create_channel() -> (Sender, Receiver) {
-    tokio::sync::mpsc::unbounded_channel()
+    broadcast::channel(0xffff)
 }

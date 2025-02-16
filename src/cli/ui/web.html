@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web UI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin-top: 50px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            margin: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+
+        <strong>socket</strong>: <span id="status">Connecting...</span>
+        <br />
+        <strong>status</strong>: <span id="control_state"></span>
+        <br />
+
+        <button onclick="sendCommand('play')">Play</button>
+        <button onclick="sendCommand('pause')">Pause</button>
+        <button onclick="sendCommand('stop')">Stop</button>
+    </div>
+    <hr />
+
+    <div>
+        <h3>Prompt</h3>
+        <p>
+        <pre id="prompt" style="white-space: pre-wrap; word-break: break-word; font-size: small;"></pre>
+        </p>
+    </div>
+    <div>
+        <p id="storages"></p>
+    </div>
+    <div>
+        <h3>Actions</h3>
+        <p id="tool_calls"></p>
+    </div>
+
+    <hr />
+
+    <pre id="events"></pre>
+
+    <script>
+        var storages = {};
+        var toolCalls = [];
+
+        const statusElement = document.getElementById('status');
+        const controlStateElement = document.getElementById('control_state');
+
+        const eventsElement = document.getElementById('events');
+        const promptElement = document.getElementById('prompt');
+        const storagesElement = document.getElementById('storages');
+        const toolCallsElement = document.getElementById('tool_calls');
+        // const systemPromptElement = document.getElementById('system_prompt');
+        const ws = new WebSocket('ws://{WEBSOCKET_SERVER_ADDRESS}');
+
+        ws.onopen = () => {
+            statusElement.textContent = 'Connected';
+        };
+
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+
+            console.log(message.type);
+
+            if (message.type === 'state_update') {
+                onStateUpdate(message);
+            } else if (message.type === 'storage_update') {
+                onStorageUpdate(message);
+            } else if (message.type === 'control_state_changed') {
+                controlStateElement.textContent = message.data;
+                return;
+            } else if (message.type === 'before_tool_call') {
+                onBeforeToolCall(message);
+            } else if (message.type === 'after_tool_call') {
+                onAfterToolCall(message);
+            }
+
+            eventsElement.textContent += event.data + "\n\n";
+            eventsElement.scrollTop = eventsElement.scrollHeight;
+        };
+
+        ws.onclose = () => {
+            statusElement.textContent = 'Disconnected';
+        };
+
+        function sendCommand(command) {
+            const message = JSON.stringify({ type: command });
+            ws.send(message);
+        }
+
+        function onStateUpdate(message) {
+            promptElement.textContent = message.data.chat.prompt;
+            // systemPromptElement.textContent = message.data.chat.system_prompt;
+        }
+
+        function onStorageUpdate(message) {
+            storages[message.data.storage_name] = message.data.new;
+
+            let html = '';
+
+            for (const [key, value] of Object.entries(storages)) {
+                html += `<p><h3 style="text-transform: capitalize; color: blue">${key}</h3><pre style="white-space: pre-wrap; word-break: break-word; font-size: small; color: blue">${value}</pre></p>`;
+            }
+
+            storagesElement.innerHTML = html;
+        }
+
+        function renderToolCalls() {
+            let html = '';
+
+            for (const toolCall of toolCalls) {
+                html += `${toolCall}<br/><br/>`;
+            }
+
+            toolCallsElement.innerHTML = html;
+        }
+
+        function onBeforeToolCall(message) {
+            // this will be reflected in the storages anyway
+            let args = `<code>${message.data.tool_call.argument}</code>`;
+            if (message.data.tool_call.tool_name == 'think') {
+                args = "";
+            }
+
+            let toolCall = `<strong>${message.data.tool_call.tool_name}</strong> ${args} ...`;
+            toolCalls.push(toolCall);
+
+            renderToolCalls();
+        }
+
+        function onAfterToolCall(message) {
+            // this will be reflected in the storages anyway
+            let args = `<code>${message.data.tool_call.argument}</code>`;
+            if (message.data.tool_call.tool_name == 'think') {
+                args = "";
+            }
+
+            let toolCall = `<strong>${message.data.tool_call.tool_name}</strong> ${args}`;
+
+            toolCalls.pop();
+            toolCalls.push(toolCall);
+
+            renderToolCalls();
+        }
+    </script>
+</body>
+
+</html>

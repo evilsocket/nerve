@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use super::{Tool, ToolOutput, Namespace, StorageDescriptor};
+use super::{Namespace, StorageDescriptor, Tool, ToolOutput};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
@@ -33,7 +33,8 @@ impl Tool for AddStep {
             .lock()
             .await
             .get_storage_mut("plan")?
-            .add_completion(&payload.unwrap());
+            .add_completion(&payload.unwrap())
+            .await;
         Ok(Some("step added to the plan".into()))
     }
 }
@@ -65,7 +66,8 @@ impl Tool for DeleteStep {
             .lock()
             .await
             .get_storage_mut("plan")?
-            .del_completion(payload.unwrap().parse::<usize>()?);
+            .del_completion(payload.unwrap().parse::<usize>()?)
+            .await;
         Ok(Some("step removed from the plan".into()))
     }
 }
@@ -99,6 +101,7 @@ impl Tool for SetComplete {
             .await
             .get_storage_mut("plan")?
             .set_complete(pos)
+            .await
             .is_some()
         {
             Ok(Some(format!("step {} marked as completed", pos).into()))
@@ -137,6 +140,7 @@ impl Tool for SetIncomplete {
             .await
             .get_storage_mut("plan")?
             .set_incomplete(pos)
+            .await
             .is_some()
         {
             Ok(Some(format!("step {} marked as incomplete", pos).into()))
@@ -165,7 +169,7 @@ impl Tool for Clear {
         _: Option<HashMap<String, String>>,
         _: Option<String>,
     ) -> Result<Option<ToolOutput>> {
-        state.lock().await.get_storage_mut("plan")?.clear();
+        state.lock().await.get_storage_mut("plan")?.clear().await;
         Ok(Some("plan cleared".into()))
     }
 }

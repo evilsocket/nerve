@@ -15,7 +15,7 @@ use url::Url;
 
 use crate::agent::state::SharedState;
 
-use super::{Tool, ToolOutput, Namespace, StorageDescriptor};
+use super::{Namespace, StorageDescriptor, Tool, ToolOutput};
 
 const DEFAULT_HTTP_SCHEMA: &str = "https";
 
@@ -60,7 +60,12 @@ impl Tool for ClearHeaders {
         _: Option<HashMap<String, String>>,
         _: Option<String>,
     ) -> Result<Option<ToolOutput>> {
-        state.lock().await.get_storage_mut("http-headers")?.clear();
+        state
+            .lock()
+            .await
+            .get_storage_mut("http-headers")?
+            .clear()
+            .await;
         Ok(Some("http headers cleared".into()))
     }
 }
@@ -104,7 +109,8 @@ impl Tool for SetHeader {
             .lock()
             .await
             .get_storage_mut("http-headers")?
-            .add_tagged(key, &data);
+            .add_tagged(key, &data)
+            .await;
 
         Ok(Some("header set".into()))
     }

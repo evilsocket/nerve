@@ -63,6 +63,17 @@ pub struct Args {
     /// Record every event of the session to a JSONL file.
     #[arg(long)]
     pub record_to: Option<String>,
+    /// If set, the agent will start a web UI on the given port.
+    #[arg(short = 'U', long)]
+    pub web_ui: bool,
+
+    /// Web UI address.
+    #[arg(long, default_value = "127.0.0.1:8080")]
+    pub web_address: String,
+    /// Websocket server address for the web UI.
+    #[arg(long, default_value = "127.0.0.1:8081")]
+    pub ws_address: String,
+
     /// Print the documentation of the available tool namespaces.
     #[arg(long)]
     pub generate_doc: bool,

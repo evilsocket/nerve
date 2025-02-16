@@ -3,7 +3,7 @@ use async_trait::async_trait;
 
 use std::{collections::HashMap, time::Duration};
 
-use super::{Tool, ToolOutput, Namespace, StorageDescriptor};
+use super::{Namespace, StorageDescriptor, Tool, ToolOutput};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]

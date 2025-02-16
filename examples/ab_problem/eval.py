@@ -103,6 +103,7 @@ if __name__ == "__main__":
             f"{agent_solution} is an invalid solution: provide a single string of tokens separated by spaces with the solution"
         )
     elif solution == agent_solution:
+        print("CORRECT SOLUTION PROVIDED, EVALUATION COMPLETE")
         # exit code 42 is a special exit code that indicates the solution is correct
         exit(42)
     else:

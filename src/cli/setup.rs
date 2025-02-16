@@ -2,11 +2,14 @@ use anyhow::Result;
 use clap::Parser;
 use colored::Colorize;
 
-use crate::agent::{
-    self, events,
-    generator::{self, history::ConversationWindow},
-    task::{robopages, tasklet::Tasklet},
-    Agent,
+use crate::{
+    agent::{
+        self, events,
+        generator::{self, history::ConversationWindow},
+        task::{robopages, tasklet::Tasklet},
+        Agent,
+    },
+    Control,
 };
 
 use crate::{cli, APP_NAME, APP_VERSION};
@@ -52,7 +55,7 @@ pub async fn setup_arguments() -> Result<Args> {
         // set `RUST_LOG=debug` to see debug logs
         std::env::set_var(
             "RUST_LOG",
-            "info,openai_api_rust=warn,rustls=warn,ureq=warn",
+            "info,actix_web=warn,openai_api_rust=warn,rustls=warn,ureq=warn",
         );
     }
 
@@ -60,7 +63,7 @@ pub async fn setup_arguments() -> Result<Args> {
         // disable most logging
         std::env::set_var(
             "RUST_LOG",
-            "error,openai_api_rust=error,rustls=error,ureq=error",
+            "error,actix_web=error,openai_api_rust=error,rustls=error,ureq=error",
         );
 
         // read STDIN and preemptively set $STDIN
@@ -117,6 +120,7 @@ pub async fn setup_agent_for_task(
     args: &cli::Args,
     workflow_mode: bool,
     tx: events::Sender,
+    remote: Control,
 ) -> Result<(Agent, Tasklet)> {
     // create generator and embedder
     let (gen_options, generator, embedder) = setup_models(args)?;
@@ -174,6 +178,7 @@ pub async fn setup_agent_for_task(
         user_only: args.user_only,
         max_iterations: args.max_iterations,
         cot_tags: args.cot_tags.clone(),
+        remote,
     };
 
     // create the agent

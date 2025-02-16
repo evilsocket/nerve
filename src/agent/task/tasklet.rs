@@ -243,7 +243,11 @@ impl TaskletTool {
             let exit_code = output.status.code().unwrap_or(0);
             log::debug!("exit_code={}", exit_code);
             if exit_code == STATE_COMPLETE_EXIT_CODE {
-                state.lock().await.on_complete(false, Some(out))?;
+                state
+                    .lock()
+                    .await
+                    .on_complete(false, Some(out.clone()))
+                    .await?;
                 return Ok(Some("task complete".into()));
             }
 

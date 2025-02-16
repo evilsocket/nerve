@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 
-use super::{Tool, ToolOutput, Namespace};
+use super::{Namespace, Tool, ToolOutput};
 use crate::agent::state::SharedState;
 
 #[derive(Debug, Default, Clone)]
@@ -29,7 +29,7 @@ impl Tool for Complete {
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<ToolOutput>> {
-        state.lock().await.on_complete(false, payload)?;
+        state.lock().await.on_complete(false, payload).await?;
         Ok(None)
     }
 }
@@ -57,7 +57,7 @@ impl Tool for Impossible {
         _: Option<HashMap<String, String>>,
         payload: Option<String>,
     ) -> Result<Option<ToolOutput>> {
-        state.lock().await.on_complete(true, payload)?;
+        state.lock().await.on_complete(true, payload).await?;
         Ok(None)
     }
 }

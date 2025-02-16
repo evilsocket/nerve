@@ -107,8 +107,9 @@ impl Storage {
         &self.type_
     }
 
-    fn on_event(&self, event: Event) {
-        self.events_tx.send(event).unwrap();
+    async fn on_event(&self, event: Event) -> anyhow::Result<()> {
+        self.events_tx.send(event)?;
+        Ok(())
     }
 
     pub fn get_started_at(&self) -> Instant {
@@ -121,7 +122,7 @@ impl Storage {
         self.inner.get(TEXT_TAG).map(|va| va.data.to_string())
     }
 
-    pub fn set_text(&mut self, data: &str) {
+    pub async fn set_text(&mut self, data: &str) {
         assert!(matches!(self.type_, StorageType::Text));
         self.inner
             .insert(TEXT_TAG.to_string(), Entry::new(data.to_string()));
@@ -131,10 +132,12 @@ impl Storage {
             key: TEXT_TAG.to_string(),
             prev: None,
             new: Some(data.to_string()),
-        }));
+        }))
+        .await
+        .unwrap();
     }
 
-    pub fn add_text(&mut self, data: &str) {
+    pub async fn add_text(&mut self, data: &str) {
         assert!(matches!(self.type_, StorageType::Text));
 
         let old = self.get_text();
@@ -152,10 +155,12 @@ impl Storage {
             key: TEXT_TAG.to_string(),
             prev: old,
             new: Some(new),
-        }));
+        }))
+        .await
+        .unwrap();
     }
 
-    pub fn add_data(&mut self, key: &str, data: &str) {
+    pub async fn add_data(&mut self, key: &str, data: &str) {
         self.inner
             .insert(key.to_string(), Entry::new(data.to_string()));
         self.on_event(Event::new(EventType::StorageUpdate {
@@ -164,10 +169,12 @@ impl Storage {
             key: key.to_string(),
             prev: None,
             new: Some(data.to_string()),
-        }));
+        }))
+        .await
+        .unwrap();
     }
 
-    pub fn add_tagged(&mut self, key: &str, data: &str) {
+    pub async fn add_tagged(&mut self, key: &str, data: &str) {
         assert!(matches!(self.type_, StorageType::Tagged));
 
         self.inner
@@ -179,10 +186,12 @@ impl Storage {
             key: key.to_string(),
             prev: None,
             new: Some(data.to_string()),
-        }));
+        }))
+        .await
+        .unwrap();
     }
 
-    pub fn del_tagged(&mut self, key: &str) -> Option<String> {
+    pub async fn del_tagged(&mut self, key: &str) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Tagged));
         if let Some(old) = self.inner.shift_remove(key) {
             self.on_event(Event::new(EventType::StorageUpdate {
@@ -191,7 +200,9 @@ impl Storage {
                 key: key.to_string(),
                 prev: Some(old.data.to_string()),
                 new: None,
-            }));
+            }))
+            .await
+            .unwrap();
 
             Some(old.data)
         } else {
@@ -204,7 +215,7 @@ impl Storage {
         self.inner.get(key).map(|va| va.data.to_string())
     }
 
-    pub fn add_completion(&mut self, data: &str) {
+    pub async fn add_completion(&mut self, data: &str) {
         assert!(matches!(self.type_, StorageType::Completion));
         let tag = format!("{}", self.inner.len() + 1);
         self.inner
@@ -216,10 +227,12 @@ impl Storage {
             key: tag,
             prev: None,
             new: Some(data.to_string()),
-        }));
+        }))
+        .await
+        .unwrap();
     }
 
-    pub fn del_completion(&mut self, pos: usize) -> Option<String> {
+    pub async fn del_completion(&mut self, pos: usize) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Completion));
         let tag = format!("{}", pos);
         if let Some(old) = self.inner.shift_remove(&tag) {
@@ -229,7 +242,9 @@ impl Storage {
                 key: tag,
                 prev: Some(old.data.to_string()),
                 new: None,
-            }));
+            }))
+            .await
+            .unwrap();
 
             Some(old.data)
         } else {
@@ -237,7 +252,7 @@ impl Storage {
         }
     }
 
-    pub fn set_complete(&mut self, pos: usize) -> Option<bool> {
+    pub async fn set_complete(&mut self, pos: usize) -> Option<bool> {
         assert!(matches!(self.type_, StorageType::Completion));
         let tag = format!("{}", pos);
         if let Some(entry) = self.inner.get_mut(&tag) {
@@ -250,7 +265,9 @@ impl Storage {
                 key: tag,
                 prev: Some((if prev { "complete" } else { "incomplete" }).to_string()),
                 new: Some("complete".to_string()),
-            }));
+            }))
+            .await
+            .unwrap();
 
             Some(prev)
         } else {
@@ -258,7 +275,7 @@ impl Storage {
         }
     }
 
-    pub fn set_incomplete(&mut self, pos: usize) -> Option<bool> {
+    pub async fn set_incomplete(&mut self, pos: usize) -> Option<bool> {
         assert!(matches!(self.type_, StorageType::Completion));
         let tag = format!("{}", pos);
         if let Some(entry) = self.inner.get_mut(&tag) {
@@ -271,7 +288,9 @@ impl Storage {
                 key: tag,
                 prev: Some((if prev { "complete" } else { "incomplete" }).to_string()),
                 new: Some("incomplete".to_string()),
-            }));
+            }))
+            .await
+            .unwrap();
 
             Some(prev)
         } else {
@@ -279,7 +298,7 @@ impl Storage {
         }
     }
 
-    pub fn add_untagged(&mut self, data: &str) {
+    pub async fn add_untagged(&mut self, data: &str) {
         assert!(matches!(self.type_, StorageType::Untagged));
         let tag = format!("{}", self.inner.len() + 1);
         self.inner
@@ -291,10 +310,12 @@ impl Storage {
             key: tag,
             prev: None,
             new: Some(data.to_string()),
-        }));
+        }))
+        .await
+        .unwrap();
     }
 
-    pub fn del_untagged(&mut self, pos: usize) -> Option<String> {
+    pub async fn del_untagged(&mut self, pos: usize) -> Option<String> {
         assert!(matches!(self.type_, StorageType::Untagged));
         let tag = format!("{}", pos);
         if let Some(old) = self.inner.shift_remove(&tag) {
@@ -304,14 +325,17 @@ impl Storage {
                 key: tag,
                 prev: Some(old.data.to_string()),
                 new: None,
-            }));
+            }))
+            .await
+            .unwrap();
+
             Some(old.data)
         } else {
             None
         }
     }
 
-    pub fn set_current(&mut self, data: &str) {
+    pub async fn set_current(&mut self, data: &str) {
         assert!(matches!(self.type_, StorageType::CurrentPrevious));
 
         let old_current = self.inner.shift_remove(CURRENT_TAG);
@@ -331,10 +355,12 @@ impl Storage {
             key: CURRENT_TAG.to_string(),
             prev,
             new: Some(data.to_string()),
-        }));
+        }))
+        .await
+        .unwrap();
     }
 
-    pub fn clear(&mut self) {
+    pub async fn clear(&mut self) {
         self.inner.clear();
         self.on_event(Event::new(EventType::StorageUpdate {
             storage_name: self.name.to_string(),
@@ -342,6 +368,8 @@ impl Storage {
             key: "".to_string(),
             prev: None,
             new: None,
-        }));
+        }))
+        .await
+        .unwrap();
     }
 }

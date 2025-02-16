@@ -19,6 +19,8 @@ use namespaces::{Tool, ToolOutput};
 use state::{SharedState, State};
 use task::{eval::Evaluator, Task};
 
+use crate::Control;
+
 pub mod events;
 pub mod generator;
 pub mod namespaces;
@@ -110,6 +112,7 @@ pub struct Config {
     pub user_only: bool,
     pub max_iterations: usize,
     pub cot_tags: Vec<String>,
+    pub remote: Control,
 }
 
 pub struct TaskSpecs {
@@ -312,7 +315,8 @@ impl Agent {
                         self.state
                             .lock()
                             .await
-                            .on_complete(false, Some("evaluation success".to_string()))?;
+                            .on_complete(false, Some("evaluation success".to_string()))
+                            .await?;
                     } else if let Some(feedback) = evaluation.feedback {
                         self.state.lock().await.add_feedback_to_history(feedback);
                     }
@@ -321,6 +325,8 @@ impl Agent {
         }
 
         self.on_event(Event::new(EventType::StateUpdate(state_update)))
+            .await?;
+        Ok(())
     }
 
     // TODO: move these feedback strings to a common place
@@ -331,7 +337,9 @@ impl Agent {
         mut_state
             .add_unparsed_response_to_history("", "Do not return an empty responses.".to_string());
 
-        self.on_event(Event::new(EventType::EmptyResponse)).unwrap();
+        self.on_event(Event::new(EventType::EmptyResponse))
+            .await
+            .unwrap();
     }
 
     async fn on_chat_response(&self, response: &str) {
@@ -342,6 +350,7 @@ impl Agent {
         "I could not parse any valid tool calls from your response, please correct it according to the instructions.".to_string(),
     );
         self.on_event(Event::new(EventType::TextResponse(response.to_string())))
+            .await
             .unwrap();
     }
 
@@ -352,6 +361,7 @@ impl Agent {
     async fn on_invalid_tool_call(&self, tool_call: ToolCall, error: Option<String>) {
         if self.config.cot_tags.contains(&tool_call.tool_name) {
             self.on_event(Event::new(EventType::Thinking(tool_call.argument.unwrap())))
+                .await
                 .unwrap();
             return;
         }
@@ -369,6 +379,7 @@ impl Agent {
         );
 
         self.on_event(Event::new(EventType::InvalidToolCall { tool_call, error }))
+            .await
             .unwrap();
     }
 
@@ -378,6 +389,7 @@ impl Agent {
         let tool_call = tool_call.clone();
 
         self.on_event(Event::new(EventType::BeforeToolCall { tool_call }))
+            .await
             .unwrap();
     }
 
@@ -428,6 +440,7 @@ impl Agent {
             elapsed: start.elapsed(),
             complete_task: tool.complete_task(),
         }))
+        .await
         .unwrap();
     }
 
@@ -457,7 +470,8 @@ impl Agent {
 
         self.on_event(Event::new(EventType::MetricsUpdate(
             mut_state.metrics.clone(),
-        )))?;
+        )))
+        .await?;
 
         let system_prompt = self.config.serializer.system_prompt_for_state(&mut_state)?;
         let prompt = mut_state.to_prompt()?;
@@ -480,18 +494,23 @@ impl Agent {
         Ok(options)
     }
 
-    pub fn on_event(&self, event: Event) -> Result<()> {
-        self.events_chan.send(event).map_err(|e| anyhow!(e))
+    pub async fn on_event(&self, event: Event) -> Result<()> {
+        self.events_chan.send(event)?;
+        Ok(())
     }
 
-    pub fn on_event_type(&self, event_type: EventType) -> Result<()> {
-        self.on_event(Event::new(event_type))
+    pub async fn on_event_type(&self, event_type: EventType) -> Result<()> {
+        self.on_event(Event::new(event_type)).await?;
+        Ok(())
     }
 
     pub async fn step(&mut self) -> Result<()> {
         let options = self.prepare_step().await?;
 
         self.on_state_update(&options, false).await?;
+
+        // wait before inference
+        self.config.remote.wait_if_paused().await;
 
         // run model inference
         let response = self.generator.chat(self.state.clone(), &options).await?;
@@ -523,6 +542,9 @@ impl Agent {
         } else {
             self.on_valid_response().await;
         }
+
+        // wait before executing tool calls
+        self.config.remote.wait_if_paused().await;
 
         let mut any_state_updates = false;
 
@@ -581,6 +603,9 @@ impl Agent {
                     }
 
                     if execute {
+                        // wait before executing the tool call
+                        self.config.remote.wait_if_paused().await;
+
                         // execute with timeout
                         let start = std::time::Instant::now();
                         let ret = tokio::time::timeout(
@@ -600,9 +625,12 @@ impl Agent {
                                 .await;
                         }
 
+                        // wait after executing the tool call
+                        self.config.remote.wait_if_paused().await;
+
                         if tool.complete_task() {
                             log::debug!("! task complete");
-                            self.state.lock().await.on_complete(false, None)?;
+                            self.state.lock().await.on_complete(false, None).await?;
                         }
                     }
                 }
@@ -622,6 +650,9 @@ impl Agent {
             self.on_state_update(&options, true).await?;
         }
 
+        // wait after the step
+        self.config.remote.wait_if_paused().await;
+
         Ok(())
     }
 
@@ -630,5 +661,7 @@ impl Agent {
         let last_metrics = self.get_metrics().await;
 
         self.on_event(Event::new(EventType::MetricsUpdate(last_metrics)))
+            .await?;
+        Ok(())
     }
 }

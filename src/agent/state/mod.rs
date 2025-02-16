@@ -138,7 +138,7 @@ impl State {
 
                         if let Some(pre) = &storage_descriptor.predefined {
                             for (key, value) in pre {
-                                new_storage.add_data(key, value);
+                                new_storage.add_data(key, value).await;
                             }
                         }
 
@@ -151,7 +151,7 @@ impl State {
         // if the goal namespace is enabled, set the current goal
         if let Some(goal) = storages.get_mut("goal") {
             let prompt = task.to_prompt()?;
-            goal.set_current(&prompt);
+            goal.set_current(&prompt).await;
         }
 
         let metrics = Metrics {
@@ -277,12 +277,14 @@ impl State {
         None
     }
 
-    pub fn on_complete(&mut self, impossible: bool, reason: Option<String>) -> Result<()> {
+    pub async fn on_complete(&mut self, impossible: bool, reason: Option<String>) -> Result<()> {
         self.complete = true;
         self.on_event(Event::new(EventType::TaskComplete { impossible, reason }))
+            .await
     }
 
-    pub fn on_event(&self, event: Event) -> Result<()> {
-        self.events_tx.send(event).map_err(|e| anyhow!(e))
+    pub async fn on_event(&self, event: Event) -> Result<()> {
+        self.events_tx.send(event)?;
+        Ok(())
     }
 }

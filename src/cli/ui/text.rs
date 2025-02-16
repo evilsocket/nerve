@@ -1,5 +1,6 @@
 use std::{io::Write, time::Duration};
 
+use anyhow::Result;
 use colored::Colorize;
 
 use crate::{
@@ -89,8 +90,13 @@ fn on_tool_call_executed(
     }
 }
 
-pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bool) {
-    while let Some(event) = events_rx.recv().await {
+pub async fn start(events_rx: Receiver, args: Args) -> Result<()> {
+    tokio::spawn(consume_events(events_rx, args));
+    Ok(())
+}
+
+async fn consume_events(mut events_rx: Receiver, args: Args) {
+    while let Ok(event) = events_rx.recv().await {
         if let Some(record_to) = &args.record_to {
             let data = serde_json::to_string(&event).unwrap() + "\n";
             let mut file = std::fs::OpenOptions::new()
@@ -103,6 +109,9 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
         }
 
         match event.event {
+            EventType::ControlStateChanged(state) => {
+                log::debug!("control state: {:?}", state);
+            }
             EventType::WorkflowStarted(workflow) => {
                 println!(
                     "{} v{} 🧠 | executing workflow {}\n",
@@ -166,7 +175,7 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
                 );
             }
             EventType::TaskComplete { impossible, reason } => {
-                if !is_workflow {
+                if args.workflow.is_none() {
                     if impossible {
                         if let Some(reason) = reason {
                             log::error!("{}: '{}'", "task is impossible".bold().red(), reason);
@@ -187,7 +196,7 @@ pub async fn consume_events(mut events_rx: Receiver, args: Args, is_workflow: bo
                 prev,
                 new,
             } => {
-                if !is_workflow {
+                if args.workflow.is_none() {
                     if prev.is_none() && new.is_none() {
                         log::info!("storage.{} cleared", storage_name.yellow().bold());
                     } else if prev.is_none() && new.is_some() {
