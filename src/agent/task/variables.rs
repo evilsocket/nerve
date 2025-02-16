@@ -9,7 +9,8 @@ use crate::agent::get_user_input;
 
 lazy_static! {
     static ref VAR_CACHE: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
-    static ref VAR_PARSER: Regex = Regex::new(r#"(?m)(\$[^\s"']+)(\|\|[^\s"']+)?"#).unwrap();
+    static ref VAR_PARSER: Regex =
+        Regex::new(r#"(?m)(\$[^\s"']+[a-zA-Z0-9_])(\|\|[^\s"']+)?"#).unwrap();
 }
 
 pub fn define_variable(name: &str, value: &str) {
