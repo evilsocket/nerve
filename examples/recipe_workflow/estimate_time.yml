@@ -12,6 +12,11 @@ prompt: >
 guidance:
   - Once you have made an estimation, use the estimate_time tool to confirm the decision.
 
+evaluator: 
+  command:
+    - python3
+    - eval.py
+
 functions:
   - name: Tools
     actions:

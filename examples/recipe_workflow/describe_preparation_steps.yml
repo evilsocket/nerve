@@ -8,6 +8,11 @@ guidance:
   - Use the describe_preparation_steps tool to describe each step in the preparation.
   - Once you have described each step in the preparation of the pie set your task as complete.
 
+evaluator: 
+  command:
+    - python3
+    - eval.py
+
 functions:
   - name: Tools
     actions:

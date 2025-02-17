@@ -7,6 +7,11 @@ prompt: prepare a list of ingredients for $food
 guidance:
   - Once you have made a list of ingredients, use the create_list_of_ingredients tool to confirm the decision.
 
+evaluator: 
+  command:
+    - python3
+    - eval.py
+
 functions:
   - name: Tools
     actions:

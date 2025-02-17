@@ -18,6 +18,11 @@ prompt: >
 guidance:
   - Once you have completed the task, use the rewrite tool to confirm the decision.
 
+evaluator: 
+  command:
+    - python3
+    - eval.py
+
 functions:
   - name: Tools
     actions:
