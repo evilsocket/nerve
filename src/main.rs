@@ -90,7 +90,8 @@ async fn run_task(
         // next step
         if let Err(error) = agent.step().await {
             log::error!("{}", error.to_string());
-            return Err(error);
+            agent.set_failed_state(Some(error.to_string())).await?;
+            break;
         }
 
         if let Some(sleep_seconds) = args.sleep {

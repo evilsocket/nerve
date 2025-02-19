@@ -508,6 +508,11 @@ impl Agent {
         Ok(())
     }
 
+    pub async fn set_failed_state(&self, reason: Option<String>) -> Result<()> {
+        self.state.lock().await.on_complete(true, reason).await?;
+        Ok(())
+    }
+
     pub async fn step(&mut self) -> Result<()> {
         let options = self.prepare_step().await?;
 
