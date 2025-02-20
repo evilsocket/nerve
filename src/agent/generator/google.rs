@@ -28,12 +28,36 @@ impl Client for GoogleClient {
         self.client.check_supported_features().await
     }
 
+    async fn check_rate_limit(&self, error: &str) -> bool {
+        // if message contains "RESOURCE_EXHAUSTED" return true
+        if error.contains("RESOURCE_EXHAUSTED") {
+            let retry_time = std::time::Duration::from_secs(5);
+            log::warn!(
+                "rate limit reached for this model, retrying in {:?} ...",
+                &retry_time,
+            );
+
+            tokio::time::sleep(retry_time).await;
+
+            return true;
+        }
+
+        false
+    }
+
     async fn chat(
         &self,
         state: SharedState,
         options: &ChatOptions,
     ) -> anyhow::Result<ChatResponse> {
-        self.client.chat(state, options).await
+        let response = self.client.chat(state.clone(), options).await;
+        if let Err(error) = &response {
+            if self.check_rate_limit(&error.to_string()).await {
+                return self.chat(state, options).await;
+            }
+        }
+
+        response
     }
 }
 
