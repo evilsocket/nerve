@@ -203,40 +203,45 @@ impl TaskletTool {
             let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
             let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
-            if !err.is_empty() && self.max_shown_output > 0 && !self.ignore_stderr.unwrap_or(false)
-            {
-                log::error!(
-                    "{}",
-                    if err.len() > self.max_shown_output {
-                        format!(
-                            "{}\n{}",
-                            &err[0..self.max_shown_output].red(),
-                            "... truncated ...".yellow()
-                        )
-                    } else {
-                        err.red().to_string()
-                    }
-                );
-            }
-
-            if !out.is_empty() && self.max_shown_output > 0 {
-                let lines = if out.len() > self.max_shown_output {
-                    let end = out
-                        .char_indices()
-                        .map(|(i, _)| i)
-                        .nth(self.max_shown_output)
-                        .unwrap();
-                    let ascii = &out[0..end];
-                    format!("{}\n{}", ascii, "... truncated ...")
-                } else {
-                    out.to_string()
+            // do not log output if mime type is set
+            if self.mime_type.is_none() {
+                if !err.is_empty()
+                    && self.max_shown_output > 0
+                    && !self.ignore_stderr.unwrap_or(false)
+                {
+                    log::error!(
+                        "{}",
+                        if err.len() > self.max_shown_output {
+                            format!(
+                                "{}\n{}",
+                                &err[0..self.max_shown_output].red(),
+                                "... truncated ...".yellow()
+                            )
+                        } else {
+                            err.red().to_string()
+                        }
+                    );
                 }
-                .split('\n')
-                .map(|s| s.dimmed().to_string())
-                .collect::<Vec<String>>();
 
-                for line in lines {
-                    log::info!("{}", line);
+                if !out.is_empty() && self.max_shown_output > 0 {
+                    let lines = if out.len() > self.max_shown_output {
+                        let end = out
+                            .char_indices()
+                            .map(|(i, _)| i)
+                            .nth(self.max_shown_output)
+                            .unwrap();
+                        let ascii = &out[0..end];
+                        format!("{}\n{}", ascii, "... truncated ...")
+                    } else {
+                        out.to_string()
+                    }
+                    .split('\n')
+                    .map(|s| s.dimmed().to_string())
+                    .collect::<Vec<String>>();
+
+                    for line in lines {
+                        log::info!("{}", line);
+                    }
                 }
             }
 
