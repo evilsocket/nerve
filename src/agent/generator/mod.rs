@@ -23,6 +23,7 @@ mod ollama;
 mod openai;
 mod openai_compatible;
 mod xai;
+mod gigachat;
 
 pub(crate) mod history;
 mod options;
@@ -256,6 +257,12 @@ macro_rules! factory_body {
                 $context_window,
             )?)),
             "google" | "gemini" => Ok(Box::new(google::GoogleClient::new(
+                $url,
+                $port,
+                $model_name,
+                $context_window,
+            )?)),
+            "gigachat" => Ok(Box::new(gigachat::GigachatClient::new(
                 $url,
                 $port,
                 $model_name,
