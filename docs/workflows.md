@@ -2,7 +2,7 @@
 
 Workflows allow you to orchestrate multiple [tasklets](tasklets.md) as a sequence of steps. Each tasklet can be executed by a different model, if desired, and data is passed between them by setting variables and interpolating them into the prompt of the next tasklet. Each agent will have its own prompt, guidance, and functions, acting as an independent functional unit.
 
-For instance, the [recipe workflow example](https://github.com/dreadnode/nerve/tree/main/examples/recipe_workflow) shows how to orchestrate four different agents to:
+For instance, the [recipe workflow example](https://github.com/evilsocket/nerve/tree/main/examples/recipe_workflow) shows how to orchestrate four different agents to:
 
 - Create a list of ingredients (Claude)
 - Describe the preparation steps (GPT-4o)

@@ -24,4 +24,4 @@ Finally, you can run the agent with:
 nerve -G "openai://gpt-4o" -T webcam --window 5
 ```
 
-It is recommended to use [a conversation window size](https://github.com/dreadnode/nerve/blob/main/docs/tasklets.md#agent-loop-and-conversation-window) of 5 messages.
+It is recommended to use [a conversation window size](https://github.com/evilsocket/nerve/blob/main/docs/tasklets.md#agent-loop-and-conversation-window) of 5 messages.

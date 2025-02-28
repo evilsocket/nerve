@@ -22,13 +22,13 @@ cargo install nerve-ai
 
 ### Installing from DockerHub
 
-Alternatively, a Docker image is available on [Docker Hub](https://hub.docker.com/r/dreadnode/nerve). When running the container, if you're using a local inference server such as OLLAMA, you'll likely want it to share the same network as the host. To allow Nerve to reach network endpoints like OLLAMA, use the command below. This ensures the container runs without network isolation and can access the same resources on the network as your host computer.
+Alternatively, a Docker image is available on [Docker Hub](https://hub.docker.com/r/evilsocket/nerve). When running the container, if you're using a local inference server such as OLLAMA, you'll likely want it to share the same network as the host. To allow Nerve to reach network endpoints like OLLAMA, use the command below. This ensures the container runs without network isolation and can access the same resources on the network as your host computer.
 
 Additionally, remember to share the tasklet files by mounting a volume when running the container.
 
 
 ```sh
-docker run -it --network=host -v ./examples:/root/.nerve/tasklets dreadnode/nerve -h
+docker run -it --network=host -v ./examples:/root/.nerve/tasklets evilsocket/nerve -h
 ```
 
 ### Building from sources

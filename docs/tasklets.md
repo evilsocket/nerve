@@ -123,7 +123,7 @@ tool_box:
   $https://your-server.com/tools.yml
 ```
 
-Check the [the examples folder](https://github.com/search?q=repo%3Adreadnode%2Fnerve+%24+path%3A%2F%5Eexamples%5C%2F%2F+language%3AYAML&type=code&l=YAML) for more variables usage examples.
+Check the [the examples folder](https://github.com/search?q=repo%3Aevilsocket%2Fnerve+%24+path%3A%2F%5Eexamples%5C%2F%2F+language%3AYAML&type=code&l=YAML) for more variables usage examples.
 
 ## Timeouts
 
@@ -173,7 +173,7 @@ rag:
 # ... snippet ...
 ```
 
-See the [auto_rag example](https://github.com/dreadnode/nerve/tree/main/examples/auto_rag) for a complete example.
+See the [auto_rag example](https://github.com/evilsocket/nerve/tree/main/examples/auto_rag) for a complete example.
 
 ## Tools
 
@@ -275,12 +275,12 @@ tool_box:
 In addition to the ones already mentioned, tools can optionally define the following fields:
 
 - `max_shown_output`: The maximum number of characters to be shown in the output of the tool.
-- `store_to`: Save the output of the tool in a named variable used to pass data between different tasks. View [example workflows](https://github.com/search?q=repo%3Adreadnode%2Fnerve+store_to+language%3AYAML&type=code).
+- `store_to`: Save the output of the tool in a named variable used to pass data between different tasks. View [example workflows](https://github.com/search?q=repo%3Aevilsocket%2Fnerve+store_to+language%3AYAML&type=code).
 - `timeout`: Timeout for the specific tool.
-- `mime_type`: If set to `image/<any valid format>`, like `image/png`, the output of the tool will be considered as a base64 encoded image for vision models. View examples for [screenshots](https://github.com/dreadnode/nerve/tree/main/examples/screenshot) and [webcams](https://github.com/dreadnode/nerve/tree/main/examples/webcam).
+- `mime_type`: If set to `image/<any valid format>`, like `image/png`, the output of the tool will be considered as a base64 encoded image for vision models. View examples for [screenshots](https://github.com/evilsocket/nerve/tree/main/examples/screenshot) and [webcams](https://github.com/evilsocket/nerve/tree/main/examples/webcam).
 - `complete_task`: If set to `true`, the task will be marked as complete after the tool is executed.
-- `judge`: Use another tasklet as a judge to validate the output of the tool. View an example of a [code auditor with judge](https://github.com/dreadnode/nerve/tree/main/examples/code_auditor_with_judge).
-- `alias`: Create a tool that's an alias to one of the predefined ones. View examples of a [docker agent](https://github.com/dreadnode/nerve/tree/main/examples/docker-agent).
+- `judge`: Use another tasklet as a judge to validate the output of the tool. View an example of a [code auditor with judge](https://github.com/evilsocket/nerve/tree/main/examples/code_auditor_with_judge).
+- `alias`: Create a tool that's an alias to one of the predefined ones. View examples of a [docker agent](https://github.com/evilsocket/nerve/tree/main/examples/docker-agent).
 - `ignore_stderr`: If set to `true`, the `stderr` of the tool will be ignored.
 
 ## Evaluators
@@ -291,5 +291,5 @@ An evaluator is a command line that receives the current state of the agent thro
 2. Exit with any other status code if the task is not completed successfully.
 3. Print your output to stdout. The evaluation script will automatically add your console output to the chat history as feedback to the agent.
 
-Review the [eval_test](https://github.com/dreadnode/nerve/tree/main/examples/eval_test) and [ab_problem](https://github.com/dreadnode/nerve/tree/main/examples/ab_problem) tasklets for complete examples.
+Review the [eval_test](https://github.com/evilsocket/nerve/tree/main/examples/eval_test) and [ab_problem](https://github.com/evilsocket/nerve/tree/main/examples/ab_problem) tasklets for complete examples.
 
