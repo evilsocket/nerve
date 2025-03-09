@@ -1,1 +1,0 @@
-Performs a simple task by accessing the filesystem.

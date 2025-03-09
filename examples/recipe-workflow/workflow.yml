@@ -1,0 +1,16 @@
+name: "Write a Recipe"
+description: "A workflow for writing a recipe."
+
+flow:
+  create_list_of_ingredients:
+    generator: openai/gpt-4o-mini
+    #anthropic/claude-3-5-sonnet
+
+  describe_preparation_steps:
+    generator: openai/gpt-4o-mini
+
+  estimate_time:
+    generator: openai/gpt-4o-mini
+
+  rewrite_nicely:
+    generator: openai/gpt-4o-mini

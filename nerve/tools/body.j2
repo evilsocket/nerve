@@ -1,0 +1,44 @@
+import os
+from typing import Any, Annotated
+
+from pydantic import Field
+from loguru import logger
+
+import nerve.runtime.state as state
+
+{% set func_ret_type = "Any" %}
+{% if tool.tool is none %}
+{% set func_ret_type = "None" %}
+{% endif %}
+
+def {{ tool.name }}({% for arg in tool.arguments %}{{ arg.name }}: Annotated[str, Field(description="""{{ arg.description }}""", examples=["""{{ arg.example }}"""])]{% if not loop.last %}, {% endif %}{% endfor %}) -> {{ func_ret_type }}:
+    """{{ tool.description }}"""
+
+{% if tool.tool is none %}
+    # tool not set, this function will simply write the arguments to the runtime
+    state.update_variables(locals())
+    ret = None
+{% else %}
+    # tool is set, interpolate and quote the arguments for shell use
+    import shlex
+    context = {k: shlex.quote(v) for k, v in locals().items() if type(v) == str}
+    command = '''cd '{{ working_dir }}' && ''' + state.interpolate(raw='''{{ tool.tool }}''', extra=context)
+    logger.debug(command)
+
+    proc = os.popen(command)
+    buffer = proc.buffer.read() # read as bytes
+
+    try:
+        ret = buffer.decode("utf-8")
+    except Exception as e:
+        ret = buffer
+
+{% endif %}
+
+{% if tool.complete_task %}
+    # if the tool is set to complete the task, set the task as complete
+    state.set_task_complete()
+{% endif %}
+
+    # return the result of the tool call
+    return ret

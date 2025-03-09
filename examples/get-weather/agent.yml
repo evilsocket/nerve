@@ -1,0 +1,11 @@
+agent: You are a helpful assistant.
+task: What's the weather in {{ city }}?
+
+tools:
+  - name: get_weather
+    description: Get the current weather in a given place.
+    arguments:
+        - name: place
+          description: The place to get the weather of.
+          example: Rome
+    tool: curl wttr.in/{{ place }}

@@ -1,23 +1,36 @@
-# Nerve
+# Nerve: The Simple Agent Development Kit
 
-Nerve is a tool for building LLM agents using a simple YAML-based syntax. Agents are composed of [tasklets](tasklets.md) - modular steps that execute sequentially using tools available from [the standard library](namespaces.md) or a user-defined library. Furthermore tasklets can be orchestrated into [workflows](workflows.md) to create multi-agent environments to solve more complex tasks.
+Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool designed to be a simple yet powerful platform for creating and executing LLM-based agents using a simple YAML-based syntax.
 
 * [Installation](#installation)
 * [Usage](#usage)
-* [LLM Support](#llm-support)
-* [Using with Robopages](#using-with-robopages)
-* [Tasklets](tasklets.md)
 * [Namespaces](namespaces.md)
 * [Workflows](workflows.md)
 
 ## Installation
 
-### Installing with Cargo
+Nerve requires Python 3.9 or later and PIP. You can install it with:
 
-The easiest and recommended way to install Nerve is with [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html):
+```bash
+pip install nerve-adk
+```
 
-```sh
-cargo install nerve-ai
+To upgrade to the latest version, run:
+
+```bash
+pip install --upgrade nerve-adk
+```
+
+For a list of options:
+
+```bash
+nerve -h
+```
+
+To uninstall, run:
+
+```bash
+pip uninstall nerve-adk
 ```
 
 ### Installing from DockerHub
@@ -26,84 +39,127 @@ Alternatively, a Docker image is available on [Docker Hub](https://hub.docker.co
 
 Additionally, remember to share the tasklet files by mounting a volume when running the container.
 
-
 ```sh
-docker run -it --network=host -v ./examples:/root/.nerve/tasklets evilsocket/nerve -h
-```
-
-### Building from sources
-
-To build from source code:
-
-
-```sh
-cargo build --release
+docker run -it --network=host -v ./examples:/root/.nerve/ evilsocket/nerve -h
 ```
 
 ## Usage
 
-In order to use Nerve, you must specify which model to use through a generator string and what task to perform through a tasklet file.
+Nerve agents are simple YAML files that can use a set of built-in tools such as a bash shell, file system primitives [and more](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md). 
 
-To specify the model, refer to the [LLM Support](#llm-support) and [tasklets](tasklets.md) documentation.
+You can start creating an agent with a guided procedure by executing:
 
-For instance the command below will run the `examples/code_auditor` tasklet using the `gpt-4o` model from OpenAI:
-
-```sh
-nerve -G "openai://gpt-4o" -T examples/code_auditor 
+```bash
+nerve create new-agent
 ```
 
-Some tasklets require additional arguments that can be passed with `-D name=value` using the command line. For instance, the `code_auditor` tasklet requires a `TARGET_PATH` argument:
+During this procedure, you'll be prompted for the following:
 
-```sh
-nerve -G "openai://gpt-4o" -T examples/code_auditor -D TARGET_PATH=/path/to/code
+- where to save this agent (either as a folder or single yml file).
+- the agent **system prompt**, which is what determines the agent role (the `You are a useful assistant ...` stuff).
+- the agent **task** - what does this agent has to do? (`what is 4+3?`)
+- which **tools** from [the built-in namespaces](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md) the agent can use to perform its task.
+
+After completing the procedure, your `new-agent/agent.yml` file will look something like this:
+
+```yaml
+agent: You are a helpful assistant.
+
+# jinja2 templating syntax supported
+task: Make an HTTP request to {{ url }}
+
+using:
+- bash # can execute bash commands
+- task # can autonomously set the task as complete or failed
 ```
 
-When you use a workflow file, you can specify it with the `-W`/`--workflow` argument:
+To run this agent (the `--url` is required because we referenced it in the agent `task`):
 
-
-```sh
-nerve -W examples/recipe_workflow 
+```bash
+# equivalent to "nerve run new-agent/agent.yml"
+nerve run new-agent --url 'cnn.com'
 ```
 
-### LLM Support
-
-Nerve features integrations for any model accessible through the following providers:
-
-| Name | API Key Environment Variable | Generator Syntax |
-|----------|----------------------------|------------------|
-| **Ollama** | - | `ollama://llama3@localhost:11434` |
-| **Groq** | `GROQ_API_KEY` | `groq://llama3-70b-8192` |
-| **OpenAI**¹ | `OPENAI_API_KEY` | `openai://gpt-4` |
-| **Fireworks** | `LLM_FIREWORKS_KEY` | `fireworks://llama-v3-70b-instruct` |
-| **Huggingface**² | `HF_API_TOKEN` | `hf://tgi@your-custom-endpoint.aws.endpoints.huggingface.cloud` |
-| **Anthropic** | `ANTHROPIC_API_KEY` | `anthropic://claude` |
-| **Nvidia NIM** | `NIM_API_KEY` | `nim://nvidia/nemotron-4-340b-instruct` |
-| **DeepSeek** | `DEEPSEEK_API_KEY` | `deepseek://deepseek-chat` |
-| **xAI** | `XAI_API_KEY` | `xai://grok-beta` |
-| **Mistral.ai** | `MISTRAL_API_KEY` | `mistral://mistral-large-latest` |
-| **Novita** | `NOVITA_API_KEY` | `novita://meta-llama/llama-3.1-70b-instruct` |
-| **Google Gemini**³ | `GEMINI_API_KEY` | `gemini://gemini-2.0-flash` |
-
-¹ **o1-preview and o1 models do not support function calling directly** and do not support a system prompt. Nerve will attempt to detect this and will fallback to the user prompt. It's possible to force this behaviour by adding the `--user-only` flag to the command line.
-
-² To configure a custom Huggingface endpoint, refer to this document at: https://huggingface.co/blog/tgi-messages-api#using-inference-endpoints-with-openai-client-libraries.
-
-³ Google Gemini OpenAI endpoint breaks with multiple tools. While this bug won't be fixed, Nerve will detect this and use its own xml based tooling prompt to work around this issue. To learn more about this issue, read the materials at: https://discuss.ai.google.dev/t/invalid-argument-error-using-openai-compatible/51788.
-
-### Using with Robopages
-
-Nerve can use functions from a [robopages server](https://github.com/dreadnode/robopages-cli). In order to do so, you'll need to pass its address to the tool using the `-R`/`--robopages` argument:
+The default model is OpenAI `gpt-4o-mini`, in order to use a different model you can either set the `NERVE_GENERATOR` environment variable, or pass it as [a generator string](#llm-support) via the `-g/--generator` command line argument (using any of the [LiteLLM supported providers](https://docs.litellm.ai/docs/providers)):
 
 ```sh
-nerve -G "openai://gpt-4o" \
-  -T /path/to/tasklet \
-  -R "localhost:8000"
+export NERVE_GENERATOR=openai/gpt-4o
+nerve run new-agent --url 'cnn.com'
 ```
 
-To import only a subset of tools:
+is equivalent to:
 
 ```sh
-nerve -G "openai://gpt-4o" \
-  -T /path/to/tasklet \
-  -R "localhost:8000/cybersecurity/reverse-engineering"
+nerve run -g "openai/gpt-4o" new-agent --url 'cnn.com'
+```
+
+To pass additional inference parameters:
+
+```sh
+nerve -g "ollama/llama3.2?temperature=0.9&api_base=http://server-host:11434" new-agent --url 'cnn.com'
+```
+
+For a list of all the subcommands and their options, feel free to explore `nerve -h`.
+
+### Adding Tools
+
+When a tool can be represented as a shell command, you can conveniently extend the agent capabilites in the YAML:
+
+```yaml
+agent: You are a helpful assistant.
+task: What's the weather in {{ city }}?
+
+tools:
+  # this adds the get_weather tool
+  - name: get_weather
+    # it's important to let the agent know what the tool purpose is.
+    description: Get the current weather in a given place.
+    arguments:
+        # named arguments with descriptions and examples
+        - name: place
+          description: The place to get the weather of.
+          example: Rome
+    # arguments will be interpolated by name and automatically quoted for shell use
+    tool: curl wttr.in/{{ place }}
+```
+
+If the tool requires more advanced capabilities, you can implement it in Python, by adding a `tools.py` file in the same folder of the agent with annotated functions:
+
+```python
+# new-agent/tools.py
+
+import typing as t
+
+# This annotated function will be available as a tool to the agent.
+def read_webcam_image(foo: t.Annotated[str, "Describe arguments to the model like this."]) -> dict[str, str]:
+    """Reads an image from the webcam."""
+
+    # a tool can return a simple scalar value, or a dictionary for models with vision.
+    base64_image = '...'
+    return {
+        "type": "image_url",
+        "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+    }
+```
+
+### Conversation Window
+
+An agent will continue running in a loop execute tools at each step until one of the following conditions is met:
+
+- The task status has been set as complete (either by the agent itself if using the `task` namespace, or by one of the tools if its `complete_task` field is `true`).
+- The task status has been set as failed (by the agent itself if using the `task` namespace)
+- The task times out.
+
+During this loop the chat history the model has access to is defined by the conversation window, default to `full`, determined by the `--conversation/c` argument.
+
+Full conversation window (the default behaviour, the model receives the entire conversation history):
+
+```bash
+nerve run agent -c full
+```
+
+Only receive the last N messages (with N=5 in this example):
+
+```bash
+nerve run agent -c 5
 ```

@@ -1,0 +1,45 @@
+# the actor
+agent: > 
+  You are an expert application security professional.
+  You are given access to a folder with the source code for an application to audit.
+  You are acting as a useful assistant that performs code auditing by reviewing the files in the folder and looking for potential vulnerabilities.
+
+  ## Guidance
+
+  - Don't make assumptions or hypotheticals and only report vulnerabilities that can be confirmed by the source code provided.
+  - Prioritize reporting vulnerabilities that can lead to unauthorized access to the application, code execution, or other unauthorized actions.
+  - Avoid reporting misconfigurations or other non-vulnerability issues such as improper error handling.
+  - Use exclusively the report_findings tool to report your findings.
+  - Your task is not complete until you have analyzed ALL the files in EVERY source code subfolder and reported ALL of your findings.
+  - Analyze the files in a folder before moving on to the next folder.
+  - Make sure you reported everything you found and ince you are done reporting ALL of your findings, set your task as complete.
+
+# the task
+task: find vulnerabilities in source code in {{ target_path }} and report your findings.
+
+# builtin tools to use
+using:
+  - filesystem
+  - task
+  - reasoning
+
+jail:
+  # make sure that the model can't access the filesystem outside of the target path
+  filesystem:
+    - "{{ target_path }}"
+
+tools:
+  - name: report_finding
+    description: Use this tool to report your findings.
+    arguments: 
+      - name: finding
+        description: The finding to report.
+        example: >
+          {
+            "title": "SQL Injection",
+            "severity": "HIGH",
+            "description": "This is an example finding",
+            "file": "/full/path/to/vulnerable_file.py"
+          }
+    # interpolated arguments will be automatically quoted for shell use
+    tool: echo {{ finding }} >> findings.jsonl

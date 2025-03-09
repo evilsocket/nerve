@@ -2,11 +2,11 @@ using:
   - time
   - reasoning
 
-system_prompt: You are an helpful assistant with access to a webcam.
+agent: >
+  You are an helpful assistant with access to a webcam.
+  
+  ## Guidance
 
-prompt: Check the image from the webcam and inform the user if and only if there's a state change.
-
-guidance:
   - Use the read_webcam_image tool to get the image from the webcam.
   - Use the inform_user tool to inform the user about interesting activity.
   - If you see pets, focus on them and on what they are doing.
@@ -14,20 +14,5 @@ guidance:
   - Do NOT inform the user for every image, only do it if you see something interesting.
   - Do NOT inform the user if you see nothing interesting or no state changes are happening.
 
-functions:
-  - name: Enviroment
-    actions:
-      - name: read_webcam_image
-        description: Check the image from the webcam.
-        tool: ./webcam.py
-        # we don't need to see the base64 on the logs
-        max_shown_output: 0
-        mime_type: image/png
-  
-      - name: inform_user
-        description: Use this tool to inform the user about interesting activity.
-        example_payload: "The kitten is moving!"
-        tool: ./dialog.py
-        max_shown_output: 0
-        # opecv ui stuff can generate noisy stderr we don't need
-        ignore_stderr: true
+
+task: Check the image from the webcam and inform the user if and only if there's a state change.

@@ -1,76 +1,55 @@
 # Namespaces
 
-Nerve offers a rich set of predefined tools, organized in namespaces, that the agent can import [with the using directive](tasklets.md#tools). **If a specific model does not natievly support tool calling, Nerve will use its own XML based format to enable tool calling.**
+Nerve offers a rich set of predefined tools, organized in namespaces, that the agent can import [via the `using` directive](index.md#usage). This page contains the list of namespaces available in Nerve, with the descriptive prompt that will be provided to the model.
 
-This page contains the list of namespaces available in Nerve, with the descriptive prompt that will be provided to the model.
+## anytool
 
-## Memory
+Let the agent create its own tools in Python.
 
-Use these memory-related actions to store and retrieve meaningful information obtained from the output of previous actions. Information worth storing includes anything that could be useful for accomplishing your current task, goal, or plan. If the information is no longer relevant to the current goal, or if it contains errors based on new information, it should be deleted.
+| Tool | Description |
+|------|-------------|
+| `create_tool` | <pre>Create a new tool or redefine an existing one by defining it as an annotated Python function.<br>    Use this tool to implement the missing functionalities you need to perform your task.</pre> |
 
+## bash
 
-* To store a memory with any key: `<save_memory key="my-note">put here the custom data you want to keep for later</save_memory>`
-* To delete a memory you previously stored given its key: `<delete_memory key="my-note"/>`
+Let the agent execute bash commands.
 
+| Tool | Description |
+|------|-------------|
+| `execute_bash_command` | <pre>Execute a bash command and return the output.</pre> |
 
-## Time
+## filesystem
 
-Include time-related actions to give the agent awareness of the current time, track elapsed time between messages, and allow it to autonomously pause its loop for a specified duration.
+Read-only access primitives to the local filesystem.
 
-* To pause for a given amount of seconds: `<wait>5</wait>`
+| Tool | Description |
+|------|-------------|
+| `list_folder_contents` | <pre>List the contents of a folder on disk.</pre> |
+| `read_file` | <pre>Read the contents of a file from disk.</pre> |
 
-## Goal
+## reasoning
 
-Use this action to update your current goal.
+Simulates the reasoning process at runtime.
 
-* When a new goal is required: `<update_goal>your new goal</update_goal>`
+| Tool | Description |
+|------|-------------|
+| `clear_thoughts` | <pre>If the reasoning process proved wrong, inconsistent or ineffective, clear your thoughts and start again.</pre> |
+| `think` | <pre>Adhere strictly to this reasoning framework, ensuring thoroughness, precision, and logical rigor.<br><br>    ## Problem Decomposition<br><br>    Break the query into discrete, sequential steps.<br>    Explicitly state assumptions and context.<br><br>    ## Stepwise Analysis<br><br>    Address each step individually.<br>    Explain the rationale, principles, or rules applied (e.g., mathematical laws, linguistic conventions).<br>    Use examples, analogies, or intermediate calculations to illustrate reasoning.<br><br>    ## Validation & Error Checking<br><br>    Verify logical consistency at each step.<br>    Flag potential oversights, contradictions, or edge cases.<br>    Confirm numerical accuracy (e.g., recompute calculations).<br><br>    ## Synthesis & Conclusion<br><br>    Integrate validated steps into a coherent solution.<br>    Summarize key insights and ensure the conclusion directly addresses the original query.</pre> |
 
-## Planning
+## task
 
-Use these actions to maintain a structured plan for achieving your current goal. This namespace allows you to think the problem through step-by-step. Each step must build upon the steps that precede it, moving methodically towards accomplishing your current goal:
+Let the agent autonomously set the task as complete or failed.
 
-* To add a step to your plan: `<add_plan_step>complete the task</add_plan_step>`
-* To remove a step from your plan, given its position: `<delete_plan_step>2</delete_plan_step>`
-* To set a step from your plan as completed: `<set_step_completed>2</set_step_completed>`
-* To set a step from your plan as incomplete: `<set_step_incomplete>2</set_step_incomplete>`
-* You may hit a dead end if your original plan wasn't the right direction, as you'll notice when your efforts fail to bring you closer to your goal. Whenever you reach a dead end, clear your existing plan and start from scratch with a new one by using: `<clear_plan/>`
+| Tool | Description |
+|------|-------------|
+| `task_complete_success` | <pre>When your objective has been reached use this tool to set the task as complete.</pre> |
+| `task_failed` | <pre>Use this tool if you determine that the given goal or task is impossible given the information you have.</pre> |
 
-## Task
+## time
 
-Use these actions to set the task as completed.
+Provides tools for getting the current date and time and waiting for a given number of seconds.
 
-* When your objective has been reached: `<task_complete>a brief report about why the task is complete</task_complete>`
-* If you determine that the given goal or task is impossible given the information you have: `<task_impossible>a brief report about why the task is impossible</task_impossible>`
-
-## Filesystem
-
-You can use the filesystem actions to read files and folders from the disk.
-
-* To read the contents of a file from disk: `<read_file>/path/to/file/to/read</read_file>`
-* To list the files in a folder on disk: `<list_folder_contents>/path/to/folder</list_folder_contents>`
-* To append a structured JSON object to the log file: `<append_to_file>{
-      "title": "Example title",
-      "description": "Example description.",
-    }</append_to_file>`
-
-## Knowledge
-
-Use these actions to search and retrieve information from your long term storage.
-
-* All information from your long term storage is true. To search for information on your long-term storage: `<search>what is the biggest city in the world?</search>`
-
-## Web
-
-You can use the web actions to execute HTTP requests.
-
-* To add a permanent header to all future requests:
- `<http_set_header name="X-Header">some-value-for-the-header</http_set_header>`
-      * This is useful for cookies, session information, and authentication tokens.
-* To reset your current session and clear all headers: `<http_clear_headers/>`
-* To create and send an HTTP request with the specified method: `<http_request method="GET">/index.php?id=1</http_request>`
-
-## Shell
-
-Use this action to execute shell commands and get their output.
-
-*  `<shell>ls -la</shell>`
+| Tool | Description |
+|------|-------------|
+| `current_time_and_date` | <pre>Get the current date and time.</pre> |
+| `wait` | <pre>Wait for a given number of seconds.</pre> |

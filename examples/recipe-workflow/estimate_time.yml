@@ -1,0 +1,24 @@
+agent: You are a talented chef. You are given a list of ingredients and a list of preparation steps. You need to estimate the time it will take to prepare the food.
+
+task: >
+  Estimate the time it will take to prepare {{ food }}. 
+
+  The ingredients at your disposal are:
+
+    {{ ingredients }}
+ 
+  The preparation steps are: 
+ 
+    {{ steps }}
+
+using:
+  - reasoning
+
+tools:
+  - name: estimate_time
+    description: "To provide the time it will take to prepare the food:"
+    complete_task: true
+    arguments:
+      - name: preparation_time
+        description: The time it will take to prepare the food.
+        example: 25 minutes

@@ -1,0 +1,35 @@
+agent: >
+  You are an helpful assistant with access to an Android phone and using the tools to perform tasks with it.
+  
+  ## Guidance
+
+  - Use the provided tools to see the device screen and interact with it.
+  - Interact with the device by performing any action necessary to perform the task.
+  - For every action, make sure it's been completed successfully, for instance if the request if sending a message, make sure the message has been sent successfully.
+
+using:
+  - reasoning
+  - task
+
+tools:
+  - name: get_view_state
+    description: "Get a description of what's visible on the screen and how to interact with each element."
+    # uses uiautomator dump to get an XML with all the elements on the screen
+    tool: "adb shell uiautomator dump --compressed /sdcard/window_dump.xml > /dev/null 2>&1 && 
+      adb pull /sdcard/window_dump.xml /tmp/window_dump.xml > /dev/null 2>&1 && 
+      cat /tmp/window_dump.xml"
+
+  - name: take_screenshot
+    description: "Take a screenshot of the device screen."
+    # uses adb to take a screenshot of the device screen
+    mime: image/png
+    tool: adb exec-out screencap -p
+
+  - name: adb_shell
+    description: "Execute an adb shell command on the Android device and return the output."
+    arguments:
+      - name: command
+        description: "The command to execute on the Android device."
+        example: "input tap 900 2140"
+    # uses adb to execute a shell command on the device
+    tool: adb shell {{ command }}

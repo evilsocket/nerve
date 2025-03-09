@@ -1,0 +1,19 @@
+agent: You are a talented and creative chef.
+
+task: describe the preparation steps for {{ food }}. The ingredients at your disposal are {{ ingredients }}.
+
+using:
+  - reasoning
+
+tools:
+  - name: describe_preparation_steps
+    description: "To provide the preparation steps one per line as an organized list:"
+    complete_task: true
+    arguments:
+      - name: steps
+        description: The steps to describe.
+        example: >
+          - Preheat the oven to 350 degrees F (175 degrees C)
+          - In a large bowl, mix together flour, sugar, eggs, and milk.
+          - Pour the mixture into a pie crust.
+          - Bake in the preheated oven for 20 minutes, or until a knife inserted into the center comes out clean.
