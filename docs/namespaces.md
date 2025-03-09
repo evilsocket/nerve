@@ -53,3 +53,4 @@ Provides tools for getting the current date and time and waiting for a given num
 |------|-------------|
 | `current_time_and_date` | <pre>Get the current date and time.</pre> |
 | `wait` | <pre>Wait for a given number of seconds.</pre> |
+

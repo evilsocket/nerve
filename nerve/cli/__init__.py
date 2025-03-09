@@ -15,7 +15,6 @@ from nerve.cli.defaults import (
     DEFAULT_TIMEOUT,
 )
 from nerve.cli.execute import execute_flow
-from nerve.cli.ns import print_namespaces
 from nerve.cli.replay import replay
 from nerve.generation import conversation
 from nerve.runtime import logging
@@ -57,13 +56,6 @@ def version() -> None:
     print(f"platform: {platform.system().lower()} ({platform.machine()})")
     print(f"python:   {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
     print(f"nerve:    {nerve.__version__}")
-
-
-@cli.command(
-    help="Print the markdown formatted list of available namespaces.",
-)
-def ns() -> None:
-    print_namespaces()
 
 
 @cli.command(

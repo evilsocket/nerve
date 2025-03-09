@@ -1,9 +1,17 @@
 import inspect
 import pkgutil
 
+import nerve.tools.namespaces as namespaces
 
-def print_namespaces() -> None:
-    import nerve.tools.namespaces as namespaces
+if __name__ == "__main__":
+    head = """
+# Namespaces
+
+Nerve offers a rich set of predefined tools, organized in namespaces, that the agent can import [via the `using` directive](index.md#usage). This page contains the list of namespaces available in Nerve, with the descriptive prompt that will be provided to the model.
+""".strip()
+
+    print(head)
+    print()
 
     for _, modname, _ in pkgutil.iter_modules(namespaces.__path__):
         if modname[0] != "_" and not modname.startswith("test_"):
