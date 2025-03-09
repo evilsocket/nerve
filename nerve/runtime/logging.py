@@ -68,7 +68,8 @@ def log_event_to_terminal(event: Event) -> None:
             data["flow"] = DictWrapper(data["flow"])
 
         max_steps = data["flow"].max_steps
-        timeout = f"{data["flow"].timeout}s timeout" if data["flow"].timeout else "no timeout"
+        timeout = data["flow"].timeout
+        timeout = f"{timeout}s timeout" if timeout else "no timeout"
         conv_window_strategy = data["flow"].actors[0].conv_window_strategy
         logger.info(f"🚀 {max_steps} max steps | {timeout} | {conv_window_strategy}")
 
