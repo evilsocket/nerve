@@ -132,9 +132,9 @@ def log_event_to_terminal(event: Event) -> None:
             data["token_usage"] = DictWrapper(data["token_usage"])
 
         if data["token_usage"].total_tokens > 0:
-            logger.info(f"📊 [step {data["step"]}] [usage {data["token_usage"]}]")
+            logger.info(f"📊 [step {data['step']}] [usage {data['token_usage']}]")
         else:
-            logger.info(f"📊 [step {data["step"]}]")
+            logger.info(f"📊 [step {data['step']}]")
 
     elif event.name in ("task_started", "agent_step", "step_complete", "variable_change", "knowledge_change"):
         pass
