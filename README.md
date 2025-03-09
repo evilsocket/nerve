@@ -10,6 +10,10 @@
 
 <p align="center">
   🧠 + 🛠️ = 🤖
+  <br>
+  <strong>
+    <a href="https://github.com/evilsocket/nerve/blob/main/docs/index.md">Documentation</a> - <a href="https://github.com/evilsocket/nerve/blob/main/examples">Examples</a>
+  </strong>
 </p>
 
 Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool designed to be a simple yet powerful platform for creating and executing LLM-based agents.
