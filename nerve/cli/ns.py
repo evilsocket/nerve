@@ -20,6 +20,7 @@ def print_namespaces() -> None:
             for name, func in inspect.getmembers(module, inspect.isfunction):
                 if name[0] != "_" and func.__module__ == module.__name__:
                     doc = func.__doc__ or ""
-                    print(f"| `{name}` | <pre>{doc.strip().replace('\n', '<br>')}</pre> |")
+                    doc = doc.strip().replace("\n", "<br>")
+                    print(f"| `{name}` | <pre>{doc}</pre> |")
 
             print("")
