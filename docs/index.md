@@ -80,10 +80,15 @@ To run this agent (the `--url` is required because we referenced it in the agent
 nerve run new-agent --url 'cnn.com'
 ```
 
+For a list of all the subcommands and their options, feel free to explore `nerve -h`.
+
+### Generators
+
 The default model is OpenAI `gpt-4o-mini`, in order to use a different model you can either set the `NERVE_GENERATOR` environment variable, or pass it as [a generator string](#llm-support) via the `-g/--generator` command line argument (using any of the [LiteLLM supported providers](https://docs.litellm.ai/docs/providers)):
 
 ```sh
 export NERVE_GENERATOR=openai/gpt-4o
+
 nerve run new-agent --url 'cnn.com'
 ```
 
@@ -98,8 +103,6 @@ To pass additional inference parameters:
 ```sh
 nerve -g "ollama/llama3.2?temperature=0.9&api_base=http://server-host:11434" new-agent --url 'cnn.com'
 ```
-
-For a list of all the subcommands and their options, feel free to explore `nerve -h`.
 
 ### Adding Tools
 
