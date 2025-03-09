@@ -46,7 +46,7 @@ def wrap_tool_function(func: t.Callable[..., t.Any], mime: str | None = None) ->
             if mime.startswith("image/"):
                 result = {
                     "type": "image_url",
-                    "image_url": {"url": f"data:{mime};base64,{base64.b64encode(result).decode("utf-8")}"},
+                    "image_url": {"url": f"data:{mime};base64,{base64.b64encode(result).decode('utf-8')}"},
                 }
             else:
                 logger.error(f"tool {func.__name__} references an unsupported mime type: {mime}")
