@@ -67,16 +67,20 @@ def log_event_to_terminal(event: Event) -> None:
         if isinstance(data["flow"], dict):
             data["flow"] = DictWrapper(data["flow"])
 
-        logger.info(
-            f"🚀 {data["flow"].max_steps} max steps | {f"{data["flow"].timeout}s timeout" if data["flow"].timeout else "no timeout"} | {data["flow"].actors[0].conv_window_strategy}"
-        )
+        max_steps = data["flow"].max_steps
+        timeout = f"{data["flow"].timeout}s timeout" if data["flow"].timeout else "no timeout"
+        conv_window_strategy = data["flow"].actors[0].conv_window_strategy
+        logger.info(f"🚀 {max_steps} max steps | {timeout} | {conv_window_strategy}")
 
     elif event.name == "agent_created":
         if isinstance(data["agent"], dict):
             data["agent"] = DictWrapper(data["agent"])
-        logger.info(
-            f"🤖 {data["agent"].runtime.generator} | {data["agent"].runtime.name} v{data["agent"].configuration.version} with {len(data["agent"].runtime.tools)} tools"
-        )
+
+        generator = data["agent"].runtime.generator
+        name = data["agent"].runtime.name
+        version = data["agent"].configuration.version
+        tools = len(data["agent"].runtime.tools)
+        logger.info(f"🤖 {generator} | {name} v{version} with {tools} tools")
 
     elif event.name == "before_tool_called":
         args_str = ", ".join([f"{k}={v}" for k, v in data["args"].items()])
