@@ -85,7 +85,7 @@ def log_event_to_terminal(event: Event) -> None:
 
     elif event.name == "before_tool_called":
         args_str = ", ".join([f"{k}={v}" for k, v in data["args"].items()])
-        logger.debug(f"🛠️  {data["name"]}({args_str}) ...")
+        logger.debug(f"🛠️  {data['name']}({args_str}) ...")
 
     elif event.name == "tool_called":
         # avoid logging twice
@@ -100,7 +100,7 @@ def log_event_to_terminal(event: Event) -> None:
         else:
             ret = f"{len(str(data['result']))} bytes in "
 
-        logger.info(f"🛠️  {data["name"]}({args_str}) -> {ret}{elapsed_time:.4f} seconds")
+        logger.info(f"🛠️  {data['name']}({args_str}) -> {ret}{elapsed_time:.4f} seconds")
 
     elif event.name == "task_complete":
         if isinstance(data["actor"], dict):
@@ -110,10 +110,10 @@ def log_event_to_terminal(event: Event) -> None:
         logger.info(f"✅ task {data['actor'].runtime.name} completed{reason}")
 
     elif event.name == "task_failed":
-        logger.error(f"❌ task {data['actor'].runtime.name} failed: {data["reason"]}")
+        logger.error(f"❌ task {data['actor'].runtime.name} failed: {data['reason']}")
 
     elif event.name == "tool_created":
-        logger.info(f"🧰 registered tool: {data["name"]}")
+        logger.info(f"🧰 registered tool: {data['name']}")
 
     elif event.name == "unknown_tool":
         logger.warning(f"❌ model called unknown tool: {data['tool_name']}")
