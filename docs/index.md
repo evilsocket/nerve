@@ -9,7 +9,7 @@ Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool 
 
 ## Installation
 
-Nerve requires Python 3.9 or later and PIP. You can install it with:
+Nerve requires Python 3.10 or later and PIP. You can install it with:
 
 ```bash
 pip install nerve-adk
