@@ -101,7 +101,7 @@ nerve run -g "openai/gpt-4o" new-agent --url 'cnn.com'
 To pass additional inference parameters:
 
 ```sh
-nerve -g "ollama/llama3.2?temperature=0.9&api_base=http://server-host:11434" new-agent --url 'cnn.com'
+nerve run -g "ollama/llama3.2?temperature=0.9&api_base=http://server-host:11434" new-agent --url 'cnn.com'
 ```
 
 ### Load Path
