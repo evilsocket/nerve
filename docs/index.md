@@ -104,6 +104,10 @@ To pass additional inference parameters:
 nerve -g "ollama/llama3.2?temperature=0.9&api_base=http://server-host:11434" new-agent --url 'cnn.com'
 ```
 
+### Load Path
+
+Nerve primarily loads agents from `$HOME/.nerve/`, ensuring that any agent in this folder is accessible regardless of your current working directory. If the agent is not found there, Nerve will then search in the current working directory as a fallback.
+
 ### Adding Tools
 
 When a tool can be represented as a shell command, you can conveniently extend the agent capabilites in the YAML:
