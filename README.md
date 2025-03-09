@@ -43,7 +43,7 @@ using: [task, bash]
 nerve run new-agent
 ```
 
-🛠️ The agent capabilities can be extended directly via YAML (the [android-agent](https://github.com/evilsocket/nerve/blob/main/examples/android-agent) for a perfect example of this):
+🛠️ The agent capabilities can be extended directly via YAML (the [android-agent](https://github.com/evilsocket/nerve/blob/main/examples/android-agent) is a perfect example of this):
 
 ```yaml
 tools:
