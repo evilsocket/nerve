@@ -32,7 +32,7 @@ jobs:
           poetry config virtualenvs.in-project true --local
 
       - name: Cache dependencies
-        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a
+        uses: actions/cache@v4
         with:
           path: ./.venv
           key: venv-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
