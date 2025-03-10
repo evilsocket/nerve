@@ -52,7 +52,7 @@ Let the agent execute shell commands.
 
 | Tool | Description |
 |------|-------------|
-| `execute_shell_command` | <pre>Execute a shell command and return the output.</pre> |
+| `shell` | <pre>Execute a shell command on the local computer and return the output. Non interactive shell with a timeout of 30 seconds.</pre> |
 
 ## task
 

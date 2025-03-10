@@ -13,10 +13,10 @@ def _maybe_text(output: bytes) -> str | bytes:
         return output
 
 
-def execute_shell_command(
+def shell(
     command: Annotated[str, "The shell command to execute"],
 ) -> str | bytes:
-    """Execute a shell command on the local computer and return the output with a timeout of 30 seconds."""
+    """Execute a shell command on the local computer and return the output. Non interactive shell with a timeout of 30 seconds."""
 
     result = subprocess.run(command, shell=True, capture_output=True, timeout=30)
 
