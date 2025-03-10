@@ -42,4 +42,4 @@ class TestShell(unittest.TestCase):
         result = shell.execute_shell_command("head /bin/sh")
         # verify the result is bytes, not str
         self.assertIsInstance(result, bytes)
-        self.assertEqual(result[:4], b"\xca\xfe\xba\xbe")
+        self.assertTrue(result[:4] == b"\x7fELF" or result[:4] == b"\xca\xfe\xba\xbe")

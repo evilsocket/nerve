@@ -17,7 +17,7 @@ def init(log_path: pathlib.Path | None = None, level: str = "INFO", litellm_debu
         level: The log level to use.
         litellm_debug: Whether to enable litellm debug logging.
     """
-    format = "<green>{time}</green> {message}"
+    format = "<green>{time}</green> <level>{message}</level>"
 
     if level != "DEBUG":
         logger.remove()
@@ -99,14 +99,14 @@ def log_event_to_terminal(event: Event) -> None:
         else:
             ret = f"{len(str(data['result']))} bytes in "
 
-        logger.success(f"🛠️  {data['name']}({args_str}) -> {ret}{elapsed_time:.4f} seconds")
+        logger.info(f"🛠️  {data['name']}({args_str}) -> {ret}{elapsed_time:.4f} seconds")
 
     elif event.name == "task_complete":
         if isinstance(data["actor"], dict):
             data["actor"] = DictWrapper(data["actor"])
 
         reason = f": {data['reason']}" if data["reason"] else ""
-        logger.success(f"✅ task {data['actor'].runtime.name} completed{reason}")
+        logger.info(f"✅ task {data['actor'].runtime.name} completed{reason}")
 
     elif event.name == "task_failed":
         logger.error(f"❌ task {data['actor'].runtime.name} failed: {data['reason']}")
