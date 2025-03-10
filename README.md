@@ -1,24 +1,22 @@
-# Nerve: The Simple Agent Development Kit
+<div align="center">
 
-<p align="center">
-  <a href="https://github.com/evilsocket/nerve/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/evilsocket/nerve.svg?style=flat-square"></a>
-  <a href="https://pypi.org/project/nerve-adk"><img alt="Package" src="https://img.shields.io/pypi/v/nerve-adk.svg"></a>
-  <a href="https://hub.docker.com/r/evilsocket/nerve"><img alt="Docker Hub" src="https://img.shields.io/docker/v/evilsocket/nerve?logo=docker"></a>
-  <a href="#"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/evilsocket/nerve/ci.yml"></a>
-  <a href="https://github.com/evilsocket/nerve/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square"></a>
-</p>
+# `nerve`
 
-<p align="center">
-  🧠 + 🛠️ = 🤖
-  <br>
-  <strong>
-    <a href="https://github.com/evilsocket/nerve/blob/main/docs/index.md">Documentation</a> - <a href="https://github.com/evilsocket/nerve/blob/main/examples">Examples</a>
-  </strong>
-</p>
+<i>The Simple Agent Development Kit</i>
 
-Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool designed to be a simple yet powerful platform for creating and executing LLM-based agents.
+[![Release](https://img.shields.io/github/release/evilsocket/nerve.svg?style=flat-square)](https://github.com/evilsocket/nerve/releases/latest)
+[![Package](https://img.shields.io/pypi/v/nerve-adk.svg)](https://pypi.org/project/nerve-adk)
+[![Docker](https://img.shields.io/docker/v/evilsocket/nerve?logo=docker)](https://hub.docker.com/r/evilsocket/nerve)
+[![CI](https://img.shields.io/github/actions/workflow/status/evilsocket/nerve/ci.yml)](https://github.com/evilsocket/nerve/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square)](https://github.com/evilsocket/nerve/blob/master/LICENSE.md)
 
-🖥️ Install:
+**[Documentation](https://github.com/evilsocket/nerve/blob/main/docs/index.md) - [Examples](https://github.com/evilsocket/nerve/blob/main/examples)**
+
+</div>
+
+Nerve is an ADK ( _Agent Development Kit_ ) designed to be a simple yet powerful platform for creating and executing LLM-based agents.
+
+🖥️ Install with:
 
 ```bash
 pip install nerve-adk
