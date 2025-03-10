@@ -104,10 +104,10 @@ def log_event_to_terminal(event: Event) -> None:
 
     elif event.name == "task_complete":
         reason = f": {data['reason']}" if data["reason"] else ""
-        logger.info(f"✅ task {data['actor']} completed{reason}")
+        logger.info(colored(f"✅ task {data['actor']} completed{reason}", "green", attrs=["bold"]))
 
     elif event.name == "task_failed":
-        logger.error(f"❌ task {data['actor']} failed: {data['reason']}")
+        logger.error(colored(f"❌ task {data['actor']} failed: {data['reason']}", "red", attrs=["bold"]))
 
     elif event.name == "tool_created":
         logger.info(f"🧰 registered tool: {data['name']}")

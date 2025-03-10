@@ -50,4 +50,4 @@ def {{ tool.name }}({% for arg in tool.arguments %}{{ arg.name }}: Annotated[str
 {% endif %}
 
     # return the result of the tool call
-    return ret
+    return ret if len(ret) > 0 else None

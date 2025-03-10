@@ -123,3 +123,17 @@ class TestFilesystem(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 filesystem.read_file(str(symlink_path / "outside_file.txt"))
+
+    def test_read_file_binary(self) -> None:
+        # Create a binary file with non-UTF8 content
+        binary_file = self.test_dir / "binary_file"
+        binary_content = bytes([0xFF, 0xFE, 0xFD])  # Invalid UTF-8 sequence
+        binary_file.write_bytes(binary_content)
+
+        # Set jail to allow the test directory
+        filesystem.jail = [str(self.test_dir)]
+
+        # Should return bytes for binary content
+        result = filesystem.read_file(str(binary_file))
+        self.assertIsInstance(result, bytes)
+        self.assertEqual(result, binary_content)

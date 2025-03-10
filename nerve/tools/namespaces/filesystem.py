@@ -29,6 +29,13 @@ def _path_acl(path_to_check: str) -> None:
         raise ValueError(f"access to path {path_to_check} is not allowed, only allowed paths are: {jail}")
 
 
+def _maybe_text(output: bytes) -> str | bytes:
+    try:
+        return output.decode("utf-8").strip()
+    except UnicodeDecodeError:
+        return output
+
+
 def list_folder_contents(
     path: Annotated[str, "The path to the folder to list"],
 ) -> str:
@@ -43,10 +50,10 @@ def list_folder_contents(
     return os.popen(f"ls -la {path}").read()
 
 
-def read_file(path: Annotated[str, "The path to the file to read"]) -> str:
+def read_file(path: Annotated[str, "The path to the file to read"]) -> str | bytes:
     """Read the contents of a file from disk."""
 
     _path_acl(path)
 
-    with open(path) as f:
-        return f.read()
+    with open(path, "rb") as f:
+        return _maybe_text(f.read())

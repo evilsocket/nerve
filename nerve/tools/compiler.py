@@ -9,6 +9,7 @@ import typing as t
 
 import jinja2
 from loguru import logger
+from termcolor import colored
 
 from nerve.models import Tool
 from nerve.runtime import state
@@ -35,7 +36,7 @@ def wrap_tool_function(func: t.Callable[..., t.Any], mime: str | None = None) ->
             # logger.error(f"{error_trace}")
             result = f"ERROR in {func.__name__}: {e}"
             error = str(e)
-            logger.error(f"{result}")
+            logger.error(colored(f"{func.__name__}: {e}", "red"))
 
         finished_at = time.time()
 
