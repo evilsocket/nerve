@@ -1,4 +1,3 @@
-import os
 import pathlib
 import time
 
@@ -103,7 +102,7 @@ class Flow:
         if self.curr_actor is None:
             self.curr_actor = self.actors[self.curr_actor_idx]
             state.on_task_started(self.curr_actor)
-            os.chdir(self.curr_actor.runtime.working_dir)
+            # os.chdir(self.curr_actor.runtime.working_dir)
 
         if self.done():
             state.on_event("flow_complete", {"steps": self.curr_step, "usage": self.token_usage})

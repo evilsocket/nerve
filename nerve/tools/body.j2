@@ -20,11 +20,12 @@ def {{ tool.name }}({% for arg in tool.arguments %}{{ arg.name }}: Annotated[str
     # tool not set, this function will simply write the arguments to the runtime
     state.update_variables(locals())
     ret = None
+    ok_exit_code = True
 {% else %}
     # tool is set, interpolate and quote the arguments for shell use
     import shlex
     context = {k: shlex.quote(v) for k, v in locals().items() if type(v) == str}
-    command = '''cd '{{ working_dir }}' && ''' + state.interpolate(raw='''{{ tool.tool }}''', extra=context)
+    command = state.interpolate(raw='''{{ tool.tool }}''', extra=context)
     logger.debug(command)
 
     ret = shell(command)
@@ -50,4 +51,4 @@ def {{ tool.name }}({% for arg in tool.arguments %}{{ arg.name }}: Annotated[str
 {% endif %}
 
     # return the result of the tool call
-    return ret if len(ret) > 0 else None
+    return ret if ret and len(ret) > 0 else None

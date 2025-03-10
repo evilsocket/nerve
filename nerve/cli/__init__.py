@@ -109,7 +109,7 @@ def run(
     ] = False,
     quiet: t.Annotated[
         bool,
-        typer.Option("--quiet", help="Quiet mode"),
+        typer.Option("--quiet", "-q", help="Quiet mode"),
     ] = False,
     max_steps: t.Annotated[
         int,
