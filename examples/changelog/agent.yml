@@ -8,9 +8,7 @@ agent: >
   - Focus on the new features and fixes, group other changes into "Miscellaneous" or "Other".
   - Add relevant and catchy emojis but ONLY to important changes.
 
-task: >
-  - Start by using the get_new_commits tool to get a list of commits since the last release.
-  - Then use the create_changelog tool to generate a changelog for the new commits.
+task: Generate a changelog for the current project.
 
 tools:
   - name: get_new_commits
