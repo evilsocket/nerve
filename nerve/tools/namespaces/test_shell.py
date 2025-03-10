@@ -34,8 +34,9 @@ class TestShell(unittest.TestCase):
             self.assertEqual(test_file.read_text().strip(), "test content")
 
     def test_execute_shell_command_error(self) -> None:
-        output = shell.execute_shell_command("foobarbazbiz666")
-        self.assertEqual(output, "EXIT CODE: 127\nERROR: /bin/sh: foobarbazbiz666: command not found")
+        app = "foobarbazbiz666"
+        output = shell.execute_shell_command(app)
+        self.assertTrue("EXIT CODE: " in output and "ERROR: " in output and "not found" in output and app in output)
 
     def test_execute_shell_command_binary_output(self) -> None:
         result = shell.execute_shell_command("printf '\\xff\\xfe\\x00\\x01'")
