@@ -31,6 +31,23 @@ def _get_available_namespaces(defaults: list[str]) -> tuple[list[str], list[str]
     return available_namespaces, default_entries
 
 
+def _resolve_system_prompt(system_prompt: str) -> str:
+    if system_prompt.startswith("@"):
+        system_prompt_file = DEFAULT_PROMPTS_LOAD_PATH / (system_prompt[1:] + ".md")
+        if system_prompt_file.exists():
+            print(f"🔍 loading system prompt from {system_prompt_file}")
+            with open(system_prompt_file) as f:
+                system_prompt = f.read()
+        else:
+            system_prompt_nested = DEFAULT_PROMPTS_LOAD_PATH / system_prompt[1:] / "system.md"
+            if system_prompt_nested.exists():
+                print(f"🔍 loading system prompt from {system_prompt_nested}")
+                with open(system_prompt_nested) as f:
+                    system_prompt = f.read()
+
+    return system_prompt.strip()
+
+
 async def create_agent(path: pathlib.Path, default: bool) -> None:
     if path.exists():
         print(f"❌ {path} already exists.")
@@ -62,22 +79,7 @@ async def create_agent(path: pathlib.Path, default: bool) -> None:
 
         answers = inquirer.prompt(questions)
         answers["tools"] = [tool.split(" - ")[0] for tool in answers["tools"]]  # type: ignore
-
-        system_prompt = str(answers["system_prompt"]).strip()
-        if system_prompt.startswith("@"):
-            system_prompt_file = DEFAULT_PROMPTS_LOAD_PATH / (system_prompt[1:] + ".md")
-            if system_prompt_file.exists():
-                print(f"🔍 loading system prompt from {system_prompt_file}")
-                with open(system_prompt_file) as f:
-                    system_prompt = f.read().strip()
-            else:
-                system_prompt_nested = DEFAULT_PROMPTS_LOAD_PATH / system_prompt[1:] / "system.md"
-                if system_prompt_nested.exists():
-                    print(f"🔍 loading system prompt from {system_prompt_nested}")
-                    with open(system_prompt_nested) as f:
-                        system_prompt = f.read().strip()
-
-        answers["system_prompt"] = system_prompt
+        answers["system_prompt"] = _resolve_system_prompt(str(answers["system_prompt"]))
 
     example_tool = Tool(
         name="get_weather",
