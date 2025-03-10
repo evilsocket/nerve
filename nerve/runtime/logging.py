@@ -8,19 +8,18 @@ from nerve.runtime import state
 from nerve.runtime.events import Event
 
 
-def init(log_path: pathlib.Path | None = None, debug: bool = False, litellm_debug: bool = False) -> None:
+def init(log_path: pathlib.Path | None = None, level: str = "INFO", litellm_debug: bool = False) -> None:
     """
     Initialize the logging system.
 
     Args:
         log_path: The path to the log file.
-        debug: Whether to enable debug logging.
+        level: The log level to use.
         litellm_debug: Whether to enable litellm debug logging.
     """
-    level = "DEBUG" if debug else "INFO"
-    format = "<green>{time}</green> <level>{message}</level>"
+    format = "<green>{time}</green> {message}"
 
-    if not debug:
+    if level != "DEBUG":
         logger.remove()
         logger.add(
             sys.stdout,
@@ -100,14 +99,14 @@ def log_event_to_terminal(event: Event) -> None:
         else:
             ret = f"{len(str(data['result']))} bytes in "
 
-        logger.info(f"🛠️  {data['name']}({args_str}) -> {ret}{elapsed_time:.4f} seconds")
+        logger.success(f"🛠️  {data['name']}({args_str}) -> {ret}{elapsed_time:.4f} seconds")
 
     elif event.name == "task_complete":
         if isinstance(data["actor"], dict):
             data["actor"] = DictWrapper(data["actor"])
 
         reason = f": {data['reason']}" if data["reason"] else ""
-        logger.info(f"✅ task {data['actor'].runtime.name} completed{reason}")
+        logger.success(f"✅ task {data['actor'].runtime.name} completed{reason}")
 
     elif event.name == "task_failed":
         logger.error(f"❌ task {data['actor'].runtime.name} failed: {data['reason']}")

@@ -73,7 +73,7 @@ def play(
         typer.Option("--fast", "-f", help="Do not sleep between events"),
     ] = False,
 ) -> None:
-    logging.init(None, False)
+    logging.init(level="INFO")
     logger.info(f"🧠 nerve v{nerve.__version__}")
 
     asyncio.run(replay(trace_path, fast))
@@ -106,6 +106,10 @@ def run(
         bool,
         typer.Option("--debug", help="Enable debug logging"),
     ] = False,
+    quiet: t.Annotated[
+        bool,
+        typer.Option("--quiet", help="Quiet mode"),
+    ] = False,
     max_steps: t.Annotated[
         int,
         typer.Option("--max-steps", "-s", help="Maximum number of steps"),
@@ -123,7 +127,7 @@ def run(
         typer.Option("--trace", help="Save the final state to a file."),
     ] = None,
 ) -> None:
-    logging.init(log_path, debug)
+    logging.init(log_path, level="DEBUG" if debug else "SUCCESS" if quiet else "INFO")
     logger.info(f"🧠 nerve v{nerve.__version__}")
 
     asyncio.run(

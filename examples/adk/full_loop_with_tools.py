@@ -19,8 +19,8 @@ async def get_capital(place: Annotated[str, "The place to get the capital of"]) 
 
 
 async def main():
-    # pass debug=True to get more verbose logging
-    logging.init(debug=False)
+    # pass level='DEBUG' to get more verbose logging or level='SUCCESS' to get quieter logging
+    logging.init(level="INFO")
 
     agent = Agent.create(
         "openai/gpt-4o",  # the model to use
