@@ -16,9 +16,9 @@ def _maybe_text(output: bytes) -> str | bytes:
 def execute_shell_command(
     command: Annotated[str, "The shell command to execute"],
 ) -> str | bytes:
-    """Execute a shell command on the local computer and return the output."""
+    """Execute a shell command on the local computer and return the output with a timeout of 30 seconds."""
 
-    result = subprocess.run(command, shell=True, capture_output=True)
+    result = subprocess.run(command, shell=True, capture_output=True, timeout=30)
 
     raw_output = result.stdout or b""
 
