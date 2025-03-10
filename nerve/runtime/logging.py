@@ -93,7 +93,7 @@ def log_event_to_terminal(event: Event) -> None:
 
         elapsed_time = data["finished_at"] - data["started_at"]
         if data["result"] is None:
-            ret = "<no result>"
+            ret = "<none>"
         else:
             ret = f"{type(data['result'])} ({len(str(data['result']))} bytes)"
 
