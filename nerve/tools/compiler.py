@@ -29,14 +29,13 @@ def wrap_tool_function(func: t.Callable[..., t.Any], mime: str | None = None) ->
         try:
             result = func(*args, **kwargs)
         except Exception as e:
-            import traceback
-
-            error_trace = traceback.format_exc()
-            logger.error(f"{func.__name__}: {e}")
-            logger.error(f"{error_trace}")
-
+            # import traceback
+            # error_trace = traceback.format_exc()
+            # logger.error(f"{func.__name__}: {e}")
+            # logger.error(f"{error_trace}")
             result = f"ERROR in {func.__name__}: {e}"
             error = str(e)
+            logger.error(f"{result}")
 
         finished_at = time.time()
 

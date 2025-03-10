@@ -51,6 +51,9 @@ class LiteLLMEngine(Engine):
                 total_tokens=0,
             ), response.message
         else:
+            # TODO: handle litellm.ContextWindowExceededError by adjusting window strategy
+            #   litellm.BadRequestError: ContextWindowExceededError: OpenAIException - Error code: 400 ...
+
             try:
                 # litellm.set_verbose = True
                 response = litellm.completion(

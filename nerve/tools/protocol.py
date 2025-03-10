@@ -65,6 +65,13 @@ def get_tool_response(response: t.Any) -> t.Any:
     if isinstance(response, str):
         # simple case, just text
         return response
+    elif isinstance(response, bytes):
+        # binary data, attempt decoding
+        try:
+            return response.decode("utf-8", errors="ignore")
+        except UnicodeDecodeError:
+            return str(response)
+
     elif isinstance(response, dict):
         # structured (vision), return as list
         return response

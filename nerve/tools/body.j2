@@ -33,11 +33,16 @@ def {{ tool.name }}({% for arg in tool.arguments %}{{ arg.name }}: Annotated[str
     except Exception as e:
         ret = buffer
 
+    exit_code = proc.close() or 0
+
 {% endif %}
 
 {% if tool.complete_task %}
-    # if the tool is set to complete the task, set the task as complete
-    state.set_task_complete()
+    if exit_code == 0:
+        # if the tool is set to complete the task, set the task as complete
+        state.set_task_complete({'reason': {k:v for k, v in locals().items() if type(v) == str}})
+    else:
+        logger.warning(f"📊 tool {{ tool.name }} failed with exit code {exit_code}: {ret}")
 {% endif %}
 
     # return the result of the tool call
