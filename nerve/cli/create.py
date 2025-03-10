@@ -21,12 +21,15 @@ def _get_available_namespaces(defaults: list[str]) -> tuple[list[str], list[str]
 
     for _, modname, _ in pkgutil.iter_modules(namespaces.__path__):
         if modname[0] != "_" and not modname.startswith("test_"):
-            module = __import__(f"nerve.tools.namespaces.{modname}", fromlist=[""])
-            doc = module.__doc__ or ""
-            entry = f"{modname} - {doc.strip()}"
-            available_namespaces.append(entry)
-            if modname in defaults:
-                default_entries.append(entry)
+            try:
+                module = __import__(f"nerve.tools.namespaces.{modname}", fromlist=[""])
+                doc = module.__doc__ or ""
+                entry = f"{modname} - {doc.strip()}"
+                available_namespaces.append(entry)
+                if modname in defaults:
+                    default_entries.append(entry)
+            except Exception:
+                pass
 
     return available_namespaces, default_entries
 
