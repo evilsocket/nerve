@@ -82,9 +82,12 @@ nerve run new-agent --url 'cnn.com'
 
 For a list of all the subcommands and their options, feel free to explore `nerve -h`.
 
+> [!TIP]  
+> Nerve primarily loads agents from `$HOME/.nerve/`, ensuring that any agent in this folder is accessible regardless of your current working directory. If the agent is not found there, Nerve will then search in the current working directory as a fallback.
+
 ### Generators
 
-The default model is OpenAI `gpt-4o-mini`, in order to use a different model you can either set the `NERVE_GENERATOR` environment variable, or pass it as [a generator string](#llm-support) via the `-g/--generator` command line argument (using any of the [LiteLLM supported providers](https://docs.litellm.ai/docs/providers)):
+The default model is OpenAI `gpt-4o-mini`, in order to use a different model you can either set the `NERVE_GENERATOR` environment variable, or pass it as [a generator string](#llm-support) via the `-g/--generator` command line argument ():
 
 ```sh
 export NERVE_GENERATOR=openai/gpt-4o
@@ -98,15 +101,14 @@ is equivalent to:
 nerve run -g "openai/gpt-4o" new-agent --url 'cnn.com'
 ```
 
+> [!NOTE]  
+> Nerve supports any of the LiteLLM supported providers, check [the litellm documentation](https://docs.litellm.ai/docs/providers) for a list of all the providers and their syntax.
+
 To pass additional inference parameters:
 
 ```sh
 nerve run -g "ollama/llama3.2?temperature=0.9&api_base=http://server-host:11434" new-agent --url 'cnn.com'
 ```
-
-### Load Path
-
-Nerve primarily loads agents from `$HOME/.nerve/`, ensuring that any agent in this folder is accessible regardless of your current working directory. If the agent is not found there, Nerve will then search in the current working directory as a fallback.
 
 ### Adding Tools
 
