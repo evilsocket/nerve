@@ -10,6 +10,24 @@ Let the agent create its own tools in Python.
 |------|-------------|
 | `create_tool` | <pre>Create a new tool or redefine an existing one by defining it as an annotated Python function.<br>    Use this tool to implement the missing functionalities you need to perform your task.</pre> |
 
+## computer
+
+Computer use primitives for mouse, keyboard, and screen.
+
+| Tool | Description |
+|------|-------------|
+| `get_cursor_position` | <pre>Get the current mouse position.</pre> |
+| `keyboard_press_hotkeys` | <pre>Press one or more hotkeys on the keyboard.</pre> |
+| `keyboard_type` | <pre>Type the given text on the keyboard.</pre> |
+| `mouse_double_click` | <pre>Double click the left mouse button at the current mouse position.</pre> |
+| `mouse_left_click` | <pre>Click the left mouse button at the current mouse position.</pre> |
+| `mouse_left_click_drag` | <pre>Click and drag the left mouse button from the current mouse position to the given coordinates.</pre> |
+| `mouse_middle_click` | <pre>Click the middle mouse button at the current mouse position.</pre> |
+| `mouse_move` | <pre>Move the mouse to the given coordinates.</pre> |
+| `mouse_right_click` | <pre>Click the right mouse button at the current mouse position.</pre> |
+| `mouse_scroll` | <pre>Scroll the mouse wheel in the given direction.</pre> |
+| `screenshot` | <pre>Take a screenshot of the current screen.</pre> |
+
 ## filesystem
 
 Read-only access primitives to the local filesystem.

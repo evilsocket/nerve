@@ -62,6 +62,11 @@ def wrap_tool_function(func: t.Callable[..., t.Any], mime: str | None = None) ->
 
 def get_tools_from_namespace(namespace: str, jail: list[str]) -> list[t.Callable[..., t.Any]]:
     try:
+        importlib.util.find_spec(f"nerve.tools.namespaces.{namespace}")
+    except ImportError as err:
+        raise ImportError(f"namespace {namespace} not found") from err
+
+    try:
         module = __import__(f"nerve.tools.namespaces.{namespace}", fromlist=[""])
         if jail:
             for jailed_path in jail:
@@ -77,9 +82,8 @@ def get_tools_from_namespace(namespace: str, jail: list[str]) -> list[t.Callable
         ]
         logger.debug(f"importing {len(module_tools)} tools from {namespace} namespace")
         return module_tools
-
     except ImportError as err:
-        raise ImportError(f"namespace {namespace} not found") from err
+        raise ImportError(f"could not import {namespace}: {err}") from err
 
 
 def get_tools_from_namespaces(
