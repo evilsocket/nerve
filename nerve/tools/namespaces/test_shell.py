@@ -1,8 +1,6 @@
-import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 from nerve.tools.namespaces import shell
 
@@ -35,17 +33,12 @@ class TestShell(unittest.TestCase):
             self.assertTrue(test_file.exists())
             self.assertEqual(test_file.read_text().strip(), "test content")
 
-    @patch("subprocess.check_output")
-    def test_execute_shell_command_calls_subprocess(self, mock_check_output: unittest.mock.Mock) -> None:
-        # Test that the function calls subprocess.check_output with the right arguments
-        mock_check_output.return_value = b"mocked output"
-
-        result = shell.execute_shell_command("some command")
-
-        mock_check_output.assert_called_once_with("some command", shell=True)
-        self.assertEqual(result, "mocked output")
-
     def test_execute_shell_command_error(self) -> None:
-        # Test that the function raises an exception for invalid commands
-        with self.assertRaises(subprocess.CalledProcessError):
-            shell.execute_shell_command("command_that_does_not_exist")
+        output = shell.execute_shell_command("foobarbazbiz666")
+        self.assertEqual(output, "EXIT CODE: 127\nERROR: /bin/sh: foobarbazbiz666: command not found")
+
+    def test_execute_shell_command_binary_output(self) -> None:
+        result = shell.execute_shell_command("printf '\\xff\\xfe\\x00\\x01'")
+        # verify the result is bytes, not str
+        self.assertIsInstance(result, bytes)
+        self.assertEqual(result, b"\xff\xfe\x00\x01")
