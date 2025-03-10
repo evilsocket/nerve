@@ -2582,7 +2582,7 @@ types-PyScreeze = "*"
 name = "types-pyperclip"
 version = "1.9.0.20250218"
 description = "Typing stubs for pyperclip"
-optional = false
+optional = true
 python-versions = ">=3.9"
 files = [
     {file = "types_pyperclip-1.9.0.20250218-py3-none-any.whl", hash = "sha256:305afab7efb6fbcc77d9690bf660cf24baa06e30c2db7d12dd1f1602b2094a27"},
@@ -2803,9 +2803,9 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 type = ["pytest-mypy"]
 
 [extras]
-computer-use = ["pillow", "pyautogui", "pyperclip", "pyscreeze", "types-pyautogui"]
+computer-use = ["pillow", "pyautogui", "pyperclip", "pyscreeze", "types-pyautogui", "types-pyperclip"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "fc5fd7383ddc3856141b690a957b98cf8609460c58168660852d7ca86452ff9b"
+content-hash = "a92d82fe3a2460de96353b5520d8035cae3c2c014947c2bbca55245f8393f7ed"
