@@ -138,30 +138,17 @@ async def keyboard_press_hotkeys(
 ) -> None:
     """Press one or more hotkeys on the keyboard."""
 
-    # TODO: refactor this
-    key_sequence = keys.lower().replace("super", "command").split("+")
-    key_sequence = [key.strip() for key in key_sequence]
-    key_sequence = ["command" if key == "cmd" else key for key in key_sequence]
-    special_keys = {
-        "ctrl": "ctrl",
+    key_sequence = list(map(str.strip, keys.lower().split("+")))
+    replace = {
         "control": "ctrl",
-        "alt": "alt",
         "option": "alt",
-        "shift": "shift",
-        "command": "command",
-        "tab": "tab",
-        "enter": "enter",
+        "super": "command",
+        "cmd": "command",
         "return": "enter",
-        "esc": "esc",
         "escape": "esc",
-        "space": "space",
         "spacebar": "space",
-        "up": "up",
-        "down": "down",
-        "left": "left",
-        "right": "right",
     }
-    key_sequence = [special_keys.get(key, key) for key in key_sequence]
+    key_sequence = [replace.get(key, key) for key in key_sequence]
 
     px.hotkey(*key_sequence)
 
