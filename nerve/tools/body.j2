@@ -5,6 +5,7 @@ from pydantic import Field
 from loguru import logger
 
 import nerve.runtime.state as state
+from nerve.tools.namespaces.shell import shell
 
 {% set func_ret_type = "Any | None" %}
 {% if tool.tool is none %}
@@ -25,18 +26,11 @@ def {{ tool.name }}({% for arg in tool.arguments %}{{ arg.name }}: Annotated[str
     command = '''cd '{{ working_dir }}' && ''' + state.interpolate(raw='''{{ tool.tool }}''', extra=context)
     logger.debug(command)
 
-    proc = os.popen(command)
-    buffer = proc.buffer.read() # read as bytes
-
-    try:
-        ret = buffer.decode("utf-8")
-    except Exception as e:
-        ret = buffer
-
-    exit_code = proc.close() or 0
+    ret = shell(command)
+    ok_exit_code = 'EXIT CODE: ' not in ret
 
 {% if tool.log %}
-    if ret and exit_code == 0:
+    if ret and not ok_exit_code:
         logger.success(ret)
     elif ret:
         logger.error(ret)
@@ -45,10 +39,14 @@ def {{ tool.name }}({% for arg in tool.arguments %}{{ arg.name }}: Annotated[str
 {% endif %}
 
 {% if tool.complete_task %}
-    if exit_code == 0:
+    if ok_exit_code:
         # if the tool is set to complete the task, set the task as complete
-        state.set_task_complete({k:v for k, v in locals().items() if type(v) == str})
+        # and set the reason as the arguments
+        reason = {
+            {% for arg in tool.arguments %}"{{ arg.name }}": {{ arg.name }}{% if not loop.last %},{% endif %}{% endfor %}
+        }
+        state.set_task_complete(reason)
 {% endif %}
 
     # return the result of the tool call
-    return ret if len(ret) > 0 else None
+    return ret
