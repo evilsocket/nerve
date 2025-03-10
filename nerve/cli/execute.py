@@ -49,6 +49,7 @@ async def execute_flow(
     conv_window_strategy: WindowStrategy,
     start_state_args: list[str],
     max_steps: int = 100,
+    max_cost: float = 10.0,
     timeout: int | None = None,
     interactive: bool = False,
     trace: pathlib.Path | None = None,
@@ -73,6 +74,7 @@ async def execute_flow(
             input_path,
             window_strategy=conv_window_strategy,
             max_steps=max_steps,
+            max_cost=max_cost,
             timeout=timeout,
             start_state=start_state,
         )
@@ -82,6 +84,7 @@ async def execute_flow(
         flow = Flow.build(
             actors=[Agent.create_from_file(generator, input_path, conv_window_strategy)],
             max_steps=max_steps,
+            max_cost=max_cost,
             timeout=timeout,
             start_state=start_state,
         )

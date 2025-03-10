@@ -3,6 +3,7 @@ from typing import Any, Annotated
 
 from pydantic import Field
 from loguru import logger
+from termcolor import colored
 
 import nerve.runtime.state as state
 from nerve.tools.namespaces.shell import shell
@@ -30,10 +31,10 @@ def {{ tool.name }}({% for arg in tool.arguments %}{{ arg.name }}: Annotated[str
     ok_exit_code = 'EXIT CODE: ' not in ret
 
 {% if tool.log %}
-    if ret and not ok_exit_code:
-        logger.success(ret)
+    if ret and ok_exit_code:
+        logger.info(colored(ret, "green"))
     elif ret:
-        logger.error(ret)
+        logger.error(colored(ret, "red"))
 {% endif %}
 
 {% endif %}

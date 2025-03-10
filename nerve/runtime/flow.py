@@ -19,6 +19,7 @@ class Flow:
         actors: list[Agent],
         workflow: Workflow | None = None,
         max_steps: int = 500,
+        max_cost: float = 10.0,
         timeout: int | None = None,
     ):
         global IS_ACTIVE
@@ -41,6 +42,8 @@ class Flow:
         self.token_usage: Usage = Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0)
         # optional max steps to run
         self.max_steps: int = max_steps
+        # max cost to run the flow
+        self.max_cost: float = max_cost
         # optional timeout to run the flow
         self.timeout: int | None = timeout
         # start time of the flow
@@ -51,13 +54,14 @@ class Flow:
         cls,
         actors: list[Agent],
         max_steps: int = 500,
+        max_cost: float = 10.0,
         timeout: int | None = None,
         start_state: dict[str, str] | None = None,
     ) -> "Flow":
         if start_state:
             state.update_variables(start_state)
 
-        return cls(actors=actors, max_steps=max_steps, timeout=timeout)
+        return cls(actors=actors, max_steps=max_steps, max_cost=max_cost, timeout=timeout)
 
     @classmethod
     def from_path(
@@ -65,6 +69,7 @@ class Flow:
         input_path: pathlib.Path,
         window_strategy: WindowStrategy = FullHistoryStrategy(),
         max_steps: int = 500,
+        max_cost: float = 10.0,
         timeout: int | None = None,
         start_state: dict[str, str] | None = None,
     ) -> "Flow":
@@ -87,6 +92,7 @@ class Flow:
             actors=actors,
             workflow=workflow,
             max_steps=max_steps,
+            max_cost=max_cost,
             timeout=timeout,
         )
 
@@ -127,6 +133,10 @@ class Flow:
 
         if self.max_steps is not None and self.curr_step > self.max_steps:
             state.on_max_steps_reached()
+            return True
+
+        if self.max_cost is not None and self.token_usage.cost is not None and self.token_usage.cost > self.max_cost:
+            state.on_max_cost_reached()
             return True
 
         if self.timeout is not None and self.started_at is not None and time.time() - self.started_at > self.timeout:

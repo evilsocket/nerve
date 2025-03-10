@@ -183,6 +183,14 @@ def on_max_steps_reached() -> None:
         set_task_failed("max steps reached")
 
 
+def on_max_cost_reached() -> None:
+    """Set the task as failed due to max cost reached."""
+
+    global _task_status, _reason
+    if _task_status == Status.RUNNING:
+        set_task_failed("max cost reached")
+
+
 def on_timeout() -> None:
     """Set the task as failed due to timeout."""
 

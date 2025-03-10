@@ -11,6 +11,7 @@ from nerve.cli.defaults import (
     DEFAULT_AGENT_PATH,
     DEFAULT_CONVERSATION_STRATEGY,
     DEFAULT_GENERATOR,
+    DEFAULT_MAX_COST,
     DEFAULT_MAX_STEPS,
     DEFAULT_TIMEOUT,
 )
@@ -114,6 +115,12 @@ def run(
         int,
         typer.Option("--max-steps", "-s", help="Maximum number of steps"),
     ] = DEFAULT_MAX_STEPS,
+    max_cost: t.Annotated[
+        float,
+        typer.Option(
+            "--max-cost", help="If cost information is available, stop when the cost exceeds this value in USD."
+        ),
+    ] = DEFAULT_MAX_COST,
     timeout: t.Annotated[
         int | None,
         typer.Option("--timeout", "-t", help="Timeout in seconds"),
@@ -140,6 +147,7 @@ def run(
             conversation.strategy_from_string(conversation_strategy),
             ctx.args,
             max_steps,
+            max_cost,
             timeout,
             interactive,
             trace,
