@@ -69,6 +69,7 @@ class LiteLLMEngine(Engine):
                     prompt_tokens=response.usage.prompt_tokens,
                     completion_tokens=response.usage.completion_tokens,
                     total_tokens=response.usage.total_tokens,
+                    cost=response._hidden_params.get("response_cost", None),
                 ), response.choices[0].message
             except litellm.AuthenticationError as e:  # type: ignore
                 logger.error(e)

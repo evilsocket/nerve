@@ -100,20 +100,18 @@ class Flow:
             os.chdir(self.curr_actor.runtime.working_dir)
 
         if self.done():
-            state.on_event("flow_complete", {"steps": self.curr_step})
+            state.on_event("flow_complete", {"steps": self.curr_step, "usage": self.token_usage})
             return
 
-        state.on_event("step_started", {"step": self.curr_step, "token_usage": self.token_usage})
+        state.on_event("step_started", {"step": self.curr_step, "usage": self.token_usage})
 
         step_usage = await self.curr_actor.step()
         logger.debug(f"step usage: {step_usage}")
 
         # increment total usage
-        self.token_usage.prompt_tokens += step_usage.prompt_tokens
-        self.token_usage.completion_tokens += step_usage.completion_tokens
-        self.token_usage.total_tokens += step_usage.total_tokens
+        self.token_usage += step_usage
 
-        state.on_event("step_complete", {"step": self.curr_step, "token_usage": self.token_usage})
+        state.on_event("step_complete", {"step": self.curr_step, "usage": self.token_usage})
 
         if state.is_active_task_done():
             logger.debug(f"task {self.curr_actor.runtime.name} complete")

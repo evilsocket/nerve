@@ -118,17 +118,23 @@ def log_event_to_terminal(event: Event) -> None:
         logger.error(f"❌ error executing {data['tool_name']}({data['args']}): {data['error']}")
 
     elif event.name == "flow_complete":
-        logger.info(f"⚙️  flow complete in {data['steps']} steps")
+        if isinstance(data["usage"], dict):
+            data["usage"] = DictWrapper(data["usage"])
+
+        if data["usage"].total_tokens > 0:
+            logger.info(f"⚙️  flow complete in {data['steps']} steps ({data['usage']})")
+        else:
+            logger.info(f"⚙️  flow complete in {data['steps']} steps")
 
     elif event.name == "text_response":
         logger.info(f"💬 {data['response']}")
 
     elif event.name == "step_started":
-        if isinstance(data["token_usage"], dict):
-            data["token_usage"] = DictWrapper(data["token_usage"])
+        if isinstance(data["usage"], dict):
+            data["usage"] = DictWrapper(data["usage"])
 
-        if data["token_usage"].total_tokens > 0:
-            logger.info(f"📊 [step {data['step']}] [usage {data['token_usage']}]")
+        if data["usage"].total_tokens > 0:
+            logger.info(f"📊 [step {data['step']}] [usage {data['usage']}]")
         else:
             logger.info(f"📊 [step {data['step']}]")
 
