@@ -36,7 +36,7 @@ agent: You are an helpful assistant using pragmatism and shell commands to perfo
 # what
 task: Find which running process is using more RAM.
 # how
-using: [task, bash]
+using: [task, shell]
 ```
 
 🚀 Execute the agent with:

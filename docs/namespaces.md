@@ -10,14 +10,6 @@ Let the agent create its own tools in Python.
 |------|-------------|
 | `create_tool` | <pre>Create a new tool or redefine an existing one by defining it as an annotated Python function.<br>    Use this tool to implement the missing functionalities you need to perform your task.</pre> |
 
-## bash
-
-Let the agent execute bash commands.
-
-| Tool | Description |
-|------|-------------|
-| `execute_bash_command` | <pre>Execute a bash command and return the output.</pre> |
-
 ## filesystem
 
 Read-only access primitives to the local filesystem.
@@ -35,6 +27,14 @@ Simulates the reasoning process at runtime.
 |------|-------------|
 | `clear_thoughts` | <pre>If the reasoning process proved wrong, inconsistent or ineffective, clear your thoughts and start again.</pre> |
 | `think` | <pre>Adhere strictly to this reasoning framework, ensuring thoroughness, precision, and logical rigor.<br><br>    ## Problem Decomposition<br><br>    Break the query into discrete, sequential steps.<br>    Explicitly state assumptions and context.<br><br>    ## Stepwise Analysis<br><br>    Address each step individually.<br>    Explain the rationale, principles, or rules applied (e.g., mathematical laws, linguistic conventions).<br>    Use examples, analogies, or intermediate calculations to illustrate reasoning.<br><br>    ## Validation & Error Checking<br><br>    Verify logical consistency at each step.<br>    Flag potential oversights, contradictions, or edge cases.<br>    Confirm numerical accuracy (e.g., recompute calculations).<br><br>    ## Synthesis & Conclusion<br><br>    Integrate validated steps into a coherent solution.<br>    Summarize key insights and ensure the conclusion directly addresses the original query.</pre> |
+
+## shell
+
+Let the agent execute shell commands.
+
+| Tool | Description |
+|------|-------------|
+| `execute_shell_command` | <pre>Execute a shell command and return the output.</pre> |
 
 ## task
 

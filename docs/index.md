@@ -72,7 +72,7 @@ agent: You are a helpful assistant.
 task: Make an HTTP request to {{ url }}
 
 using:
-- bash # can execute bash commands
+- shell # can execute shell commands
 - task # can autonomously set the task as complete or failed
 ```
 
