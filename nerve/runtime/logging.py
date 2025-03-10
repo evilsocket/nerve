@@ -84,7 +84,7 @@ def log_event_to_terminal(event: Event) -> None:
 
     elif event.name == "before_tool_called":
         args_str = ", ".join([f"{k}={v}" for k, v in data["args"].items()])
-        logger.debug(f"🛠️  {data['name']}({args_str}) ...")
+        logger.info(f"🛠️  {data['name']}({args_str}) ...")
 
     elif event.name == "tool_called":
         # avoid logging twice
@@ -92,14 +92,12 @@ def log_event_to_terminal(event: Event) -> None:
             return
 
         elapsed_time = data["finished_at"] - data["started_at"]
-        args_str = ", ".join([f"{k}={v}" for k, v in data["args"].items()])
-
         if data["result"] is None:
-            ret = ""
+            ret = "<no result>"
         else:
-            ret = f"{len(str(data['result']))} bytes in "
+            ret = f"{type(data['result'])} ({len(str(data['result']))} bytes)"
 
-        logger.info(f"🛠️  {data['name']}({args_str}) -> {ret}{elapsed_time:.4f} seconds")
+        logger.info(f"↳ {ret} in {elapsed_time:.4f}s")
 
     elif event.name == "task_complete":
         reason = f": {data['reason']}" if data["reason"] else ""
