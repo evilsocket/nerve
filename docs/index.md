@@ -113,6 +113,26 @@ To pass additional inference parameters:
 nerve run -g "ollama/llama3.2?temperature=0.9&api_base=http://server-host:11434" new-agent --url 'cnn.com'
 ```
 
+### Record & Replay
+
+Nerve sessions can be recorded to a JSONL file by specifying the `--trace` argument:
+
+```sh
+nerve run new-agent --trace agent-trace.jsonl
+```
+
+The session can then be replayed at any time:
+
+```sh
+nerve play agent-trace.jsonl # this plays the session at the original speed
+```
+
+Add `-f` to replay in fast forward mode:
+
+```sh
+nerve play agent-trace.jsonl -f # much faster
+```
+
 ### Adding Tools
 
 When a tool can be represented as a shell command, you can conveniently extend the agent capabilites in the YAML:
