@@ -137,8 +137,6 @@ def run(
     logging.init(log_path, level="DEBUG" if debug else "SUCCESS" if quiet else "INFO")
     logger.info(f"🧠 nerve v{nerve.__version__}")
 
-    # TODO: interactive mode, step (s), continue (c), view (v), ... anything else is chat ...
-
     asyncio.run(
         execute_flow(
             input_path,

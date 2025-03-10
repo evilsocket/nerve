@@ -153,6 +153,7 @@ class Flow:
             },
         )
 
+        # TODO: interactive mode, step (s), continue (c), view (v), ... anything else is chat ...
         while not self.done():
             await self.step()
 
