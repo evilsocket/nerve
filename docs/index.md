@@ -60,6 +60,9 @@ During this procedure, you'll be prompted for the following:
 - the agent **task** - what does this agent has to do? (`what is 4+3?`)
 - which **tools** from [the built-in namespaces](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md) the agent can use to perform its task.
 
+> [!TIP]  
+> You can use a `@` prefix for the system prompt as a shortcut to load the prompt from a markdown file in your `$HOME/.nerve/prompts` directory. For example, specifying `@scientist` as the system prompt will automatically load the prompt from either `$HOME/.nerve/prompts/scientist.md` or `$HOME/.nerve/prompts/scientist/system.md`.
+
 After completing the procedure, your `new-agent/agent.yml` file will look something like this:
 
 ```yaml

@@ -4,7 +4,12 @@ import pkgutil
 import inquirer  # type: ignore
 from pydantic_yaml import to_yaml_str
 
-from nerve.cli.defaults import DEFAULT_AGENT_SYSTEM_PROMPT, DEFAULT_AGENT_TASK, DEFAULT_AGENT_TOOLS
+from nerve.cli.defaults import (
+    DEFAULT_AGENT_SYSTEM_PROMPT,
+    DEFAULT_AGENT_TASK,
+    DEFAULT_AGENT_TOOLS,
+    DEFAULT_PROMPTS_LOAD_PATH,
+)
 from nerve.models import Configuration, Tool
 
 
@@ -44,7 +49,6 @@ async def create_agent(path: pathlib.Path, default: bool) -> None:
         print()
         questions = [
             inquirer.Path("path", message="Path", default=str(path)),
-            # TODO: maybe implement search in some nice sytem prompt database?
             inquirer.Text("system_prompt", message="System prompt", default=DEFAULT_AGENT_SYSTEM_PROMPT),
             inquirer.Text("prompt", message="Task", default=DEFAULT_AGENT_TASK),
             inquirer.Checkbox(
@@ -58,6 +62,22 @@ async def create_agent(path: pathlib.Path, default: bool) -> None:
 
         answers = inquirer.prompt(questions)
         answers["tools"] = [tool.split(" - ")[0] for tool in answers["tools"]]  # type: ignore
+
+        system_prompt = str(answers["system_prompt"]).strip()
+        if system_prompt.startswith("@"):
+            system_prompt_file = DEFAULT_PROMPTS_LOAD_PATH / (system_prompt[1:] + ".md")
+            if system_prompt_file.exists():
+                print(f"🔍 loading system prompt from {system_prompt_file}")
+                with open(system_prompt_file) as f:
+                    system_prompt = f.read().strip()
+            else:
+                system_prompt_nested = DEFAULT_PROMPTS_LOAD_PATH / system_prompt[1:] / "system.md"
+                if system_prompt_nested.exists():
+                    print(f"🔍 loading system prompt from {system_prompt_nested}")
+                    with open(system_prompt_nested) as f:
+                        system_prompt = f.read().strip()
+
+        answers["system_prompt"] = system_prompt
 
     example_tool = Tool(
         name="get_weather",

@@ -4,6 +4,7 @@ import typer
 from loguru import logger
 
 import nerve.runtime.state as state
+from nerve.cli.defaults import DEFAULT_AGENTS_LOAD_PATH
 from nerve.generation import WindowStrategy
 from nerve.models import Configuration, Mode, Workflow
 from nerve.runtime.agent import Agent
@@ -31,7 +32,7 @@ def _resolve_input_path(input_path: pathlib.Path) -> pathlib.Path:
     if not input_path.exists():
         if not input_path.is_absolute():
             # check if it exists as part of the $HOME/.nerve/agents directory
-            in_home = pathlib.Path.home() / ".nerve" / "agents" / input_path
+            in_home = DEFAULT_AGENTS_LOAD_PATH / input_path
             if in_home.exists():
                 input_path = in_home
 
