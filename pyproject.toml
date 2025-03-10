@@ -32,6 +32,7 @@ pillow = { version = "^11.1.0", optional = true }
 pyperclip = { version = "^1.9.0", optional = true }
 types-pyautogui = { version = "^0.9.3.20241230", optional = true }
 types-pyperclip = { version = "^1.9.0.20250218", optional = true }
+termcolor = "^2.5.0"
 
 [tool.poetry.extras]
 computer_use = [

@@ -3,6 +3,7 @@ import sys
 import typing as t
 
 from loguru import logger
+from termcolor import colored
 
 from nerve.runtime import state
 from nerve.runtime.events import Event
@@ -17,7 +18,7 @@ def init(log_path: pathlib.Path | None = None, level: str = "INFO", litellm_debu
         level: The log level to use.
         litellm_debug: Whether to enable litellm debug logging.
     """
-    format = "<green>{time}</green> <level>{message}</level>"
+    format = "{time} {message}"
 
     if level != "DEBUG":
         logger.remove()
@@ -83,8 +84,9 @@ def log_event_to_terminal(event: Event) -> None:
         logger.info(f"🤖 {generator} | {name} v{version} with {tools} tools")
 
     elif event.name == "before_tool_called":
-        args_str = ", ".join([f"{k}={v}" for k, v in data["args"].items()])
-        logger.info(f"🛠️  {data['name']}({args_str}) ...")
+        args_str = ", ".join([colored(v, "yellow") for v in data["args"].values()])
+        name = colored(data["name"], attrs=["bold"])
+        logger.info(f"🛠️  {name}({args_str})")
 
     elif event.name == "tool_called":
         # avoid logging twice
@@ -97,7 +99,7 @@ def log_event_to_terminal(event: Event) -> None:
         else:
             ret = f"{type(data['result'])} ({len(str(data['result']))} bytes)"
 
-        logger.info(f"↳ {ret} in {elapsed_time:.4f}s")
+        logger.info(colored(f" ↳ {ret} in {elapsed_time:.4f}s", "dark_grey"))
 
     elif event.name == "task_complete":
         reason = f": {data['reason']}" if data["reason"] else ""
@@ -125,7 +127,7 @@ def log_event_to_terminal(event: Event) -> None:
             logger.info(f"⚙️  flow complete in {data['steps']} steps")
 
     elif event.name == "text_response":
-        logger.info(f"💬 {data['response']}")
+        logger.info(f"💬 {colored(data['response'], 'blue')}")
 
     elif event.name == "step_started":
         if isinstance(data["usage"], dict):
