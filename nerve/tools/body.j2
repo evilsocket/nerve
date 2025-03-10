@@ -47,7 +47,7 @@ def {{ tool.name }}({% for arg in tool.arguments %}{{ arg.name }}: Annotated[str
 {% if tool.complete_task %}
     if exit_code == 0:
         # if the tool is set to complete the task, set the task as complete
-        state.set_task_complete({'reason': {k:v for k, v in locals().items() if type(v) == str}})
+        state.set_task_complete({k:v for k, v in locals().items() if type(v) == str})
 {% endif %}
 
     # return the result of the tool call
