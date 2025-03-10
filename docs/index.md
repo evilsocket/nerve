@@ -90,10 +90,13 @@ For a list of all the subcommands and their options, feel free to explore `nerve
 
 ### Generators
 
-The default model is OpenAI `gpt-4o-mini`, in order to use a different model you can either set the `NERVE_GENERATOR` environment variable, or pass it as [a generator string](#llm-support) via the `-g/--generator` command line argument ():
+The default model is OpenAI `gpt-4o-mini`, in order to use a different model you can either set the `NERVE_GENERATOR` environment variable, or pass it as a generator string via the `-g/--generator` command line argument.
+
+> [!NOTE]  
+> Nerve supports any of the LiteLLM supported providers, check [the litellm documentation](https://docs.litellm.ai/docs/providers) for a list of all the providers and their syntax.
 
 ```sh
-export NERVE_GENERATOR=openai/gpt-4o
+export NERVE_GENERATOR=anthropic/claude-3-7-sonnet-20250219
 
 nerve run new-agent --url 'cnn.com'
 ```
@@ -101,11 +104,8 @@ nerve run new-agent --url 'cnn.com'
 is equivalent to:
 
 ```sh
-nerve run -g "openai/gpt-4o" new-agent --url 'cnn.com'
+nerve run -g "anthropic/claude-3-7-sonnet-20250219" new-agent --url 'cnn.com'
 ```
-
-> [!NOTE]  
-> Nerve supports any of the LiteLLM supported providers, check [the litellm documentation](https://docs.litellm.ai/docs/providers) for a list of all the providers and their syntax.
 
 To pass additional inference parameters:
 
