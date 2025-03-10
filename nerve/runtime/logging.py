@@ -102,14 +102,11 @@ def log_event_to_terminal(event: Event) -> None:
         logger.info(f"🛠️  {data['name']}({args_str}) -> {ret}{elapsed_time:.4f} seconds")
 
     elif event.name == "task_complete":
-        if isinstance(data["actor"], dict):
-            data["actor"] = DictWrapper(data["actor"])
-
         reason = f": {data['reason']}" if data["reason"] else ""
-        logger.info(f"✅ task {data['actor'].runtime.name} completed{reason}")
+        logger.info(f"✅ task {data['actor']} completed{reason}")
 
     elif event.name == "task_failed":
-        logger.error(f"❌ task {data['actor'].runtime.name} failed: {data['reason']}")
+        logger.error(f"❌ task {data['actor']} failed: {data['reason']}")
 
     elif event.name == "tool_created":
         logger.info(f"🧰 registered tool: {data['name']}")

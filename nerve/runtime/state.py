@@ -158,7 +158,9 @@ def set_task_complete(the_reason: str | None = None) -> None:
     global _task_status, _reason
     _task_status = Status.COMPLETED
     _reason = the_reason
-    on_event("task_complete", {"actor": _current_actor, "reason": the_reason})
+    on_event(
+        "task_complete", {"actor": _current_actor.runtime.name if _current_actor else "unknown", "reason": the_reason}
+    )
 
 
 def set_task_failed(the_reason: str) -> None:
@@ -167,7 +169,10 @@ def set_task_failed(the_reason: str) -> None:
     global _task_status, _reason
     _task_status = Status.FAILED
     _reason = the_reason
-    on_event("task_failed", {"reason": _reason, "actor": _current_actor})
+
+    on_event(
+        "task_failed", {"actor": _current_actor.runtime.name if _current_actor else "unknown", "reason": the_reason}
+    )
 
 
 def on_max_steps_reached() -> None:
