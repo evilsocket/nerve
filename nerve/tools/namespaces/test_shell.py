@@ -39,7 +39,7 @@ class TestShell(unittest.TestCase):
         self.assertTrue("EXIT CODE: " in output and "ERROR: " in output and "not found" in output and app in output)
 
     def test_execute_shell_command_binary_output(self) -> None:
-        result = shell.execute_shell_command("printf '\\xff\\xfe\\x00\\x01'")
+        result = shell.execute_shell_command("head /bin/sh")
         # verify the result is bytes, not str
         self.assertIsInstance(result, bytes)
-        self.assertEqual(result, b"\xff\xfe\x00\x01")
+        self.assertEqual(result[:4], b"\xca\xfe\xba\xbe")
