@@ -40,7 +40,7 @@ Alternatively, a Docker image is available on [Docker Hub](https://hub.docker.co
 Additionally, remember to share the tasklet files by mounting a volume when running the container.
 
 ```sh
-docker run -it --network=host -v ./examples:/root/.nerve/ evilsocket/nerve -h
+docker run -it --network=host -v ./examples:/root/.nerve/agents evilsocket/nerve -h
 ```
 
 ## Usage
@@ -83,7 +83,7 @@ nerve run new-agent --url 'cnn.com'
 For a list of all the subcommands and their options, feel free to explore `nerve -h`.
 
 > [!TIP]  
-> Nerve primarily loads agents from `$HOME/.nerve/`, ensuring that any agent in this folder is accessible regardless of your current working directory. If the agent is not found there, Nerve will then search in the current working directory as a fallback.
+> Nerve primarily loads agents from `$HOME/.nerve/agents`, ensuring that any agent in this folder is accessible regardless of your current working directory. If the agent is not found there, Nerve will then search in the current working directory as a fallback.
 
 ### Generators
 

@@ -30,8 +30,8 @@ def _resolve_input_path(input_path: pathlib.Path) -> pathlib.Path:
     # check if input_path exists
     if not input_path.exists():
         if not input_path.is_absolute():
-            # check if it exists as part of the $HOME/.nerve/ directory
-            in_home = pathlib.Path.home() / ".nerve" / input_path
+            # check if it exists as part of the $HOME/.nerve/agents directory
+            in_home = pathlib.Path.home() / ".nerve" / "agents" / input_path
             if in_home.exists():
                 input_path = in_home
 
