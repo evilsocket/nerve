@@ -26,6 +26,9 @@ def shell(
         raw_output += b"\nEXIT CODE: " + str(result.returncode).encode("utf-8")
 
     if result.stderr:
-        raw_output += b"\nERROR: " + result.stderr
+        if result.returncode != 0:
+            raw_output += b"\nERROR: " + result.stderr
+        else:
+            raw_output += b"\n" + result.stderr
 
     return _maybe_text(raw_output)
