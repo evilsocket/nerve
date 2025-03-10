@@ -9,6 +9,12 @@ authors = ["evilsocket <evilsocket@gmail.com>"]
 license = "GPL-3.0-or-later"
 readme = ["README.md", "LICENSE"]
 keywords = ["ai", "agent", "nerve", "adk", "agent development kit"]
+classifiers = [
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Framework :: Robot Framework",
+]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
