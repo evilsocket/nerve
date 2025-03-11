@@ -27,7 +27,7 @@ nerve create new-agent
 nerve run new-agent
 ```
 
-🤖 Agents are simple YAML files that can use a set of built-in tools such as a bash shell, file system primitives [and others](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md):
+Agents are simple YAML files that can use a set of built-in tools such as a bash shell, file system primitives [and others](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md):
 
 ```yaml
 # who
