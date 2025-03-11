@@ -85,7 +85,7 @@ class LiteLLMEngine(Engine):
         conversation.append({"role": "user", "content": user_prompt})
         conversation.extend(await self.window_strategy.get_window(self.history))
 
-        logger.info(f"{self.window_strategy} | conv size: {len(conversation)}")
+        logger.debug(f"{self.window_strategy} | conv size: {len(conversation)}")
 
         # build json schema for available tools
         extra_tools = extra_tools or {}
