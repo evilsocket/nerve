@@ -36,6 +36,10 @@ def create(
         pathlib.Path,
         typer.Argument(help="Path to the agent or workflow to create"),
     ] = DEFAULT_AGENT_PATH,
+    task: t.Annotated[
+        str | None,
+        typer.Option("--task", "-t", help="Task to create the agent for"),
+    ] = None,
     default: t.Annotated[
         bool,
         typer.Option("--default", "-d", help="Use default values."),
@@ -43,7 +47,7 @@ def create(
 ) -> None:
     print(f"🧠 nerve v{nerve.__version__}")
 
-    asyncio.run(create_agent(path.absolute(), default))
+    asyncio.run(create_agent(path.absolute(), task=task, default=default))
 
 
 @cli.command(

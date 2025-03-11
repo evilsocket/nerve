@@ -51,26 +51,53 @@ def _resolve_system_prompt(system_prompt: str) -> str:
     return system_prompt.strip()
 
 
-async def create_agent(path: pathlib.Path, default: bool) -> None:
+def _collect_user_prompts() -> list[str]:
+    prompts: list[str] = []
+
+    if not DEFAULT_PROMPTS_LOAD_PATH.exists():
+        return prompts
+
+    for item in DEFAULT_PROMPTS_LOAD_PATH.iterdir():
+        if item.is_dir():
+            system_file = item.joinpath("system.md")
+            if system_file.exists():
+                prompts.append(f"@{item.name}")
+        elif item.is_file() and item.suffix == ".md" and item.name != "system.md":
+            prompts.append(f"@{item.stem}")
+
+    return sorted(prompts)
+
+
+async def create_agent(path: pathlib.Path, task: str | None = None, default: bool = False) -> None:
     if path.exists():
         print(f"❌ {path} already exists.")
         exit(1)
 
     available_namespaces, defaults = _get_available_namespaces(DEFAULT_AGENT_TOOLS)
+    user_prompts = _collect_user_prompts()
 
     if default:
         answers = {
             "path": path,
             "system_prompt": DEFAULT_AGENT_SYSTEM_PROMPT,
-            "prompt": DEFAULT_AGENT_TASK.replace("{{", "{").replace("}}", "}"),
+            "prompt": task or DEFAULT_AGENT_TASK.replace("{{", "{").replace("}}", "}"),
             "tools": DEFAULT_AGENT_TOOLS,
         }
     else:
         print()
+        basic_system_prompt_prompt = inquirer.Text(
+            "system_prompt", message="System prompt", default=DEFAULT_AGENT_SYSTEM_PROMPT
+        )
         questions = [
             inquirer.Path("path", message="Path", default=str(path)),
-            inquirer.Text("system_prompt", message="System prompt", default=DEFAULT_AGENT_SYSTEM_PROMPT),
-            inquirer.Text("prompt", message="Task", default=DEFAULT_AGENT_TASK),
+            basic_system_prompt_prompt
+            if not user_prompts
+            else inquirer.List(
+                "system_prompt",
+                message="System prompt",
+                choices=["use custom, or:"] + user_prompts,
+            ),
+            inquirer.Text("prompt", message="Task", default=task or DEFAULT_AGENT_TASK),
             inquirer.Checkbox(
                 "tools",
                 message="Built-in tools",
@@ -82,7 +109,16 @@ async def create_agent(path: pathlib.Path, default: bool) -> None:
 
         answers = inquirer.prompt(questions)
         answers["tools"] = [tool.split(" - ")[0] for tool in answers["tools"]]  # type: ignore
-        answers["system_prompt"] = _resolve_system_prompt(str(answers["system_prompt"]))
+
+        if user_prompts:
+            answer = str(answers["system_prompt"])
+            if answer == "use custom, or:":
+                a = inquirer.prompt([basic_system_prompt_prompt])
+                answers["system_prompt"] = _resolve_system_prompt(str(a["system_prompt"]))
+            else:
+                answers["system_prompt"] = _resolve_system_prompt(answer)
+        else:
+            answers["system_prompt"] = _resolve_system_prompt(str(answers["system_prompt"]))
 
     example_tool = Tool(
         name="get_weather",
