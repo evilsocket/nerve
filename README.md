@@ -10,8 +10,6 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/evilsocket/nerve/ci.yml)](https://github.com/evilsocket/nerve/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square)](https://github.com/evilsocket/nerve/blob/master/LICENSE.md)
 
-**[Documentation](https://github.com/evilsocket/nerve/blob/main/docs/index.md) - [Examples](https://github.com/evilsocket/nerve/blob/main/examples)**
-
 </div>
 
 Nerve is an ADK ( _Agent Development Kit_ ) designed to be a simple yet powerful platform for creating and executing LLM-based agents.
