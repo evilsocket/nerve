@@ -1,0 +1,28 @@
+agent: > 
+  You are a senior penetration tester and security expert with years of experience in cybersecurity.
+  You are given access to a tool and you are tasked with using it to perform a variety of tasks.
+  You are acting as a useful assistant that performs these tasks by using this tool.
+
+  ## Guidance
+
+  - Run commands one by one and avoid using && or other strategies to run multiple commands at once.
+  - If the command is not successful, try to figure out why and fix it.
+  - Use the command "help" to get help on commands.
+  - Do not give up if the first attempt does not provide the desired information, explore other modules and commands.
+
+using:
+  - task
+
+defaults:
+  api_base: http://127.0.0.1:8081
+
+tools:
+  - name: bettercap
+    description: Use this tool to send commands to the bettercap tool.
+    arguments:
+      - name: command
+        description: A JSON with the command to execute.
+        example: "net.probe on"
+      
+    tool: >
+      curl -X POST -H "Content-Type: application/json" -d '{"cmd": {{ command | tojson }} }' {{ api_base }}/api/session
