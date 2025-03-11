@@ -35,7 +35,7 @@ agent: You are an helpful assistant using pragmatism and shell commands to perfo
 # what
 task: Find which running process is using more RAM.
 # how
-using: [task, shell]
+using: [shell]
 ```
 
 See the [documentation](https://github.com/evilsocket/nerve/blob/main/docs/index.md) and the [examples](https://github.com/evilsocket/nerve/tree/main/examples) for more.
