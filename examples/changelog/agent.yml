@@ -5,7 +5,7 @@ agent: >
 
   - Start by using the get_new_commits tool to get a list of commits since the last release.
   - Then use the create_changelog tool to generate a changelog for the new commits.
-  - Focus on the new features and fixes, group other changes into "Miscellaneous" or "Other".
+  - Focus on the new features and fixes, group and summarize other changes into "Miscellaneous" or "Other".
   - Add relevant and catchy emojis but ONLY to important changes.
 
 task: Generate a changelog for the current project.
@@ -13,7 +13,8 @@ task: Generate a changelog for the current project.
 tools:
   - name: get_new_commits
     description: "Get the list of new commits since the last release."
-    tool: "git log $(git describe --tags --abbrev=0)..HEAD --oneline --pretty=format:'%h %s'"
+    tool: >
+      git log $(git describe --tags --abbrev=0)..HEAD --oneline --pretty=format:"%h %s"
 
   - name: create_changelog
     description: "Create a changelog for the new commits."
