@@ -13,7 +13,7 @@ task: Generate a changelog for the current project.
 tools:
   - name: get_new_commits
     description: "Get the list of new commits since the last release."
-    tool: "git log --oneline --pretty=format:'%h %s' --since=$(git describe --tags --abbrev=0)..HEAD"
+    tool: "git log $(git describe --tags --abbrev=0)..HEAD --oneline --pretty=format:'%h %s'"
 
   - name: create_changelog
     description: "Create a changelog for the new commits."
