@@ -88,7 +88,7 @@ For a list of all the subcommands and their options, feel free to explore `nerve
 > [!TIP]  
 > Nerve primarily loads agents from `$HOME/.nerve/agents`, ensuring that any agent in this folder is accessible regardless of your current working directory. If the agent is not found there, Nerve will then search in the current working directory as a fallback.
 
-### Generators
+### 🧠 Generators
 
 The default model is OpenAI `gpt-4o-mini`, in order to use a different model you can either set the `NERVE_GENERATOR` environment variable, or pass it as a generator string via the `-g/--generator` command line argument.
 
@@ -113,7 +113,7 @@ To pass additional inference parameters:
 nerve run -g "ollama/llama3.2?temperature=0.9&api_base=http://server-host:11434" new-agent --url 'cnn.com'
 ```
 
-### Record & Replay
+### 🎥 Record & Replay
 
 Nerve sessions can be recorded to a JSONL file by specifying the `--trace` argument:
 
@@ -133,7 +133,7 @@ Add `-f` to replay in fast forward mode:
 nerve play agent-trace.jsonl -f # much faster
 ```
 
-### Adding Tools
+### 🛠️ Adding Tools
 
 When a tool can be represented as a shell command, you can conveniently extend the agent capabilites in the YAML:
 
@@ -174,7 +174,7 @@ def read_webcam_image(foo: t.Annotated[str, "Describe arguments to the model lik
     }
 ```
 
-### Conversation Window
+### 💬 Conversation Window
 
 An agent will continue running in a loop execute tools at each step until one of the following conditions is met:
 
