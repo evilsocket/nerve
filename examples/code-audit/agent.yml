@@ -25,7 +25,6 @@ defaults:
 using:
   - filesystem
   - task
-  - reasoning
 
 jail:
   # make sure that the model can't access the filesystem outside of the target path
@@ -33,9 +32,9 @@ jail:
     - "{{ target_path }}"
 
 tools:
-  - name: report_finding
-    description: Use this tool to report your findings.
-    arguments: 
+  - name: report
+    description: Use this tool to report each of your findings.
+    arguments:
       - name: finding
         description: The finding to report.
         example: >
@@ -43,7 +42,8 @@ tools:
             "title": "SQL Injection",
             "severity": "HIGH",
             "description": "This is an example finding",
-            "file": "/full/path/to/vulnerable_file.py"
+            "file": "/full/path/to/vulnerable_file.py",
+            "poc": "/page.php?id=1&cat=2; DROP TABLE users;"
           }
     # interpolated arguments will be automatically quoted for shell use
-    tool: echo {{ finding }} >> findings.jsonl
+    tool: echo {{ finding }} >> audit.jsonl
