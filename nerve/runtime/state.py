@@ -24,6 +24,8 @@ _task_status: Status = Status.RUNNING
 _reason: str | None = None
 # variables
 _variables: dict[str, t.Any] = {}
+# defaults for variables
+_defaults: dict[str, t.Any] = {}
 # similar to variables but used by tools
 _knowledge: dict[str, t.Any] = {}
 # extra tools defined at runtime
@@ -144,6 +146,13 @@ def set_mode(new_mode: Mode) -> None:
         on_event("mode_change", {"from": _mode, "to": new_mode})
 
     _mode = new_mode
+
+
+def set_defaults(defaults: dict[str, t.Any]) -> None:
+    """Set the defaults for variables."""
+
+    global _defaults
+    _defaults = defaults
 
 
 def is_active_task_done() -> bool:
@@ -299,9 +308,14 @@ def on_user_input_needed(input_name: str, prompt: str) -> str:
     elif input_name in _variables:
         return str(_variables[input_name])
 
-    if _mode == Mode.INTERACTIVE:
+    elif _mode == Mode.INTERACTIVE:
         # ask the user
         return input(prompt).strip()
+
+    elif input_name in _defaults:
+        # from the agent defaults
+        return str(_defaults[input_name])
+
     else:
         raise click.MissingParameter(
             param=click.Option(
@@ -326,6 +340,7 @@ def interpolate(raw: str, extra: dict[str, t.Any] | None = None) -> str:
 
             logger.debug(f"undefined variable encountered: {undefined_name}")
             logger.debug(f"current variables: {_variables}")
+            logger.debug(f"current defaults: {_defaults}")
 
             self.value = on_user_input_needed(undefined_name, f"Enter value for '{undefined_name}': ")
 

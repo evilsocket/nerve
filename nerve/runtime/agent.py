@@ -55,6 +55,9 @@ class Agent:
         if start_state:
             state.update_variables(start_state)
 
+        if configuration.defaults:
+            state.set_defaults(configuration.defaults)
+
         # import tools.py by default if found
         tools_py_path = working_dir / "tools.py"
         if tools_py_path.exists():

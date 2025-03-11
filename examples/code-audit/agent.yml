@@ -17,6 +17,10 @@ agent: >
 # the task
 task: find vulnerabilities in source code in {{ target_path }} and report your findings.
 
+# default values if --target-path is not provided
+defaults:
+  target_path: .
+
 # builtin tools to use
 using:
   - filesystem

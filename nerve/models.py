@@ -70,6 +70,8 @@ class Configuration(BaseModel):
     agent: str | None = None
     # the main agent task
     task: str | None = None
+    # optional default values for the initial state
+    defaults: dict[str, t.Any] = {}
     # builtin namespaces
     using: list[str] = []
     # jail mechanism for each namespace
