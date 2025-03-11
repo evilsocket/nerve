@@ -10,6 +10,9 @@ agent: >
 
 task: Generate a changelog for the current project.
 
+defaults:
+  output: CHANGELOG.md
+
 tools:
   - name: get_new_commits
     description: "Get the list of new commits since the last release."
@@ -36,4 +39,4 @@ tools:
 
           ...
     complete_task: true
-    tool: "echo {{ markdown }} > CHANGELOG.md"
+    tool: "echo {{ markdown }} > {{ output }}"
