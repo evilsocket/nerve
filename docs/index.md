@@ -2,10 +2,14 @@
 
 Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool designed to be a simple yet powerful platform for creating and executing LLM-based agents using a simple YAML-based syntax.
 
-* [Installation](#installation)
-* [Usage](#usage)
-* [Namespaces](namespaces.md)
-* [Workflows](workflows.md)
+* 💻 [Installation](#installation)
+* 🚀 [Usage](#usage)
+  - 🧠 [Generators](#-generators)
+  - 🎥 [Record & Replay](#-record--replay)
+  - 🛠️ [Adding Tools](#️-adding-tools)️
+  - 💬 [Conversation Window](#-conversation-window)
+* 🧬 [Namespaces](namespaces.md)
+* 👥 [Workflows](workflows.md)
 
 ## Installation
 
