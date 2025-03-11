@@ -27,7 +27,7 @@ nerve create new-agent
 nerve run new-agent
 ```
 
-🤖 Agents are simple YAML files that can use a set of built-in tools such as a bash shell, file system primitives [and many others](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md):
+🤖 Agents are simple YAML files that can use a set of built-in tools such as a bash shell, file system primitives [and others](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md):
 
 ```yaml
 # who
@@ -39,6 +39,10 @@ using: [task, shell]
 ```
 
 See the [documentation](https://github.com/evilsocket/nerve/blob/main/docs/index.md) and the [examples](https://github.com/evilsocket/nerve/tree/main/examples) for more.
+
+## Contributing
+
+We welcome contributions! Check out our [contributing guidelines](https://github.com/evilsocket/nerve/blob/main/CONTRIBUTING.md) to get started and join our [Discord community](https://discord.gg/btZpkp45gQ) for help and discussion.
 
 ## License
 
