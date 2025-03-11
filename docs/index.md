@@ -96,6 +96,7 @@ The default model is OpenAI `gpt-4o-mini`, in order to use a different model you
 > Nerve supports any of the LiteLLM supported providers, check [the litellm documentation](https://docs.litellm.ai/docs/providers) for a list of all the providers and their syntax.
 
 ```sh
+export ANTHROPIC_API_KEY=sk-ant-api...
 export NERVE_GENERATOR=anthropic/claude-3-7-sonnet-20250219
 
 nerve run new-agent --url 'cnn.com'
