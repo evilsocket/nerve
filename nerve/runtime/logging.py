@@ -128,7 +128,7 @@ def log_event_to_terminal(event: Event) -> None:
             logger.info(f"⚙️  flow complete in {data['steps']} steps")
 
     elif event.name == "text_response":
-        logger.info(f"💬 {colored(data['response'], 'blue')}")
+        logger.info(f"💬 {colored(data['response'], 'black', 'on_white')}")
 
     elif event.name == "step_started":
         if isinstance(data["usage"], dict):
