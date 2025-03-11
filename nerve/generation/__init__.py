@@ -142,7 +142,6 @@ class Engine(ABC):
             # check if the tool function returned a coroutine
             if asyncio.iscoroutine(tool_response):
                 tool_response = await tool_response
-
         except Exception as e:
             state.on_event(
                 "tool_error",

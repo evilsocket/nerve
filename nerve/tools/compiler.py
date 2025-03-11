@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import functools
 import importlib
@@ -20,7 +21,7 @@ def wrap_tool_function(func: t.Callable[..., t.Any], mime: str | None = None) ->
     Creates a wrapper around a function that logs the function call and its result.
     """
 
-    def wrapper(*args: t.Any, **kwargs: t.Any) -> t.Any:
+    async def wrapper(*args: t.Any, **kwargs: t.Any) -> t.Any:
         logger.debug(f"calling {func.__name__} ...")
 
         state.on_before_tool_called(func.__name__, kwargs)
@@ -29,6 +30,10 @@ def wrap_tool_function(func: t.Callable[..., t.Any], mime: str | None = None) ->
         error = None
         try:
             result = func(*args, **kwargs)
+            # check if the tool function returned a coroutine
+            if asyncio.iscoroutine(result):
+                result = await result
+
         except Exception as e:
             # import traceback
             # error_trace = traceback.format_exc()
