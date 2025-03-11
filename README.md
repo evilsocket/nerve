@@ -22,12 +22,10 @@ Nerve is an ADK ( _Agent Development Kit_ ) designed to be a simple yet powerful
 # 🖥️ install the project with:
 pip install nerve-adk
 
-# 💡 create an agent with  guided procedure:
-
+# 💡 create an agent with a guided procedure:
 nerve create new-agent
 
 # 🚀 go!
-
 nerve run new-agent
 ```
 
