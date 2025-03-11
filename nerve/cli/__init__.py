@@ -6,9 +6,11 @@ import typer
 from loguru import logger
 
 import nerve
+from nerve.cli.agents import show_agents
 from nerve.cli.create import create_agent
 from nerve.cli.defaults import (
     DEFAULT_AGENT_PATH,
+    DEFAULT_AGENTS_LOAD_PATH,
     DEFAULT_CONVERSATION_STRATEGY,
     DEFAULT_GENERATOR,
     DEFAULT_MAX_COST,
@@ -25,6 +27,21 @@ cli = typer.Typer(
     pretty_exceptions_enable=False,
     context_settings={"help_option_names": ["-h", "--help"]},
 )
+
+
+@cli.command(
+    context_settings={"help_option_names": ["-h", "--help"]},
+    help="List the agents available locally in $HOME/.nerve/agents or a custom path.",
+)
+def agents(
+    path: t.Annotated[
+        pathlib.Path,
+        typer.Argument(help="Path to the agent or workflow to create"),
+    ] = DEFAULT_AGENTS_LOAD_PATH,
+) -> None:
+    print(f"🧠 nerve v{nerve.__version__}")
+
+    asyncio.run(show_agents(path))
 
 
 @cli.command(
@@ -61,27 +78,6 @@ def version() -> None:
     print(f"platform: {platform.system().lower()} ({platform.machine()})")
     print(f"python:   {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
     print(f"nerve:    {nerve.__version__}")
-
-
-@cli.command(
-    context_settings={"help_option_names": ["-h", "--help"]},
-    no_args_is_help=True,
-    help="Replay a trace file.",
-)
-def play(
-    trace_path: t.Annotated[
-        pathlib.Path,
-        typer.Argument(help="Trace file to replay"),
-    ] = pathlib.Path("trace.jsonl"),
-    fast: t.Annotated[
-        bool,
-        typer.Option("--fast", "-f", help="Do not sleep between events"),
-    ] = False,
-) -> None:
-    logging.init(level="INFO")
-    logger.info(f"🧠 nerve v{nerve.__version__}")
-
-    asyncio.run(replay(trace_path, fast))
 
 
 @cli.command(
@@ -155,3 +151,24 @@ def run(
             trace,
         )
     )
+
+
+@cli.command(
+    context_settings={"help_option_names": ["-h", "--help"]},
+    no_args_is_help=True,
+    help="Replay a trace file.",
+)
+def play(
+    trace_path: t.Annotated[
+        pathlib.Path,
+        typer.Argument(help="Trace file to replay"),
+    ] = pathlib.Path("trace.jsonl"),
+    fast: t.Annotated[
+        bool,
+        typer.Option("--fast", "-f", help="Do not sleep between events"),
+    ] = False,
+) -> None:
+    logging.init(level="INFO")
+    logger.info(f"🧠 nerve v{nerve.__version__}")
+
+    asyncio.run(replay(trace_path, fast))
