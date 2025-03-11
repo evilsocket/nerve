@@ -34,28 +34,23 @@ class SlidingWindowStrategy(WindowStrategy):
         #
         #   Invalid parameter: messages with role 'tool' must be a response
         #   to a preceeding message with 'tool_calls'.
-        #
-        # So we start from there and go backwards until we include everything we need.
-        idx_actual = history_size - self.window_size
-        logger.debug(f"idx_actual={idx_actual}")
-        while idx_actual > 0:
-            item = history[idx_actual]
+        window = history[-self.window_size :]
+        orphans = []
+        for item in window:
+            if item.get("role") == "tool":
+                tool_call_id = item.get("tool_call_id", "")
+                found = False
+                for other in window:
+                    # quick and dirty way to check if the tool call id is in the other item
+                    if item != other and tool_call_id in str(other):
+                        found = True
+                        break
 
-            logger.debug(f"  item={item}")
-            # if the item is not a tool response (as dictionary), it means
-            # it is a tool call and everything we have after it is a response
-            # for it, so we're done.
-            if not isinstance(item, dict) or item.get("role") != "tool":
-                break
-            # keep going backwards until we find a tool call
-            idx_actual -= 1
+                if not found:
+                    orphans.append(item)
 
-        window = history[idx_actual:]
-
-        logger.debug(f"window_size={self.window_size}, window_size_actual={len(window)}, idx_actual_after={idx_actual}")
-
-        for msg in window:
-            logger.debug(" [*] " + str(msg))
+        if orphans:
+            window = [item for item in window if item not in orphans]
 
         return window
 

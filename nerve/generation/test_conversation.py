@@ -58,21 +58,6 @@ class TestSlidingWindowStrategy(unittest.TestCase):
         # Verify logger was called
         self.assertTrue(mock_debug.called)
 
-    def test_get_window_includes_tool_calls_and_responses(self) -> None:
-        strategy = SlidingWindowStrategy(window_size=2)
-        history = [
-            {"role": "user", "content": "First"},
-            {"role": "assistant", "content": "Response", "tool_calls": [{"id": "123"}]},
-            {"role": "tool", "tool_call_id": "123", "content": "Tool response"},
-            {"role": "user", "content": "Second"},
-        ]
-
-        result = asyncio.run(strategy.get_window(history))  # type: ignore
-
-        # Should include the tool call and response even if it means exceeding window size
-        self.assertEqual(len(result), 3)
-        self.assertEqual(result, history[1:])
-
     def test_str_representation(self) -> None:
         strategy = SlidingWindowStrategy(window_size=10)
         self.assertEqual(str(strategy), "<sliding window of size 10>")

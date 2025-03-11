@@ -6,6 +6,7 @@ import litellm
 from loguru import logger
 
 from nerve.generation import Engine, Usage, WindowStrategy
+from nerve.generation.conversation import SlidingWindowStrategy
 from nerve.runtime import state
 
 
@@ -20,6 +21,7 @@ class LiteLLMEngine(Engine):
 
         # until this is not fixed, ollama needs special treatment: https://github.com/BerriAI/litellm/issues/6353
         self.is_ollama = "ollama" in self.generator_id
+        self.reduced_window_size = 25
 
         if not self.is_ollama and self.tools:
             if not litellm.supports_function_calling(model=self.generator_id):  # type: ignore
@@ -51,9 +53,6 @@ class LiteLLMEngine(Engine):
                 total_tokens=0,
             ), response.message
         else:
-            # TODO: handle litellm.ContextWindowExceededError by adjusting window strategy
-            #   litellm.BadRequestError: ContextWindowExceededError: OpenAIException - Error code: 400 ...
-
             try:
                 # litellm.set_verbose = True
                 response = litellm.completion(
@@ -86,12 +85,30 @@ class LiteLLMEngine(Engine):
         conversation.append({"role": "user", "content": user_prompt})
         conversation.extend(await self.window_strategy.get_window(self.history))
 
+        logger.info(f"{self.window_strategy} | conv size: {len(conversation)}")
+
         # build json schema for available tools
         extra_tools = extra_tools or {}
         tooling = self._get_extended_tooling_schema(extra_tools) or None
         try:
             # get message
             usage, message = await self._generate(conversation, tooling)
+        except litellm.ContextWindowExceededError as e:  # type: ignore
+            logger.debug(e)
+
+            if self.reduced_window_size > 0:
+                self.reduced_window_size -= 1
+                self.window_strategy = SlidingWindowStrategy(self.reduced_window_size)
+
+                logger.error(f"context window exceeded, adjusting window strategy: {self.window_strategy}")
+                return await self.step(system_prompt, user_prompt, extra_tools)
+            else:
+                logger.error("context window exceeded")
+                return Usage(
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    total_tokens=0,
+                )
         except Exception as e:
             logger.error(e)
             return Usage(
