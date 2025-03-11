@@ -301,6 +301,8 @@ def reset() -> None:
 def on_user_input_needed(input_name: str, prompt: str) -> str:
     """Get user input."""
 
+    # TODO: this could wait on a shared event bus in case of multiple agents in a workflow.
+
     # check if defined as environment variable
     if input_name in os.environ:
         return os.environ[input_name]

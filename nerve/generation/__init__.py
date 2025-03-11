@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import typing as t
 from abc import ABC, abstractmethod
@@ -192,6 +193,19 @@ class Engine(ABC):
                     ],
                 },
             ]
+
+    async def _process_tool_call(
+        self, call_id: str, tool_name: str, args: str | dict[str, t.Any], extra_tools: dict[str, t.Callable[..., t.Any]]
+    ) -> list[dict[str, t.Any]]:
+        # resolve tool
+        tool_fn = self.tools.get(tool_name, extra_tools.get(tool_name, None))
+        if tool_fn is None:
+            # unknown tool
+            return [self._get_unknown_tool_response(call_id, tool_name)]
+        else:
+            tool_call_args = json.loads(args) if isinstance(args, str) else args
+            # execute tool and collect response
+            return await self._get_tool_response(call_id, tool_name, tool_fn, tool_call_args)
 
     @abstractmethod
     async def step(
