@@ -85,6 +85,10 @@ def log_event_to_terminal(event: Event) -> None:
         logger.info(f"🤖 {generator} | {name} v{version} with {tools} tools")
 
     elif event.name == "before_tool_called":
+        # avoid logging twice
+        if data["name"] in ("task_complete_success"):
+            return
+
         args_str = ", ".join([colored(v, "yellow") for v in data["args"].values()])
         name = colored(data["name"], attrs=["bold"])
         logger.info(f"🛠️  {name}({args_str})")
