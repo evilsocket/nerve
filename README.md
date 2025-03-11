@@ -16,6 +16,10 @@
 
 Nerve is an ADK ( _Agent Development Kit_ ) designed to be a simple yet powerful platform for creating and executing LLM-based agents.
 
+<div align="center">
+  <a href="https://asciinema.org/a/707391" target="_blank"><img width="512" src="https://asciinema.org/a/707391.svg" /></a>
+</div>
+
 🖥️ Install with:
 
 ```bash
