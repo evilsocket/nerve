@@ -66,6 +66,8 @@ class Configuration(BaseModel):
 
     # TODO: add a "precall" to call the tool when the agent is started
 
+    # TODO: document these fields.
+
     # used for versioning the agents
     version: str = "1.0.0"
     # the system prompt, the agent identity

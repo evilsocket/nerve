@@ -31,6 +31,9 @@ Nerve offers a rich set of predefined tools, organized in namespaces, that the a
 
             print(doc.strip())
             print()
+            print("<details>")
+            print("<summary><b>Show Tools</b></summary>")
+
             print("| Tool | Description |")
             print("|------|-------------|")
 
@@ -40,4 +43,5 @@ Nerve offers a rich set of predefined tools, organized in namespaces, that the a
                     doc = doc.strip().replace("\n", "<br>")
                     print(f"| `{name}` | <pre>{doc}</pre> |")
 
-            print("")
+            print("</details>")
+            print()

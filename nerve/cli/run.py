@@ -29,7 +29,6 @@ cli = typer.Typer(
 
 @cli.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True, "help_option_names": ["-h", "--help"]},
-    no_args_is_help=True,
     help="Execute an agent or a workflow.",
 )
 def run(
@@ -37,7 +36,7 @@ def run(
     input_path: t.Annotated[
         pathlib.Path,
         typer.Argument(help="Agent or workflow to execute"),
-    ],
+    ] = pathlib.Path("."),
     generator: t.Annotated[
         str,
         typer.Option("--generator", "-g", help="Generator to use"),

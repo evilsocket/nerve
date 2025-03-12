@@ -116,7 +116,7 @@ class Engine(ABC):
 
         return {
             "role": "user",
-            "content": "None of the tools were used.",
+            "content": "None of the tools were used, interact with the user by executing the existing tools.",
         }
 
     def _get_unknown_tool_response(self, tool_call_id: str, tool_name: str) -> dict[str, t.Any]:
