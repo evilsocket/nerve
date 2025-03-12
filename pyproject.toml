@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "nerve-adk"
 packages = [{ include = "nerve" }, { include = "nerve/py.typed" }]
-version = "1.1.0"
+version = "1.2.0"
 description = "The simple agent development kit."
 repository = "https://github.com/evilsocket/nerve"
 homepage = "https://github.com/evilsocket/nerve"
