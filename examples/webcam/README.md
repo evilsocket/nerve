@@ -24,4 +24,4 @@ Finally, you can run the agent with:
 nerve run examples/webcam -c 5
 ```
 
-It is recommended to use [a conversation window size](https://github.com/dreadnode/nerve/blob/main/docs/usage.md#conversation-window) of 5 messages.
+It is recommended to use [a conversation window size](https://github.com/evilsocket/nerve/blob/main/docs/index.md#-conversation-window) of 5 messages.
