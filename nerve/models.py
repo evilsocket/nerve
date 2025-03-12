@@ -122,7 +122,7 @@ class Workflow(BaseModel):
 
     name: str
     description: str
-    flow: dict[str, Actor]
+    actors: dict[str, Actor]
 
     @staticmethod
     def is_workflow(input_path: pathlib.Path) -> bool:

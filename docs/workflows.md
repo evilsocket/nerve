@@ -21,7 +21,7 @@ Its YAML definition is:
 name: "Write a Recipe"
 description: "A workflow for writing a recipe."
 
-flow:
+actors:
   create_list_of_ingredients:
     generator: anthropic://claude
 
@@ -35,7 +35,7 @@ flow:
     generator: openai://gpt-4o
 ```
 
-Each element of the `flow` array is an agent that will be executed in the order specified.
+Each element in the `actors` array represents an agent that will be executed sequentially in the specified order.
 
 **create_list_of_ingredients.yml**
 

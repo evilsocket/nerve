@@ -1,7 +1,7 @@
 name: "Write a Recipe"
 description: "A workflow for writing a recipe."
 
-flow:
+actors:
   create_list_of_ingredients:
     generator: openai/gpt-4o-mini
     #anthropic/claude-3-5-sonnet

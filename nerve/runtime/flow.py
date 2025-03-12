@@ -76,7 +76,7 @@ class Flow:
         root_path = input_path if input_path.is_dir() else input_path.parent
 
         actors = []
-        for actor_name, actor in workflow.flow.items():
+        for actor_name, actor in workflow.actors.items():
             # determine actor task file
             task_file_path = (root_path / actor_name).with_suffix(".yml")
             if not task_file_path.exists():
