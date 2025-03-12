@@ -86,7 +86,7 @@ def log_event_to_terminal(event: Event) -> None:
 
     elif event.name == "before_tool_called":
         # avoid logging twice
-        if data["name"] in ("task_complete_success"):
+        if data["name"] in ("task_complete", "task_failed"):
             return
 
         args_str = ", ".join([colored(v, "yellow") for v in data["args"].values()])
@@ -95,7 +95,7 @@ def log_event_to_terminal(event: Event) -> None:
 
     elif event.name == "tool_called":
         # avoid logging twice
-        if data["name"] in ("task_complete_success"):
+        if data["name"] in ("task_complete", "task_failed"):
             return
 
         elapsed_time = data["finished_at"] - data["started_at"]
@@ -104,7 +104,7 @@ def log_event_to_terminal(event: Event) -> None:
         else:
             ret = f"{type(data['result'])} ({len(str(data['result']))} bytes)"
 
-        logger.info(colored(f" ↳ {ret} in {elapsed_time:.4f}s", "dark_grey"))
+        logger.info(colored(f" ↳ {data['name']} -> {ret} in {elapsed_time:.4f}s", "dark_grey"))
 
     elif event.name == "task_complete":
         logger.info(colored(f"✅ task {data['actor']} completed", "green", attrs=["bold"]))
