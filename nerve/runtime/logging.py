@@ -107,8 +107,7 @@ def log_event_to_terminal(event: Event) -> None:
         logger.info(colored(f" ↳ {ret} in {elapsed_time:.4f}s", "dark_grey"))
 
     elif event.name == "task_complete":
-        reason = f": {data['reason']}" if data["reason"] else ""
-        logger.info(colored(f"✅ task {data['actor']} completed{reason}", "green", attrs=["bold"]))
+        logger.info(colored(f"✅ task {data['actor']} completed", "green", attrs=["bold"]))
 
     elif event.name == "task_failed":
         logger.error(colored(f"❌ task {data['actor']} failed: {data['reason']}", "red", attrs=["bold"]))
