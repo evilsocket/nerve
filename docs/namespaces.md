@@ -17,6 +17,7 @@ Let the agent create its own tools in Python.
 **Parameters**
 
 * `code` <i>(<class 'str'>)</i>: The Python code to create the tool.
+
 </details>
 
 ## 💻 computer
@@ -41,6 +42,7 @@ Computer use primitives for mouse, keyboard, and screen.
 **Parameters**
 
 * `keys` <i>(<class 'str'>)</i>: The hotkey sequence to press (like 'ctrl+shift+cmd+space')
+
 ### `keyboard_type`
 
 <pre>Type the given text on the keyboard.</pre>
@@ -48,6 +50,7 @@ Computer use primitives for mouse, keyboard, and screen.
 **Parameters**
 
 * `text` <i>(<class 'str'>)</i>: The text to type
+
 ### `mouse_double_click`
 
 <pre>Double click the left mouse button at the current mouse position.</pre>
@@ -64,6 +67,7 @@ Computer use primitives for mouse, keyboard, and screen.
 
 * `x` <i>(<class 'int'>)</i>: The x coordinate to move to
 * `y` <i>(<class 'int'>)</i>: The y coordinate to move to
+
 ### `mouse_middle_click`
 
 <pre>Click the middle mouse button at the current mouse position.</pre>
@@ -76,6 +80,7 @@ Computer use primitives for mouse, keyboard, and screen.
 
 * `x` <i>(<class 'int'>)</i>: The x coordinate to move to
 * `y` <i>(<class 'int'>)</i>: The y coordinate to move to
+
 ### `mouse_right_click`
 
 <pre>Click the right mouse button at the current mouse position.</pre>
@@ -88,6 +93,7 @@ Computer use primitives for mouse, keyboard, and screen.
 
 * `x` <i>(<class 'int'>)</i>: The x coordinate to move to
 * `y` <i>(<class 'int'>)</i>: The y coordinate to move to
+
 ### `screenshot`
 
 <pre>Take a screenshot of the current screen.</pre>
@@ -97,6 +103,20 @@ Computer use primitives for mouse, keyboard, and screen.
 ## 📂 filesystem
 
 Read-only access primitives to the local filesystem.
+
+### Jail
+
+The tools in this namespace can be restricted to a specific set of paths by using the `jail` directive in the agent configuration:
+
+```yaml
+using:
+  - filesystem
+
+jail:
+    filesystem:
+      - "/only/path/to/allow"
+      - "{{ target_path }}" # variables can be used too
+```
 
 <details>
 <summary><b>Show Tools</b></summary>
@@ -108,6 +128,7 @@ Read-only access primitives to the local filesystem.
 **Parameters**
 
 * `path` <i>(<class 'str'>)</i>: The path to the folder to list
+
 ### `read_file`
 
 <pre>Read the contents of a file from disk.</pre>
@@ -115,6 +136,7 @@ Read-only access primitives to the local filesystem.
 **Parameters**
 
 * `path` <i>(<class 'str'>)</i>: The path to the file to read
+
 </details>
 
 ## 💬 inquire
@@ -132,6 +154,7 @@ Let the agent interactively ask questions to the user in a structured way.
 
 * `question` <i>(<class 'str'>)</i>: The question to ask the user.
 * `default` <i>(<class 'bool'>)</i>: The default answer to the question.
+
 ### `ask_for_multiple_choice`
 
 <pre>Ask a multiple choice question to the user.</pre>
@@ -140,6 +163,7 @@ Let the agent interactively ask questions to the user in a structured way.
 
 * `question` <i>(<class 'str'>)</i>: The question to ask the user.
 * `choices` <i>(list[str])</i>: The choices to offer the user.
+
 ### `ask_for_single_choice`
 
 <pre>Ask a single choice question to the user.</pre>
@@ -148,6 +172,7 @@ Let the agent interactively ask questions to the user in a structured way.
 
 * `question` <i>(<class 'str'>)</i>: The question to ask the user.
 * `choices` <i>(list[str])</i>: The choices to offer the user.
+
 ### `ask_question`
 
 <pre>Ask a question to the user.</pre>
@@ -155,6 +180,7 @@ Let the agent interactively ask questions to the user in a structured way.
 **Parameters**
 
 * `question` <i>(<class 'str'>)</i>: The question to ask the user.
+
 </details>
 
 ## 🧠 reasoning
@@ -197,6 +223,7 @@ Simulates the reasoning process at runtime.
 **Parameters**
 
 * `thought` <i>(<class 'str'>)</i>: A thought to think about
+
 </details>
 
 ## 💻 shell
@@ -213,6 +240,7 @@ Let the agent execute shell commands.
 **Parameters**
 
 * `command` <i>(<class 'str'>)</i>: The shell command to execute
+
 </details>
 
 ## ✅ task
@@ -229,6 +257,7 @@ Let the agent autonomously set the task as complete or failed.
 **Parameters**
 
 * `reason` <i>(str | None)</i>: Optional reason why the task is complete or report of conclusive information.
+
 ### `task_failed`
 
 <pre>Use this tool if you determine that the given goal or task is impossible given the information you have.</pre>
@@ -236,6 +265,7 @@ Let the agent autonomously set the task as complete or failed.
 **Parameters**
 
 * `reason` <i>(<class 'str'>)</i>: The reason why the task is impossible
+
 </details>
 
 ## 🕒 time
@@ -256,5 +286,6 @@ Provides tools for getting the current date and time and waiting for a given num
 **Parameters**
 
 * `seconds` <i>(<class 'int'>)</i>: The number of seconds to wait
+
 </details>
 

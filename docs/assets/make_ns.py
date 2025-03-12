@@ -32,6 +32,26 @@ Nerve offers a rich set of predefined tools, organized in namespaces, that the a
 
             print(doc.strip())
             print()
+
+            if hasattr(module, "jail"):
+                print("### Jail")
+                print()
+                print(
+                    "The tools in this namespace can be restricted to a specific set of paths by using the `jail` directive in the agent configuration:"
+                )
+
+                print()
+                print("```yaml")
+                print("using:")
+                print(f"  - {modname}")
+                print()
+                print("jail:")
+                print(f"    {modname}:")
+                print('      - "/only/path/to/allow"')
+                print('      - "{{ target_path }}" # variables can be used too')
+                print("```")
+                print()
+
             print("<details>")
             print("<summary><b>Show Tools</b></summary>")
             print()
@@ -76,6 +96,8 @@ Nerve offers a rich set of predefined tools, organized in namespaces, that the a
                             description = ""
 
                         print(f"* `{param_name}` <i>({base_type})</i>: {description.strip()}")
+
+                    print()
 
             print("</details>")
             print()
