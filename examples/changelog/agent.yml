@@ -9,13 +9,11 @@ agent: >
   - Group and summarize other minor changes into "Miscellaneous" or "Other".
   - Add relevant and catchy emojis but ONLY to important changes.
 
+# tools can also be used in the prompts
 task: >
   Generate a changelog for these commits:
 
   {{ get_new_commits() }}
-
-defaults:
-  output: CHANGELOG.md
 
 tools:
   - name: get_new_commits
@@ -42,5 +40,8 @@ tools:
           ### Other
 
           ...
+    # will set the task as complete when the tool is called
     complete_task: true
-    tool: "echo {{ markdown }} > {{ output }}"
+    # will just print to stdout
+    tool: "echo {{ markdown }}"
+    print: true

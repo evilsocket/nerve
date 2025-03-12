@@ -51,7 +51,7 @@ class Tool(BaseModel):
     description: str = ""
     arguments: list[Argument] = []
     complete_task: bool = False
-    log: bool = False
+    print: bool = False
     mime: str | None = None
     tool: str | None = None
 

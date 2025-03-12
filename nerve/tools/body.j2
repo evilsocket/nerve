@@ -31,9 +31,9 @@ def {{ tool.name }}({% for arg in tool.arguments %}{{ arg.name }}: Annotated[str
     ret = shell(command)
     ok_exit_code = 'EXIT CODE: ' not in ret
 
-{% if tool.log %}
+{% if tool.print %}
     if ret and ok_exit_code:
-        logger.info(colored(ret, "green"))
+        print(ret)
     elif ret:
         logger.error(colored(ret, "red"))
 {% endif %}
