@@ -373,6 +373,7 @@ def _create_jinja_env() -> jinja2.Environment:
 
             def make_sync_wrapper(fn: t.Callable[..., t.Any]) -> t.Callable[..., t.Any]:
                 def sync_wrapper(*args: t.Any, **kwargs: t.Any) -> t.Any:
+                    logger.debug(f"calling tool {fn.__name__} from template")
                     coro = fn(*args, **kwargs)
                     # NOTE: we use a list to store the result because nonlocal variables (like scalars) inside a nested
                     # function do not allow assignment unless explicitly declared nonlocal. However, mutable objects like

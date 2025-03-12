@@ -3,6 +3,7 @@ agent: >
   
   ## Guidance
 
+  - Do not use the get_new_commits tool since you already have the list of commits.
   - Use the create_changelog tool to generate a changelog for the new commits.
   - Focus on the new features and major fixes.
   - Group and summarize other minor changes into "Miscellaneous" or "Other".
