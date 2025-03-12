@@ -10,7 +10,7 @@ agent: >
   - Add relevant and catchy emojis but ONLY to important changes.
 
 task: >
-  Generate a changelog for these commits in the current project:
+  Generate a changelog for these commits:
 
   {{ get_new_commits() }}
 
