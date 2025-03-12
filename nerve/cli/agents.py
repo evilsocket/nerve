@@ -1,10 +1,37 @@
+import asyncio
 import pathlib
+import typing as t
 
 import typer
 from loguru import logger
 from termcolor import colored
 
+import nerve
+from nerve.cli.defaults import (
+    DEFAULT_AGENTS_LOAD_PATH,
+)
 from nerve.models import Configuration, Workflow
+
+cli = typer.Typer(
+    no_args_is_help=True,
+    pretty_exceptions_enable=False,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
+
+
+@cli.command(
+    context_settings={"help_option_names": ["-h", "--help"]},
+    help="List the agents available locally in $HOME/.nerve/agents or a custom path.",
+)
+def agents(
+    path: t.Annotated[
+        pathlib.Path,
+        typer.Argument(help="Path to the agent or workflow to create"),
+    ] = DEFAULT_AGENTS_LOAD_PATH,
+) -> None:
+    print(f"🧠 nerve v{nerve.__version__}")
+
+    asyncio.run(show_agents(path))
 
 
 async def show_agents(path: pathlib.Path) -> None:
@@ -29,4 +56,5 @@ async def show_agents(path: pathlib.Path) -> None:
             anything = True
 
     if not anything:
+        # TODO: add instructions
         print(colored("no agents or workflows found", "light_grey"))

@@ -1,16 +1,50 @@
+import asyncio
 import pathlib
 import pkgutil
+import typing as t
 
 import inquirer  # type: ignore
+import typer
 from pydantic_yaml import to_yaml_str
 
+import nerve
 from nerve.cli.defaults import (
+    DEFAULT_AGENT_PATH,
     DEFAULT_AGENT_SYSTEM_PROMPT,
     DEFAULT_AGENT_TASK,
     DEFAULT_AGENT_TOOLS,
     DEFAULT_PROMPTS_LOAD_PATH,
 )
 from nerve.models import Configuration, Tool
+
+cli = typer.Typer(
+    no_args_is_help=True,
+    pretty_exceptions_enable=False,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
+
+
+@cli.command(
+    context_settings={"help_option_names": ["-h", "--help"]},
+    help="Guided procedure for creating a new agent.",
+)
+def create(
+    path: t.Annotated[
+        pathlib.Path,
+        typer.Argument(help="Path to the agent or workflow to create"),
+    ] = DEFAULT_AGENT_PATH,
+    task: t.Annotated[
+        str | None,
+        typer.Option("--task", "-t", help="Task to create the agent for"),
+    ] = None,
+    default: t.Annotated[
+        bool,
+        typer.Option("--default", "-d", help="Use default values."),
+    ] = False,
+) -> None:
+    print(f"🧠 nerve v{nerve.__version__}")
+
+    asyncio.run(create_agent(path.absolute(), task=task, default=default))
 
 
 def _get_available_namespaces(defaults: list[str]) -> tuple[list[str], list[str]]:
@@ -66,6 +100,9 @@ def _collect_user_prompts() -> list[str]:
             prompts.append(f"@{item.stem}")
 
     return sorted(prompts)
+
+
+# TODO: create a doc page for this.
 
 
 async def create_agent(path: pathlib.Path, task: str | None = None, default: bool = False) -> None:
@@ -157,3 +194,5 @@ async def create_agent(path: pathlib.Path, task: str | None = None, default: boo
         f.write(agent_code)
 
     print(f"🤖 agent saved to {path}")
+
+    # TODO: add run prompt

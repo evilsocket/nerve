@@ -64,6 +64,8 @@ class Configuration(BaseModel):
     # legacy field used to detect if the user is loading a legacy file
     system_prompt: str | None = Field(default=None, exclude=True)
 
+    # TODO: add a "precall" to call the tool when the agent is started
+
     # used for versioning the agents
     version: str = "1.0.0"
     # the system prompt, the agent identity

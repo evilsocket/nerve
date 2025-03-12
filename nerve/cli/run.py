@@ -1,12 +1,22 @@
+import asyncio
 import pathlib
+import typing as t
 
 import typer
 from loguru import logger
 
-import nerve.runtime.state as state
-from nerve.cli.defaults import DEFAULT_AGENTS_LOAD_PATH
-from nerve.generation import WindowStrategy
+import nerve
+from nerve.cli.defaults import (
+    DEFAULT_AGENTS_LOAD_PATH,
+    DEFAULT_CONVERSATION_STRATEGY,
+    DEFAULT_GENERATOR,
+    DEFAULT_MAX_COST,
+    DEFAULT_MAX_STEPS,
+    DEFAULT_TIMEOUT,
+)
+from nerve.generation import WindowStrategy, conversation
 from nerve.models import Configuration, Mode, Workflow
+from nerve.runtime import logging, state
 from nerve.runtime.agent import Agent
 from nerve.runtime.flow import Flow
 
@@ -15,6 +25,79 @@ cli = typer.Typer(
     pretty_exceptions_enable=False,
     context_settings={"help_option_names": ["-h", "--help"]},
 )
+
+
+@cli.command(
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True, "help_option_names": ["-h", "--help"]},
+    no_args_is_help=True,
+    help="Execute an agent or a workflow.",
+)
+def run(
+    ctx: typer.Context,
+    input_path: t.Annotated[
+        pathlib.Path,
+        typer.Argument(help="Agent or workflow to execute"),
+    ],
+    generator: t.Annotated[
+        str,
+        typer.Option("--generator", "-g", help="Generator to use"),
+    ] = DEFAULT_GENERATOR,
+    conversation_strategy: t.Annotated[
+        str,
+        typer.Option("--conversation", "-c", help="Conversation strategy to use"),
+    ] = DEFAULT_CONVERSATION_STRATEGY,
+    interactive: t.Annotated[
+        bool,
+        typer.Option("--interactive", "-i", help="Interactive mode"),
+    ] = False,
+    debug: t.Annotated[
+        bool,
+        typer.Option("--debug", help="Enable debug logging"),
+    ] = False,
+    quiet: t.Annotated[
+        bool,
+        typer.Option("--quiet", "-q", help="Quiet mode"),
+    ] = False,
+    max_steps: t.Annotated[
+        int,
+        typer.Option("--max-steps", "-s", help="Maximum number of steps"),
+    ] = DEFAULT_MAX_STEPS,
+    max_cost: t.Annotated[
+        float,
+        typer.Option(
+            "--max-cost", help="If cost information is available, stop when the cost exceeds this value in USD."
+        ),
+    ] = DEFAULT_MAX_COST,
+    timeout: t.Annotated[
+        int | None,
+        typer.Option("--timeout", "-t", help="Timeout in seconds"),
+    ] = DEFAULT_TIMEOUT,
+    log_path: t.Annotated[
+        pathlib.Path | None,
+        typer.Option("--log", help="Log to a file."),
+    ] = None,
+    trace: t.Annotated[
+        pathlib.Path | None,
+        typer.Option("--trace", help="Save the final state to a file."),
+    ] = None,
+) -> None:
+    logging.init(log_path, level="DEBUG" if debug else "SUCCESS" if quiet else "INFO")
+    logger.info(f"🧠 nerve v{nerve.__version__}")
+
+    asyncio.run(
+        execute_flow(
+            input_path,
+            generator,
+            # convert the conversation strategy string to a valid enum
+            conversation.strategy_from_string(conversation_strategy),
+            ctx.args,
+            max_steps,
+            max_cost,
+            timeout,
+            interactive,
+            trace,
+        )
+    )
 
 
 def _get_start_state(args: list[str]) -> dict[str, str]:

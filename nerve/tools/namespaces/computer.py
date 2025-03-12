@@ -9,6 +9,9 @@ import typing as t
 import pyautogui as px
 import pyperclip
 
+# TODO: add indicator that this requires an optional feature
+
+
 MAX_WIDTH = 1280  # Max screenshot width
 TYPING_DELAY_MS = 12
 
