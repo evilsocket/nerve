@@ -19,7 +19,7 @@ Nerve offers a rich set of predefined tools, organized in namespaces, that the a
             module = __import__(f"nerve.tools.namespaces.{modname}", fromlist=[""])
 
             doc = module.__doc__ or ""
-            print(f"## {modname}")
+            print(f"## {module.EMOJI} {modname}")
             print()
 
             if hasattr(module, "OPTIONAL_FEATURE"):

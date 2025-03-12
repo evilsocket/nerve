@@ -11,6 +11,9 @@ import pyperclip
 
 # this is an extra feature, so we need to indicate it
 OPTIONAL_FEATURE = "computer_use"
+# for docs
+EMOJI = "💻"
+
 # max screenshot width
 MAX_WIDTH = 1280
 # typing delay in ms

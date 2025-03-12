@@ -2,7 +2,7 @@
 
 Nerve offers a rich set of predefined tools, organized in namespaces, that the agent can import [via the `using` directive](index.md#usage). This page contains the list of namespaces available in Nerve, with the descriptive prompt that will be provided to the model.
 
-## anytool
+## 🔧 anytool
 
 Let the agent create its own tools in Python.
 
@@ -19,7 +19,7 @@ Let the agent create its own tools in Python.
 * `code` <i>(<class 'str'>)</i>: The Python code to create the tool.
 </details>
 
-## computer
+## 💻 computer
 
 > [!IMPORTANT]
 > This namespace is not available by default and requires the `computer_use` optional feature.
@@ -94,7 +94,7 @@ Computer use primitives for mouse, keyboard, and screen.
 
 </details>
 
-## filesystem
+## 📂 filesystem
 
 Read-only access primitives to the local filesystem.
 
@@ -117,7 +117,7 @@ Read-only access primitives to the local filesystem.
 * `path` <i>(<class 'str'>)</i>: The path to the file to read
 </details>
 
-## inquire
+## 💬 inquire
 
 Let the agent interactively ask questions to the user in a structured way.
 
@@ -157,7 +157,7 @@ Let the agent interactively ask questions to the user in a structured way.
 * `question` <i>(<class 'str'>)</i>: The question to ask the user.
 </details>
 
-## reasoning
+## 🧠 reasoning
 
 Simulates the reasoning process at runtime.
 
@@ -199,7 +199,7 @@ Simulates the reasoning process at runtime.
 * `thought` <i>(<class 'str'>)</i>: A thought to think about
 </details>
 
-## shell
+## 💻 shell
 
 Let the agent execute shell commands.
 
@@ -215,7 +215,7 @@ Let the agent execute shell commands.
 * `command` <i>(<class 'str'>)</i>: The shell command to execute
 </details>
 
-## task
+## ✅ task
 
 Let the agent autonomously set the task as complete or failed.
 
@@ -238,7 +238,7 @@ Let the agent autonomously set the task as complete or failed.
 * `reason` <i>(<class 'str'>)</i>: The reason why the task is impossible
 </details>
 
-## time
+## 🕒 time
 
 Provides tools for getting the current date and time and waiting for a given number of seconds.
 

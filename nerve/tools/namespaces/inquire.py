@@ -7,6 +7,9 @@ from typing import Annotated
 import inquirer  # type: ignore
 from pydantic import Field
 
+# for docs
+EMOJI = "💬"
+
 
 def ask_question(
     question: Annotated[

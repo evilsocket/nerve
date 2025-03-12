@@ -11,6 +11,9 @@ from pydantic import Field
 from nerve.runtime import state
 from nerve.tools.compiler import wrap_tool_function
 
+# for docs
+EMOJI = "🔧"
+
 
 def create_tool(
     code: Annotated[

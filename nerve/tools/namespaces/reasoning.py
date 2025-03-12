@@ -6,6 +6,9 @@ from typing import Annotated
 
 import nerve.runtime.state as state
 
+# for docs
+EMOJI = "🧠"
+
 
 def think(thought: Annotated[str, "A thought to think about"]) -> None:
     """

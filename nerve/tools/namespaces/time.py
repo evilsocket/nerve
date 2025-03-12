@@ -5,6 +5,9 @@ Provides tools for getting the current date and time and waiting for a given num
 import time
 from typing import Annotated
 
+# for docs
+EMOJI = "🕒"
+
 
 def current_time_and_date() -> str:
     """Get the current date and time."""

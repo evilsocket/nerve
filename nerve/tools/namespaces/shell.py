@@ -5,6 +5,9 @@ Let the agent execute shell commands.
 import subprocess
 from typing import Annotated
 
+# for docs
+EMOJI = "💻"
+
 
 def _maybe_text(output: bytes) -> str | bytes:
     try:

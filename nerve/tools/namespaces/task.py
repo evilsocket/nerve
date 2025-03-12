@@ -5,6 +5,9 @@ import typing as t
 
 import nerve.runtime.state as state
 
+# for docs
+EMOJI = "✅"
+
 
 def task_complete_success(
     reason: t.Annotated[

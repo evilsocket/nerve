@@ -6,6 +6,9 @@ import os
 from pathlib import Path
 from typing import Annotated
 
+# for docs
+EMOJI = "📂"
+
 # if set, the agent will only have access to these paths
 jail: list[str] = []
 
