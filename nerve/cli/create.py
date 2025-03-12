@@ -54,7 +54,7 @@ def _get_available_namespaces(defaults: list[str]) -> tuple[list[str], list[str]
     default_entries = []
 
     for _, modname, _ in pkgutil.iter_modules(namespaces.__path__):
-        if modname[0] != "_" and not modname.startswith("test_"):
+        if modname[0] != "_" and "test" not in modname:
             try:
                 module = __import__(f"nerve.tools.namespaces.{modname}", fromlist=[""])
                 doc = module.__doc__ or ""
