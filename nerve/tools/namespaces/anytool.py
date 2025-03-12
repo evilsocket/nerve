@@ -6,6 +6,7 @@ import typing as t
 from typing import Annotated
 
 from loguru import logger
+from pydantic import Field
 
 from nerve.runtime import state
 from nerve.tools.compiler import wrap_tool_function
@@ -14,7 +15,10 @@ from nerve.tools.compiler import wrap_tool_function
 def create_tool(
     code: Annotated[
         str,
-        '''
+        Field(
+            description="The Python code to create the tool.",
+            examples=[
+                '''
 # import any standard library you need
 from typing import Annotated
 
@@ -24,7 +28,9 @@ def this_will_be_the_tool_name(
 ) -> str:
     """ALWAYS add a docstring to the tool."""
     return "This is the return value of the tool."
-''',
+'''
+            ],
+        ),
     ],
 ) -> None:
     """Create a new tool or redefine an existing one by defining it as an annotated Python function.
