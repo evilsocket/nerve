@@ -76,7 +76,7 @@ def get_tool_response(response: t.Any) -> t.Any:
         # structured (vision), return as list
         return response
     else:
-        logger.warning(f"unknown tool response type: {type(response)}")
+        logger.debug(f"unknown tool response type: {type(response)}")
         return get_tool_response(str(response))
 
 
