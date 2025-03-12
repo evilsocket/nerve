@@ -12,6 +12,10 @@ Let the agent create its own tools in Python.
 
 ## computer
 
+> [!IMPORTANT]
+> This namespace is not available by default and requires the `computer_use` optional feature.
+> To enable it, run `pip install nerve-adk[computer_use]`.
+
 Computer use primitives for mouse, keyboard, and screen.
 
 | Tool | Description |

@@ -9,10 +9,11 @@ import typing as t
 import pyautogui as px
 import pyperclip
 
-# TODO: add indicator that this requires an optional feature
-
-
-MAX_WIDTH = 1280  # Max screenshot width
+# this is an extra feature, so we need to indicate it
+OPTIONAL_FEATURE = "computer_use"
+# max screenshot width
+MAX_WIDTH = 1280
+# typing delay in ms
 TYPING_DELAY_MS = 12
 
 _width = 0
