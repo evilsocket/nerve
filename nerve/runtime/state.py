@@ -1,6 +1,8 @@
+import asyncio
 import json
 import os
 import pathlib
+import threading
 import typing as t
 
 import click
@@ -28,6 +30,8 @@ _variables: dict[str, t.Any] = {}
 _defaults: dict[str, t.Any] = {}
 # similar to variables but used by tools
 _knowledge: dict[str, t.Any] = {}
+# tools
+_tools: dict[str, t.Callable[..., t.Any]] = {}
 # extra tools defined at runtime
 _extra_tools: dict[str, t.Callable[..., t.Any]] = {}
 # listeners for events
@@ -222,6 +226,15 @@ def as_dict() -> dict[str, t.Any]:
     }
 
 
+def set_tools(tools: dict[str, t.Callable[..., t.Any]]) -> None:
+    """Set all tools."""
+
+    global _tools
+    _tools = tools
+
+    logger.debug(f"tools: {_tools}")
+
+
 def get_extra_tools() -> dict[str, t.Callable[..., t.Any]]:
     """Get any extra tool registered at runtime."""
 
@@ -329,9 +342,8 @@ def on_user_input_needed(input_name: str, prompt: str) -> str:
         )
 
 
-def interpolate(raw: str, extra: dict[str, t.Any] | None = None) -> str:
-    """Interpolate the current state into a string."""
-
+def _create_jinja_env() -> jinja2.Environment:
+    # we use this to catch undefined variables at runtime
     class OnUndefinedVariable(jinja2.Undefined):
         def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
             super().__init__(*args, **kwargs)
@@ -352,5 +364,46 @@ def interpolate(raw: str, extra: dict[str, t.Any] | None = None) -> str:
         def __str__(self) -> str:
             return self.value or "<UNDEFINED>"
 
+    env = jinja2.Environment(undefined=OnUndefinedVariable)
+
+    # allow prompts to call tools
+    for name, tool_fn in _tools.items():
+        # if the tool is async, wrap it in a sync function to make it callable from Jinja
+        if asyncio.iscoroutinefunction(tool_fn):
+
+            def make_sync_wrapper(fn: t.Callable[..., t.Any]) -> t.Callable[..., t.Any]:
+                def sync_wrapper(*args: t.Any, **kwargs: t.Any) -> t.Any:
+                    coro = fn(*args, **kwargs)
+                    # NOTE: we use a list to store the result because nonlocal variables (like scalars) inside a nested
+                    # function do not allow assignment unless explicitly declared nonlocal. However, mutable objects like
+                    # lists can be modified within the nested function without extra declarations.
+                    result_container = []
+
+                    def we_need_an_async_loop_thread() -> None:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        result_container.append(loop.run_until_complete(coro))
+
+                    thread = threading.Thread(target=we_need_an_async_loop_thread)
+                    thread.start()
+                    thread.join()
+
+                    return result_container[0]
+
+                return sync_wrapper
+
+            env.globals[name] = make_sync_wrapper(tool_fn)
+        else:
+            env.globals[name] = tool_fn
+
+    return env
+
+
+def interpolate(raw: str, extra: dict[str, t.Any] | None = None) -> str:
+    """Interpolate the current state into a string."""
+
+    env = _create_jinja_env()
+    template = env.from_string(raw)
     context = _variables | (extra or {})
-    return jinja2.Environment(undefined=OnUndefinedVariable).from_string(raw).render(**context)
+
+    return template.render(**context)
