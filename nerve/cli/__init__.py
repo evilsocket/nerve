@@ -17,6 +17,8 @@ cli.add_typer(create_cli)
 cli.add_typer(run_cli)
 cli.add_typer(replay_cli)
 
+# TODO: namespaces command
+
 
 @cli.command(
     context_settings={"help_option_names": ["-h", "--help"]},

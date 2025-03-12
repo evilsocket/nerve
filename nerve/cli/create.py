@@ -195,4 +195,9 @@ async def create_agent(path: pathlib.Path, task: str | None = None, default: boo
 
     print(f"🤖 agent saved to {path}")
 
-    # TODO: add run prompt
+    print()
+    answers = inquirer.prompt([inquirer.Confirm("start", message="Start the agent now?", default=True)])
+    if answers["start"]:
+        import os
+
+        os.system(f"nerve run {path}")

@@ -56,5 +56,4 @@ async def show_agents(path: pathlib.Path) -> None:
             anything = True
 
     if not anything:
-        # TODO: add instructions
         print(colored("no agents or workflows found", "light_grey"))
