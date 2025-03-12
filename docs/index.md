@@ -2,16 +2,16 @@
 
 Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool designed to be a simple yet powerful platform for creating and executing LLM-based agents using a simple YAML-based syntax.
 
-* 💻 [Installation](#installation)
-* 🚀 [Usage](#usage)
-  - 🧠 [Generators](#-generators)
-  - 🎥 [Record & Replay](#-record--replay)
-  - 🛠️ [Adding Tools](#️-adding-tools)️
-  - 💬 [Conversation Window](#-conversation-window)
-* 🧬 [Namespaces](namespaces.md)
-* 👥 [Workflows](workflows.md)
+* [Installation](#installation)
+* [Usage](#usage)
+  - [Generators](#-generators)
+  - [Record & Replay](#-record--replay)
+  - [Adding Tools](#️-adding-tools)️
+  - [Conversation Window](#-conversation-window)
+* [Namespaces](namespaces.md)
+* [Workflows](workflows.md)
 
-## Installation
+## 💻 Installation
 
 Nerve requires Python 3.10 or later and PIP. You can install it with:
 
@@ -37,7 +37,7 @@ To uninstall, run:
 pip uninstall nerve-adk
 ```
 
-### Installing from DockerHub
+### 🐋 Installing from DockerHub
 
 Alternatively, a Docker image is available on [Docker Hub](https://hub.docker.com/r/evilsocket/nerve). When running the container, if you're using a local inference server such as OLLAMA, you'll likely want it to share the same network as the host. To allow Nerve to reach network endpoints like OLLAMA, use the command below. This ensures the container runs without network isolation and can access the same resources on the network as your host computer.
 
@@ -47,7 +47,7 @@ Additionally, remember to share the tasklet files by mounting a volume when runn
 docker run -it --network=host -v ./examples:/root/.nerve/agents evilsocket/nerve -h
 ```
 
-## Usage
+## 🚀 Usage
 
 Nerve agents are simple YAML files that can use a set of built-in tools such as a bash shell, file system primitives [and more](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md). 
 
