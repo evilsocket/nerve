@@ -1,21 +1,24 @@
 import asyncio
 from typing import Annotated
 
+import httpx
+
 from nerve.models import Configuration
 from nerve.runtime import logging
 from nerve.runtime.agent import Agent
 
 
-# annotate parameters to describe them to the agent
-# async is optional in this case, but supported
-async def get_capital(place: Annotated[str, "The place to get the capital of"]) -> str:
-    """Get the capital of a given place."""
+# Annotate functions and parameters to describe them to the agent.
+async def get_current_weather(location: Annotated[str, "The city and state, e.g. San Francisco, CA"]) -> str:
+    """Get the current weather in a given location."""
 
-    # you can manually set the task as complete when a target objective is reached
-    # from nerve.runtime import state
-    # state.set_task_complete()
-
-    return place.upper()
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get("https://wttr.in/" + location)
+            return r.text
+    except Exception as e:
+        # let the agent know what happened
+        return f"ERROR: {e}"
 
 
 async def main():
@@ -25,20 +28,17 @@ async def main():
     agent = Agent.create(
         "openai/gpt-4o",  # the model to use
         Configuration(
-            # prompts support jinja2 templating
-            agent="You are a helpful assistant. Your task is complete when you have the capital of the place.",
-            task="What is the capital of {{ place }}?",
-            # add builtin tooling by namespace
+            agent="You are a helpful assistant.",
+            task="What is the weather in {{ place }}?",
             using=[
-                "reasoning",  # to allow the agent to make analytical decisions
                 "task",  # to allow the agent to set the task as complete autonomously
             ],
-            tools=[get_capital],  # easily add custom tooling
+            tools=[get_current_weather],
         ),
     )
 
-    # run until done or max steps reached or timeout
-    await agent.run(start_state={"place": "Spain"}, max_steps=100, timeout=10)
+    # run until done or max steps reached or max cost reached or timeout
+    await agent.run(start_state={"place": "Rome"}, max_steps=100, max_cost=10.0, timeout=10)
 
 
 if __name__ == "__main__":

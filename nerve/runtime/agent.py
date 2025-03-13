@@ -171,6 +171,7 @@ class Agent:
     async def run(
         self,
         max_steps: int = 500,
+        max_cost: float = 10.0,
         timeout: int | None = None,
         start_state: dict[str, str] | None = None,
     ) -> None:
@@ -181,10 +182,12 @@ class Agent:
 
         - The task is completed.
         - The maximum number of steps is reached.
+        - The maximum cost is reached.
         - The timeout is reached.
 
         Args:
             max_steps: The maximum number of steps to run.
+            max_cost: The maximum cost in USD.
             timeout: The timeout in seconds.
             start_state: Initial variables for the agent.
         """
@@ -195,6 +198,7 @@ class Agent:
         await Flow.build(
             actors=[self],
             max_steps=max_steps,
+            max_cost=max_cost,
             timeout=timeout,
             start_state=start_state,
         ).run()
