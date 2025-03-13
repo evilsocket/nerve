@@ -19,6 +19,14 @@ cli.add_typer(run_cli)
 cli.add_typer(replay_cli)
 cli.add_typer(namespaces_cli)
 
+# TODO Workflows 2.0: shared events bus (IPC and network) for multiple agents (one input variable = one event).
+# Tools:
+# advertise: ask the agent to advertise itself on the events bus
+# request: allow the agent to request something from another agent
+# respond: allow the agent to respond to a request
+# at every step the agent goes requests = bus.query()
+# TODO: browser-use: each interactable html generates tools at runtime.
+
 
 @cli.command(
     context_settings={"help_option_names": ["-h", "--help"]},

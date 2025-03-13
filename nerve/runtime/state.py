@@ -80,6 +80,7 @@ def on_event(name: str, data: t.Any | None = None) -> None:
     _events.append(event)
 
     for listener in _listeners:
+        # TODO: IMPORTANT: make this asynchronous (thread pool?)
         listener(event)
 
     if _trace_file:
