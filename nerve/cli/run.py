@@ -118,6 +118,10 @@ def _resolve_input_path(input_path: pathlib.Path) -> pathlib.Path:
             if in_home.exists():
                 input_path = in_home
 
+            in_home_with_yaml = in_home.with_suffix(".yml")
+            if in_home_with_yaml.exists():
+                input_path = in_home_with_yaml
+
         if not input_path.exists():
             logger.error(f"path '{input_path}' does not exist")
             raise typer.Abort()
