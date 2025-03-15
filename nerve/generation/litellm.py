@@ -30,7 +30,7 @@ class LiteLLMEngine(Engine):
         else:
             import ollama
 
-            self.ollama_model = self.generator_id.split("/")[-1]
+            self.ollama_model = "/".join(self.generator_id.split("/")[1:])
             self.ollama_client = ollama.AsyncClient(host=self.api_base)
 
             logger.debug(f"using ollama client for model {self.ollama_model}")
