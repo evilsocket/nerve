@@ -13,6 +13,10 @@ class FullHistoryStrategy(WindowStrategy):
         return "<full history>"
 
 
+# TODO: add a Compression strategy that leaves the conversation structure but replaces
+# the tool responses bigger than a certain size with a <the content has been removed> placeholder.
+
+
 class SlidingWindowStrategy(WindowStrategy):
     def __init__(self, window_size: int = 10) -> None:
         self.window_size = window_size

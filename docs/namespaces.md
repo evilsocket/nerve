@@ -139,6 +139,46 @@ jail:
 
 </details>
 
+## 📂 filesystem_w
+
+Write primitives to the local filesystem.
+
+### Jail
+
+The tools in this namespace can be restricted to a specific set of paths by using the `jail` directive in the agent configuration:
+
+```yaml
+using:
+  - filesystem_w
+
+jail:
+    filesystem_w:
+      - "/only/path/to/allow"
+      - "{{ target_path }}" # variables can be used too
+```
+
+<details>
+<summary><b>Show Tools</b></summary>
+
+### `create_file`
+
+<pre>Create a file on disk, if the file already exists, it will be overwritten.</pre>
+
+**Parameters**
+
+* `path` <i>(<class 'str'>)</i>: The path to the file to create
+* `content` <i>(str | None)</i>: The content to write to the file, if not provided, the file will be created empty
+
+### `delete_file`
+
+<pre>Delete a file from disk.</pre>
+
+**Parameters**
+
+* `path` <i>(<class 'str'>)</i>: The path to the file to delete
+
+</details>
+
 ## 💬 inquire
 
 Let the agent interactively ask questions to the user in a structured way.

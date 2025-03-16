@@ -16,6 +16,7 @@ def _maybe_text(output: bytes) -> str | bytes:
         return output
 
 
+# TODO: if both filesystem and shell are used, shell can be used to bypass the filesystem jailing system. find a way to either prevent it, or communicate it.
 def shell(
     command: Annotated[str, "The shell command to execute"],
 ) -> str | bytes:
