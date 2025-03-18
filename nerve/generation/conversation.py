@@ -6,6 +6,10 @@ from nerve.generation import WindowStrategy
 
 
 class FullHistoryStrategy(WindowStrategy):
+    """
+    This strategy returns the full history of the conversation.
+    """
+
     async def get_window(self, history: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
         return history
 
@@ -13,11 +17,11 @@ class FullHistoryStrategy(WindowStrategy):
         return "<full history>"
 
 
-# TODO: add a Compression strategy that leaves the conversation structure but replaces
-# the tool responses bigger than a certain size with a <the content has been removed> placeholder.
-
-
 class SlidingWindowStrategy(WindowStrategy):
+    """
+    This strategy returns a sliding window of the last N messages.
+    """
+
     def __init__(self, window_size: int = 10) -> None:
         self.window_size = window_size
 
@@ -62,9 +66,49 @@ class SlidingWindowStrategy(WindowStrategy):
         return f"<sliding window of size {self.window_size}>"
 
 
+class StrippedWindowStrategy(WindowStrategy):
+    """
+    This strategy returns a sliding window of the last N messages, but instead of removing
+    earlier messages it will replace the content of the messages with a <stripped> placeholder.
+    """
+
+    def __init__(self, window_size: int = 10) -> None:
+        self.window_size = window_size
+
+    async def get_window(self, history: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
+        history_size = len(history)
+        if history_size <= self.window_size:
+            return history
+
+        window = []
+        # calculate which messages should be stripped (all except the last window_size messages)
+        messages_to_strip = max(0, history_size - self.window_size)
+
+        for current_index, msg in enumerate(history):
+            # create a copy of the message to avoid modifying the original
+            msg = msg.copy()
+
+            # strip content for messages outside the window (earlier messages)
+            if current_index < messages_to_strip:
+                if msg.get("role") == "tool":
+                    # For tool messages, preserve tool_call_id but strip content
+                    msg["content"] = "<stripped tool response>"
+                elif "content" in msg:
+                    msg["content"] = "<stripped content>"
+
+            window.append(msg)
+
+        return window
+
+    def __str__(self) -> str:
+        return f"<stripping window of size {self.window_size}>"
+
+
 def strategy_from_string(strategy: str) -> WindowStrategy:
     if strategy == "full":
         return FullHistoryStrategy()
+    elif strategy.startswith("strip-") and strategy.split("-")[1].isdigit():
+        return StrippedWindowStrategy(int(strategy.split("-")[1]))
     elif strategy.isdigit():
         return SlidingWindowStrategy(int(strategy))
     else:

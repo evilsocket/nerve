@@ -200,3 +200,9 @@ Only receive the last N messages (with N=5 in this example):
 ```bash
 nerve run agent -c 5
 ```
+
+Receive the entire conversation, but strip the contents of every message before the last N (with N=5 in this example):
+
+```bash
+nerve run agent -c strip-5
+```
