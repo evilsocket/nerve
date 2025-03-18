@@ -270,6 +270,9 @@ Simulates the reasoning process at runtime.
 
 Let the agent execute shell commands.
 
+> [!WARNING]
+> Using this tool will bypass the filesystem jail mechanism
+
 <details>
 <summary><b>Show Tools</b></summary>
 

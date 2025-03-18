@@ -1,5 +1,8 @@
 """
 Let the agent execute shell commands.
+
+> [!WARNING]
+> Using this tool will bypass the filesystem jail mechanism
 """
 
 import subprocess
@@ -11,7 +14,6 @@ from nerve.tools.utils import maybe_text
 EMOJI = "💻"
 
 
-# TODO: if both filesystem and shell are used, shell can be used to bypass the filesystem jailing system. find a way to either prevent it, or communicate it.
 def shell(
     command: Annotated[str, "The shell command to execute"],
 ) -> str | bytes:
