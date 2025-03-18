@@ -418,7 +418,7 @@ def _create_jinja_env() -> jinja2.Environment:
         def __str__(self) -> str:
             return self.value or "<UNDEFINED>"
 
-    env = jinja2.Environment(undefined=OnUndefinedVariable)
+    env = jinja2.Environment(undefined=OnUndefinedVariable, loader=jinja2.FileSystemLoader("."))
 
     # allow prompts to call tools
     for name, tool_fn in _tools.items():
