@@ -4,6 +4,7 @@
 
 <i>The Simple Agent Development Kit</i>
 
+[![Documentation](https://img.shields.io/badge/documentation-blue)](https://github.com/evilsocket/nerve/blob/main/docs/index.md)
 [![Release](https://img.shields.io/github/release/evilsocket/nerve.svg?style=flat-square)](https://github.com/evilsocket/nerve/releases/latest)
 [![Package](https://img.shields.io/pypi/v/nerve-adk.svg)](https://pypi.org/project/nerve-adk)
 [![Docker](https://img.shields.io/docker/v/evilsocket/nerve?logo=docker)](https://hub.docker.com/r/evilsocket/nerve)
