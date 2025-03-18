@@ -5,15 +5,10 @@ Let the agent execute shell commands.
 import subprocess
 from typing import Annotated
 
+from nerve.tools.utils import maybe_text
+
 # for docs
 EMOJI = "💻"
-
-
-def _maybe_text(output: bytes) -> str | bytes:
-    try:
-        return output.decode("utf-8").strip()
-    except UnicodeDecodeError:
-        return output
 
 
 # TODO: if both filesystem and shell are used, shell can be used to bypass the filesystem jailing system. find a way to either prevent it, or communicate it.
@@ -35,4 +30,4 @@ def shell(
         else:
             raw_output += b"\n" + result.stderr
 
-    return _maybe_text(raw_output)
+    return maybe_text(raw_output)

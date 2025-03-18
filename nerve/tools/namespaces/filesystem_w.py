@@ -3,41 +3,15 @@ Write primitives to the local filesystem.
 """
 
 import os
-from pathlib import Path
 from typing import Annotated
+
+from nerve.tools.utils import path_acl
 
 # for docs
 EMOJI = "📂"
 
 # if set, the agent will only have access to these paths
 jail: list[str] = []
-
-
-# TODO: abstract and centralize jail system
-def _path_allowed(path_to_check: str) -> bool:
-    if not jail:
-        return True
-
-    # https://stackoverflow.com/questions/3812849/how-to-check-whether-a-directory-is-a-sub-directory-of-another-directory
-    path = Path(path_to_check).resolve().absolute()
-    for allowed_path in jail:
-        allowed = Path(allowed_path).resolve().absolute()
-        if path == allowed or allowed in path.parents:
-            return True
-
-    return False
-
-
-def _path_acl(path_to_check: str) -> None:
-    if not _path_allowed(path_to_check):
-        raise ValueError(f"access to path {path_to_check} is not allowed, only allowed paths are: {jail}")
-
-
-def _maybe_text(output: bytes) -> str | bytes:
-    try:
-        return output.decode("utf-8").strip()
-    except UnicodeDecodeError:
-        return output
 
 
 def create_file(
@@ -48,7 +22,7 @@ def create_file(
 ) -> str:
     """Create a file on disk, if the file already exists, it will be overwritten."""
 
-    _path_acl(path)
+    path_acl(path, jail)
 
     response = ""
 
@@ -74,7 +48,7 @@ def create_file(
 def delete_file(path: Annotated[str, "The path to the file to delete"]) -> str:
     """Delete a file from disk."""
 
-    _path_acl(path)
+    path_acl(path, jail)
 
     os.remove(path)
     return f"File {path} deleted."
