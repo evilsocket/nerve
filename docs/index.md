@@ -118,6 +118,16 @@ To pass additional inference parameters:
 nerve run -g "ollama/llama3.2?temperature=0.9&api_base=http://server-host:11434" new-agent --url 'cnn.com'
 ```
 
+Alternatively, a generator string can be set via YAML directly:
+
+```yaml
+generator: 'anthropic/claude-3-7-sonnet-20250219'
+
+agent: You are a helpful assistant.
+
+# ...
+```
+
 ### 🎥 Record & Replay
 
 Nerve sessions can be recorded to a JSONL file by specifying the `--trace` argument:
