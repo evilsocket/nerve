@@ -5,6 +5,7 @@ Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool 
 * [Installation](#installation)
 * [Usage](#usage)
   - [Generators](#-generators)
+  - [Interactive Mode](#-interactive-mode)
   - [Record & Replay](#-record--replay)
   - [Adding Tools](#️-adding-tools)️
   - [Conversation Window](#-conversation-window)
@@ -127,6 +128,24 @@ agent: You are a helpful assistant.
 
 # ...
 ```
+
+### 🗣 Interactive Mode
+
+By default, Nerve operates in automatic mode, allowing the agent loop to run continuously until an exit condition is met. To gain more control over the process and interact with the agent in real time as it executes steps, use the `-i` flag to enable interactive mode.
+
+```sh
+nerve run any-agent -i
+```
+
+In this mode, you will have access to the following commands at each step:
+
+* **help** (alias `h`): show the help menu.
+* **quit** (alias `q` or `exit`): stop the execution and exit.
+* **step** (alias `s` or just hit enter with no command): execute a single step.
+* **continue** (alias `c`, `cont`, or `go`): continue the execution until completion.
+* **view** (alias `v`): inspect the current state.
+
+Anything else will be interpreted and used as a chat message for the current agent.
 
 ### 🎥 Record & Replay
 
