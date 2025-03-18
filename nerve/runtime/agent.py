@@ -44,7 +44,7 @@ class Agent:
         Create an agent from a generator and configuration.
 
         Args:
-            generator: The generator string to use.
+            generator: The generator string to use if not set in the configuration.
             configuration: The configuration to use.
             start_state: Initial variables for the agent.
             window_strategy: How to handle conversation history.
@@ -67,10 +67,12 @@ class Agent:
                 )
             )
 
+        generator_to_use = configuration.generator or generator
+
         runtime = Runtime.build(
             working_dir=working_dir,
             name=name,
-            generator=generator,
+            generator=generator_to_use,
             using=configuration.using,
             jail=configuration.jail,
             tools=configuration.tools,
@@ -79,7 +81,7 @@ class Agent:
         return cls(
             runtime=runtime,
             configuration=configuration,
-            generation_engine=LiteLLMEngine(generator, window_strategy, runtime.tools),
+            generation_engine=LiteLLMEngine(generator_to_use, window_strategy, runtime.tools),
             conv_window_strategy=window_strategy,
         )
 

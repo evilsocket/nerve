@@ -39,7 +39,7 @@ def run(
     ] = pathlib.Path("."),
     generator: t.Annotated[
         str,
-        typer.Option("--generator", "-g", help="Generator to use"),
+        typer.Option("--generator", "-g", help="If the agent generator field is not set, use this generator."),
     ] = DEFAULT_GENERATOR,
     conversation_strategy: t.Annotated[
         str,
