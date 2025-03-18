@@ -11,6 +11,7 @@ from loguru import logger
 
 from nerve.models import Mode, Status
 from nerve.runtime.events import Event
+from nerve.runtime.thread_pool import ThreadPool
 
 # the current actor
 _current_actor: t.Any | None = None
@@ -36,6 +37,8 @@ _tools: dict[str, t.Callable[..., t.Any]] = {}
 _extra_tools: dict[str, t.Callable[..., t.Any]] = {}
 # listeners for events
 _listeners: list[t.Callable[[Event], None]] = []
+# thread pool for asynchronous event dispatching
+_thread_pool: ThreadPool = ThreadPool()
 
 
 def add_event_listener(listener: t.Callable[[Event], None]) -> None:
@@ -80,8 +83,8 @@ def on_event(name: str, data: t.Any | None = None) -> None:
     _events.append(event)
 
     for listener in _listeners:
-        # TODO: IMPORTANT: make this asynchronous (thread pool?)
-        listener(event)
+        # execute the listener in a separate thread in order to avoid blocking the main thread
+        _task_id = _thread_pool.submit(listener, event)
 
     if _trace_file:
         with open(_trace_file, "a+t") as f:
