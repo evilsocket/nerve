@@ -5,8 +5,8 @@ import typing as t
 from abc import ABC, abstractmethod
 
 from loguru import logger
-from pydantic import BaseModel
 
+from nerve.models import Usage
 from nerve.runtime import state
 from nerve.tools.protocol import get_tool_response, get_tool_schema
 
@@ -19,21 +19,6 @@ class WindowStrategy(ABC):
     @abstractmethod
     def __str__(self) -> str:
         pass
-
-
-class Usage(BaseModel):
-    cost: float | None = None
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
-
-    def __add__(self, other: "Usage") -> "Usage":
-        return Usage(
-            cost=(self.cost or 0) + (other.cost or 0),
-            prompt_tokens=self.prompt_tokens + other.prompt_tokens,
-            completion_tokens=self.completion_tokens + other.completion_tokens,
-            total_tokens=self.total_tokens + other.total_tokens,
-        )
 
 
 class Engine(ABC):
@@ -213,5 +198,6 @@ class Engine(ABC):
         system_prompt: str | None,
         user_prompt: str,
         extra_tools: dict[str, t.Callable[..., t.Any]] | None = None,
+        extra_message: str | None = None,
     ) -> Usage:
         pass

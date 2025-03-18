@@ -134,6 +134,10 @@ def log_event_to_terminal(event: Event) -> None:
         logger.info(f"💬 {colored(data['response'], 'black', 'on_white')}")
 
     elif event.name == "step_started":
+        # avoid logging step usage in interactive mode
+        if state.is_interactive():
+            return
+
         if isinstance(data["usage"], dict):
             data["usage"] = DictWrapper(data["usage"])
 
@@ -142,7 +146,14 @@ def log_event_to_terminal(event: Event) -> None:
         else:
             logger.info(f"📊 [step {data['step']}]")
 
-    elif event.name in ("task_started", "agent_step", "step_complete", "variable_change", "knowledge_change"):
+    elif event.name in (
+        "task_started",
+        "agent_step",
+        "step_complete",
+        "variable_change",
+        "knowledge_change",
+        "mode_change",
+    ):
         pass
     else:
         logger.info(f"unknown event: {event}")

@@ -4,10 +4,11 @@ import time
 from loguru import logger
 
 import nerve.runtime.state as state
-from nerve.generation import Usage, WindowStrategy
+from nerve.generation import WindowStrategy
 from nerve.generation.conversation import FullHistoryStrategy
 from nerve.models import Workflow
 from nerve.runtime.agent import Agent
+from nerve.runtime.shell import Shell
 
 IS_ACTIVE: bool = False
 
@@ -37,8 +38,6 @@ class Flow:
         self.curr_actor: Agent | None = None
         # current step from the beginning of the flow
         self.curr_step: int = 0
-        # total token usage accumulated over each step
-        self.token_usage: Usage = Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0)
         # optional max steps to run
         self.max_steps: int = max_steps
         # max cost to run the flow
@@ -47,6 +46,8 @@ class Flow:
         self.timeout: int | None = timeout
         # start time of the flow
         self.started_at: float | None = None
+        # interactive shell
+        self.shell: Shell = Shell()
 
     @classmethod
     def build(
@@ -95,31 +96,35 @@ class Flow:
             timeout=timeout,
         )
 
-    async def step(self) -> None:
+    async def _setup_if_needed(self) -> None:
         if self.started_at is None:
             self.started_at = time.time()
 
         if self.curr_actor is None:
             self.curr_actor = self.actors[self.curr_actor_idx]
-            state.on_task_started(self.curr_actor)
+
+            state.set_tools({tool.__name__: tool for tool in self.curr_actor.runtime.tools})
             state.set_defaults(self.curr_actor.configuration.defaults)
+            state.on_task_started(self.curr_actor)
+
+    async def step(self) -> None:
+        await self._setup_if_needed()
 
         if self.done():
-            state.on_event("flow_complete", {"steps": self.curr_step, "usage": self.token_usage})
+            state.on_event("flow_complete", {"steps": self.curr_step, "usage": state.get_usage()})
             return
 
-        state.on_event("step_started", {"step": self.curr_step, "usage": self.token_usage})
+        state.on_event("step_started", {"step": self.curr_step, "usage": state.get_usage()})
 
-        step_usage = await self.curr_actor.step()
+        step_usage = await self.curr_actor.step()  # type: ignore
         logger.debug(f"step usage: {step_usage}")
 
         # increment total usage
-        self.token_usage += step_usage
-
-        state.on_event("step_complete", {"step": self.curr_step, "usage": self.token_usage})
+        state.update_usage(step_usage)
+        state.on_event("step_complete", {"step": self.curr_step, "usage": state.get_usage()})
 
         if state.is_active_task_done():
-            logger.debug(f"task {self.curr_actor.runtime.name} complete")
+            logger.debug(f"task {self.curr_actor.runtime.name} complete")  # type: ignore
             self.curr_actor_idx += 1
             self.curr_actor = None
             state.reset()
@@ -134,7 +139,8 @@ class Flow:
             state.on_max_steps_reached()
             return True
 
-        if self.max_cost is not None and self.token_usage.cost is not None and self.token_usage.cost > self.max_cost:
+        usage = state.get_usage()
+        if self.max_cost is not None and usage.cost is not None and usage.cost > self.max_cost:
             state.on_max_cost_reached()
             return True
 
@@ -153,8 +159,10 @@ class Flow:
             },
         )
 
-        # TODO: interactive mode, step (s), continue (c), view (v), ... anything else is chat ...
         while not self.done():
+            await self._setup_if_needed()
+            if self.curr_actor:
+                await self.shell.interact_if_needed(self.curr_actor)
             await self.step()
 
         state.on_event(
@@ -162,7 +170,7 @@ class Flow:
             {
                 "workflow": self.workflow,
                 "steps": self.curr_step - 1,
-                "usage": self.token_usage,
+                "usage": state.get_usage(),
                 "state": state.as_dict(),
             },
         )

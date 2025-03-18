@@ -29,6 +29,21 @@ class Status(str, Enum):
         return self in [Status.COMPLETED, Status.FAILED]
 
 
+class Usage(BaseModel):
+    cost: float | None = None
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+
+    def __add__(self, other: "Usage") -> "Usage":
+        return Usage(
+            cost=(self.cost or 0) + (other.cost or 0),
+            prompt_tokens=self.prompt_tokens + other.prompt_tokens,
+            completion_tokens=self.completion_tokens + other.completion_tokens,
+            total_tokens=self.total_tokens + other.total_tokens,
+        )
+
+
 class Tool(BaseModel):
     """
     A tool is a function that can be called by the agent.

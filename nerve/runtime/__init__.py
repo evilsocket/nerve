@@ -4,7 +4,6 @@ import typing as t
 from loguru import logger
 
 from nerve.models import Tool
-from nerve.runtime import state
 from nerve.tools import compiler
 
 
@@ -62,7 +61,5 @@ class Runtime:
         if funcs:
             logger.debug(f"🧰 importing {len(funcs)} custom tools from functions")
             runtime.tools.extend(funcs)
-
-        state.set_tools({tool.__name__: tool for tool in runtime.tools})
 
         return runtime

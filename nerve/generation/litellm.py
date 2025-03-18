@@ -4,8 +4,9 @@ import uuid
 import litellm
 from loguru import logger
 
-from nerve.generation import Engine, Usage, WindowStrategy
+from nerve.generation import Engine, WindowStrategy
 from nerve.generation.conversation import SlidingWindowStrategy
+from nerve.models import Usage
 from nerve.runtime import state
 
 
@@ -83,11 +84,16 @@ class LiteLLMEngine(Engine):
         else:
             return await self._litellm_generate(conversation, tools_schema)
 
-    async def _get_conversation(self, system_prompt: str | None, user_prompt: str) -> list[dict[str, t.Any]]:
+    async def _get_conversation(
+        self, system_prompt: str | None, user_prompt: str, extra_message: str | None
+    ) -> list[dict[str, t.Any]]:
         # @ system prompt and user prompt always included
         conversation = [{"role": "system", "content": system_prompt}] if system_prompt else []
         conversation.append({"role": "user", "content": user_prompt})
         conversation.extend(await self.window_strategy.get_window(self.history))
+
+        if extra_message:
+            conversation.append({"role": "user", "content": extra_message})
 
         logger.debug(f"{self.window_strategy} | conv size: {len(conversation)}")
 
@@ -98,9 +104,10 @@ class LiteLLMEngine(Engine):
         system_prompt: str | None,
         user_prompt: str,
         extra_tools: dict[str, t.Callable[..., t.Any]] | None = None,
+        extra_message: str | None = None,
     ) -> tuple[Usage, t.Any]:
         # build chat history
-        conversation = await self._get_conversation(system_prompt, user_prompt)
+        conversation = await self._get_conversation(system_prompt, user_prompt, extra_message)
         # build json schema for available tools
         extra_tools = extra_tools or {}
         tools_schema = self._get_extended_tooling_schema(extra_tools)
@@ -136,11 +143,12 @@ class LiteLLMEngine(Engine):
         system_prompt: str | None,
         user_prompt: str,
         extra_tools: dict[str, t.Callable[..., t.Any]] | None = None,
+        extra_message: str | None = None,
     ) -> Usage:
         extra_tools = extra_tools or {}
 
         # get next message
-        usage, message = await self._generate_next_message(system_prompt, user_prompt, extra_tools)
+        usage, message = await self._generate_next_message(system_prompt, user_prompt, extra_tools, extra_message)
         if message is None:
             return usage
 

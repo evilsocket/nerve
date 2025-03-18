@@ -4,10 +4,10 @@ import click
 from loguru import logger
 
 import nerve.runtime.state as state
-from nerve.generation import Engine, Usage, WindowStrategy
+from nerve.generation import Engine, WindowStrategy
 from nerve.generation.conversation import FullHistoryStrategy
 from nerve.generation.litellm import LiteLLMEngine
-from nerve.models import Configuration, Tool
+from nerve.models import Configuration, Tool, Usage
 from nerve.runtime import Runtime
 
 
@@ -27,6 +27,8 @@ class Agent:
         self.generation_engine = generation_engine
         # conversation window strategy
         self.conv_window_strategy = conv_window_strategy
+        # user message to be added to the conversation at runtime if in interactive mode
+        self._extra_message: str | None = None
 
         state.on_event("agent_created", {"agent": self})
 
@@ -67,12 +69,12 @@ class Agent:
                 )
             )
 
-        generator_to_use = configuration.generator or generator
+        configuration.generator = configuration.generator or generator
 
         runtime = Runtime.build(
             working_dir=working_dir,
             name=name,
-            generator=generator_to_use,
+            generator=configuration.generator,
             using=configuration.using,
             jail=configuration.jail,
             tools=configuration.tools,
@@ -81,7 +83,7 @@ class Agent:
         return cls(
             runtime=runtime,
             configuration=configuration,
-            generation_engine=LiteLLMEngine(generator_to_use, window_strategy, runtime.tools),
+            generation_engine=LiteLLMEngine(configuration.generator, window_strategy, runtime.tools),
             conv_window_strategy=window_strategy,
         )
 
@@ -126,6 +128,9 @@ class Agent:
 
         return state.interpolate(self.configuration.task)
 
+    def add_extra_message(self, message: str) -> None:
+        self._extra_message = message
+
     async def step(self) -> Usage:
         logger.debug(f"agent {self.runtime.name} step")
 
@@ -136,6 +141,12 @@ class Agent:
             system_prompt = self._get_system_prompt()
             prompt = self._get_prompt()
             extra_tools = state.get_extra_tools()
+            extra_message = None
+
+            if self._extra_message:
+                extra_message = self._extra_message
+                self._extra_message = None
+
             logger.debug(f"system_prompt: {system_prompt}")
             logger.debug(f"prompt: {prompt}")
             logger.debug(f"extra_tools: {extra_tools}")
@@ -150,7 +161,7 @@ class Agent:
                 },
             )
 
-            usage = await self.generation_engine.step(system_prompt, prompt, extra_tools)
+            usage = await self.generation_engine.step(system_prompt, prompt, extra_tools, extra_message)
             logger.debug(f"usage: {usage}")
             return usage
         except click.exceptions.MissingParameter as e:

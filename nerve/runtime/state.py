@@ -9,12 +9,14 @@ import click
 import jinja2
 from loguru import logger
 
-from nerve.models import Mode, Status
+from nerve.models import Mode, Status, Usage
 from nerve.runtime.events import Event
 from nerve.runtime.thread_pool import ThreadPool
 
 # the current actor
 _current_actor: t.Any | None = None
+# total usage
+_usage: Usage = Usage()
 # event log
 _events: list[Event] = []
 # trace file
@@ -72,6 +74,27 @@ class CustomJSONEncoder(json.JSONEncoder):
             return str(o)
 
         return super().default(o)
+
+
+def wait_for_events_logs() -> None:
+    """Wait for all events to be flushed."""
+
+    global _thread_pool
+    _thread_pool.wait_all()
+
+
+def update_usage(usage: Usage) -> None:
+    """Update the total usage."""
+
+    global _usage
+    _usage += usage
+
+
+def get_usage() -> Usage:
+    """Get the total usage."""
+
+    global _usage
+    return _usage
 
 
 def on_event(name: str, data: t.Any | None = None) -> None:
@@ -154,6 +177,19 @@ def set_mode(new_mode: Mode) -> None:
         on_event("mode_change", {"from": _mode, "to": new_mode})
 
     _mode = new_mode
+
+
+def get_mode() -> Mode:
+    """Get the current mode."""
+
+    global _mode
+    return _mode
+
+
+def is_interactive() -> bool:
+    """Check if the current mode is interactive."""
+
+    return get_mode() == Mode.INTERACTIVE
 
 
 def set_defaults(defaults: dict[str, t.Any]) -> None:
@@ -239,6 +275,13 @@ def set_tools(tools: dict[str, t.Callable[..., t.Any]]) -> None:
     logger.debug(f"tools: {_tools}")
 
 
+def get_tools() -> dict[str, t.Callable[..., t.Any]]:
+    """Get all tools."""
+
+    global _tools
+    return _tools
+
+
 def get_extra_tools() -> dict[str, t.Callable[..., t.Any]]:
     """Get any extra tool registered at runtime."""
 
@@ -259,6 +302,13 @@ def get_variable(key: str, default: t.Any = None) -> t.Any:
 
     global _variables
     return _variables.get(key, default)
+
+
+def get_variables() -> dict[str, t.Any]:
+    """Get all variables."""
+
+    global _variables
+    return _variables
 
 
 def get_knowledge() -> dict[str, t.Any]:
@@ -318,8 +368,6 @@ def reset() -> None:
 def on_user_input_needed(input_name: str, prompt: str) -> str:
     """Get user input."""
 
-    # TODO: this could wait on a shared event bus in case of multiple agents in a workflow.
-
     # check if defined as environment variable
     if input_name in os.environ:
         return os.environ[input_name]
@@ -327,13 +375,15 @@ def on_user_input_needed(input_name: str, prompt: str) -> str:
     elif input_name in _variables:
         return str(_variables[input_name])
 
-    elif _mode == Mode.INTERACTIVE:
-        # ask the user
-        return input(prompt).strip()
-
     elif input_name in _defaults:
         # from the agent defaults
         return str(_defaults[input_name])
+
+    elif is_interactive():
+        # wait for all events to be logged
+        wait_for_events_logs()
+        # ask the user
+        return input(prompt).strip()
 
     else:
         raise click.MissingParameter(
