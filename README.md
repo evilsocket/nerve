@@ -38,7 +38,7 @@ task: Find which running process is using more RAM.
 using: [shell]
 ```
 
-See the [documentation](https://github.com/evilsocket/nerve/blob/main/docs/index.md) and the [examples](https://github.com/evilsocket/nerve/tree/main/examples) for more.
+Read [this introductory blog post](https://www.evilsocket.net/2025/03/13/How-To-Write-An-Agent/), see the [documentation](https://github.com/evilsocket/nerve/blob/main/docs/index.md) and the [examples](https://github.com/evilsocket/nerve/tree/main/examples) for more.
 
 ## Contributing
 
