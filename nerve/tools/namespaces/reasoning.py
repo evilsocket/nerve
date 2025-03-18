@@ -36,7 +36,7 @@ def think(thought: Annotated[str, "A thought to think about"]) -> None:
     Integrate validated steps into a coherent solution.
     Summarize key insights and ensure the conclusion directly addresses the original query.
     """
-    state.write_knowledge("thoughts", thought)
+    state.append_to_knowledge("thoughts", thought)
 
 
 def clear_thoughts() -> None:
