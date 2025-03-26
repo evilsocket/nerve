@@ -135,12 +135,12 @@ class Flow:
         if self.curr_actor_idx >= len(self.actors):
             return True
 
-        if self.max_steps is not None and self.curr_step > self.max_steps:
+        if self.max_steps > 0 and self.curr_step > self.max_steps:
             state.on_max_steps_reached()
             return True
 
         usage = state.get_usage()
-        if self.max_cost is not None and usage.cost is not None and usage.cost > self.max_cost:
+        if self.max_cost > 0 and usage.cost is not None and usage.cost > self.max_cost:
             state.on_max_cost_reached()
             return True
 

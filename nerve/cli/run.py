@@ -59,12 +59,13 @@ def run(
     ] = False,
     max_steps: t.Annotated[
         int,
-        typer.Option("--max-steps", "-s", help="Maximum number of steps"),
+        typer.Option("--max-steps", "-s", help="Maximum number of steps. Set to 0 to disable."),
     ] = DEFAULT_MAX_STEPS,
     max_cost: t.Annotated[
         float,
         typer.Option(
-            "--max-cost", help="If cost information is available, stop when the cost exceeds this value in USD."
+            "--max-cost",
+            help="If cost information is available, stop when the cost exceeds this value in USD. Set to 0 to disable.",
         ),
     ] = DEFAULT_MAX_COST,
     timeout: t.Annotated[
