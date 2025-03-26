@@ -6,8 +6,8 @@ import base64
 import io
 import typing as t
 
-import pyautogui as px
-import pyperclip
+import pyautogui as px  # type: ignore
+import pyperclip  # type: ignore
 
 # this is an extra feature, so we need to indicate it
 OPTIONAL_FEATURE = "computer_use"

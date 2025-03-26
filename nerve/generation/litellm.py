@@ -1,3 +1,4 @@
+import traceback
 import typing as t
 import uuid
 
@@ -6,6 +7,7 @@ from loguru import logger
 
 from nerve.generation import Engine, WindowStrategy
 from nerve.generation.conversation import SlidingWindowStrategy
+from nerve.generation.ollama import OllamaGlue
 from nerve.models import Usage
 from nerve.runtime import state
 
@@ -29,27 +31,7 @@ class LiteLLMEngine(Engine):
                 exit(1)
 
         else:
-            import ollama
-
-            self.ollama_model = "/".join(self.generator_id.split("/")[1:])
-            self.ollama_client = ollama.AsyncClient(host=self.api_base)
-
-            logger.debug(f"using ollama client for model {self.ollama_model}")
-
-    async def _ollama_generate(
-        self, conversation: list[dict[str, t.Any]], tools_schema: list[dict[str, t.Any]] | None
-    ) -> tuple[Usage, t.Any]:
-        response = await self.ollama_client.chat(
-            model=self.ollama_model,
-            messages=conversation,
-            tools=tools_schema,
-            **self.generator_params,
-        )
-        return Usage(
-            prompt_tokens=0,
-            completion_tokens=0,
-            total_tokens=0,
-        ), response.message
+            self._ollama = OllamaGlue(self.api_base, self.generator_id, self.generator_params)
 
     async def _litellm_generate(
         self, conversation: list[dict[str, t.Any]], tools_schema: list[dict[str, t.Any]] | None
@@ -80,7 +62,7 @@ class LiteLLMEngine(Engine):
     ) -> tuple[Usage, t.Any]:
         if self.is_ollama:
             # https://github.com/BerriAI/litellm/issues/6353
-            return await self._ollama_generate(conversation, tools_schema)
+            return await self._ollama.generate(conversation, tools_schema)
         else:
             return await self._litellm_generate(conversation, tools_schema)
 
@@ -132,6 +114,7 @@ class LiteLLMEngine(Engine):
                 ), None
         except Exception as e:
             logger.error(e)
+            logger.error(f"{traceback.format_exc()}")
             return Usage(
                 prompt_tokens=0,
                 completion_tokens=0,
