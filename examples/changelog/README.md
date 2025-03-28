@@ -1,1 +1,1 @@
-This agent now [live in its own repository](https://github.com/evilsocket/changelog).
+This agent now [live in its own repository](https://github.com/evilsocket/changelog), you can install it with `nerve install evilsocket/changelog`.

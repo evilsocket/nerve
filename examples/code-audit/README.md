@@ -1,5 +1,1 @@
-Nerve agent that performs a security audit on a target codebase and saves its findings to `findings.jsonl`, run with:
-
-```sh
-nerve run examples/code-audit --target-path /path/to/source
-```
+This agent now [live in its own repository](https://github.com/evilsocket/code-audit), you can install it with `nerve install evilsocket/code-audit`.
