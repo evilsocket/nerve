@@ -1,7 +1,7 @@
-import asyncio
 import pathlib
 import typing as t
 
+import requests
 import typer
 from termcolor import colored
 
@@ -20,25 +20,59 @@ cli = typer.Typer(
 
 @cli.command(
     context_settings={"help_option_names": ["-h", "--help"]},
-    help="List the agents available locally in $HOME/.nerve/agents or a custom path.",
+    help="List locally installed agents and available ones from the awesomeagents.ai index.",
 )
 def agents(
     path: t.Annotated[
         pathlib.Path,
         typer.Argument(help="Path to the agent or workflow to create"),
     ] = DEFAULT_AGENTS_LOAD_PATH,
+    offline: t.Annotated[
+        bool,
+        typer.Option("--offline", "-o", help="Only show installed agents."),
+    ] = False,
 ) -> None:
     print(f"🧠 nerve v{nerve.__version__}")
 
-    asyncio.run(show_agents(path))
+    _show_installed_agents(path)
+
+    if not offline:
+        agents = _fetch_awesome_agents()
+        if agents:
+            _show_awesome_agents(agents)
 
 
-async def show_agents(path: pathlib.Path) -> None:
+def _fetch_awesome_agents() -> list[dict] | None:
+    try:
+        response = requests.get("https://api.awesomeagents.ai/index.json")
+        response.raise_for_status()
+        agents = response.json()
+        return [agent for agent in agents if "nerve" in agent.get("stack", [])]
+    except Exception:
+        return None
+
+
+def _show_awesome_agents(agents: list[dict]) -> None:
+    print("🔍 Available from the index:\n")
+    for agent in agents:
+        repo = agent["repo"]
+        # Extract username/repo from the repository URL
+        repo_parts = repo.split("/")
+        if len(repo_parts) >= 2:
+            username_repo = f"{repo_parts[-2]}/{repo_parts[-1]}"
+        else:
+            username_repo = repo
+        print(f"     {colored(username_repo, 'white', attrs=['bold'])} - {agent['description']}")
+
+    print()
+
+
+def _show_installed_agents(path: pathlib.Path) -> None:
     anything = False
 
     if path.exists() and path.is_dir():
         print()
-        print(f"📁 agents in {path.absolute()}:")
+        print(f"📁 Installed in {path.absolute()}:\n")
 
         for item in path.iterdir():
             if Workflow.is_workflow(item):
