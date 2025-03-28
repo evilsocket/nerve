@@ -66,6 +66,12 @@ This will download, extract and install the agent to the folder `$HOME/.nerve/ag
 nerve run changelog
 ```
 
+You can uninstall agents with:
+
+```bash
+nerve uninstall changelog
+```
+
 ### Create an Agent
 
 You can start creating an agent with a guided procedure by executing:
