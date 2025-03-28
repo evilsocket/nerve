@@ -50,7 +50,23 @@ docker run -it --network=host -v ./examples:/root/.nerve/agents evilsocket/nerve
 
 ## 🚀 Usage
 
-Nerve agents are simple YAML files that can use a set of built-in tools such as a bash shell, file system primitives [and more](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md). 
+Nerve agents are simple YAML files that can use a set of built-in tools such as a bash shell, file system primitives [and more](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md).
+
+### Install an Agent
+
+Starting from Nerve 1.4.x, agents can be installed from a github repository or zip archive URL. For instance, to install the [Changelog](https://github.com/evilsocket/changelog) agent you can run:
+
+```bash
+nerve install evilsocket/changelog
+```
+
+This will download, extract and install the agent to the folder `$HOME/.nerve/agents` allowing you to execute it with:
+
+```bash
+nerve run changelog
+```
+
+### Create an Agent
 
 You can start creating an agent with a guided procedure by executing:
 

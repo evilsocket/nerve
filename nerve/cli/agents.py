@@ -28,7 +28,7 @@ def agents(
         typer.Argument(help="Path to the agent or workflow to create"),
     ] = DEFAULT_AGENTS_LOAD_PATH,
 ) -> None:
-    print(f"🧠 nerve v{nerve.__version__}\n")
+    print(f"🧠 nerve v{nerve.__version__}")
 
     asyncio.run(show_agents(path))
 
