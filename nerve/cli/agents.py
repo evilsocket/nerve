@@ -42,7 +42,7 @@ def agents(
             _show_awesome_agents(agents)
 
 
-def _fetch_awesome_agents() -> list[dict] | None:
+def _fetch_awesome_agents() -> list[dict[str, t.Any]] | None:
     try:
         response = requests.get("https://api.awesomeagents.ai/index.json")
         response.raise_for_status()
@@ -52,7 +52,7 @@ def _fetch_awesome_agents() -> list[dict] | None:
         return None
 
 
-def _show_awesome_agents(agents: list[dict]) -> None:
+def _show_awesome_agents(agents: list[dict[str, t.Any]]) -> None:
     print("🔍 Available from the index:\n")
     for agent in agents:
         repo = agent["repo"]
