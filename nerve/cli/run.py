@@ -85,7 +85,7 @@ def run(
     logger.info(f"🧠 nerve v{nerve.__version__}")
 
     asyncio.run(
-        execute_flow(
+        _run(
             input_path,
             generator,
             # convert the conversation strategy string to a valid enum
@@ -130,7 +130,7 @@ def _resolve_input_path(input_path: pathlib.Path) -> pathlib.Path:
     return input_path
 
 
-async def execute_flow(
+async def _run(
     input_path: pathlib.Path,
     generator: str,
     conv_window_strategy: WindowStrategy,

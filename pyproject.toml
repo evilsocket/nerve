@@ -36,6 +36,7 @@ types-pyperclip = { version = "^1.9.0.20250218", optional = true }
 termcolor = "^2.5.0"
 requests = "^2.32.3"
 types-requests = "^2.32.0.20250328"
+packaging = "^24.2"
 
 [tool.poetry.extras]
 computer_use = [

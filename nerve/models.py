@@ -2,8 +2,11 @@ import pathlib
 import typing as t
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from loguru import logger
+from pydantic import AfterValidator, BaseModel, Field
 from pydantic_yaml import parse_yaml_raw_as
+
+import nerve
 
 
 class Mode(str, Enum):
@@ -71,6 +74,30 @@ class Tool(BaseModel):
     tool: str | None = None
 
 
+def _check_required_version(required: str | None) -> str | None:
+    if required:
+        from packaging.requirements import Requirement
+
+        try:
+            # a version was specified, convert to a valid requirement
+            if required[0].isdigit():
+                required_str = f"nerve-adk>={required}"
+            else:
+                # a full expression was specified, use it as is
+                required_str = f"nerve-adk{required}"
+            req = Requirement(required_str)
+        except Exception as e:
+            logger.error(f"error parsing required version '{required}': {e}")
+            raise
+
+        if nerve.__version__ not in req.specifier:
+            msg = f"required version {required} not satisfied by installed version {nerve.__version__}"
+            logger.error(msg)
+            raise ValueError(msg)
+
+    return required
+
+
 class Configuration(BaseModel):
     """
     Configuration for an agent determining its "identity", task and capabilities.
@@ -81,6 +108,8 @@ class Configuration(BaseModel):
 
     # optional generator
     generator: str | None = None
+    # optional nerve version requirement
+    requires: t.Annotated[str | None, AfterValidator(_check_required_version)] = None
     # used for versioning the agents
     version: str = "1.0.0"
     # the system prompt, the agent identity

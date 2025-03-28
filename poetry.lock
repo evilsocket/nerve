@@ -2836,4 +2836,4 @@ computer-use = ["pillow", "pyautogui", "pyperclip", "pyscreeze", "types-pyautogu
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "64bb1e4a5a2c4d203776668cb923a7de88061ef9d2fb4caaa0f4e5d80b90e232"
+content-hash = "737d38a9c2d2030342f2e2492ffd9dc8c493817772491d84af6eaa293b1a3c0a"
