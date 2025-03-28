@@ -7,6 +7,7 @@ from nerve.cli.install import cli as install_cli
 from nerve.cli.namespaces import cli as namespaces_cli
 from nerve.cli.replay import cli as replay_cli
 from nerve.cli.run import cli as run_cli
+from nerve.cli.uninstall import cli as uninstall_cli
 
 cli = typer.Typer(
     no_args_is_help=True,
@@ -20,6 +21,7 @@ cli.add_typer(create_cli)
 cli.add_typer(run_cli)
 cli.add_typer(replay_cli)
 cli.add_typer(namespaces_cli)
+cli.add_typer(uninstall_cli)
 
 
 @cli.command(

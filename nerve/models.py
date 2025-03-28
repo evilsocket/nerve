@@ -108,6 +108,8 @@ class Configuration(BaseModel):
 
     # optional generator
     generator: str | None = None
+    # optional agent description
+    description: str = ""
     # optional nerve version requirement
     requires: t.Annotated[str | None, AfterValidator(_check_required_version)] = None
     # used for versioning the agents

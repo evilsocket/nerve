@@ -38,15 +38,27 @@ async def show_agents(path: pathlib.Path) -> None:
 
     if path.exists() and path.is_dir():
         print()
-        print(f"📁 {path.absolute()}")
+        print(f"📁 agents in {path.absolute()}:")
 
         for item in path.iterdir():
             if Workflow.is_workflow(item):
-                print(f"   {item.name} " + colored("<workflow>", "blue"))
+                workflow = Workflow.from_path(item)
+                print(
+                    f"     {colored(item.name, 'white', attrs=['bold'])} "
+                    + colored("<workflow>", "blue")
+                    + f" - {workflow.description}"
+                )
                 anything = True
             elif Configuration.is_agent_config(item):
-                print(f"   {item.name} " + colored("<agent>", "green"))
+                config = Configuration.from_path(item)
+                print(
+                    f"     {colored(item.name, 'white', attrs=['bold'])} "
+                    + colored("<agent>", "green")
+                    + f" - {config.description}"
+                )
                 anything = True
+
+        print()
 
     if not anything:
         print(colored(f"No agents or workflows found in {path}", "light_grey"))
