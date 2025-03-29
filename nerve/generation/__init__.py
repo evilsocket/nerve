@@ -119,6 +119,45 @@ class Engine(ABC):
             "content": f"The tool {tool_name} is not available.",
         }
 
+    def _responses_for(self, tool_call_id: str, tool_name: str, response: t.Any) -> t.Any:
+        if isinstance(response, str):
+            return [
+                {
+                    "tool_call_id": tool_call_id,
+                    "role": "tool",
+                    "name": tool_name,
+                    "content": response,
+                }
+            ]
+        else:
+            """
+            Handle:
+
+                Invalid 'messages[3]'. Image URLs are only allowed for messages with role 'user', but this message with role 'tool' contains an image URL.", 'type': 'invalid_request_error', 'param': 'messages[3]', 'code': 'invalid_value'}}
+
+            And:
+
+                An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'.
+            """
+            return [
+                {
+                    "tool_call_id": tool_call_id,
+                    "role": "tool",
+                    "name": tool_name,
+                    "content": "",
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": f"{tool_name} returned the following response:",
+                        },
+                        response,
+                    ],
+                },
+            ]
+
     async def _get_tool_response(
         self, tool_call_id: str, tool_name: str, tool_fn: t.Callable[..., t.Any], tool_args: dict[str, t.Any]
     ) -> list[dict[str, t.Any]]:
@@ -141,53 +180,55 @@ class Engine(ABC):
             tool_response = f"ERROR while executing tool {tool_name}: {e}"
 
         generated_responses = get_tool_response(tool_response)
-        if not isinstance(generated_responses, list):
-            generated_responses = [generated_responses]
+        if isinstance(generated_responses, str):
+            # simple case, just set content
+            return [
+                {
+                    "tool_call_id": tool_call_id,
+                    "role": "tool",
+                    "name": tool_name,
+                    "content": generated_responses,
+                }
+            ]
+        elif isinstance(generated_responses, list):
+            logger.debug("merging multiple responses from MCP: {}", generated_responses)
+            # multiple response, probably from MCP, merge
+            return [
+                {
+                    "tool_call_id": tool_call_id,
+                    "role": "tool",
+                    "name": tool_name,
+                    "content": "\n".join(generated_responses),
+                }
+            ]
+        else:
+            """
+            Handle:
 
-        ret_responses: list[t.Any] = []
+                Invalid 'messages[3]'. Image URLs are only allowed for messages with role 'user', but this message with role 'tool' contains an image URL.", 'type': 'invalid_request_error', 'param': 'messages[3]', 'code': 'invalid_value'}}
 
-        for generated_response in generated_responses:
-            if isinstance(generated_response, str):
-                ret_responses.append(
-                    {
-                        "tool_call_id": tool_call_id,
-                        "role": "tool",
-                        "name": tool_name,
-                        "content": generated_response,
-                    }
-                )
-            else:
-                """
-                Handle:
+            And:
 
-                    Invalid 'messages[3]'. Image URLs are only allowed for messages with role 'user', but this message with role 'tool' contains an image URL.", 'type': 'invalid_request_error', 'param': 'messages[3]', 'code': 'invalid_value'}}
-
-                And:
-
-                    An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'.
-                """
-                ret_responses.extend(
-                    [
+                An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'.
+            """
+            return [
+                {
+                    "tool_call_id": tool_call_id,
+                    "role": "tool",
+                    "name": tool_name,
+                    "content": "",
+                },
+                {
+                    "role": "user",
+                    "content": [
                         {
-                            "tool_call_id": tool_call_id,
-                            "role": "tool",
-                            "name": tool_name,
-                            "content": "",
+                            "type": "text",
+                            "text": f"{tool_name} returned the following response:",
                         },
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": f"{tool_name} returned the following response:",
-                                },
-                                generated_response,
-                            ],
-                        },
-                    ]
-                )
-
-        return ret_responses
+                        generated_responses,
+                    ],
+                },
+            ]
 
     async def _process_tool_call(
         self, call_id: str, tool_name: str, args: str | dict[str, t.Any], extra_tools: dict[str, t.Callable[..., t.Any]]

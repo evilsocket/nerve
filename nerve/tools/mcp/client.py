@@ -72,14 +72,14 @@ class Client:
 
         return self._tools
 
-    async def call_tool(self, name: str, **kwargs: t.Any) -> list[t.Any]:
+    async def call_tool(self, mcp_tool_name: str, **kwargs: t.Any) -> t.Any:
         if not self._session:
             await self.connect()
             if not self._session:
                 raise Exception("failed to connect to MCP server")
 
-        logger.debug("calling mcp tool: {}", name)
-        ret = await self._session.call_tool(name, kwargs)
+        logger.debug("calling mcp tool: {}", mcp_tool_name)
+        ret = await self._session.call_tool(mcp_tool_name, kwargs)
         logger.debug("mcp tool call result: {}", ret)
 
         if ret.isError:
@@ -101,4 +101,4 @@ class Client:
 
         logger.debug("tool call responses: {}", responses)
 
-        return responses
+        return responses[0] if len(responses) == 1 else responses
