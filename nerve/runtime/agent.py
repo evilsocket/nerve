@@ -33,7 +33,7 @@ class Agent:
         state.on_event("agent_created", {"agent": self})
 
     @classmethod
-    def create(
+    async def create(
         cls,
         generator: str,
         configuration: Configuration,
@@ -71,13 +71,10 @@ class Agent:
 
         configuration.generator = configuration.generator or generator
 
-        runtime = Runtime.build(
+        runtime = await Runtime.build(
             working_dir=working_dir,
             name=name,
-            generator=configuration.generator,
-            using=configuration.using,
-            jail=configuration.jail,
-            tools=configuration.tools,
+            configuration=configuration,
         )
 
         return cls(
@@ -88,7 +85,7 @@ class Agent:
         )
 
     @classmethod
-    def create_from_file(
+    async def create_from_file(
         cls,
         generator: str,
         config_file_path: pathlib.Path,
@@ -102,7 +99,7 @@ class Agent:
 
         stem = config_file_path.stem
         working_dir = (config_file_path if config_file_path.is_dir() else config_file_path.parent).absolute()
-        return cls.create(
+        return await cls.create(
             generator,
             config,
             start_state,
@@ -208,10 +205,11 @@ class Agent:
         # import here to avoid circular import
         from nerve.runtime.flow import Flow
 
-        await Flow.build(
+        flow = await Flow.build(
             actors=[self],
             max_steps=max_steps,
             max_cost=max_cost,
             timeout=timeout,
             start_state=start_state,
-        ).run()
+        )
+        await flow.run()

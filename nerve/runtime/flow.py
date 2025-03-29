@@ -50,7 +50,7 @@ class Flow:
         self.shell: Shell = Shell()
 
     @classmethod
-    def build(
+    async def build(
         cls,
         actors: list[Agent],
         max_steps: int = 500,
@@ -64,7 +64,7 @@ class Flow:
         return cls(actors=actors, max_steps=max_steps, max_cost=max_cost, timeout=timeout)
 
     @classmethod
-    def from_path(
+    async def from_path(
         cls,
         input_path: pathlib.Path,
         window_strategy: WindowStrategy = FullHistoryStrategy(),
@@ -83,7 +83,7 @@ class Flow:
             if not task_file_path.exists():
                 task_file_path = root_path / actor_name
 
-            actors.append(Agent.create_from_file(actor.generator, task_file_path, window_strategy))
+            actors.append(await Agent.create_from_file(actor.generator, task_file_path, window_strategy))
 
         if start_state:
             state.update_variables(start_state)

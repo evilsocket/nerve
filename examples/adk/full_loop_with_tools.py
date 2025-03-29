@@ -25,7 +25,7 @@ async def main():
     # pass level='DEBUG' to get more verbose logging or level='SUCCESS' to get quieter logging
     logging.init(level="INFO")
 
-    agent = Agent.create(
+    agent = await Agent.create(
         "openai/gpt-4o",  # the model to use
         Configuration(
             agent="You are a helpful assistant.",

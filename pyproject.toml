@@ -37,6 +37,7 @@ termcolor = "^2.5.0"
 requests = "^2.32.3"
 types-requests = "^2.32.0.20250328"
 packaging = "^24.2"
+mcp = "^1.6.0"
 
 [tool.poetry.extras]
 computer_use = [

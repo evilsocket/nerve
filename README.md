@@ -21,6 +21,14 @@
 
 Nerve is an ADK ( _Agent Development Kit_ ) designed to be a simple yet powerful platform for creating and executing LLM-based agents.
 
+## Main Features
+
+- Define agents as simple YAML files.
+- Simple CLI for creating, installing, and running agents with step-by-step guidance.
+- Comes with a library of predefined, built-in tools for common tasks.
+- Easily integrate a vast amount of [MCP servers](https://github.com/punkpeye/awesome-mcp-servers), or create your own custom tools.
+- Support for [any model provider](https://docs.litellm.ai/docs/providers).
+
 ## Quick Start
 
 ```bash

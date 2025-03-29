@@ -33,7 +33,7 @@ async def main():
         logger.error("Usage: python single_step.py <expression>")
         sys.exit(1)
 
-    agent = Agent.create(
+    agent = await Agent.create(
         "openai/gpt-4o",  # the model to use
         Configuration(
             agent="You are a helpful assistant that solves math problems.",

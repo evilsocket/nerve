@@ -1,0 +1,14 @@
+agent: You are a helpful assistant.
+task: Write something to your knowledge graph, then read it back, save it to output.txt and set your task as complete.
+
+using:
+  - task
+
+mcp:
+  memory:
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-memory"]
+
+  filesystem:
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-filesystem", "."]

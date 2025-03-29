@@ -157,7 +157,7 @@ async def _run(
     # check if input_path is a workflow or single agent
     if Workflow.is_workflow(input_path):
         # full workflow
-        flow = Flow.from_path(
+        flow = await Flow.from_path(
             input_path,
             window_strategy=conv_window_strategy,
             max_steps=max_steps,
@@ -168,8 +168,8 @@ async def _run(
 
     elif Configuration.is_agent_config(input_path):
         # single agent
-        flow = Flow.build(
-            actors=[Agent.create_from_file(generator, input_path, conv_window_strategy)],
+        flow = await Flow.build(
+            actors=[await Agent.create_from_file(generator, input_path, conv_window_strategy)],
             max_steps=max_steps,
             max_cost=max_cost,
             timeout=timeout,

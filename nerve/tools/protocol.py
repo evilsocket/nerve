@@ -75,8 +75,11 @@ def get_tool_response(response: t.Any) -> t.Any:
     elif isinstance(response, dict):
         # structured (vision), return as list
         return response
+    elif isinstance(response, list):
+        # list of responses, return as list
+        return [get_tool_response(r) for r in response]
     else:
-        logger.debug(f"unknown tool response type: {type(response)}")
+        logger.warning(f"unknown tool response type: {type(response)}")
         return get_tool_response(str(response))
 
 

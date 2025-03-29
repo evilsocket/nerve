@@ -103,6 +103,15 @@ class Configuration(BaseModel):
     Configuration for an agent determining its "identity", task and capabilities.
     """
 
+    class MCPServer(BaseModel):
+        """
+        A MCP server is a server that implements the MCP protocol.
+        """
+
+        command: str = "python"
+        args: list[str] = []
+        env: dict[str, str] = {}
+
     # legacy field used to detect if the user is loading a legacy file
     system_prompt: str | None = Field(default=None, exclude=True)
 
@@ -124,6 +133,8 @@ class Configuration(BaseModel):
     using: list[str] = []
     # jail mechanism for each namespace
     jail: dict[str, list[str]] = {}
+    # MCP ( https://modelcontextprotocol.io/ ) servers.
+    mcp: dict[str, MCPServer] = {}
     # custom tooling
     tools: list[Tool | t.Callable[..., t.Any]] = []
 

@@ -1,0 +1,8 @@
+from typing import *
+from pydantic import Field
+from loguru import logger
+
+async def {{ tool.name }}({% for arg in arguments %}{{ arg.name }}: Annotated[{{ arg.type }}, "{{ arg.description }}"]{% if not loop.last %}, {% endif %}{% endfor %}) -> Any:
+    """{{ tool.description }}"""
+
+    return await globals().get("{{ client_name }}", None).call_tool("{{ tool.name }}", **locals())

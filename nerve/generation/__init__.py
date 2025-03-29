@@ -140,44 +140,54 @@ class Engine(ABC):
             )
             tool_response = f"ERROR while executing tool {tool_name}: {e}"
 
-        generated_response = get_tool_response(tool_response)
-        if isinstance(generated_response, str):
-            return [
-                {
-                    "tool_call_id": tool_call_id,
-                    "role": "tool",
-                    "name": tool_name,
-                    "content": generated_response,
-                }
-            ]
-        else:
-            """
-            Handle:
+        generated_responses = get_tool_response(tool_response)
+        if not isinstance(generated_responses, list):
+            generated_responses = [generated_responses]
 
-                Invalid 'messages[3]'. Image URLs are only allowed for messages with role 'user', but this message with role 'tool' contains an image URL.", 'type': 'invalid_request_error', 'param': 'messages[3]', 'code': 'invalid_value'}}
+        ret_responses: list[t.Any] = []
 
-            And:
+        for generated_response in generated_responses:
+            if isinstance(generated_response, str):
+                ret_responses.append(
+                    {
+                        "tool_call_id": tool_call_id,
+                        "role": "tool",
+                        "name": tool_name,
+                        "content": generated_response,
+                    }
+                )
+            else:
+                """
+                Handle:
 
-                An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'.
-            """
-            return [
-                {
-                    "tool_call_id": tool_call_id,
-                    "role": "tool",
-                    "name": tool_name,
-                    "content": "",
-                },
-                {
-                    "role": "user",
-                    "content": [
+                    Invalid 'messages[3]'. Image URLs are only allowed for messages with role 'user', but this message with role 'tool' contains an image URL.", 'type': 'invalid_request_error', 'param': 'messages[3]', 'code': 'invalid_value'}}
+
+                And:
+
+                    An assistant message with 'tool_calls' must be followed by tool messages responding to each 'tool_call_id'.
+                """
+                ret_responses.extend(
+                    [
                         {
-                            "type": "text",
-                            "text": f"{tool_name} returned the following response:",
+                            "tool_call_id": tool_call_id,
+                            "role": "tool",
+                            "name": tool_name,
+                            "content": "",
                         },
-                        generated_response,
-                    ],
-                },
-            ]
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": f"{tool_name} returned the following response:",
+                                },
+                                generated_response,
+                            ],
+                        },
+                    ]
+                )
+
+        return ret_responses
 
     async def _process_tool_call(
         self, call_id: str, tool_name: str, args: str | dict[str, t.Any], extra_tools: dict[str, t.Callable[..., t.Any]]
