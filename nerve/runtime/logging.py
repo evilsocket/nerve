@@ -9,6 +9,10 @@ from nerve.runtime import state
 from nerve.runtime.events import Event
 
 
+def _log_message_format(record: dict[str, t.Any]) -> str:
+    return "{time} <level>{message}</level>\n"
+
+
 def init(log_path: pathlib.Path | None = None, level: str = "INFO", litellm_debug: bool = False) -> None:
     """
     Initialize the logging system.
@@ -18,14 +22,13 @@ def init(log_path: pathlib.Path | None = None, level: str = "INFO", litellm_debu
         level: The log level to use.
         litellm_debug: Whether to enable litellm debug logging.
     """
-    format = "{time} {message}"
 
     if level != "DEBUG":
         logger.remove()
         logger.add(
             sys.stdout,
             colorize=True,
-            format=format,
+            format=_log_message_format,
             level=level,
         )
 
