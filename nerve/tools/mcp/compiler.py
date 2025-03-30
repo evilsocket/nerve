@@ -3,6 +3,7 @@ import os
 import typing as t
 
 import jinja2
+from mcp import Tool
 from pydantic import create_model
 
 from nerve.models import Configuration
@@ -81,36 +82,44 @@ def _get_python_type(
         return None, type_mapping.get(schema_type, t.Any)  # type: ignore
 
 
+async def create_function_body(client: Client, mcp_tool: Tool) -> tuple[str, dict[str, t.Any]]:
+    typed_args = []
+    client_name = f"nerve_mcp_{client.name}_client"
+    type_defs = {client_name: client}
+
+    for name, arg_props in mcp_tool.inputSchema.get("properties", {}).items():
+        args_def, arg_type = _get_python_type(name, arg_props)
+        typed_args.append(
+            {"name": name, "type": _stringify_type(arg_type), "description": arg_props.get("description", "")}
+        )
+        if args_def:
+            type_defs.update(args_def)
+
+    # load the template from the same directory as this script
+    template_path = os.path.join(os.path.dirname(__file__), "body.j2")
+    with open(template_path) as f:
+        template_content = f.read()
+
+    return (
+        jinja2.Environment()
+        .from_string(template_content)
+        .render(client_name=client_name, tool=mcp_tool, arguments=typed_args),
+        type_defs,
+    )
+
+
 async def get_tools_from_mcp(name: str, server: Configuration.MCPServer) -> list[t.Callable[..., t.Any]]:
     # connect and list tools
     client = Client(name, server)
     mpc_tools = await client.tools()
-    client_name = f"nerve_mcp_{name}_client"
     compiled_tools = []
 
     for mcp_tool in mpc_tools:
-        typed_args = []
-        type_defs = {client_name: client}
+        func_body, type_defs = await create_function_body(client, mcp_tool)
 
-        for name, arg_props in mcp_tool.inputSchema.get("properties", {}).items():
-            args_def, arg_type = _get_python_type(name, arg_props)
-            typed_args.append({"name": name, "type": _stringify_type(arg_type)})
-            if args_def:
-                type_defs.update(args_def)
-
-        # load the template from the same directory as this script
-        template_path = os.path.join(os.path.dirname(__file__), "body.j2")
-        with open(template_path) as f:
-            template_content = f.read()
-
-        func_body = (
-            jinja2.Environment()
-            .from_string(template_content)
-            .render(client_name=client_name, tool=mcp_tool, arguments=typed_args)
-        )
         # print(func_body)
         exec(func_body, type_defs)
 
-        tool_fn = wrap_tool_function(type_defs[mcp_tool.name])  # type: ignore
+        tool_fn = wrap_tool_function(type_defs[mcp_tool.name])
         compiled_tools.append(tool_fn)
     return compiled_tools

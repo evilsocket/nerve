@@ -10,6 +10,8 @@ from nerve.models import Configuration
 
 
 class Client:
+    name: str = ""
+
     def __init__(self, name: str, server: Configuration.MCPServer):
         self.name = name
         self.server = server
