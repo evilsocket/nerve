@@ -24,7 +24,7 @@ def init(log_path: pathlib.Path | None = None, level: str = "INFO", litellm_debu
         logger.add(
             sys.stdout,
             colorize=True,
-            format="{time} <level>{message}</level>",
+            format="<level>[{time:MM-DD-YY HH:mm:ss}] {level}</level> {message}",
             level=level,
         )
 

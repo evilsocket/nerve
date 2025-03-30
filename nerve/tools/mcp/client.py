@@ -28,15 +28,13 @@ class Client:
             async with stdio_client(server=self.server_params) as (read_stream, write_stream):
                 try:
                     yield read_stream, write_stream
-                except GeneratorExit:
-                    pass
+                except Exception as e:
+                    logger.debug("error yielding streams: {}", e)
         except Exception as e:
             # TODO: there's a weird bug, if we don't do this when the process exits
             # we will see an exception
-            if "anext(): asynchronous generator is already running" in str(e):
-                exit(0)
-            else:
-                raise e
+            logger.debug("error creating streams: {}", e)
+            exit(0)
 
     async def connect(self) -> None:
         if self._session:

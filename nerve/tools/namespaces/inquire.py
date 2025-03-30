@@ -17,7 +17,7 @@ def ask_question(
         Field(description="The question to ask the user.", examples=["What is your name?", "What is your age?"]),
     ],
 ) -> str:
-    """Ask a question to the user."""
+    """Use this tool to ask a question to the user."""
 
     print()
     return str(inquirer.prompt([inquirer.Text("question", message=question)])["question"]).strip()
@@ -32,7 +32,7 @@ def ask_for_confirmation(
     ],
     default: Annotated[bool, Field(description="The default answer to the question.", examples=[True, False])] = False,
 ) -> str:
-    """Ask a confirmation question to the user."""
+    """Use this tool to ask a confirmation question to the user."""
 
     print()
     return (
@@ -53,7 +53,7 @@ def ask_for_single_choice(
         Field(description="The choices to offer the user.", examples=["red", "blue", "green"]),
     ],
 ) -> str:
-    """Ask a single choice question to the user."""
+    """Use this tool to ask a single choice question to the user."""
 
     print()
     return str(inquirer.prompt([inquirer.List("choice", message=question, choices=choices)])["choice"]).strip()
@@ -72,7 +72,7 @@ def ask_for_multiple_choice(
         Field(description="The choices to offer the user.", examples=["red", "blue", "green"]),
     ],
 ) -> str:
-    """Ask a multiple choice question to the user."""
+    """Use this tool to ask a multiple choice question to the user."""
 
     print()
     return ", ".join(
