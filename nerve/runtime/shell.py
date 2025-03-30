@@ -7,6 +7,7 @@ from nerve.runtime.agent import Agent
 
 class Shell:
     def __init__(self) -> None:
+        self._first_step: bool = True
         self._keep_going: bool = False
         # TODO: can we build this by inspecting the class methods?
         self.commands = [
@@ -128,12 +129,23 @@ class Shell:
 
         return command
 
+    async def _show_welcome(self) -> None:
+        print()
+        print(colored("👋 Welcome to the interactive shell!", "white", attrs=["bold"]))
+        print()
+        await self._handle_help()
+
     async def interact_if_needed(self, actor: Agent) -> None:
         if not state.is_interactive() or self._keep_going:
             return
 
         # wait for all events to be logged
         state.wait_for_events_logs()
+
+        # show the welcome message if this is the first step
+        if self._first_step:
+            self._first_step = False
+            await self._show_welcome()
 
         # show the prompt and get the command
         command = await self._show_prompt(actor)
