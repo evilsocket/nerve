@@ -96,12 +96,16 @@ class Flow:
             timeout=timeout,
         )
 
-    async def _setup_if_needed(self) -> None:
+    async def _setup_if_needed(self, task_override: str | None = None) -> None:
         if self.started_at is None:
             self.started_at = time.time()
 
         if self.curr_actor is None:
             self.curr_actor = self.actors[self.curr_actor_idx]
+
+            if task_override:
+                logger.info(f"🎯 setting task: {task_override}")
+                self.curr_actor.configuration.task = task_override
 
             state.set_tools({tool.__name__: tool for tool in self.curr_actor.runtime.tools})
             state.set_defaults(self.curr_actor.configuration.defaults)
@@ -150,7 +154,7 @@ class Flow:
 
         return False
 
-    async def run(self) -> None:
+    async def run(self, task_override: str | None = None) -> None:
         state.on_event(
             "flow_started",
             {
@@ -160,7 +164,7 @@ class Flow:
         )
 
         while not self.done():
-            await self._setup_if_needed()
+            await self._setup_if_needed(task_override)
             if self.curr_actor:
                 await self.shell.interact_if_needed(self.curr_actor)
             await self.step()

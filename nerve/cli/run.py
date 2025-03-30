@@ -37,6 +37,10 @@ def run(
         pathlib.Path,
         typer.Argument(help="Agent or workflow to execute"),
     ] = pathlib.Path("."),
+    task: t.Annotated[
+        str | None,
+        typer.Option("--task", "-t", help="Set or override the task for the agent."),
+    ] = None,
     generator: t.Annotated[
         str,
         typer.Option("--generator", "-g", help="If the agent generator field is not set, use this generator."),
@@ -70,7 +74,7 @@ def run(
     ] = DEFAULT_MAX_COST,
     timeout: t.Annotated[
         int | None,
-        typer.Option("--timeout", "-t", help="Timeout in seconds"),
+        typer.Option("--timeout", help="Timeout in seconds"),
     ] = DEFAULT_TIMEOUT,
     log_path: t.Annotated[
         pathlib.Path | None,
@@ -90,6 +94,7 @@ def run(
             generator,
             # convert the conversation strategy string to a valid enum
             conversation.strategy_from_string(conversation_strategy),
+            task,
             ctx.args,
             max_steps,
             max_cost,
@@ -134,6 +139,7 @@ async def _run(
     input_path: pathlib.Path,
     generator: str,
     conv_window_strategy: WindowStrategy,
+    task_override: str | None,
     start_state_args: list[str],
     max_steps: int = 100,
     max_cost: float = 10.0,
@@ -180,4 +186,4 @@ async def _run(
         logger.error(f"path '{input_path}' is not a valid workflow or agent configuration")
         raise typer.Abort()
 
-    await flow.run()
+    await flow.run(task_override)

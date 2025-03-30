@@ -66,6 +66,12 @@ This will download, extract and install the agent to the folder `$HOME/.nerve/ag
 nerve run changelog
 ```
 
+You can override the default task of any agent:
+
+```bash
+nerve run changelog --task 'use a single sentence for the changelog'
+```
+
 You can uninstall agents with:
 
 ```bash
