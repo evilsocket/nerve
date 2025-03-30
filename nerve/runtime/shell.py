@@ -57,45 +57,46 @@ class Shell:
         return True
 
     async def _handle_view(self) -> bool:
+        agent = state.get_current_actor()
+        print(colored("[agent]", "white", attrs=["bold"]))
+        print(f"  name: {agent.runtime.name}")
+        print(f"  model: {agent.configuration.generator}")
+        print(f"  conversation strategy: {agent.conv_window_strategy}")
+        print(f"  task: {colored(agent.configuration.task, 'green')}")
+        print()
+
         usage = state.get_usage()
-        print(colored("usage", "white", attrs=["bold"]))
+        print(colored("[usage]", "white", attrs=["bold"]))
         print(f"  prompt tokens: {usage.prompt_tokens}")
         print(f"  completion tokens: {usage.completion_tokens}")
         print(f"  total tokens: {usage.total_tokens}")
         print(f"  cost: {usage.cost} $")
         print()
 
-        agent = state.get_current_actor()
-        print(colored("agent", "white", attrs=["bold"]))
-        print(f"  name: {agent.runtime.name}")
-        print(f"  model: {agent.configuration.generator}")
-        print(f"  conversation strategy: {agent.conv_window_strategy}")
-        print()
-
         vars = state.get_variables()
         if vars:
-            print(colored("variables", "white", attrs=["bold"]))
+            print(colored("[variables]", "white", attrs=["bold"]))
             for k, v in vars.items():
                 print(f"  {colored(k, 'green')} = {v}")
             print()
 
         knowledge = state.get_knowledge()
         if knowledge:
-            print(colored("knowledge", "white", attrs=["bold"]))
+            print(colored("[knowledge]", "white", attrs=["bold"]))
             for k, v in knowledge.items():
                 print(f"  {colored(k, 'green')} = {v}")
             print()
 
         tools = state.get_tools()
         if tools:
-            print(colored("tools", "white", attrs=["bold"]))
-            for k in tools.keys():
+            print(colored("[tools]", "white", attrs=["bold"]))
+            for k in sorted(tools.keys()):
                 print(f"  {colored(k, 'magenta')}")
             print()
 
         extra_tools = state.get_extra_tools()
         if extra_tools:
-            print(colored("extra tools", "white", attrs=["bold"]))
+            print(colored("[extra tools]", "white", attrs=["bold"]))
             for k in extra_tools.keys():
                 print(f"  {colored(k, 'magenta')}")
             print()

@@ -33,7 +33,7 @@ class Runtime:
         # import tools from builtin namespaces
         ns_tools = compiler.get_tools_from_namespaces(configuration.using, configuration.jail)
         if ns_tools:
-            logger.debug(f"🧰 importing {len(ns_tools)} tools from: {configuration.using}")
+            logger.info(f"🧰 importing {len(ns_tools)} tools from: {configuration.using}")
             runtime.tools.extend(ns_tools)
 
         # import custom tools from yaml definition
@@ -42,7 +42,7 @@ class Runtime:
             [tool for tool in configuration.tools if isinstance(tool, Tool) and not tool.path],
         )
         if yml_tools:
-            logger.debug(f"🧰 importing {len(yml_tools)} tools from: {working_dir}")
+            logger.info(f"🧰 importing {len(yml_tools)} tools from: {working_dir}")
             runtime.tools.extend(yml_tools)
 
         # import custom tools from files
@@ -51,19 +51,19 @@ class Runtime:
             [tool.path for tool in configuration.tools if isinstance(tool, Tool) and tool.path],
         )
         if py_tools:
-            logger.debug(f"🧰 importing {len(py_tools)} tools from: {working_dir}")
+            logger.info(f"🧰 importing {len(py_tools)} tools from: {working_dir}")
             runtime.tools.extend(py_tools)
 
         # import custom tools from functions (when used as sdk)
         funcs = [compiler.wrap_tool_function(tool) for tool in configuration.tools if callable(tool)]
         if funcs:
-            logger.debug(f"🧰 importing {len(funcs)} custom tools from functions")
+            logger.info(f"🧰 importing {len(funcs)} custom tools")
             runtime.tools.extend(funcs)
 
         # import MCP servers
         for name, server in configuration.mcp.items():
             server_tools = await mcp_compiler.get_tools_from_mcp(name, server)
-            logger.debug(f"🧰 importing {len(server_tools)} custom tools from MCP server {name}")
+            logger.info(f"🧰 importing {len(server_tools)} tools from MCP server {name}")
             runtime.tools.extend(server_tools)
 
         return runtime
