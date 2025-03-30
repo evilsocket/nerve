@@ -98,9 +98,11 @@ class Flow:
 
     async def _setup_if_needed(self, task_override: str | None = None) -> None:
         if self.started_at is None:
+            logger.debug("setting started at")
             self.started_at = time.time()
 
         if self.curr_actor is None:
+            logger.debug(f"setting curr actor to {self.curr_actor_idx}")
             self.curr_actor = self.actors[self.curr_actor_idx]
 
             if task_override:
@@ -112,9 +114,12 @@ class Flow:
             state.on_task_started(self.curr_actor)
 
     async def step(self) -> None:
+        logger.debug("flow.step")
+
         await self._setup_if_needed()
 
         if self.done():
+            logger.debug("flow done")
             state.on_event("flow_complete", {"steps": self.curr_step, "usage": state.get_usage()})
             return
 
@@ -130,29 +135,38 @@ class Flow:
         if state.is_active_task_done():
             logger.debug(f"task {self.curr_actor.runtime.name} complete")  # type: ignore
             self.curr_actor_idx += 1
-            self.curr_actor = None
             state.reset()
 
         self.curr_step += 1
 
     def done(self) -> bool:
         if self.curr_actor_idx >= len(self.actors):
+            logger.debug("all actors done")
             return True
 
         if self.max_steps > 0 and self.curr_step > self.max_steps:
+            logger.debug("max steps reached")
             state.on_max_steps_reached()
             return True
 
         usage = state.get_usage()
         if self.max_cost > 0 and usage.cost is not None and usage.cost > self.max_cost:
+            logger.debug("max cost reached")
             state.on_max_cost_reached()
             return True
 
         if self.timeout is not None and self.started_at is not None and time.time() - self.started_at > self.timeout:
+            logger.debug("timeout reached")
             state.on_timeout()
             return True
 
         return False
+
+    async def _reset(self) -> None:
+        logger.debug("flow reset")
+        state.reset()
+        await self.shell.reset()
+        self.curr_actor_idx = 0
 
     async def run(self, task_override: str | None = None) -> None:
         state.on_event(
@@ -165,9 +179,21 @@ class Flow:
 
         while not self.done():
             await self._setup_if_needed(task_override)
+
             if self.curr_actor:
+                logger.debug("interact if needed")
                 await self.shell.interact_if_needed(self.curr_actor)
+            else:
+                logger.debug("no actor, can't interact")
+
             await self.step()
+
+            # in interactive mode, we reset and restart when we're done
+            # to let the user quit or change the task
+            if self.done() and state.is_interactive():
+                await self._reset()
+
+        logger.debug("flow complete")
 
         state.on_event(
             "flow_complete",

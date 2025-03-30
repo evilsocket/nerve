@@ -9,10 +9,6 @@ from nerve.runtime import state
 from nerve.runtime.events import Event
 
 
-def _log_message_format(record: dict[str, t.Any]) -> str:
-    return "{time} <level>{message}</level>\n"
-
-
 def init(log_path: pathlib.Path | None = None, level: str = "INFO", litellm_debug: bool = False) -> None:
     """
     Initialize the logging system.
@@ -28,7 +24,7 @@ def init(log_path: pathlib.Path | None = None, level: str = "INFO", litellm_debu
         logger.add(
             sys.stdout,
             colorize=True,
-            format=_log_message_format,
+            format="{time} <level>{message}</level>",
             level=level,
         )
 
@@ -142,10 +138,6 @@ def log_event_to_terminal(event: Event) -> None:
         logger.info(f"💬 {colored(data['response'], 'black', 'on_white')}")
 
     elif event.name == "step_started":
-        # avoid logging step usage in interactive mode
-        if state.is_interactive():
-            return
-
         if isinstance(data["usage"], dict):
             data["usage"] = DictWrapper(data["usage"])
 

@@ -362,7 +362,6 @@ def reset() -> None:
     global _task_status, _reason, _knowledge
     _task_status = Status.RUNNING
     _reason = None
-    _knowledge = {}
 
 
 def on_user_input_needed(input_name: str, prompt: str) -> str:

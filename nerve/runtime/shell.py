@@ -133,14 +133,19 @@ class Shell:
         print()
         print(colored("👋 Welcome to the interactive shell!", "white", attrs=["bold"]))
         print()
+        await self._handle_view()
         await self._handle_help()
 
-    async def interact_if_needed(self, actor: Agent) -> None:
-        if not state.is_interactive() or self._keep_going:
-            return
+    async def reset(self) -> None:
+        logger.debug("shell reset")
+        self._keep_going = False
 
+    async def interact_if_needed(self, actor: Agent) -> None:
         # wait for all events to be logged
         state.wait_for_events_logs()
+
+        if not state.is_interactive() or self._keep_going:
+            return
 
         # show the welcome message if this is the first step
         if self._first_step:
@@ -157,6 +162,8 @@ class Shell:
             logger.debug(f"unhandled command: {command}")
             # add the command to the conversation
             actor.add_extra_message(command)
+            # continue until complete
+            self._keep_going = True
         elif not done:
             # keep running the interaction shell
             await self.interact_if_needed(actor)
