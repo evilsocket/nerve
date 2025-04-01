@@ -135,6 +135,7 @@ class Flow:
         if state.is_active_task_done():
             logger.debug(f"task {self.curr_actor.runtime.name} complete")  # type: ignore
             self.curr_actor_idx += 1
+            self.curr_actor = None
             state.reset()
 
         self.curr_step += 1
@@ -167,6 +168,7 @@ class Flow:
         state.reset()
         await self.shell.reset()
         self.curr_actor_idx = 0
+        self.curr_actor = None
 
     async def run(self, task_override: str | None = None) -> None:
         state.on_event(

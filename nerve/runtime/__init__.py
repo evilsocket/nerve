@@ -33,7 +33,7 @@ class Runtime:
         # import tools from builtin namespaces
         ns_tools = compiler.get_tools_from_namespaces(configuration.using, configuration.jail)
         if ns_tools:
-            logger.info(f"🧰 importing {len(ns_tools)} tools from: {configuration.using}")
+            logger.debug(f"🧰 importing {len(ns_tools)} tools from: {configuration.using}")
             runtime.tools.extend(ns_tools)
 
         # import custom tools from yaml definition
@@ -42,7 +42,7 @@ class Runtime:
             [tool for tool in configuration.tools if isinstance(tool, Tool) and not tool.path],
         )
         if yml_tools:
-            logger.info(f"🧰 importing {len(yml_tools)} tools from: {working_dir}")
+            logger.debug(f"🧰 importing {len(yml_tools)} tools from: {working_dir}")
             runtime.tools.extend(yml_tools)
 
         # import custom tools from files
@@ -51,13 +51,13 @@ class Runtime:
             [tool.path for tool in configuration.tools if isinstance(tool, Tool) and tool.path],
         )
         if py_tools:
-            logger.info(f"🧰 importing {len(py_tools)} tools from: {working_dir}")
+            logger.debug(f"🧰 importing {len(py_tools)} tools from: {working_dir}")
             runtime.tools.extend(py_tools)
 
         # import custom tools from functions (when used as sdk)
         funcs = [compiler.wrap_tool_function(tool) for tool in configuration.tools if callable(tool)]
         if funcs:
-            logger.info(f"🧰 importing {len(funcs)} custom tools")
+            logger.debug(f"🧰 importing {len(funcs)} custom tools")
             runtime.tools.extend(funcs)
 
         # import MCP servers
