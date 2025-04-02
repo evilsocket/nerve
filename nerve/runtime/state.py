@@ -395,7 +395,7 @@ def on_user_input_needed(input_name: str, prompt: str) -> str:
         )
 
 
-def _create_jinja_env() -> jinja2.Environment:
+def _create_jinja_env(working_dir: pathlib.Path) -> jinja2.Environment:
     # we use this to catch undefined variables at runtime
     class OnUndefinedVariable(jinja2.Undefined):
         def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
@@ -417,7 +417,7 @@ def _create_jinja_env() -> jinja2.Environment:
         def __str__(self) -> str:
             return self.value or "<UNDEFINED>"
 
-    env = jinja2.Environment(undefined=OnUndefinedVariable, loader=jinja2.FileSystemLoader("."))
+    env = jinja2.Environment(undefined=OnUndefinedVariable, loader=jinja2.FileSystemLoader(working_dir))
 
     # allow prompts to call tools
     for name, tool_fn in _tools.items():
@@ -453,10 +453,10 @@ def _create_jinja_env() -> jinja2.Environment:
     return env
 
 
-def interpolate(raw: str, extra: dict[str, t.Any] | None = None) -> str:
+def interpolate(raw: str, extra: dict[str, t.Any] | None = None, working_dir: pathlib.Path = pathlib.Path(".")) -> str:
     """Interpolate the current state into a string."""
 
-    env = _create_jinja_env()
+    env = _create_jinja_env(working_dir)
     template = env.from_string(raw)
     context = _variables | (extra or {})
 

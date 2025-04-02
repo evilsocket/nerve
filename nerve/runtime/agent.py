@@ -117,13 +117,13 @@ class Agent:
         for name, value in state.get_knowledge().items():
             raw += f"\n\n## {name.capitalize()}\n\n{value}"
 
-        return state.interpolate(raw)
+        return state.interpolate(raw, working_dir=self.runtime.working_dir)
 
     def _get_prompt(self) -> str:
         if not self.configuration.task:
             self.configuration.task = state.on_user_input_needed("task", "Describe the task: ")
 
-        return state.interpolate(self.configuration.task)
+        return state.interpolate(self.configuration.task, working_dir=self.runtime.working_dir)
 
     def add_extra_message(self, message: str) -> None:
         self._extra_message = message
