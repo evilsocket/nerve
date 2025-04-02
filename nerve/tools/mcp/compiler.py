@@ -88,12 +88,17 @@ async def create_function_body(client: Client, mcp_tool: Tool) -> tuple[str, dic
     type_defs = {client_name: client}
 
     for name, arg_props in mcp_tool.inputSchema.get("properties", {}).items():
+        # print(name, arg_props)
         args_def, arg_type = _get_python_type(name, arg_props)
-        typed_args.append(
-            {"name": name, "type": _stringify_type(arg_type), "description": arg_props.get("description", "")}
-        )
+        arg = {"name": name, "type": _stringify_type(arg_type), "description": arg_props.get("description", "")}
+
         if args_def:
             type_defs.update(args_def)
+
+        if "default" in arg_props:
+            arg["default"] = arg_props["default"]
+
+        typed_args.append(arg)
 
     # load the template from the same directory as this script
     template_path = os.path.join(os.path.dirname(__file__), "body.j2")
@@ -117,7 +122,7 @@ async def get_tools_from_mcp(name: str, server: Configuration.MCPServer) -> list
     for mcp_tool in mpc_tools:
         func_body, type_defs = await create_function_body(client, mcp_tool)
 
-        # print(func_body)
+        print(func_body)
         exec(func_body, type_defs)
 
         tool_fn = wrap_tool_function(type_defs[mcp_tool.name])

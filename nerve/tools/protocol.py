@@ -66,14 +66,14 @@ def get_tool_schema(func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
             },
         }
 
-    if not tool["function"]["parameters"]["properties"]:
+    if not tool["function"]["parameters"]["properties"]:  # type: ignore
         """
-        Handle Gemini:
+        Handle Google Gemini:
 
-        "message": "* GenerateContentRequest.tools[0].function_declarations[0].parameters.properties: should be non-empty for OBJECT type\n* GenerateContentRequest.tools[0].function_declarations[2].parameters.properties[reason].properties: should be non-empty for OBJECT type\n",
+        "message": "* GenerateContentRequest.tools[0].function_declarations[0].parameters.properties: should be non-empty for OBJECT type"
         "status": "INVALID_ARGUMENT"
         """
-        del tool["function"]["parameters"]
+        del tool["function"]["parameters"]  # type: ignore
 
     return tool
 
