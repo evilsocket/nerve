@@ -9,6 +9,8 @@ def get_tool_schema(func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
     signature = inspect.signature(func)
     docstring = inspect.getdoc(func) or ""
 
+    logger.debug("signature: {}", signature)
+
     if docstring == "":
         logger.debug(f"tool {func.__name__} has no docstring")
 
@@ -24,10 +26,12 @@ def get_tool_schema(func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
 
     for param_name, param in signature.parameters.items():
         if param_name == "self":
+            logger.debug("ignoring self parameter")
             continue
 
         param_type = type_hints.get(param_name)
         if param_type is None:
+            logger.debug("parameter {} has no type hint", param_name)
             continue
 
         is_annotated = t.get_origin(param_type) is Annotated
@@ -41,6 +45,8 @@ def get_tool_schema(func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
             description = ""
 
         param_schema = process_type(base_type)
+
+        logger.debug("{param_name}: {param_schema}", param_name=param_name, param_schema=param_schema)
 
         if description:
             if isinstance(description, str):
@@ -57,15 +63,6 @@ def get_tool_schema(func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
         if param.default is param.empty:
             tool["function"]["parameters"]["required"].append(param_name)  # type: ignore
 
-        tool = {
-            "type": "function",
-            "function": {
-                "name": func.__name__,
-                "description": docstring,
-                "parameters": {"type": "object", "properties": {}, "required": []},
-            },
-        }
-
     if not tool["function"]["parameters"]["properties"]:  # type: ignore
         """
         Handle Google Gemini:
@@ -73,6 +70,7 @@ def get_tool_schema(func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
         "message": "* GenerateContentRequest.tools[0].function_declarations[0].parameters.properties: should be non-empty for OBJECT type"
         "status": "INVALID_ARGUMENT"
         """
+        logger.debug("removing empty parameters from tool {}: {}", func.__name__, tool)
         del tool["function"]["parameters"]  # type: ignore
 
     return tool
