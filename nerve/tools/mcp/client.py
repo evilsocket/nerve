@@ -1,3 +1,4 @@
+import os
 import typing as t
 from contextlib import AsyncExitStack, asynccontextmanager
 
@@ -13,6 +14,13 @@ class Client:
     name: str = ""
 
     def __init__(self, name: str, server: Configuration.MCPServer):
+        for key, value in server.env.items():
+            if not value:
+                env_val = os.getenv(key)
+                if env_val:
+                    logger.debug("setting {} from env", key)
+                    server.env[key] = env_val
+
         self.name = name
         self.server = server
         self.server_params = StdioServerParameters(command=server.command, args=server.args, env=server.env)

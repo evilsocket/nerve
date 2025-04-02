@@ -122,7 +122,7 @@ async def get_tools_from_mcp(name: str, server: Configuration.MCPServer) -> list
     for mcp_tool in mpc_tools:
         func_body, type_defs = await create_function_body(client, mcp_tool)
 
-        print(func_body)
+        # print(func_body)
         exec(func_body, type_defs)
 
         tool_fn = wrap_tool_function(type_defs[mcp_tool.name])
