@@ -59,7 +59,7 @@ class Tool(BaseModel):
 
         name: str
         description: str
-        example: str
+        example: str = ""
 
     # if path is set, it'll be loaded from a python file
     path: str | None = None
