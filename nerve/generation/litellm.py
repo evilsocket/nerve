@@ -97,6 +97,11 @@ class LiteLLMEngine(Engine):
         try:
             # get next message
             return await self._generate(conversation, tools_schema)
+        except litellm.BadRequestError as e:  # type: ignore
+            logger.error(e)
+            # logger.error(f"{traceback.format_exc()}")
+            exit(1)
+
         except litellm.ContextWindowExceededError as e:  # type: ignore
             logger.debug(e)
             if self.reduced_window_size > 0:
