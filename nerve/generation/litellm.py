@@ -1,3 +1,4 @@
+import json
 import traceback
 import typing as t
 import uuid
@@ -60,6 +61,7 @@ class LiteLLMEngine(Engine):
     async def _generate(
         self, conversation: list[dict[str, t.Any]], tools_schema: list[dict[str, t.Any]] | None
     ) -> tuple[Usage, t.Any]:
+        logger.debug(f"tools schema: {json.dumps(tools_schema, indent=2)}")
         if self.is_ollama:
             # https://github.com/BerriAI/litellm/issues/6353
             return await self._ollama.generate(conversation, tools_schema)

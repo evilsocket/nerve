@@ -57,6 +57,24 @@ def get_tool_schema(func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
         if param.default is param.empty:
             tool["function"]["parameters"]["required"].append(param_name)  # type: ignore
 
+        tool = {
+            "type": "function",
+            "function": {
+                "name": func.__name__,
+                "description": docstring,
+                "parameters": {"type": "object", "properties": {}, "required": []},
+            },
+        }
+
+    if not tool["function"]["parameters"]["properties"]:
+        """
+        Handle Gemini:
+
+        "message": "* GenerateContentRequest.tools[0].function_declarations[0].parameters.properties: should be non-empty for OBJECT type\n* GenerateContentRequest.tools[0].function_declarations[2].parameters.properties[reason].properties: should be non-empty for OBJECT type\n",
+        "status": "INVALID_ARGUMENT"
+        """
+        del tool["function"]["parameters"]
+
     return tool
 
 
