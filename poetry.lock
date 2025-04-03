@@ -2970,9 +2970,10 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 type = ["pytest-mypy"]
 
 [extras]
+clipboard = ["pyperclip", "types-pyperclip"]
 computer-use = ["pillow", "pyautogui", "pyperclip", "pyscreeze", "types-pyautogui", "types-pyperclip"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "68c8b1dce2c2d117f754fb8f8f9437502211970eebf16ace04608bcdf88a26e7"
+content-hash = "1890b4687621083cac5095af1113ae67d0758b36708dfd1cc5fe1ba7db412f94"
