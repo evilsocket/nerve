@@ -111,6 +111,11 @@ class Configuration(BaseModel):
         command: str = "python"
         args: list[str] = []
         env: dict[str, str] = {}
+        # for SSE
+        url: str | None = None
+        headers: dict[str, t.Any] | None = None
+        timeout: float = 5
+        sse_read_timeout: float = 60 * 5
 
     # legacy field used to detect if the user is loading a legacy file
     system_prompt: str | None = Field(default=None, exclude=True)

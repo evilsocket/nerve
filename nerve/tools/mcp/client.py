@@ -4,6 +4,7 @@ from contextlib import AsyncExitStack, asynccontextmanager
 
 from loguru import logger
 from mcp import ClientSession, StdioServerParameters, Tool
+from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
 from mcp.types import EmbeddedResource, ImageContent, TextContent
 
@@ -29,7 +30,7 @@ class Client:
         self._tools: list[Tool] = []
 
     @asynccontextmanager
-    async def _create_streams(
+    async def _create_stdio_streams(
         self,
     ) -> t.AsyncGenerator[tuple[t.Any, t.Any], None]:
         try:
@@ -44,13 +45,42 @@ class Client:
             logger.debug("error creating streams: {}", e)
             exit(0)
 
+    @asynccontextmanager
+    async def _create_sse_streams(
+        self,
+    ) -> t.AsyncGenerator[tuple[t.Any, t.Any], None]:
+        try:
+            async with sse_client(
+                url=self.server.url or "http://localhost:8080",
+                headers=self.server.headers,
+                timeout=self.server.timeout,
+                sse_read_timeout=self.server.sse_read_timeout,
+            ) as (read_stream, write_stream):
+                try:
+                    yield read_stream, write_stream
+                except Exception as e:
+                    logger.debug("error yielding streams: {}", e)
+        except Exception as e:
+            # TODO: there's a weird bug, if we don't do this when the process exits
+            # we will see an exception
+            logger.debug("error creating streams: {}", e)
+            exit(0)
+
     async def connect(self) -> None:
         if self._session:
             return
 
-        logger.debug("connecting to MCP server {}: {}", self.name, self.server_params)
+        if self.server.url:
+            logger.debug("connecting to SSE MCP server {}: {}", self.name, self.server)
+            self._read_stream, self._write_stream = await self._exit_stack.enter_async_context(
+                self._create_sse_streams()
+            )
+        else:
+            logger.debug("connecting to stdio MCP server {}: {}", self.name, self.server)
+            self._read_stream, self._write_stream = await self._exit_stack.enter_async_context(
+                self._create_stdio_streams()
+            )
 
-        self._read_stream, self._write_stream = await self._exit_stack.enter_async_context(self._create_streams())
         self._session = await self._exit_stack.enter_async_context(
             ClientSession(read_stream=self._read_stream, write_stream=self._write_stream)
         )
