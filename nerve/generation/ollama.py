@@ -64,14 +64,14 @@ class OllamaGlue:
     ) -> tuple[Usage, t.Any]:
         conversation = await self._process_conversation(conversation)
 
-        logger.debug(f"ollama conversation: {conversation}")
+        logger.debug(f"ollama.conversation: {conversation}")
         response = await self.client.chat(
             model=self.model,
             messages=conversation,
             tools=tools_schema,
             **self.generator_params,
         )
-        logger.debug(f"ollama response: {response}")
+        logger.debug(f"ollama.response: {response}")
         return Usage(
             prompt_tokens=0,
             completion_tokens=0,

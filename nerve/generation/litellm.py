@@ -13,6 +13,23 @@ from nerve.models import Usage
 from nerve.runtime import state
 
 
+def _convert_to_serializable(obj):
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    elif hasattr(obj, "__dict__"):
+        result = {}
+        for key, value in obj.__dict__.items():
+            if not key.startswith("_"):  # Skip private attributes
+                result[key] = _convert_to_serializable(value)
+        return result
+    elif isinstance(obj, dict):
+        return {key: _convert_to_serializable(value) for key, value in obj.items()}
+    elif isinstance(obj, list | tuple):
+        return [_convert_to_serializable(item) for item in obj]
+    else:
+        return obj
+
+
 class LiteLLMEngine(Engine):
     def __init__(
         self,
@@ -38,15 +55,21 @@ class LiteLLMEngine(Engine):
         self, conversation: list[dict[str, t.Any]], tools_schema: list[dict[str, t.Any]] | None
     ) -> tuple[Usage, t.Any]:
         try:
+            logger.debug(f"litellm.api_base: {self.api_base}")
+            logger.debug(f"litellm.conversation: {conversation}")
+
             # litellm.set_verbose = True
             response = litellm.completion(
                 model=self.generator_id,
                 messages=conversation,
                 tools=tools_schema,
                 tool_choice="auto" if tools_schema else None,
+                verbose=True,
                 api_base=self.api_base,
                 **self.generator_params,
             )
+
+            logger.debug(f"litellm.response: {response}")
 
             return Usage(
                 prompt_tokens=response.usage.prompt_tokens,
@@ -119,6 +142,16 @@ class LiteLLMEngine(Engine):
             logger.error(e)
             # logger.error(f"{traceback.format_exc()}")
             exit(1)
+        except litellm.APIError as e:  # type: ignore
+            logger.error(e)
+            logger.error(f"{traceback.format_exc()}")
+            exit(1)
+            return Usage(
+                prompt_tokens=0,
+                completion_tokens=0,
+                total_tokens=0,
+            ), None
+
         except Exception as e:
             logger.error(e)
             logger.error(f"{traceback.format_exc()}")
@@ -170,7 +203,8 @@ class LiteLLMEngine(Engine):
                     break
 
         # add tool call + per-call response messages
-        self.history.append(message.__dict__)
+        # https://github.com/evilsocket/nerve/issues/41
+        self.history.append(_convert_to_serializable(message))
         self.history.extend(responses)
 
         return usage
