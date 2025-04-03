@@ -45,9 +45,9 @@ class LiteLLMEngine(Engine):
 
         if not self.is_ollama:
             if self.tools and not litellm.supports_function_calling(model=self.generator_id):  # type: ignore
-                logger.error(f"model {self.generator_id} does not support function calling")
-                exit(1)
-
+                logger.warning(
+                    f"model {self.generator_id} does not support function calling or not listed in litellm database"
+                )
         else:
             self._ollama = OllamaGlue(self.api_base, self.generator_id, self.generator_params)
 
