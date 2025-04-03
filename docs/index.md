@@ -4,7 +4,8 @@ Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool 
 
 * [Installation](#installation)
 * [Usage](#usage)
-  - [Generators](#-generators)
+  - [Prompting](#-prompting)
+  - [Models](#-models)
   - [Interactive Mode](#-interactive-mode)
   - [Record & Replay](#-record--replay)
   - [Adding Tools](#️-adding-tools)️
@@ -121,7 +122,86 @@ For a list of all the subcommands and their options, feel free to explore `nerve
 > [!TIP]  
 > Nerve primarily loads agents from `$HOME/.nerve/agents`, ensuring that any agent in this folder is accessible regardless of your current working directory. If the agent is not found there, Nerve will then search in the current working directory as a fallback.
 
-### 🧠 Generators
+### Prompting
+
+Both the `agent` and task `fields` support the JINJA2 template syntax, meaning you can:
+
+Include local files:
+
+```yaml
+agent: {% include 'system_prompt.md' %}"
+```
+
+Preemptively execute a tool and use its output as part of the prompt:
+
+```yaml
+task: "Here are the logs: {{ get_logs_tool() }}"
+```
+
+Interpolate custom variables that the user will pass via command line argument:
+
+```yaml
+# passed via `nerve run agent-name --url ...`
+task: Make an HTTP request to {{ url }}
+```
+
+Reference a set of built-in variables:
+
+```yaml
+task: The current date is {{ CURRENT_DATE }} and the local IP is {{ LOCAL_IP }}.
+```
+
+**Date and Time**
+
+| Symbol | Description |
+|--------|-------------|
+| `CURRENT_DATE` | Current date in YYYY-MM-DD format. |
+| `CURRENT_TIME` | Current time in HH:MM:SS format. |
+| `CURRENT_DATETIME` | Current date and time in YYYY-MM-DD HH:MM:SS format. |
+| `CURRENT_YEAR` | Current year (e.g., "2025"). |
+| `CURRENT_MONTH` | Current month as a zero-padded number (e.g., "04" for April). |
+| `CURRENT_DAY` | Current day of the month as a zero-padded number (e.g., "03"). |
+| `CURRENT_WEEKDAY` | Current day of the week (e.g., "Thursday"). |
+| `TIMEZONE` | Current timezone name (e.g., "EST", "UTC"). |
+| `CURRENT_TIMESTAMP` | Current Unix timestamp (seconds since epoch). |
+
+**Platform Information**
+
+| Symbol | Description |
+|--------|-------------|
+| `USERNAME` | Current user's login name. |
+| `PLATFORM` | Operating system name (e.g., "Windows", "Darwin", "Linux"). |
+| `OS_VERSION` | Detailed operating system version information. |
+| `ARCHITECTURE` | System architecture (e.g., "x86_64", "arm64"). |
+| `PYTHON_VERSION` | Version of Python currently running. |
+| `HOME` | Path to the current user's home directory. |
+| `PROCESS_ID` | ID of the current process. |
+| `WORKING_DIR` | Current working directory path. |
+
+**Network Information**
+
+| Symbol | Description |
+|--------|-------------|
+| `LOCAL_IP` | Machine's local IP address on the network. |
+| `PUBLIC_IP` | Public IP address as seen from the internet (requires internet connection). |
+| `HOSTNAME` | Computer's network hostname. |
+
+**Random Values**
+
+| Symbol | Description |
+|--------|-------------|
+| `RANDOM_INT` | Random integer between 0 and 10000. |
+| `RANDOM_HEX` | Random 64-bit hexadecimal value. |
+| `RANDOM_FLOAT` | Random floating point number between 0 and 1. |
+| `RANDOM_STRING` | Random 10-character alphanumeric string. |
+
+**System Integration**
+
+| Symbol | Description |
+|--------|-------------|
+| `CLIPBOARD` | Current content of the system clipboard. |
+
+### 🧠 Models
 
 The default model is OpenAI `gpt-4o-mini`, in order to use a different model you can either set the `NERVE_GENERATOR` environment variable, or pass it as a generator string via the `-g/--generator` command line argument.
 
