@@ -1,3 +1,4 @@
+import asyncio
 import json
 import traceback
 import typing as t
@@ -77,6 +78,10 @@ class LiteLLMEngine(Engine):
                 total_tokens=response.usage.total_tokens,
                 cost=response._hidden_params.get("response_cost", None),
             ), response.choices[0].message
+        except litellm.RateLimitError as e:  # type: ignore
+            logger.warning(f"rate limit exceeded, sleeping for 3 seconds: {e}")
+            await asyncio.sleep(3)
+            return await self._litellm_generate(conversation, tools_schema)
         except litellm.AuthenticationError as e:  # type: ignore
             logger.error(e)
             exit(1)
