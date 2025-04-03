@@ -13,7 +13,7 @@ from nerve.models import Usage
 from nerve.runtime import state
 
 
-def _convert_to_serializable(obj):
+def _convert_to_serializable(obj: t.Any) -> t.Any:
     if hasattr(obj, "model_dump"):
         return obj.model_dump()
     elif hasattr(obj, "__dict__"):
