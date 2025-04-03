@@ -40,6 +40,7 @@ packaging = "^24.2"
 mcp = "^1.6.0"
 
 [tool.poetry.extras]
+clipboard = ["pyperclip", "types-pyperclip"]
 computer_use = [
     "pyautogui",
     "types-pyautogui",

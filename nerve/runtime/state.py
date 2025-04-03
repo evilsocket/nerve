@@ -10,6 +10,7 @@ import jinja2
 from loguru import logger
 
 from nerve.models import Mode, Status, Usage
+from nerve.runtime.builtin import get_builtin_variable_value, is_builtin_variable
 from nerve.runtime.events import Event
 from nerve.runtime.thread_pool import ThreadPool
 
@@ -401,18 +402,23 @@ def _create_jinja_env(working_dir: pathlib.Path) -> jinja2.Environment:
         def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
             super().__init__(*args, **kwargs)
 
-            global _variables
-
             undefined_name = self._undefined_name or ""
-
             logger.debug(f"undefined variable encountered: {undefined_name}")
-            logger.debug(f"current variables: {_variables}")
-            logger.debug(f"current defaults: {_defaults}")
 
-            self.value = on_user_input_needed(undefined_name, f"Enter value for '{undefined_name}': ")
+            if is_builtin_variable(undefined_name):
+                logger.debug(f"builtin variable encountered: {undefined_name}")
+                self.value = get_builtin_variable_value(undefined_name)
+                logger.debug(f"builtin variable value: {self.value}")
+            else:
+                global _variables
 
-            # save to state
-            update_variables({undefined_name or "": self.value or ""})
+                logger.debug(f"current variables: {_variables}")
+                logger.debug(f"current defaults: {_defaults}")
+
+                self.value = on_user_input_needed(undefined_name, f"Enter value for '{undefined_name}': ")
+
+                # save to state
+                update_variables({undefined_name or "": self.value or ""})
 
         def __str__(self) -> str:
             return self.value or "<UNDEFINED>"

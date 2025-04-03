@@ -1,4 +1,6 @@
+import datetime
 import os
+import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -103,3 +105,21 @@ class TestInterpolate:
 
         # Verify
         assert result == "Sum: 15, Average: 3.0"
+
+    def test_builtin_variables(self) -> None:
+        assert state.interpolate("Builtin: {{ CURRENT_DATE }}") == "Builtin: " + datetime.datetime.now().strftime(
+            "%Y-%m-%d"
+        )
+
+    def test_multiple_builtin_variables(self) -> None:
+        assert state.interpolate(
+            "Date: {{ CURRENT_YEAR }}-{{ CURRENT_MONTH }}-{{ CURRENT_DAY }}"
+        ) == "Date: " + datetime.datetime.now().strftime("%Y-%m-%d")
+
+    def test_builtin_and_custom_variables_together(self) -> None:
+        state.update_variables({"custom_var": "custom_value"})
+
+        assert re.match(
+            r"Builtin: \d+, Custom: custom_value",
+            state.interpolate("Builtin: {{ RANDOM_INT }}, Custom: {{ custom_var }}"),
+        )
