@@ -57,6 +57,10 @@ def run(
         bool,
         typer.Option("--debug", help="Enable debug logging"),
     ] = False,
+    litellm_debug: t.Annotated[
+        bool,
+        typer.Option("--litellm-debug", help="Enable litellm debug logging"),
+    ] = False,
     quiet: t.Annotated[
         bool,
         typer.Option("--quiet", "-q", help="Quiet mode"),
@@ -85,7 +89,7 @@ def run(
         typer.Option("--trace", help="Save the final state to a file."),
     ] = None,
 ) -> None:
-    logging.init(log_path, level="DEBUG" if debug else "SUCCESS" if quiet else "INFO")
+    logging.init(log_path, level="DEBUG" if debug else "SUCCESS" if quiet else "INFO", litellm_debug=litellm_debug)
     logger.info(f"🧠 nerve v{nerve.__version__}")
 
     asyncio.run(
