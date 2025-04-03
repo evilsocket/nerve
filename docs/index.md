@@ -4,7 +4,7 @@ Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool 
 
 * [Installation](#installation)
 * [Usage](#usage)
-  - [Prompting](#-prompting)
+  - [Prompting](#prompting)
   - [Models](#-models)
   - [Interactive Mode](#-interactive-mode)
   - [Record & Replay](#-record--replay)
