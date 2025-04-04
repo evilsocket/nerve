@@ -65,7 +65,7 @@ class LiteLLMEngine(Engine):
                 messages=conversation,
                 tools=tools_schema,
                 tool_choice="auto" if tools_schema else None,
-                verbose=True,
+                verbose=False,
                 api_base=self.api_base,
                 **self.generator_params,
             )
@@ -79,8 +79,8 @@ class LiteLLMEngine(Engine):
                 cost=response._hidden_params.get("response_cost", None),
             ), response.choices[0].message
         except litellm.RateLimitError as e:  # type: ignore
-            logger.warning(f"rate limit exceeded, sleeping for 3 seconds: {e}")
-            await asyncio.sleep(3)
+            logger.warning(f"rate limit exceeded, sleeping for 5 seconds: {e}")
+            await asyncio.sleep(5)
             return await self._litellm_generate(conversation, tools_schema)
         except litellm.AuthenticationError as e:  # type: ignore
             logger.error(e)
