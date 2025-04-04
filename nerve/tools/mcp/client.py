@@ -98,7 +98,7 @@ class Client:
             await asyncio.wait_for(self._session.initialize(), timeout=self.server.session_timeout)
         except asyncio.TimeoutError:
             logger.error(
-                "mcp server {} initialization timeout, see https://github.com/modelcontextprotocol/python-sdk/issues/428",
+                "mcp server {} initialization timeout",
                 self.name,
             )
             exit(1)
