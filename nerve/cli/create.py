@@ -58,6 +58,8 @@ def _get_available_namespaces(defaults: list[str]) -> tuple[list[str], list[str]
             try:
                 module = __import__(f"nerve.tools.namespaces.{modname}", fromlist=[""])
                 doc = module.__doc__ or ""
+                doc = doc.strip().split("\n")[0].strip()
+
                 entry = f"{modname} - {doc.strip()}"
                 available_namespaces.append(entry)
                 if modname in defaults:
