@@ -108,6 +108,8 @@ class Configuration(BaseModel):
         A MCP server is a server that implements the MCP protocol.
         """
 
+        session_timeout: float = 5
+
         command: str = "python"
         args: list[str] = []
         env: dict[str, str] = {}

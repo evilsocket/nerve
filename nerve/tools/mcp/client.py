@@ -1,3 +1,4 @@
+import asyncio
 import os
 import typing as t
 from contextlib import AsyncExitStack, asynccontextmanager
@@ -22,6 +23,10 @@ class Client:
                     logger.debug("setting {} from env", key)
                     server.env[key] = env_val
 
+            if not server.env[key]:
+                logger.error("mcp server {} environment variable {} is not set", self.name, key)
+                exit(1)
+
         self.name = name
         self.server = server
         self.server_params = StdioServerParameters(command=server.command, args=server.args, env=server.env)
@@ -35,6 +40,7 @@ class Client:
     ) -> t.AsyncGenerator[tuple[t.Any, t.Any], None]:
         try:
             async with stdio_client(server=self.server_params) as (read_stream, write_stream):
+                logger.debug("stdio streams for {} created", self.name)
                 try:
                     yield read_stream, write_stream
                 except Exception as e:
@@ -56,6 +62,7 @@ class Client:
                 timeout=self.server.timeout,
                 sse_read_timeout=self.server.sse_read_timeout,
             ) as (read_stream, write_stream):
+                logger.debug("sse streams for {} created", self.name)
                 try:
                     yield read_stream, write_stream
                 except Exception as e:
@@ -81,11 +88,22 @@ class Client:
                 self._create_stdio_streams()
             )
 
+        logger.debug("creating async context for {}", self.name)
         self._session = await self._exit_stack.enter_async_context(
             ClientSession(read_stream=self._read_stream, write_stream=self._write_stream)
         )
 
-        await self._session.initialize()
+        try:
+            logger.debug("initializing session for {}", self.name)
+            await asyncio.wait_for(self._session.initialize(), timeout=self.server.session_timeout)
+        except asyncio.TimeoutError:
+            logger.error(
+                "mcp server {} initialization timeout, see https://github.com/modelcontextprotocol/python-sdk/issues/428",
+                self.name,
+            )
+            exit(1)
+
+        logger.debug("session initialized for {}", self.name)
 
         self._tools = await self.tools()
 
