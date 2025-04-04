@@ -2,6 +2,7 @@ import pathlib
 import sys
 import typing as t
 
+import litellm
 from loguru import logger
 from termcolor import colored
 
@@ -29,9 +30,10 @@ def init(log_path: pathlib.Path | None = None, level: str = "INFO", litellm_debu
         )
 
     if litellm_debug:
-        import litellm
-
         litellm._turn_on_debug()  # type: ignore
+    else:
+        # https://github.com/BerriAI/litellm/issues/4825
+        litellm.suppress_debug_info = True
 
     if log_path:
         logger.add(log_path, format=format, level=level)
