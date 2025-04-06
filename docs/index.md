@@ -10,6 +10,7 @@ Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool 
   - [Record & Replay](#-record--replay)
   - [Adding Tools](#️-adding-tools)️
   - [Conversation Window](#-conversation-window)
+* [Model Context Protocol](mcp.md)
 * [Namespaces](namespaces.md)
 * [Workflows](workflows.md)
 
@@ -277,24 +278,7 @@ nerve play agent-trace.jsonl -f # much faster
 
 ### 🛠️ Adding Tools
 
-Since version 1.5.0 Nerve is integrated with [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction). Any server from [the multitude of publicly available MPC servers](https://github.com/punkpeye/awesome-mcp-servers) can be used with:
-
-```yaml
-agent: You are a helpful assistant.
-task: Write something to your knowledge graph, then read it back, save it to output.txt and set your task as complete.
-
-using:
-  - task
-
-mcp:
-  memory:
-    command: npx
-    args: ["-y", "@modelcontextprotocol/server-memory"]
-
-  filesystem:
-    command: npx
-    args: ["-y", "@modelcontextprotocol/server-filesystem", "."]
-```
+Since version 1.5.0 Nerve is integrated with [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction), you can refer to the [MCP section](mcp.md) of the documentation to use MCP tools.
 
 When a tool can be represented as a shell command, you can conveniently extend the agent capabilites in the YAML:
 
