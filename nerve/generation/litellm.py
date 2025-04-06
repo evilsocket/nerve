@@ -82,9 +82,6 @@ class LiteLLMEngine(Engine):
             logger.warning(f"rate limit exceeded, sleeping for 5 seconds: {e}")
             await asyncio.sleep(5)
             return await self._litellm_generate(conversation, tools_schema)
-        except litellm.AuthenticationError as e:  # type: ignore
-            logger.error(e)
-            exit(1)
 
     async def _generate(
         self, conversation: list[dict[str, t.Any]], tools_schema: list[dict[str, t.Any]] | None
@@ -143,6 +140,12 @@ class LiteLLMEngine(Engine):
                     completion_tokens=0,
                     total_tokens=0,
                 ), None
+        except litellm.AuthenticationError as e:  # type: ignore
+            logger.error(e)
+            exit(1)
+        except litellm.NotFoundError as e:  # type: ignore
+            logger.error(e)
+            exit(1)
         except litellm.BadRequestError as e:  # type: ignore
             logger.error(e)
             # logger.error(f"{traceback.format_exc()}")
