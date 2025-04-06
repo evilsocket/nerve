@@ -183,23 +183,26 @@ class Configuration(BaseModel):
         Get the input names for the agent with their default values if set.
         """
         input_names = set()
+        tools_names = [t.name if isinstance(t, Tool) else t.__name__ for t in self.tools]
 
         # from the system prompt
         if self.agent:
             for input_name in self._get_inputs_from_string(self.agent):
-                input_names.add(input_name)
+                if input_name not in tools_names:
+                    input_names.add(input_name)
 
         # from the task prompt
         if self.task:
             for input_name in self._get_inputs_from_string(self.task):
-                input_names.add(input_name)
+                if input_name not in tools_names:
+                    input_names.add(input_name)
 
         # from the tools
         for tool in self.tools:
             if isinstance(tool, Tool) and tool.tool:
                 arg_names = [arg.name for arg in tool.arguments]
                 for input_name in self._get_inputs_from_string(tool.tool):
-                    if input_name not in arg_names:
+                    if input_name not in arg_names and input_name not in tools_names:
                         input_names.add(input_name)
 
         if not self.task:

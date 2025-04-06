@@ -119,3 +119,21 @@ class TestConfiguration(unittest.TestCase):
 
         self.assertIn("task", inputs)
         self.assertIn("input1", inputs)
+
+    def test_get_inputs_ignores_interpolated_tool_calls(self) -> None:
+        """Test that get_inputs doesn't extract variables from interpolated tool calls"""
+        config = Configuration(
+            agent="I am an agent",
+            task="Complete the task using {{tool_name(param='value')}} and {{input1}}",
+            tools=[
+                Tool(
+                    name="tool_name",
+                    description="A test tool",
+                )
+            ],
+        )
+        inputs = config.get_inputs()
+
+        self.assertIn("input1", inputs)
+        self.assertNotIn("tool_name", inputs)  # Should be excluded as it's a tool
+        self.assertNotIn("param", inputs)  # Should be excluded as it's a parameter to a tool call
