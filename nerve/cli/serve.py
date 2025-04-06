@@ -133,7 +133,7 @@ def _get_rest_api_app(
     quiet: bool,
     inputs: dict[str, t.Any],
     config: Configuration,
-    runtime: Runtime,
+    runtime: Runtime | None,
     serve_tools: bool,
     tools_only: bool,
 ) -> FastAPI:
@@ -152,7 +152,7 @@ def _get_rest_api_app(
             summary=config.description,
         )
 
-    if serve_tools:
+    if serve_tools and runtime:
         logger.info(f"🌐 creating endpoints for {len(runtime.tools)} tools")
         logger.debug(runtime.tools)
 
@@ -306,7 +306,7 @@ async def _serve(
 ) -> None:
     # validate and collect inputs from the agent
     input_path, agent_name, config, inputs = _get_agent_with_inputs(input_path)
-    runtime: Runtime = None  # type: ignore
+    runtime: Runtime | None = None
 
     if tools_only or not config.system_prompt and not config.agent and not config.task:
         logger.info("🧰 tools-only mode")

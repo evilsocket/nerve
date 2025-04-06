@@ -99,9 +99,9 @@ def _create_call_handler(
     quiet: bool,
     agent_name: str,
     mcp_server: Server,  # type: ignore
-    runtime: Runtime,
+    runtime: Runtime | None,
 ) -> t.Callable[[mcp_types.CallToolRequest], t.Coroutine[t.Any, t.Any, mcp_types.ServerResult]]:
-    tools_dict = {tool.__name__: tool for tool in runtime.tools}
+    tools_dict = {tool.__name__: tool for tool in runtime.tools} if runtime else {}
 
     async def _handler(req: mcp_types.CallToolRequest) -> mcp_types.ServerResult:
         nonlocal tools_dict
@@ -146,7 +146,7 @@ def create_server(
     conversation_strategy: str,
     max_steps: int,
     max_cost: float,
-    runtime: Runtime,
+    runtime: Runtime | None,
     timeout: int | None,
     quiet: bool = False,
     serve_tools: bool = False,
@@ -179,7 +179,7 @@ def create_server(
         )
 
     # create a tool for each tool in the runtime
-    if serve_tools:
+    if serve_tools and runtime:
         logger.info(f"🧰 creating MCP tools for {len(runtime.tools)} agent tools")
         for tool in runtime.tools:
             input_schema = get_tool_schema(tool).get("function", {}).get("parameters", {})
