@@ -38,6 +38,10 @@ requests = "^2.32.3"
 types-requests = "^2.32.0.20250328"
 packaging = "^24.2"
 mcp = "^1.6.0"
+uvicorn = "^0.34.0"
+fastapi = "^0.115.12"
+uuid = "^1.30"
+starlette = "^0.46.1"
 
 [tool.poetry.extras]
 clipboard = ["pyperclip", "types-pyperclip"]

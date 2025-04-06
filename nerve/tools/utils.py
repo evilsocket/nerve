@@ -1,5 +1,9 @@
 from pathlib import Path
 
+from loguru import logger
+
+from nerve.runtime import state
+
 
 def is_path_allowed(path_to_check: str, jail: list[str] | None = None) -> bool:
     if not jail:
@@ -8,6 +12,8 @@ def is_path_allowed(path_to_check: str, jail: list[str] | None = None) -> bool:
     # https://stackoverflow.com/questions/3812849/how-to-check-whether-a-directory-is-a-sub-directory-of-another-directory
     path = Path(path_to_check).resolve().absolute()
     for allowed_path in jail:
+        logger.debug(f"interpolating {allowed_path}")
+        allowed_path = state.interpolate(allowed_path)
         allowed = Path(allowed_path).resolve().absolute()
         if path == allowed or allowed in path.parents:
             return True

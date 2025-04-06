@@ -368,6 +368,8 @@ def reset() -> None:
 def on_user_input_needed(input_name: str, prompt: str) -> str:
     """Get user input."""
 
+    logger.debug(f"on_user_input_needed: {input_name} {prompt}")
+
     # check if defined as environment variable
     if input_name in os.environ:
         return os.environ[input_name]
@@ -397,6 +399,8 @@ def on_user_input_needed(input_name: str, prompt: str) -> str:
 
 
 def _create_jinja_env(working_dir: pathlib.Path) -> jinja2.Environment:
+    logger.debug(f"creating jinja environment for working dir: {working_dir}")
+
     # we use this to catch undefined variables at runtime
     class OnUndefinedVariable(jinja2.Undefined):
         def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
@@ -463,6 +467,7 @@ def interpolate(raw: str, extra: dict[str, t.Any] | None = None, working_dir: pa
     """Interpolate the current state into a string."""
 
     env = _create_jinja_env(working_dir)
+    logger.debug(f"interpolating: {raw}")
     template = env.from_string(raw)
     context = _variables | (extra or {})
 

@@ -1,5 +1,6 @@
 # ruff: noqa: B010
 import os
+import pathlib
 import typing as t
 
 import jinja2
@@ -113,9 +114,11 @@ async def create_function_body(client: Client, mcp_tool: Tool) -> tuple[str, dic
     )
 
 
-async def get_tools_from_mcp(name: str, server: Configuration.MCPServer) -> list[t.Callable[..., t.Any]]:
+async def get_tools_from_mcp(
+    name: str, server: Configuration.MCPServer, working_dir: pathlib.Path
+) -> list[t.Callable[..., t.Any]]:
     # connect and list tools
-    client = Client(name, server)
+    client = Client(name, server, working_dir)
     mpc_tools = await client.tools()
     compiled_tools = []
 

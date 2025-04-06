@@ -57,7 +57,7 @@ class LiteLLMEngine(Engine):
     ) -> tuple[Usage, t.Any]:
         try:
             logger.debug(f"litellm.api_base: {self.api_base}")
-            logger.debug(f"litellm.conversation: {conversation}")
+            logger.debug(f"litellm.conversation: {json.dumps(conversation, indent=2)}")
 
             # litellm.set_verbose = True
             response = litellm.completion(

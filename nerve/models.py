@@ -173,6 +173,40 @@ class Configuration(BaseModel):
     def is_legacy(self) -> bool:
         return self.system_prompt is not None
 
+    def _get_inputs_from_string(self, string: str) -> set[str]:
+        from jinja2 import Environment, meta
+
+        return meta.find_undeclared_variables(Environment().parse(string))
+
+    def get_inputs(self) -> dict[str, t.Any]:
+        """
+        Get the input names for the agent with their default values if set.
+        """
+        input_names = set()
+
+        # from the system prompt
+        if self.agent:
+            for input_name in self._get_inputs_from_string(self.agent):
+                input_names.add(input_name)
+
+        # from the task prompt
+        if self.task:
+            for input_name in self._get_inputs_from_string(self.task):
+                input_names.add(input_name)
+
+        # from the tools
+        for tool in self.tools:
+            if isinstance(tool, Tool) and tool.tool:
+                arg_names = [arg.name for arg in tool.arguments]
+                for input_name in self._get_inputs_from_string(tool.tool):
+                    if input_name not in arg_names:
+                        input_names.add(input_name)
+
+        if not self.task:
+            input_names.add("task")
+
+        return {input_name: self.defaults.get(input_name) for input_name in input_names}
+
 
 class Workflow(BaseModel):
     """

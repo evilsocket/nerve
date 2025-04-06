@@ -6,6 +6,7 @@ import inspect
 import os
 import pathlib
 import time
+import traceback
 import typing as t
 
 import jinja2
@@ -34,14 +35,13 @@ def wrap_tool_function(func: t.Callable[..., t.Any], mime: str | None = None) ->
             if asyncio.iscoroutine(result):
                 result = await result
 
+            logger.debug(f"tool {func.__name__} returned: {result}")
+
         except Exception as e:
-            # import traceback
-            # error_trace = traceback.format_exc()
-            # logger.error(f"{func.__name__}: {e}")
-            # logger.error(f"{error_trace}")
             result = f"ERROR in {func.__name__}: {e}"
             error = str(e)
             logger.error(colored(f"{func.__name__}: {e}", "red"))
+            logger.debug(traceback.format_exc())
 
         finished_at = time.time()
 
@@ -75,8 +75,6 @@ def get_tools_from_namespace(namespace: str, jail: list[str]) -> list[t.Callable
         module = __import__(f"nerve.tools.namespaces.{namespace}", fromlist=[""])
         if jail:
             for jailed_path in jail:
-                jailed_path = state.interpolate(jailed_path)
-                jailed_path = os.path.abspath(jailed_path)
                 module.jail.append(jailed_path)
                 logger.debug(f"namespace {namespace} jailed to: {jailed_path}")
 

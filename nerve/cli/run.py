@@ -1,4 +1,5 @@
 import asyncio
+import json
 import pathlib
 import typing as t
 
@@ -7,13 +8,13 @@ from loguru import logger
 
 import nerve
 from nerve.cli.defaults import (
-    DEFAULT_AGENTS_LOAD_PATH,
     DEFAULT_CONVERSATION_STRATEGY,
     DEFAULT_GENERATOR,
     DEFAULT_MAX_COST,
     DEFAULT_MAX_STEPS,
     DEFAULT_TIMEOUT,
 )
+from nerve.cli.utils import _resolve_input_path
 from nerve.generation import WindowStrategy, conversation
 from nerve.models import Configuration, Mode, Workflow
 from nerve.runtime import logging, state
@@ -88,6 +89,10 @@ def run(
         pathlib.Path | None,
         typer.Option("--trace", help="Save the final state to a file."),
     ] = None,
+    start_state: t.Annotated[
+        str,
+        typer.Option("--start-state", help="Pass the initial input state as a JSON string."),
+    ] = "{}",
 ) -> None:
     logging.init(log_path, level="DEBUG" if debug else "SUCCESS" if quiet else "INFO", litellm_debug=litellm_debug)
     logger.info(f"🧠 nerve v{nerve.__version__}")
@@ -100,6 +105,7 @@ def run(
             conversation.strategy_from_string(conversation_strategy),
             task,
             ctx.args,
+            json.loads(start_state),
             max_steps,
             max_cost,
             timeout,
@@ -109,7 +115,7 @@ def run(
     )
 
 
-def _get_start_state(args: list[str]) -> dict[str, str]:
+def _get_start_state_from_args(args: list[str]) -> dict[str, str]:
     # any unknown argument will populate the start_state
     start_state = {}
     for i in range(0, len(args), 2):
@@ -119,32 +125,13 @@ def _get_start_state(args: list[str]) -> dict[str, str]:
     return start_state
 
 
-def _resolve_input_path(input_path: pathlib.Path) -> pathlib.Path:
-    # check if input_path exists
-    if not input_path.exists():
-        if not input_path.is_absolute():
-            # check if it exists as part of the $HOME/.nerve/agents directory
-            in_home = DEFAULT_AGENTS_LOAD_PATH / input_path
-            if in_home.exists():
-                input_path = in_home
-
-            in_home_with_yaml = in_home.with_suffix(".yml")
-            if in_home_with_yaml.exists():
-                input_path = in_home_with_yaml
-
-        if not input_path.exists():
-            logger.error(f"path '{input_path}' does not exist")
-            raise typer.Abort()
-
-    return input_path
-
-
 async def _run(
     input_path: pathlib.Path,
     generator: str,
     conv_window_strategy: WindowStrategy,
     task_override: str | None,
     start_state_args: list[str],
+    start_state_json: dict[str, str],
     max_steps: int = 100,
     max_cost: float = 10.0,
     timeout: int | None = None,
@@ -161,7 +148,8 @@ async def _run(
     input_path = _resolve_input_path(input_path)
 
     # make variables available to the runtime
-    start_state = _get_start_state(start_state_args)
+    start_state = start_state_json
+    start_state.update(_get_start_state_from_args(start_state_args))
     state.update_variables(start_state)
 
     # check if input_path is a workflow or single agent
@@ -191,3 +179,5 @@ async def _run(
         raise typer.Abort()
 
     await flow.run(task_override)
+
+    logger.debug("exiting")

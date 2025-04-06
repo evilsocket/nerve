@@ -10,7 +10,12 @@ from nerve.runtime import state
 from nerve.runtime.events import Event
 
 
-def init(log_path: pathlib.Path | None = None, level: str = "INFO", litellm_debug: bool = False) -> None:
+def init(
+    log_path: pathlib.Path | None = None,
+    level: str = "INFO",
+    litellm_debug: bool = False,
+    target: t.TextIO = sys.stderr,
+) -> None:
     """
     Initialize the logging system.
 
@@ -23,7 +28,7 @@ def init(log_path: pathlib.Path | None = None, level: str = "INFO", litellm_debu
     if level != "DEBUG":
         logger.remove()
         logger.add(
-            sys.stdout,
+            target,
             colorize=True,
             format="<level>[{time:MM-DD-YY HH:mm:ss}] {level}</level> {message}",
             level=level,

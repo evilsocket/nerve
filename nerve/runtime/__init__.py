@@ -1,4 +1,7 @@
+import contextlib
+import os
 import pathlib
+import sys
 import typing as t
 
 from loguru import logger
@@ -27,7 +30,11 @@ class Runtime:
         working_dir: pathlib.Path,
         name: str,
         configuration: Configuration,
+        debug: bool = False,
     ) -> "Runtime":
+        logger.debug(
+            f"building runtime for {name} with generator {configuration.generator} and working dir {working_dir}"
+        )
         runtime = cls(name=name, generator=configuration.generator or "", working_dir=working_dir)
 
         # import tools from builtin namespaces
@@ -61,9 +68,17 @@ class Runtime:
             runtime.tools.extend(funcs)
 
         # import MCP servers
+        # tool initialization, especially for MCP servers, can be verbose,
+        # we don't want to pollute the server logs with that
+        out = open(os.devnull, "w") if not debug else sys.stdout
+        err = open(os.devnull, "w") if not debug else sys.stderr
         for name, server in configuration.mcp.items():
-            server_tools = await mcp_compiler.get_tools_from_mcp(name, server)
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                server_tools = await mcp_compiler.get_tools_from_mcp(name, server, working_dir=working_dir)
+
             logger.info(f"🧰 importing {len(server_tools)} tools from MCP server {name}")
             runtime.tools.extend(server_tools)
+
+        logger.debug(f"all runtime tools: {runtime.tools}")
 
         return runtime

@@ -2,6 +2,8 @@ import os
 import pathlib
 
 DEFAULT_GENERATOR: str = os.getenv("NERVE_GENERATOR", "openai/gpt-4o-mini")
+DEFAULT_SERVE_HOST: str = os.getenv("NERVE_SERVE_HOST", "127.0.0.1")
+DEFAULT_SERVE_PORT: int = int(os.getenv("NERVE_SERVE_PORT", 8667))
 DEFAULT_MAX_STEPS: int = int(os.getenv("NERVE_MAX_STEPS", 100))
 DEFAULT_MAX_COST: float = float(os.getenv("NERVE_MAX_COST", 10.0))
 DEFAULT_TIMEOUT: int | None = int(os.getenv("NERVE_TIMEOUT", 0)) or None
