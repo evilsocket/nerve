@@ -15,6 +15,7 @@ class Arguments(BaseModel):
     input_path: pathlib.Path
     task: str | None
     generator: str
+    conversation_strategy_string: str
     conversation_strategy: t.Any
     interactive: bool
     debug: bool
@@ -26,6 +27,13 @@ class Arguments(BaseModel):
     log_path: pathlib.Path | None
     trace: pathlib.Path | None
     start_state: dict[str, t.Any]
+
+    def to_serializable(self) -> dict[str, t.Any]:
+        return {
+            k: v if not isinstance(v, pathlib.Path) else v.as_posix()
+            for k, v in self.model_dump().items()
+            if k != "conversation_strategy"
+        }
 
 
 def _create_command_line(
@@ -41,7 +49,7 @@ def _create_command_line(
         "--generator",
         run_args.generator,
         "--conversation",
-        run_args.conversation_strategy,
+        run_args.conversation_strategy_string,
         "--max-steps",
         str(run_args.max_steps),
         "--max-cost",
@@ -54,6 +62,12 @@ def _create_command_line(
 
     if run_args.quiet:
         command_line.append("--quiet")
+
+    if run_args.debug:
+        command_line.append("--debug")
+
+    if run_args.litellm_debug:
+        command_line.append("--litellm-debug")
 
     # if the task is set, add it to the command line
     if "task" in input_state:
@@ -78,59 +92,114 @@ def _get_last_event_with_name(events: list[dict[str, t.Any]], name: str) -> dict
     return None
 
 
-def _get_output_object(inputs: dict[str, str], events: list[dict[str, t.Any]]) -> dict[str, t.Any] | None:
+class ParsedEvents(BaseModel):
+    output_object: dict[str, t.Any] | None
+    task_success: bool
+    steps: int
+    time: float
+    usage: dict[str, t.Any]
+
+
+# TODO: add several unit tests for this function
+def _parse_events(inputs: dict[str, str], events: list[dict[str, t.Any]]) -> ParsedEvents:
+    started_at = events[0].get("timestamp", 0.0)
+    # we'll need this either case
+    flow_completed = _get_last_event_with_name(events, "flow_complete")
+    # prepare the output object
+    parsed = ParsedEvents(output_object=None, task_success=False, steps=0, time=0, usage={})
+    # set what we can for now
+    if flow_completed is not None:
+        parsed.steps = flow_completed.get("data", {}).get("steps", 0)
+        parsed.usage = flow_completed.get("data", {}).get("usage", {})
+        parsed.time = flow_completed.get("timestamp", 0.0) - started_at
+        logger.debug(f"flow_completed: {parsed.steps} steps, {parsed.time}s, {parsed.usage}")
+
     # one of the tools wrote an output variable and set the task to complete
-    completed = _get_last_event_with_name(events, "task_complete")
-    if completed is not None:
-        outputs = completed.get("data", {}).get("reason", {})
-        if outputs:
-            return outputs  # type: ignore
+    task_completed = _get_last_event_with_name(events, "task_complete")
+    if task_completed is not None:
+        data = task_completed.get("data", {})
+        reason = data.get("reason", {})
+        if reason:
+            parsed.output_object = {"reason": reason}
+        else:
+            parsed.output_object = data
+
+        parsed.task_success = True
+        return parsed
 
     # task failed
-    failed = _get_last_event_with_name(events, "task_failed")
-    if failed is not None:
-        outputs = failed.get("data", {}).get("reason", {})
-        if outputs:
-            return outputs  # type: ignore
+    task_failed = _get_last_event_with_name(events, "task_failed")
+    if task_failed is not None:
+        data = task_failed.get("data", {})
+        reason = data.get("reason", {})
+        if reason:
+            parsed.output_object = {"reason": reason}
+        else:
+            parsed.output_object = data
+
+        parsed.task_success = False
+        return parsed
 
     # the flow completed successfully and a variable has been written (by the tool
     # that completed the task) to the output state. this is in theory redundant, but
     # we keep it for now to be safe
-    completed = _get_last_event_with_name(events, "flow_complete")
-    if completed is not None:
-        variables = completed.get("data", {}).get("state", {}).get("variables", {})
-        outputs = {name: value for name, value in variables.items() if name not in inputs}
-        if outputs:
-            return outputs  # type: ignore
+    if flow_completed is not None:
+        variables = flow_completed.get("data", {}).get("state", {}).get("variables", {})
+        parsed.output_object = {name: value for name, value in variables.items() if name not in inputs}
+        return parsed
 
     # fallback to the latest tool call output or text response
     # whatever comes first
     for event in reversed(events):
         if event["name"] == "text_response":
-            return {"response": event["data"]["response"]}
+            parsed.output_object = {"response": event["data"]["response"]}
+            return parsed
 
         elif event["name"] == "tool_called":
-            return {"output": event["data"]["result"]}
+            parsed.output_object = {"output": event["data"]["result"]}
+            return parsed
 
-    return None
+    return parsed
+
+
+async def _default_stdout_fn(x: str) -> None:
+    logger.debug(x)
+
+
+async def _default_stderr_fn(x: str) -> None:
+    logger.debug(x)
+
+
+class Output(BaseModel):
+    command_line: list[str]
+    exit_code: int
+    stdout: list[str]
+    stderr: list[str]
+    events: list[dict[str, t.Any]]
+    output: dict[str, t.Any]
+    task_success: bool
+    steps: int
+    time: float
+    usage: dict[str, t.Any]
 
 
 class Runner:
     def __init__(
         self,
-        run_args: Arguments,
-        input_state: dict[str, str],
+        args: Arguments,
+        input_state: dict[str, str] | None = None,
+        id: str | None = None,
     ):
-        self.id = uuid.uuid4()
+        self.id = id or str(uuid.uuid4())
         self.events_file = pathlib.Path(tempfile.gettempdir()) / f"nerve-runner-{self.id}.jsonl"
-        self.input_state = input_state
+        self.input_state = input_state or {}
         self.command_line = _create_command_line(
-            run_args,
-            input_state,
+            args,
+            self.input_state,
             self.events_file,
         )
-        self._stdout_fn: t.Callable[[str], t.Awaitable[None]] | None = None
-        self._stderr_fn: t.Callable[[str], t.Awaitable[None]] | None = None
+        self._stdout_fn: t.Callable[[str], t.Awaitable[None]] = _default_stdout_fn
+        self._stderr_fn: t.Callable[[str], t.Awaitable[None]] = _default_stderr_fn
 
     def set_stdout_fn(self, fn: t.Callable[[str], t.Awaitable[None]]) -> None:
         self._stdout_fn = fn
@@ -138,8 +207,8 @@ class Runner:
     def set_stderr_fn(self, fn: t.Callable[[str], t.Awaitable[None]]) -> None:
         self._stderr_fn = fn
 
-    async def run(self) -> dict[str, t.Any]:
-        logger.info(f"spawning runner {self.id} for inputs: {self.input_state}")
+    async def run(self) -> Output:
+        logger.debug(f"spawning runner {self.id} for inputs: {self.input_state}")
 
         outerr: dict[str, list[str]] = {
             "stdout": [],
@@ -155,11 +224,9 @@ class Runner:
                     break
 
                 if name == "stdout":
-                    if self._stdout_fn:
-                        await self._stdout_fn(line.decode().rstrip())
+                    await self._stdout_fn(line.decode().rstrip())
                 else:
-                    if self._stderr_fn:
-                        await self._stderr_fn(line.decode().rstrip())
+                    await self._stderr_fn(line.decode().rstrip())
 
                 outerr[name].append(line.decode().rstrip())
 
@@ -186,26 +253,30 @@ class Runner:
 
         logger.debug(f"read {len(events)} events")
 
-        output_object = _get_output_object(self.input_state, events)
-        if output_object is None:
+        events.sort(key=lambda event: event.get("timestamp", 0), reverse=False)
+
+        parsed = _parse_events(self.input_state, events)
+        if parsed.output_object is None:
             logger.warning(f"could not get raw output value from runner {self.id}")
 
             if outerr["stderr"]:
-                output_object = {"output": "\n".join(outerr["stderr"])}
+                parsed.output_object = {"output": "\n".join(outerr["stderr"])}
             elif outerr["stdout"]:
-                output_object = {"output": "\n".join(outerr["stdout"])}
+                parsed.output_object = {"output": "\n".join(outerr["stdout"])}
             else:
-                output_object = {"output": "the tool did not write any output"}
+                parsed.output_object = {"output": "the tool did not write any output"}
 
-        logger.debug(f"output value: {output_object}")
+        logger.debug(f"output value: {parsed.output_object}")
 
-        output_state = {
-            "command_line": self.command_line,
-            "output": output_object,
-            "exit_code": process.returncode,
-            "stdout": outerr["stdout"],
-            "stderr": outerr["stderr"],
-            "events": events,
-        }
-
-        return output_state
+        return Output(
+            command_line=self.command_line,
+            exit_code=process.returncode or 0,
+            stdout=outerr["stdout"],
+            stderr=outerr["stderr"],
+            events=events,
+            output=parsed.output_object,
+            task_success=parsed.task_success,
+            steps=parsed.steps,
+            time=parsed.time,
+            usage=parsed.usage,
+        )

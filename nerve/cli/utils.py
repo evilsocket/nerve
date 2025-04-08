@@ -107,6 +107,7 @@ def _get_run_args(
         task=task,
         generator=generator,
         # convert the conversation strategy string to a valid enum
+        conversation_strategy_string=conversation_strategy,
         conversation_strategy=conversation.strategy_from_string(conversation_strategy),
         interactive=interactive,
         debug=debug,

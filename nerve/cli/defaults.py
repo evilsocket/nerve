@@ -18,3 +18,5 @@ DEFAULT_AGENT_PATH: pathlib.Path = pathlib.Path("agent.yml")
 DEFAULT_AGENT_SYSTEM_PROMPT: str = "You are a helpful assistant."
 DEFAULT_AGENT_TASK: str = "Make an HTTP request to {{{{ url }}}}"
 DEFAULT_AGENT_TOOLS: list[str] = ["shell", "task"]
+
+DEFAULT_EVAL_RUNS: int = 3

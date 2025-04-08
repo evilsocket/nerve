@@ -25,10 +25,10 @@ def _get_input_state_from_request(inputs: dict[str, str], data: dict[str, str]) 
 def _create_agent_call_endpoint(
     run_args: Arguments,
     inputs: dict[str, str],
-) -> t.Callable[[dict[str, str], Request], t.Coroutine[t.Any, t.Any, dict[str, t.Any]]]:
+) -> t.Callable[[dict[str, str], Request], t.Coroutine[t.Any, t.Any, t.Any]]:
     logger.debug(f"creating request endpoint for inputs: {inputs}")
 
-    async def _on_request(data: dict[str, str], request: Request) -> dict[str, t.Any]:
+    async def _on_request(data: dict[str, str], request: Request) -> t.Any:
         # check if the "raw" query parameter is present
         raw = request.query_params.get("full", "false").lower() == "true"
         client = request.client
@@ -42,14 +42,14 @@ def _create_agent_call_endpoint(
         # create a runner
         runner = Runner(run_args, input_state)
         # execute the runner
-        output_state = await runner.run()
+        output = await runner.run()
 
-        logger.debug(f"output state: {output_state}")
+        logger.debug(f"output state: {output}")
 
         if raw:
-            return output_state
+            return output
 
-        return output_state["output"]  # type: ignore
+        return output.output
 
     return _on_request
 

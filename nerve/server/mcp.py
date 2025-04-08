@@ -13,7 +13,7 @@ from starlette.routing import Mount, Route
 
 from nerve.models import Configuration
 from nerve.runtime import Runtime
-from nerve.server.runner import Arguments, Runner
+from nerve.server.runner import Arguments, Output, Runner
 from nerve.tools.protocol import get_tool_schema
 
 
@@ -45,7 +45,7 @@ async def _handle_agent_call(
     agent_name: str,
     mcp_server: Server,  # type: ignore
     arguments: dict[str, t.Any],
-) -> dict[str, t.Any]:
+) -> Output:
     input_state = _get_input_state_from_request(inputs, arguments)
     runner = Runner(run_args, input_state)
     runner.set_stdout_fn(
@@ -109,7 +109,7 @@ def _create_call_handler(
                     mcp_server,
                     arguments,
                 )
-                return _mcp_text_result(json.dumps(call_result["output"]))
+                return _mcp_text_result(json.dumps(call_result.output))
             else:
                 raise Exception(f"unknown tool: {req.params.name}")
 

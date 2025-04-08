@@ -19,13 +19,14 @@ cli = typer.Typer(
 
 cli.add_typer(agents_cli)
 cli.add_typer(install_cli)
+cli.add_typer(uninstall_cli)
 cli.add_typer(create_cli)
+cli.add_typer(namespaces_cli)
+
 cli.add_typer(run_cli)
+cli.add_typer(eval_cli)
 cli.add_typer(replay_cli)
 cli.add_typer(serve_cli)
-cli.add_typer(eval_cli)
-cli.add_typer(namespaces_cli)
-cli.add_typer(uninstall_cli)
 
 
 @cli.command(

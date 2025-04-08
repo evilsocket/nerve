@@ -52,7 +52,7 @@ def _get_start_state_from_args(args: list[str]) -> dict[str, str]:
     return start_state
 
 
-async def _run(list_args: list[str], args: Arguments) -> None:
+async def _run(extra_args: list[str], args: Arguments) -> None:
     if args.trace:
         state.set_trace_file(args.trace)
 
@@ -61,7 +61,7 @@ async def _run(list_args: list[str], args: Arguments) -> None:
 
     # make variables available to the runtime
     start_state = args.start_state
-    start_state.update(_get_start_state_from_args(list_args))
+    start_state.update(_get_start_state_from_args(extra_args))
     state.update_variables(start_state)
 
     # check if input_path is a workflow or single agent
