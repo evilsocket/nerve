@@ -3,6 +3,7 @@ import typer
 import nerve
 from nerve.cli.agents import cli as agents_cli
 from nerve.cli.create import cli as create_cli
+from nerve.cli.eval import cli as eval_cli
 from nerve.cli.install import cli as install_cli
 from nerve.cli.namespaces import cli as namespaces_cli
 from nerve.cli.replay import cli as replay_cli
@@ -20,8 +21,9 @@ cli.add_typer(agents_cli)
 cli.add_typer(install_cli)
 cli.add_typer(create_cli)
 cli.add_typer(run_cli)
-cli.add_typer(serve_cli)
 cli.add_typer(replay_cli)
+cli.add_typer(serve_cli)
+cli.add_typer(eval_cli)
 cli.add_typer(namespaces_cli)
 cli.add_typer(uninstall_cli)
 

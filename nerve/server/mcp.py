@@ -218,6 +218,7 @@ def create_sse_app(debug: bool, server: Server) -> Starlette:  # type: ignore
         async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
             await server.run(streams[0], streams[1], server.create_initialization_options())
 
+    # TODO: use FastAPI instead
     return Starlette(
         debug=debug,
         routes=[
