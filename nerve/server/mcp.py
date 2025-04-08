@@ -6,14 +6,15 @@ import typing as t
 import mcp.types as mcp_types
 from fastapi import HTTPException
 from loguru import logger
+from mcp import stdio_server
 from mcp.server import Server
 from mcp.server.sse import SseServerTransport
 from starlette.applications import Starlette
 from starlette.routing import Mount, Route
 
 from nerve.models import Configuration
-from nerve.runner import Runner
 from nerve.runtime import Runtime
+from nerve.server.runner import Runner
 from nerve.tools.protocol import get_tool_schema
 
 
@@ -137,7 +138,7 @@ def _create_call_handler(
     return _handler
 
 
-def create_server(
+def create_mcp_server(
     agent_name: str,
     config: Configuration,
     inputs: dict[str, str | None],
@@ -224,3 +225,9 @@ def create_sse_app(debug: bool, server: Server) -> Starlette:  # type: ignore
             Mount("/messages/", app=sse.handle_post_message),
         ],
     )
+
+
+async def serve_stdio_app(server: Server, agent_name: str) -> None:  # type: ignore
+    async with stdio_server() as streams:
+        logger.info(f"🌐 serving {agent_name} on stdout ...")
+        await server.run(streams[0], streams[1], server.create_initialization_options())

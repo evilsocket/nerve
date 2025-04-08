@@ -6,12 +6,12 @@ import mcp.types as mcp_types
 
 from nerve.models import Configuration
 from nerve.runtime import Runtime
-from nerve.tools.mcp.server import create_server
+from nerve.server.mcp import create_mcp_server
 
 
 class TestMCPServer(unittest.IsolatedAsyncioTestCase):
-    @patch("nerve.tools.mcp.server.Runner")
-    async def test_create_server_for_agent_adds_agent_as_tool(self, mock_runner: MagicMock) -> None:
+    @patch("nerve.server.mcp.Runner")
+    async def test_mcp_create_server_for_agent_adds_agent_as_tool(self, mock_runner: MagicMock) -> None:
         # Setup
         agent_name = "test_agent"
         config = MagicMock(spec=Configuration)
@@ -28,7 +28,7 @@ class TestMCPServer(unittest.IsolatedAsyncioTestCase):
         runtime.tools = []
 
         # Create server
-        server = create_server(
+        server = create_mcp_server(
             agent_name,
             config,
             inputs,
@@ -63,8 +63,8 @@ class TestMCPServer(unittest.IsolatedAsyncioTestCase):
         self.assertIn("input1", tool.inputSchema["properties"])
         self.assertIn("input2", tool.inputSchema["properties"])
 
-    @patch("nerve.tools.mcp.server.Runner")
-    async def test_create_server_for_agent_uses_task_as_description_when_description_not_set(
+    @patch("nerve.server.mcp.Runner")
+    async def test_create_mcp_server_for_agent_uses_task_as_description_when_description_not_set(
         self, mock_runner: MagicMock
     ) -> None:
         # Setup
@@ -84,7 +84,7 @@ class TestMCPServer(unittest.IsolatedAsyncioTestCase):
         runtime.tools = []
 
         # Create server
-        server = create_server(
+        server = create_mcp_server(
             agent_name,
             config,
             inputs,
