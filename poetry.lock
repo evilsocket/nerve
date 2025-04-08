@@ -2704,6 +2704,38 @@ shellingham = ">=1.3.0"
 typing-extensions = ">=3.7.4.3"
 
 [[package]]
+name = "typer-di"
+version = "0.1.3"
+description = "Extension for `typer` for dependency injection like in FastAPI"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "typer_di-0.1.3-py3-none-any.whl", hash = "sha256:e4f694a197b50d61334951792f586930dd8cc581a3113978c64f86b12043d68e"},
+    {file = "typer_di-0.1.3.tar.gz", hash = "sha256:f572e1e41f5f3cc4bebbde225f4068dc68b992bc8802e6f44c0370fab9c5748a"},
+]
+
+[package.dependencies]
+typer-slim = ">=0.9.0"
+
+[[package]]
+name = "typer-slim"
+version = "0.15.2"
+description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "typer_slim-0.15.2-py3-none-any.whl", hash = "sha256:4273014a3378b24367bffed45c2ce8dd3d85bd201a6f02e51ba6b19f336009be"},
+    {file = "typer_slim-0.15.2.tar.gz", hash = "sha256:4a666bb7839a88f51dd25d078d36dbc1d0f37c8c2696e184fbc1f3eaa314a91b"},
+]
+
+[package.dependencies]
+click = ">=8.0.0"
+typing-extensions = ">=3.7.4.3"
+
+[package.extras]
+standard = ["rich (>=10.11.0)", "shellingham (>=1.3.0)"]
+
+[[package]]
 name = "types-pyautogui"
 version = "0.9.3.20241230"
 description = "Typing stubs for PyAutoGUI"
@@ -3010,4 +3042,4 @@ computer-use = ["pillow", "pyautogui", "pyperclip", "pyscreeze", "types-pyautogu
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "e828e2c6517538789d50f8ef541f2466216416c0a5ba5da1fe69460919da6e2e"
+content-hash = "5d329c0257930106e4eeb4db33d03d44fe65aa9f5871a3cf703b6d023cabb946"

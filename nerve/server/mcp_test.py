@@ -7,6 +7,7 @@ import mcp.types as mcp_types
 from nerve.models import Configuration
 from nerve.runtime import Runtime
 from nerve.server.mcp import create_mcp_server
+from nerve.server.runner import Arguments
 
 
 class TestMCPServer(unittest.IsolatedAsyncioTestCase):
@@ -17,29 +18,36 @@ class TestMCPServer(unittest.IsolatedAsyncioTestCase):
         config = MagicMock(spec=Configuration)
         config.description = "Test agent description"
         inputs = {"input1": None, "input2": "default_value"}
-        input_path = pathlib.Path("/path/to/agent")
-        generator = "gpt-4"
-        conversation_strategy = "window"
-        max_steps = 10
-        max_cost = 5.0
-        timeout = 30
-        quiet = False
+
+        run_args = Arguments(
+            input_path=pathlib.Path("/path/to/agent"),
+            generator="gpt-4",
+            conversation_strategy="window",
+            max_steps=10,
+            max_cost=5.0,
+            timeout=30,
+            quiet=False,
+            debug=False,
+            log_path=None,
+            litellm_debug=False,
+            start_state={},
+            trace=None,
+            task=None,
+            interactive=False,
+        )
+
         runtime = MagicMock(spec=Runtime)
         runtime.tools = []
 
         # Create server
         server = create_mcp_server(
-            agent_name,
-            config,
-            inputs,
-            input_path,
-            generator,
-            conversation_strategy,
-            max_steps,
-            max_cost,
-            runtime,
-            timeout,
-            quiet,
+            agent_name=agent_name,
+            config=config,
+            run_args=run_args,
+            inputs=inputs,
+            runtime=runtime,
+            serve_tools=False,
+            tools_only=False,
         )
 
         list_tools_handler = server.request_handlers[mcp_types.ListToolsRequest]
@@ -73,29 +81,36 @@ class TestMCPServer(unittest.IsolatedAsyncioTestCase):
         config.description = None  # Description not set
         config.task = "Test agent task"  # Task is set
         inputs = {"input1": None, "input2": "default_value"}
-        input_path = pathlib.Path("/path/to/agent")
-        generator = "gpt-4"
-        conversation_strategy = "window"
-        max_steps = 10
-        max_cost = 5.0
-        timeout = 30
-        quiet = False
+
+        run_args = Arguments(
+            input_path=pathlib.Path("/path/to/agent"),
+            generator="gpt-4",
+            conversation_strategy="window",
+            max_steps=10,
+            max_cost=5.0,
+            timeout=30,
+            quiet=False,
+            debug=False,
+            log_path=None,
+            litellm_debug=False,
+            start_state={},
+            trace=None,
+            task=None,
+            interactive=False,
+        )
+
         runtime = MagicMock(spec=Runtime)
         runtime.tools = []
 
         # Create server
         server = create_mcp_server(
-            agent_name,
-            config,
-            inputs,
-            input_path,
-            generator,
-            conversation_strategy,
-            max_steps,
-            max_cost,
-            runtime,
-            timeout,
-            quiet,
+            agent_name=agent_name,
+            config=config,
+            run_args=run_args,
+            inputs=inputs,
+            runtime=runtime,
+            serve_tools=False,
+            tools_only=False,
         )
 
         list_tools_handler = server.request_handlers[mcp_types.ListToolsRequest]
