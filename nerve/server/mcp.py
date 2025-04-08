@@ -1,6 +1,5 @@
 import asyncio
 import json
-import pathlib
 import typing as t
 
 import mcp.types as mcp_types
@@ -14,7 +13,7 @@ from starlette.routing import Mount, Route
 
 from nerve.models import Configuration
 from nerve.runtime import Runtime
-from nerve.server.runner import Runner
+from nerve.server.runner import Arguments, Runner
 from nerve.tools.protocol import get_tool_schema
 
 
@@ -41,20 +40,14 @@ def _create_listing_handler(
 
 
 async def _handle_agent_call(
-    input_path: pathlib.Path,
+    run_args: Arguments,
     inputs: dict[str, str | None],
-    generator: str,
-    conversation_strategy: str,
-    max_steps: int,
-    max_cost: float,
-    timeout: int | None,
-    quiet: bool,
     agent_name: str,
     mcp_server: Server,  # type: ignore
     arguments: dict[str, t.Any],
 ) -> dict[str, t.Any]:
     input_state = _get_input_state_from_request(inputs, arguments)
-    runner = Runner(input_path, generator, conversation_strategy, max_steps, max_cost, timeout, quiet, input_state)
+    runner = Runner(run_args, input_state)
     runner.set_stdout_fn(
         lambda x: asyncio.create_task(
             mcp_server.request_context.session.send_log_message(
@@ -90,14 +83,8 @@ def _mcp_error_result(error: Exception) -> mcp_types.ServerResult:
 
 
 def _create_call_handler(
-    input_path: pathlib.Path,
+    run_args: Arguments,
     inputs: dict[str, str | None],
-    generator: str,
-    conversation_strategy: str,
-    max_steps: int,
-    max_cost: float,
-    timeout: int | None,
-    quiet: bool,
     agent_name: str,
     mcp_server: Server,  # type: ignore
     runtime: Runtime | None,
@@ -116,14 +103,8 @@ def _create_call_handler(
             elif req.params.name == agent_name:
                 # execute the agent itself
                 call_result = await _handle_agent_call(
-                    input_path,
+                    run_args,
                     inputs,
-                    generator,
-                    conversation_strategy,
-                    max_steps,
-                    max_cost,
-                    timeout,
-                    quiet,
                     agent_name,
                     mcp_server,
                     arguments,
@@ -141,15 +122,9 @@ def _create_call_handler(
 def create_mcp_server(
     agent_name: str,
     config: Configuration,
+    run_args: Arguments,
     inputs: dict[str, str | None],
-    input_path: pathlib.Path,
-    generator: str,
-    conversation_strategy: str,
-    max_steps: int,
-    max_cost: float,
     runtime: Runtime | None,
-    timeout: int | None,
-    quiet: bool = False,
     serve_tools: bool = False,
     tools_only: bool = False,
 ) -> Server:  # type: ignore
@@ -195,14 +170,8 @@ def create_mcp_server(
 
     server.request_handlers[mcp_types.ListToolsRequest] = _create_listing_handler(tools)
     server.request_handlers[mcp_types.CallToolRequest] = _create_call_handler(
-        input_path,
+        run_args,
         inputs,
-        generator,
-        conversation_strategy,
-        max_steps,
-        max_cost,
-        timeout,
-        quiet,
         agent_name,
         server,
         runtime,

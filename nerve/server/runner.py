@@ -8,16 +8,28 @@ import typing as t
 import uuid
 
 from loguru import logger
+from pydantic import BaseModel
+
+
+class Arguments(BaseModel):
+    input_path: pathlib.Path
+    task: str | None
+    generator: str
+    conversation_strategy: t.Any
+    interactive: bool
+    debug: bool
+    litellm_debug: bool
+    quiet: bool
+    max_steps: int
+    max_cost: float
+    timeout: int | None
+    log_path: pathlib.Path | None
+    trace: pathlib.Path | None
+    start_state: dict[str, t.Any]
 
 
 def _create_command_line(
-    input_path: pathlib.Path,
-    generator: str,
-    conversation_strategy: str,
-    max_steps: int,
-    max_cost: float,
-    timeout: int | None,
-    quiet: bool,
+    run_args: Arguments,
     input_state: dict[str, str],
     events_file: pathlib.Path,
 ) -> list[str]:
@@ -25,22 +37,22 @@ def _create_command_line(
     command_line = [
         nerve_bin,
         "run",
-        str(input_path),
+        str(run_args.input_path),
         "--generator",
-        generator,
+        run_args.generator,
         "--conversation",
-        conversation_strategy,
+        run_args.conversation_strategy,
         "--max-steps",
-        str(max_steps),
+        str(run_args.max_steps),
         "--max-cost",
-        str(max_cost),
+        str(run_args.max_cost),
     ]
 
-    if timeout:
+    if run_args.timeout:
         command_line.append("--timeout")
-        command_line.append(str(timeout))
+        command_line.append(str(run_args.timeout))
 
-    if quiet:
+    if run_args.quiet:
         command_line.append("--quiet")
 
     # if the task is set, add it to the command line
@@ -106,26 +118,14 @@ def _get_output_object(inputs: dict[str, str], events: list[dict[str, t.Any]]) -
 class Runner:
     def __init__(
         self,
-        input_path: pathlib.Path,
-        generator: str,
-        conversation_strategy: str,
-        max_steps: int,
-        max_cost: float,
-        timeout: int | None,
-        quiet: bool,
+        run_args: Arguments,
         input_state: dict[str, str],
     ):
         self.id = uuid.uuid4()
         self.events_file = pathlib.Path(tempfile.gettempdir()) / f"nerve-runner-{self.id}.jsonl"
         self.input_state = input_state
         self.command_line = _create_command_line(
-            input_path,
-            generator,
-            conversation_strategy,
-            max_steps,
-            max_cost,
-            timeout,
-            quiet,
+            run_args,
             input_state,
             self.events_file,
         )

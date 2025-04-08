@@ -1,4 +1,3 @@
-import pathlib
 import typing as t
 
 import uvicorn
@@ -7,7 +6,7 @@ from loguru import logger
 
 from nerve.models import Configuration
 from nerve.runtime import Runtime
-from nerve.server.runner import Runner
+from nerve.server.runner import Arguments, Runner
 
 
 def _get_input_state_from_request(inputs: dict[str, str], data: dict[str, str]) -> dict[str, str]:
@@ -24,13 +23,7 @@ def _get_input_state_from_request(inputs: dict[str, str], data: dict[str, str]) 
 
 
 def _create_agent_call_endpoint(
-    input_path: pathlib.Path,
-    generator: str,
-    conversation_strategy: str,
-    max_steps: int,
-    max_cost: float,
-    timeout: int | None,
-    quiet: bool,
+    run_args: Arguments,
     inputs: dict[str, str],
 ) -> t.Callable[[dict[str, str], Request], t.Coroutine[t.Any, t.Any, dict[str, t.Any]]]:
     logger.debug(f"creating request endpoint for inputs: {inputs}")
@@ -47,7 +40,7 @@ def _create_agent_call_endpoint(
         # validate and prepare input state from request
         input_state = _get_input_state_from_request(inputs, data)
         # create a runner
-        runner = Runner(input_path, generator, conversation_strategy, max_steps, max_cost, timeout, quiet, input_state)
+        runner = Runner(run_args, input_state)
         # execute the runner
         output_state = await runner.run()
 
@@ -78,13 +71,7 @@ def _create_tool_call_endpoint(
 
 
 def create_rest_api(
-    input_path: pathlib.Path,
-    generator: str,
-    conversation_strategy: str,
-    max_steps: int,
-    max_cost: float,
-    timeout: int | None,
-    quiet: bool,
+    run_args: Arguments,
     inputs: dict[str, t.Any],
     config: Configuration,
     runtime: Runtime | None,
@@ -98,9 +85,7 @@ def create_rest_api(
         logger.info("  /")
         app.add_api_route(
             path="/",
-            endpoint=_create_agent_call_endpoint(
-                input_path, generator, conversation_strategy, max_steps, max_cost, timeout, quiet, inputs
-            ),
+            endpoint=_create_agent_call_endpoint(run_args, inputs),
             methods=["POST"],
             response_model=dict,
             summary=config.description,
