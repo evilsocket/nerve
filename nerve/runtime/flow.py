@@ -37,7 +37,7 @@ class Flow:
         self.curr_actor_idx: int = 0
         self.curr_actor: Agent | None = None
         # current step from the beginning of the flow
-        self.curr_step: int = 0
+        self.curr_step: int = 1
         # optional max steps to run
         self.max_steps: int = max_steps
         # max cost to run the flow
@@ -120,7 +120,7 @@ class Flow:
 
         if self.done():
             logger.debug("flow done")
-            state.on_event("flow_complete", {"steps": self.curr_step, "usage": state.get_usage()})
+            state.on_event("flow_complete", {"steps": self.curr_step - 1, "usage": state.get_usage()})
             return
 
         state.on_event("step_started", {"step": self.curr_step, "usage": state.get_usage()})
