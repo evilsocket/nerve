@@ -5,7 +5,7 @@ from typing import Annotated
 from loguru import logger
 
 
-def get_tool_schema(func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
+def get_tool_schema(generator: str, func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
     signature = inspect.signature(func)
     docstring = inspect.getdoc(func) or ""
 
@@ -14,6 +14,7 @@ def get_tool_schema(func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
     if docstring == "":
         logger.debug(f"tool {func.__name__} has no docstring")
 
+    is_gemini = "gemini" in generator or "google" in generator
     type_hints = t.get_type_hints(func, include_extras=True)
     tool = {
         "type": "function",
@@ -55,7 +56,8 @@ def get_tool_schema(func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
                 if hasattr(description, "description"):
                     param_schema["description"] = description.description
 
-                if hasattr(description, "examples"):
+                # gemini will raise an INVALID_ARGUMENT if examples are provided
+                if hasattr(description, "examples") and not is_gemini:
                     param_schema["examples"] = description.examples
 
         tool["function"]["parameters"]["properties"][param_name] = param_schema  # type: ignore
@@ -63,13 +65,8 @@ def get_tool_schema(func: t.Callable[..., t.Any]) -> dict[str, t.Any]:
         if param.default is param.empty:
             tool["function"]["parameters"]["required"].append(param_name)  # type: ignore
 
-    if not tool["function"]["parameters"]["properties"]:  # type: ignore
-        """
-        Handle Google Gemini:
-
-        "message": "* GenerateContentRequest.tools[0].function_declarations[0].parameters.properties: should be non-empty for OBJECT type"
-        "status": "INVALID_ARGUMENT"
-        """
+    if not tool["function"]["parameters"]["properties"] and is_gemini:  # type: ignore
+        # gemini will raise an INVALID_ARGUMENT if parameters are empty
         logger.debug("removing empty parameters from tool {}: {}", func.__name__, tool)
         del tool["function"]["parameters"]  # type: ignore
 
