@@ -158,7 +158,7 @@ def create_mcp_server(
     if serve_tools and runtime:
         logger.info(f"🧰 creating MCP tools for {len(runtime.tools)} agent tools")
         for tool in runtime.tools:
-            input_schema = get_tool_schema(tool).get("function", {}).get("parameters", {})
+            input_schema = get_tool_schema(run_args.generator, tool).get("function", {}).get("parameters", {})
             logger.info(f"  {tool.__name__}")
             tools.append(
                 mcp_types.Tool(
@@ -187,7 +187,6 @@ def create_sse_app(debug: bool, server: Server) -> Starlette:  # type: ignore
         async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
             await server.run(streams[0], streams[1], server.create_initialization_options())
 
-    # TODO: use FastAPI instead
     return Starlette(
         debug=debug,
         routes=[

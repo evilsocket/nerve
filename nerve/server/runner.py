@@ -60,14 +60,14 @@ def _create_command_line(
         command_line.append("--timeout")
         command_line.append(str(run_args.timeout))
 
-    if run_args.quiet:
-        command_line.append("--quiet")
+    # if run_args.quiet:
+    #     command_line.append("--quiet")
 
-    if run_args.debug:
-        command_line.append("--debug")
+    # if run_args.debug:
+    #     command_line.append("--debug")
 
-    if run_args.litellm_debug:
-        command_line.append("--litellm-debug")
+    # if run_args.litellm_debug:
+    #     command_line.append("--litellm-debug")
 
     # if the task is set, add it to the command line
     if "task" in input_state:
@@ -100,7 +100,6 @@ class ParsedEvents(BaseModel):
     usage: dict[str, t.Any]
 
 
-# TODO: add several unit tests for this function
 def _parse_events(inputs: dict[str, str], events: list[dict[str, t.Any]]) -> ParsedEvents:
     started_at = events[0].get("timestamp", 0.0)
     # we'll need this either case
@@ -143,7 +142,7 @@ def _parse_events(inputs: dict[str, str], events: list[dict[str, t.Any]]) -> Par
     # the flow completed successfully and a variable has been written (by the tool
     # that completed the task) to the output state. this is in theory redundant, but
     # we keep it for now to be safe
-    if flow_completed is not None:
+    if flow_completed:
         variables = flow_completed.get("data", {}).get("state", {}).get("variables", {})
         parsed.output_object = {name: value for name, value in variables.items() if name not in inputs}
         return parsed

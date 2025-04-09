@@ -78,6 +78,7 @@ def create_rest_api(
     serve_tools: bool,
     tools_only: bool,
 ) -> FastAPI:
+    # TODO: use Starlette instead to minimize dependencies
     app = FastAPI()
 
     if not tools_only:

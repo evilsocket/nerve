@@ -9,7 +9,14 @@ documentation = "https://github.com/evilsocket/nerve/docs/index.md"
 authors = ["evilsocket <evilsocket@gmail.com>"]
 license = "GPL-3.0-or-later"
 readme = ["README.md", "LICENSE"]
-keywords = ["ai", "agent", "nerve", "adk", "agent development kit"]
+keywords = [
+    "ai",
+    "agent",
+    "adk",
+    "agent development kit",
+    "mcp",
+    "model context protocol",
+]
 classifiers = [
     "Topic :: Software Development :: Build Tools",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -43,6 +50,8 @@ fastapi = "^0.115.12"
 uuid = "^1.30"
 starlette = "^0.46.1"
 typer-di = "^0.1.3"
+natsort = "^8.4.0"
+fastparquet = "^2024.11.0"
 
 [tool.poetry.extras]
 clipboard = ["pyperclip", "types-pyperclip"]

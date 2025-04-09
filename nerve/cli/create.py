@@ -104,9 +104,6 @@ def _collect_user_prompts() -> list[str]:
     return sorted(prompts)
 
 
-# TODO: create a doc page for this.
-
-
 async def create_agent(path: pathlib.Path, task: str | None = None, default: bool = False) -> None:
     if path.exists():
         print(f"❌ {path} already exists.")

@@ -41,7 +41,7 @@ class Engine(ABC):
         for tool_name, tool_fn in self.tools.items():
             if not tool_fn.__doc__:
                 raise ValueError(f"Tool {tool_name} has no docstring")
-            self.tools_schemas.append(get_tool_schema(tool_fn))
+            self.tools_schemas.append(get_tool_schema(self.generator_id, tool_fn))
 
     def _parse_generator_params(self) -> None:
         if "?" in self.generator_id:
@@ -81,7 +81,7 @@ class Engine(ABC):
                 raise ValueError(f"Tool {tool_name} already exists")
             else:
                 logger.debug(f"adding extra tool: {tool_name} / {tool_fn.__name__}")
-                extra_schemas.append(get_tool_schema(tool_fn))
+                extra_schemas.append(get_tool_schema(self.generator_id, tool_fn))
 
         tools_schemas.extend(extra_schemas)
 

@@ -1,4 +1,6 @@
+import json
 import pathlib
+import time
 import typing as t
 from enum import Enum
 
@@ -7,6 +9,7 @@ from pydantic import AfterValidator, BaseModel, Field
 from pydantic_yaml import parse_yaml_raw_as
 
 import nerve
+from nerve.server.runner import Arguments, Output
 
 
 class Mode(str, Enum):
@@ -119,6 +122,12 @@ class Configuration(BaseModel):
         timeout: float = 5
         sse_read_timeout: float = 60 * 5
 
+    class Limits(BaseModel):
+        runs: int | None = None
+        max_steps: int | None = None
+        max_cost: float | None = None
+        timeout: int | None = None
+
     # legacy field used to detect if the user is loading a legacy file
     system_prompt: str | None = Field(default=None, exclude=True)
 
@@ -142,6 +151,8 @@ class Configuration(BaseModel):
     jail: dict[str, list[str]] = {}
     # MCP ( https://modelcontextprotocol.io/ ) servers.
     mcp: dict[str, MCPServer] = {}
+    # optional limits
+    limits: Limits | None = None
     # custom tooling
     tools: list[Tool | t.Callable[..., t.Any]] = []
 
@@ -247,4 +258,74 @@ class Workflow(BaseModel):
             return parse_yaml_raw_as(cls, f.read())
 
 
-__all__ = ["Mode", "Status", "Tool", "Configuration", "Workflow"]
+class Evaluation(BaseModel):
+    class Statistics(BaseModel):
+        generator: str = ""
+        max_steps: int = 0
+        max_cost: float = 0
+        timeout: float = 0
+        window: str = ""
+        runs: int = 0
+        cases: int = 0
+        passed: int = 0
+        failed: int = 0
+
+    class Case(BaseModel):
+        started_at: float = 0.0
+        runs: list[Output] = []
+
+    name: str = ""
+    started_at: float = 0.0
+    finished_at: float = 0.0
+    args: dict[str, t.Any] = {}
+    cases: dict[str, Case] = {}
+    stats: Statistics = Statistics()
+
+    @classmethod
+    def build(cls, args: Arguments, runs: int, cases: int) -> "Evaluation":
+        return Evaluation(
+            started_at=time.time(),
+            name=args.input_path.name,
+            args=args.to_serializable(),
+            cases={},
+            stats=Evaluation.Statistics(
+                generator=args.generator,
+                max_steps=args.max_steps,
+                max_cost=args.max_cost,
+                timeout=args.timeout or 0.0,
+                window=args.conversation_strategy_string,
+                runs=runs,
+                cases=cases,
+            ),
+        )
+
+    def add_run(self, case_name: str, run_output: Output) -> None:
+        if case_name not in self.cases:
+            self.cases[case_name] = Evaluation.Case(started_at=time.time())
+
+        self.cases[case_name].runs.append(run_output)
+        if run_output.task_success:
+            self.stats.passed += 1
+        else:
+            self.stats.failed += 1
+
+    def remove_run(self, case_name: str, run_idx: int) -> None:
+        run_output = self.cases[case_name].runs[run_idx]
+        if run_output.task_success:
+            self.stats.passed -= 1
+        else:
+            self.stats.failed -= 1
+
+        self.cases[case_name].runs.pop(run_idx)
+
+    def save_to(self, path: pathlib.Path) -> None:
+        self.finished_at = time.time()
+        path.write_text(self.model_dump_json())
+
+    @classmethod
+    def load_from(cls, path: pathlib.Path) -> "Evaluation":
+        data = json.loads(path.read_text())
+        return cls.model_validate(data)
+
+
+__all__ = ["Mode", "Status", "Tool", "Configuration", "Workflow", "Evaluation"]
