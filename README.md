@@ -28,6 +28,7 @@ Nerve is an ADK ( _Agent Development Kit_ ) designed to be a simple yet powerful
 - Comes with a library of predefined, built-in tools for common tasks.
 - Seamlessly [integrated with MCP](https://github.com/evilsocket/nerve/blob/main/docs/mcp.md).
 - Support for [any model provider](https://docs.litellm.ai/docs/providers).
+- Benchmark and [evaluate different models](https://github.com/evilsocket/nerve/blob/main/docs/evaluation.md).
 
 ## Quick Start
 
