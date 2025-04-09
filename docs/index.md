@@ -11,6 +11,7 @@ Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool 
   - [Adding Tools](#️-adding-tools)️
   - [Conversation Window](#-conversation-window)
 * [Model Context Protocol](mcp.md)
+* [Evaluation Mode](evaluation.md)
 * [Namespaces](namespaces.md)
 * [Workflows](workflows.md)
 
