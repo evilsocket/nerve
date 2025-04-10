@@ -5,7 +5,7 @@ import typing as t
 import typer
 from loguru import logger
 
-from nerve.cli.defaults import (
+from nerve.defaults import (
     DEFAULT_AGENTS_LOAD_PATH,
     DEFAULT_CONVERSATION_STRATEGY,
     DEFAULT_GENERATOR,
@@ -14,7 +14,7 @@ from nerve.cli.defaults import (
     DEFAULT_TIMEOUT,
 )
 from nerve.generation import conversation
-from nerve.server.runner import Arguments
+from nerve.runtime.runner import Arguments
 
 
 def _resolve_input_path(input_path: pathlib.Path) -> pathlib.Path:

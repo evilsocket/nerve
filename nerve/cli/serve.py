@@ -8,16 +8,16 @@ from loguru import logger
 from typer_di import Depends, TyperDI
 
 import nerve
-from nerve.cli.defaults import (
+from nerve.cli.utils import _get_run_args
+from nerve.defaults import (
     DEFAULT_SERVE_HOST,
     DEFAULT_SERVE_PORT,
 )
-from nerve.cli.utils import _get_run_args
 from nerve.models import Configuration
 from nerve.runtime import Runtime, logging
+from nerve.runtime.runner import Arguments
 from nerve.server.mcp import create_mcp_server, create_sse_app, serve_stdio_app
 from nerve.server.rest import create_rest_api, serve_http_app
-from nerve.server.runner import Arguments
 
 cli = TyperDI(
     no_args_is_help=True,

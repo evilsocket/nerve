@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 import typer
 
-from nerve.cli.defaults import DEFAULT_AGENTS_LOAD_PATH
 from nerve.cli.utils import _resolve_input_path
+from nerve.defaults import DEFAULT_AGENTS_LOAD_PATH
 
 
 def test_resolve_input_path_exists() -> None:

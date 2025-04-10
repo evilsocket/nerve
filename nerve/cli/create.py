@@ -8,7 +8,7 @@ import typer
 from pydantic_yaml import to_yaml_str
 
 import nerve
-from nerve.cli.defaults import (
+from nerve.defaults import (
     DEFAULT_AGENT_PATH,
     DEFAULT_AGENT_SYSTEM_PROMPT,
     DEFAULT_AGENT_TASK,

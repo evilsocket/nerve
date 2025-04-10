@@ -10,7 +10,7 @@ from nerve.models import Configuration, Mode, Workflow
 from nerve.runtime import logging, state
 from nerve.runtime.agent import Agent
 from nerve.runtime.flow import Flow
-from nerve.server.runner import Arguments
+from nerve.runtime.runner import Arguments
 
 cli = TyperDI(
     no_args_is_help=True,

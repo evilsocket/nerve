@@ -6,8 +6,8 @@ import mcp.types as mcp_types
 
 from nerve.models import Configuration
 from nerve.runtime import Runtime
+from nerve.runtime.runner import Arguments
 from nerve.server.mcp import create_mcp_server
-from nerve.server.runner import Arguments
 
 
 class TestMCPServer(unittest.IsolatedAsyncioTestCase):

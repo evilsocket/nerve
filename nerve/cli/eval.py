@@ -1,107 +1,25 @@
 import asyncio
 import pathlib
-import time
 import typing as t
-from enum import Enum
 
 import typer
-from fastparquet import ParquetFile  # type: ignore[import-untyped]
 from loguru import logger
-from natsort import natsorted
-from pydantic import BaseModel
-from pydantic_yaml import parse_yaml_file_as
 from termcolor import colored
 from typer_di import Depends, TyperDI
 
 import nerve
-from nerve.cli.defaults import DEFAULT_EVAL_RUNS
 from nerve.cli.utils import _get_run_args
-from nerve.models import Configuration, Evaluation
+from nerve.defaults import DEFAULT_EVAL_RUNS
+from nerve.models import Configuration
 from nerve.runtime import logging
-from nerve.server.runner import Arguments, Output, Runner
+from nerve.runtime.eval import Case, Cases, Evaluation
+from nerve.runtime.runner import Arguments, Output, Runner
 
 cli = TyperDI(
     no_args_is_help=True,
     pretty_exceptions_enable=False,
     context_settings={"help_option_names": ["-h", "--help"]},
 )
-
-
-class CaseIterator:
-    class Mode(Enum):
-        # cases have their own individual folders
-        FOLDER = 0
-        # cases are listed in a single file
-        YAML = 1
-        # parquet file
-        PARQUET = 2
-
-    class Case(BaseModel):
-        name: str
-        input_state: dict[str, t.Any]
-
-    def _from_folder(self, cases_folder: pathlib.Path) -> None:
-        logger.info(f"📊 loading evaluation cases from folder {cases_folder}")
-        self._mode = self.Mode.FOLDER
-        for path in natsorted(cases_folder.glob("*")):
-            self._cases.append(
-                CaseIterator.Case(
-                    name=path.name,
-                    input_state={
-                        "CASE_NAME": path.name,
-                        "CASE_PATH": path.absolute().as_posix(),
-                    },
-                )
-            )
-
-    def _from_yaml(self, cases_file: pathlib.Path) -> None:
-        logger.info(f"📊 loading evaluation cases from file {cases_file}")
-        self._mode = self.Mode.YAML
-        for case in parse_yaml_file_as(list[dict[str, dict[str, t.Any]]], cases_file):  # type: ignore[type-var]
-            for case_name, input_state in case.items():
-                self._cases.append(CaseIterator.Case(name=case_name, input_state=input_state))
-
-    def _from_parquet(self, cases_file: pathlib.Path) -> None:
-        logger.info(f"📊 loading evaluation cases from parquet file {cases_file}")
-        self._mode = self.Mode.PARQUET
-        pf = ParquetFile(cases_file)
-        df = pf.to_pandas()
-        num_rows = len(df)
-        for index, row in df.iterrows():
-            self._cases.append(
-                CaseIterator.Case(
-                    name=f"case_{index}_of_{num_rows}",
-                    input_state=row.to_dict(),
-                )
-            )
-
-    def __init__(self, eval_path: pathlib.Path):
-        self._eval_path = eval_path
-        self._cases: list[CaseIterator.Case] = []
-        self._mode = self.Mode.FOLDER
-
-        cases_folder = self._eval_path / "cases"
-        cases_file_yml = self._eval_path / "cases.yml"
-        cases_file_parquet = self._eval_path / "cases.parquet"
-
-        if cases_folder.exists():
-            self._from_folder(cases_folder)
-
-        elif cases_file_yml.exists():
-            self._from_yaml(cases_file_yml)
-
-        elif cases_file_parquet.exists():
-            self._from_parquet(cases_file_parquet)
-
-        if not self._cases:
-            logger.error(f"no cases found in {self._eval_path}")
-            raise typer.Abort()
-
-    def __iter__(self) -> t.Iterator["CaseIterator.Case"]:
-        return iter(self._cases)
-
-    def __len__(self) -> int:
-        return len(self._cases)
 
 
 def _get_output_path(args: Arguments) -> pathlib.Path:
@@ -145,9 +63,9 @@ def eval(
         raise typer.Abort() from e
 
     output = output or _get_output_path(args)
-    cases = CaseIterator(args.input_path)
-    new_runs = False
+    cases = Cases(args.input_path)
 
+    # apply limits from the config if available
     if config.limits:
         if config.limits.runs:
             runs = config.limits.runs
@@ -163,58 +81,57 @@ def eval(
 
     if output.exists():
         logger.info(f"📊 loading evaluation results from {output}")
-        eval_result = Evaluation.load_from(output)
+        evaluation = Evaluation.load_from(output)
     else:
         logger.info(f"📊 saving evaluation results to {output}")
-        eval_result = Evaluation.build(args, runs, len(cases))
+        evaluation = Evaluation.build(args, runs, len(cases))
 
     for case in cases:
-        if case.name not in eval_result.cases:
-            eval_result.cases[case.name] = Evaluation.Case(started_at=time.time())
-            new_runs = True
-
         for run in range(runs):
-            num_runs_done = len(eval_result.cases[case.name].runs)
-            do_run = num_runs_done < (run + 1)
-            if not do_run:
-                # check that the run has been completed
-                if eval_result.cases[case.name].runs[run].steps == 0:
+            do_run = True
+            if evaluation.num_runs(case.name) >= runs:
+                # we already have enough runs for this case
+                do_run = False
+                if not evaluation.is_run_done(case.name, run):
+                    # we don't have enough runs for this case
                     do_run = True
                     logger.warning(f"run {run} for {case.name} has not been completed, re-running")
-
-            logger.debug(f"got {num_runs_done} runs for {case.name}")
+                    evaluation.remove_run(case.name, run)
 
             if not do_run:
                 logger.debug(f"skipping {case.name} ({run + 1}/{runs})")
-                run_output = eval_result.cases[case.name].runs[run]
+                run_output = evaluation.get_run(case.name, run)
             else:
                 logger.debug(f"running {case.name} ({run + 1}/{runs})")
                 run_output = asyncio.run(_run_case(args, case))
-                eval_result.add_run(case.name, run_output)
-                new_runs = True
+                evaluation.add_run(case.name, run_output)
 
-            usage = run_output.usage
-            if run_output.task_success:
-                logger.success(
-                    f"   [{run + 1}/{runs}] {eval_name} / {case.name} : {run_output.steps} steps | {run_output.time:.1f} s | {usage.get('total_tokens', 0)} tokens | {usage.get('cost', 0.0)} $"
-                )
-            else:
-                logger.error(
-                    f"     [{run + 1}/{runs}] {eval_name} / {case.name} : {run_output.steps} steps | {run_output.time:.1f} s | {usage.get('total_tokens', 0)} tokens | {usage.get('cost', 0.0)} $"
-                )
+            _show_run(run_output, run + 1, runs, eval_name, case.name)
 
-            if do_run:
+            if evaluation.needs_flush():
                 # save at each run so we can restore later
-                eval_result.save_to(output)
+                evaluation.save_to(output)
 
-    logger.debug(f"evaluation results: {eval_result}")
+    logger.debug(f"evaluation results: {evaluation}")
 
-    # save if we did any runs
-    if new_runs:
-        eval_result.save_to(output)
+    # save if needed
+    if evaluation.needs_flush():
+        evaluation.save_to(output)
         logger.info(f"📊 evaluation results saved to {output}")
 
-    _show_results(eval_result)
+    _show_results(evaluation)
+
+
+def _show_run(output: Output, run: int, runs: int, eval_name: str, case_name: str) -> None:
+    usage = output.usage
+    if output.task_success:
+        logger.success(
+            f"   [{run + 1}/{runs}] {eval_name} / {case_name} : {output.steps} steps | {output.time:.1f} s | {usage.get('total_tokens', 0)} tokens | {usage.get('cost', 0.0)} $"
+        )
+    else:
+        logger.error(
+            f"     [{run + 1}/{runs}] {eval_name} / {case_name} : {output.steps} steps | {output.time:.1f} s | {usage.get('total_tokens', 0)} tokens | {usage.get('cost', 0.0)} $"
+        )
 
 
 def _show_results(eval: Evaluation) -> None:
@@ -233,8 +150,8 @@ def _show_results(eval: Evaluation) -> None:
     total_tests = eval.stats.passed + eval.stats.failed
     score = eval.stats.passed / total_tests * 100
 
-    for _case_name, case in eval.cases.items():
-        for run in case.runs:
+    for _case_name, case_runs in eval.runs.items():
+        for run in case_runs:
             total_cost += run.usage.get("cost", 0.0)
             # total_tokens += run.usage.get("total_tokens", 0)
             total_steps += run.steps
@@ -249,7 +166,7 @@ def _show_results(eval: Evaluation) -> None:
     logger.info(f"Score: {score:.2f} %")
 
 
-async def _run_case(args: Arguments, case: CaseIterator.Case) -> Output:
+async def _run_case(args: Arguments, case: Case) -> Output:
     return await Runner(
         args,
         case.input_state,

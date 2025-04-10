@@ -1,6 +1,6 @@
 import unittest
 
-from nerve.server.runner import _parse_events
+from nerve.runtime.runner import _parse_events
 
 
 class TestParseEvents(unittest.TestCase):

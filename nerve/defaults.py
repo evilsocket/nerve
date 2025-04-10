@@ -13,6 +13,7 @@ DEFAULT_NERVE_HOME: pathlib.Path = pathlib.Path.home() / ".nerve"
 
 DEFAULT_AGENTS_LOAD_PATH: pathlib.Path = DEFAULT_NERVE_HOME / "agents"
 DEFAULT_PROMPTS_LOAD_PATH: pathlib.Path = DEFAULT_NERVE_HOME / "prompts"
+DEFAULT_RUNS_PATH: pathlib.Path = DEFAULT_NERVE_HOME / "runs"
 
 DEFAULT_AGENT_PATH: pathlib.Path = pathlib.Path("agent.yml")
 DEFAULT_AGENT_SYSTEM_PROMPT: str = "You are a helpful assistant."

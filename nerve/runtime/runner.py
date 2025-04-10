@@ -1,14 +1,17 @@
 import asyncio
+import atexit
 import json
 import os
 import pathlib
 import sys
-import tempfile
+import time
 import typing as t
 import uuid
 
 from loguru import logger
 from pydantic import BaseModel
+
+from nerve.defaults import DEFAULT_RUNS_PATH
 
 
 class Arguments(BaseModel):
@@ -170,6 +173,7 @@ async def _default_stderr_fn(x: str) -> None:
 
 
 class Output(BaseModel):
+    generated_at: float
     command_line: list[str]
     exit_code: int
     stdout: list[str]
@@ -188,9 +192,14 @@ class Runner:
         args: Arguments,
         input_state: dict[str, str] | None = None,
         id: str | None = None,
+        base_path: pathlib.Path = DEFAULT_RUNS_PATH,
+        clean_at_exit: bool = True,
     ):
+        if not base_path.exists():
+            base_path.mkdir(parents=True, exist_ok=True)
+
         self.id = id or str(uuid.uuid4())
-        self.events_file = pathlib.Path(tempfile.gettempdir()) / f"nerve-runner-{self.id}.jsonl"
+        self.events_file = base_path / f"run-{self.id}.jsonl"
         self.input_state = input_state or {}
         self.command_line = _create_command_line(
             args,
@@ -199,6 +208,14 @@ class Runner:
         )
         self._stdout_fn: t.Callable[[str], t.Awaitable[None]] = _default_stdout_fn
         self._stderr_fn: t.Callable[[str], t.Awaitable[None]] = _default_stderr_fn
+
+        if clean_at_exit:
+            atexit.register(self._clean_up)
+
+    def _clean_up(self) -> None:
+        if self.events_file.exists():
+            logger.debug(f"removing events file {self.events_file}")
+            self.events_file.unlink()
 
     def set_stdout_fn(self, fn: t.Callable[[str], t.Awaitable[None]]) -> None:
         self._stdout_fn = fn
@@ -209,6 +226,7 @@ class Runner:
     async def run(self) -> Output:
         logger.debug(f"spawning runner {self.id} for inputs: {self.input_state}")
 
+        generated_at = time.time()
         outerr: dict[str, list[str]] = {
             "stdout": [],
             "stderr": [],
@@ -268,6 +286,7 @@ class Runner:
         logger.debug(f"output value: {parsed.output_object}")
 
         return Output(
+            generated_at=generated_at,
             command_line=self.command_line,
             exit_code=process.returncode or 0,
             stdout=outerr["stdout"],

@@ -6,7 +6,7 @@ from loguru import logger
 
 from nerve.models import Configuration
 from nerve.runtime import Runtime
-from nerve.server.runner import Arguments, Runner
+from nerve.runtime.runner import Arguments, Runner
 
 
 def _get_input_state_from_request(inputs: dict[str, str], data: dict[str, str]) -> dict[str, str]:

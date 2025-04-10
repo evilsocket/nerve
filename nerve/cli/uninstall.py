@@ -5,7 +5,7 @@ import typing as t
 import typer
 
 import nerve
-from nerve.cli.defaults import (
+from nerve.defaults import (
     DEFAULT_AGENTS_LOAD_PATH,
 )
 
