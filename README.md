@@ -21,7 +21,7 @@
 
 Nerve is a simple yet powerful Agent Development Kit (ADK) to build, run, evaluate, and orchestrate LLM-based agents using just YAML and a CLI. It’s designed for technical users who want programmable, auditable, and reproducible automation using large language models.
 
-## ✨ Key Features
+## Key Features
 
 **📝 Declarative Agents**
 
