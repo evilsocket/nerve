@@ -1,153 +1,83 @@
-# Nerve: The Simple Agent Development Kit
+## Nerve: The Simple Agent Development Kit
 
-Nerve is an ADK ( _Agent Development Kit_ ) with a convenient command line tool designed to be a simple yet powerful platform for creating and executing LLM-based agents using a simple YAML-based syntax.
+Nerve is an **Agent Development Kit (ADK)** that makes it easy to create and execute intelligent agents powered by LLMs, using a clean YAML-based syntax and a powerful CLI.
 
-* [Installation](#installation)
-* [Usage](#usage)
-  - [Prompting](#prompting)
-  - [Models](#-models)
-  - [Interactive Mode](#-interactive-mode)
-  - [Record & Replay](#-record--replay)
-  - [Adding Tools](#️-adding-tools)️
-  - [Conversation Window](#-conversation-window)
-* [Model Context Protocol](mcp.md)
-* [Evaluation Mode](evaluation.md)
-* [Namespaces](namespaces.md)
-* [Workflows](workflows.md)
+> For an overview of concepts, see [concepts.md](concepts.md).
 
-## 💻 Installation
 
-Nerve requires Python 3.10 or later and PIP. You can install it with:
+### 📦 Installation
 
+Requires Python 3.10+ and pip:
 ```bash
 pip install nerve-adk
 ```
-
-To upgrade to the latest version, run:
-
+To upgrade:
 ```bash
 pip install --upgrade nerve-adk
 ```
-
-For a list of options:
-
-```bash
-nerve -h
-```
-
-To uninstall, run:
-
+To uninstall:
 ```bash
 pip uninstall nerve-adk
 ```
 
-### 🐋 Installing from DockerHub
-
-Alternatively, a Docker image is available on [Docker Hub](https://hub.docker.com/r/evilsocket/nerve). When running the container, if you're using a local inference server such as OLLAMA, you'll likely want it to share the same network as the host. To allow Nerve to reach network endpoints like OLLAMA, use the command below. This ensures the container runs without network isolation and can access the same resources on the network as your host computer.
-
-Additionally, remember to share the tasklet files by mounting a volume when running the container.
-
-```sh
+#### Docker Image
+A Docker image is available at [Docker Hub](https://hub.docker.com/r/evilsocket/nerve):
+```bash
 docker run -it --network=host -v ./examples:/root/.nerve/agents evilsocket/nerve -h
 ```
 
-## 🚀 Usage
+## 🚀 Usage Overview
 
-Nerve agents are simple YAML files that can use a set of built-in tools such as a bash shell, file system primitives [and more](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md).
-
-### Install an Agent
-
-Starting from Nerve 1.4.x, agents can be installed from a github repository or zip archive URL. For instance, to install the [Changelog](https://github.com/evilsocket/changelog) agent you can run:
-
+### Installing an Agent
+You can install agents from GitHub or ZIP archives:
 ```bash
 nerve install evilsocket/changelog
-```
-
-This will download, extract and install the agent to the folder `$HOME/.nerve/agents` allowing you to execute it with:
-
-```bash
 nerve run changelog
-```
-
-You can override the default task of any agent:
-
-```bash
-nerve run changelog --task 'use a single sentence for the changelog'
-```
-
-You can uninstall agents with:
-
-```bash
 nerve uninstall changelog
 ```
-
-### Create an Agent
-
-You can start creating an agent with a guided procedure by executing:
-
+Override the task:
 ```bash
-nerve create new-agent
+nerve run changelog --task "use a single sentence for the changelog"
 ```
-
-During this procedure, you'll be prompted for the following:
-
-- where to save this agent (either as a folder or single yml file).
-- the agent **system prompt**, which is what determines the agent role (the `You are a useful assistant ...` stuff).
-- the agent **task** - what does this agent has to do? (`what is 4+3?`)
-- which **tools** from [the built-in namespaces](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md) the agent can use to perform its task.
-
-> [!TIP]  
-> You can use a `@` prefix for the system prompt as a shortcut to load the prompt from a markdown file in your `$HOME/.nerve/prompts` directory. For example, specifying `@scientist` as the system prompt will automatically load the prompt from either `$HOME/.nerve/prompts/scientist.md` or `$HOME/.nerve/prompts/scientist/system.md`.
-
-After completing the procedure, your `new-agent/agent.yml` file will look something like this:
-
-```yaml
-agent: You are a helpful assistant.
-
-# jinja2 templating syntax supported
-task: Make an HTTP request to {{ url }}
-
-using:
-- shell # can execute shell commands
-- task # can autonomously set the task as complete or failed
-```
-
-To run this agent (the `--url` is required because we referenced it in the agent `task`):
-
-```bash
-# equivalent to "nerve run new-agent/agent.yml"
-nerve run new-agent --url 'cnn.com'
-```
-
-For a list of all the subcommands and their options, feel free to explore `nerve -h`.
 
 > [!TIP]  
 > Nerve primarily loads agents from `$HOME/.nerve/agents`, ensuring that any agent in this folder is accessible regardless of your current working directory. If the agent is not found there, Nerve will then search in the current working directory as a fallback.
 
-### Prompting
-
-Both the `agent` and task `fields` support the JINJA2 template syntax, meaning you can:
-
-Include local files:
-
-```yaml
-agent: {% include 'system_prompt.md' %}"
+### Creating an Agent
+Run the guided setup:
+```bash
+nerve create new-agent
 ```
+It prompts you for:
+- Location
+- System prompt
+- Task
+- Tools (from the [built-in namespaces](namespaces.md))
 
-Preemptively execute a tool and use its output as part of the prompt:
+> [!TIP]  
+> You can use a `@` prefix for the system prompt as a shortcut to load the prompt from a markdown file in your `$HOME/.nerve/prompts` directory. For example, specifying `@scientist` as the system prompt will automatically load the prompt from either `$HOME/.nerve/prompts/scientist.md` or `$HOME/.nerve/prompts/scientist/system.md`.
 
+Example output (`new-agent/agent.yml`):
 ```yaml
-task: "Here are the logs: {{ get_logs_tool() }}"
-```
-
-Interpolate custom variables that the user will pass via command line argument:
-
-```yaml
-# passed via `nerve run agent-name --url ...`
+agent: You are a helpful assistant.
 task: Make an HTTP request to {{ url }}
+using:
+  - shell
+  - task
+```
+Run it with:
+```bash
+nerve run new-agent --url cnn.com
 ```
 
-Reference a set of built-in variables:
+### Prompting & Variables
+Supports [Jinja2](https://jinja.palletsprojects.com/) templating. You can:
+- Include files: `{% include 'filename.md' %}`
+- Interpolate args: `{{ url }}`
+- Use built-in vars: `{{ CURRENT_DATE }}`, `{{ LOCAL_IP }}`, etc.
+- Run tools inline: `{{ get_logs_tool() }}`
+
+### Bbuilt-in Variables
 
 ```yaml
 task: The current date is {{ CURRENT_DATE }} and the local IP is {{ LOCAL_IP }}.
@@ -156,7 +86,7 @@ task: The current date is {{ CURRENT_DATE }} and the local IP is {{ LOCAL_IP }}.
 **Date and Time**
 
 | Symbol | Description |
-|--------|-------------|
+|--|-|
 | `CURRENT_DATE` | Current date in YYYY-MM-DD format. |
 | `CURRENT_TIME` | Current time in HH:MM:SS format. |
 | `CURRENT_DATETIME` | Current date and time in YYYY-MM-DD HH:MM:SS format. |
@@ -170,7 +100,7 @@ task: The current date is {{ CURRENT_DATE }} and the local IP is {{ LOCAL_IP }}.
 **Platform Information**
 
 | Symbol | Description |
-|--------|-------------|
+|--|-|
 | `USERNAME` | Current user's login name. |
 | `PLATFORM` | Operating system name (e.g., "Windows", "Darwin", "Linux"). |
 | `OS_VERSION` | Detailed operating system version information. |
@@ -183,7 +113,7 @@ task: The current date is {{ CURRENT_DATE }} and the local IP is {{ LOCAL_IP }}.
 **Network Information**
 
 | Symbol | Description |
-|--------|-------------|
+|--|-|
 | `LOCAL_IP` | Machine's local IP address on the network. |
 | `PUBLIC_IP` | Public IP address as seen from the internet (requires internet connection). |
 | `HOSTNAME` | Computer's network hostname. |
@@ -191,7 +121,7 @@ task: The current date is {{ CURRENT_DATE }} and the local IP is {{ LOCAL_IP }}.
 **Random Values**
 
 | Symbol | Description |
-|--------|-------------|
+|--|-|
 | `RANDOM_INT` | Random integer between 0 and 10000. |
 | `RANDOM_HEX` | Random 64-bit hexadecimal value. |
 | `RANDOM_FLOAT` | Random floating point number between 0 and 1. |
@@ -200,88 +130,53 @@ task: The current date is {{ CURRENT_DATE }} and the local IP is {{ LOCAL_IP }}.
 **System Integration**
 
 | Symbol | Description |
-|--------|-------------|
+|--|-|
 | `CLIPBOARD` | Current content of the system clipboard. |
 
+
 ### 🧠 Models
-
-The default model is OpenAI `gpt-4o-mini`, in order to use a different model you can either set the `NERVE_GENERATOR` environment variable, or pass it as a generator string via the `-g/--generator` command line argument.
-
-> [!NOTE]  
-> Nerve supports any of the LiteLLM supported providers, check [the litellm documentation](https://docs.litellm.ai/docs/providers) for a list of all the providers and their syntax.
-
-```sh
-export ANTHROPIC_API_KEY=sk-ant-api...
-export NERVE_GENERATOR=anthropic/claude-3-7-sonnet-20250219
-
-nerve run new-agent --url 'cnn.com'
+Default model is OpenAI `gpt-4o-mini`. Override via env or CLI:
+```bash
+export NERVE_GENERATOR=anthropic/claude-3-7-sonnet
+nerve run agent
 ```
-
-is equivalent to:
-
-```sh
-nerve run -g "anthropic/claude-3-7-sonnet-20250219" new-agent --url 'cnn.com'
+Or pass it directly:
+```bash
+nerve run -g "ollama/llama3.2?temperature=0.9" agent
 ```
-
-To pass additional inference parameters:
-
-```sh
-nerve run -g "ollama/llama3.2?temperature=0.9&api_base=http://server-host:11434" new-agent --url 'cnn.com'
-```
-
-Alternatively, a generator string can be set via YAML directly:
-
+Set generator in YAML too:
 ```yaml
-generator: 'anthropic/claude-3-7-sonnet-20250219'
-
-agent: You are a helpful assistant.
-
-# ...
+generator: "anthropic/claude"
 ```
+
+Nerve supports all [LiteLLM providers](https://docs.litellm.ai/docs/providers).
 
 ### 🗣 Interactive Mode
-
-By default, Nerve operates in automatic mode, allowing the agent loop to run continuously until an exit condition is met. To gain more control over the process and interact with the agent in real time as it executes steps, use the `-i` flag to enable interactive mode.
-
-```sh
-nerve run any-agent -i
+Run in interactive step-by-step mode:
+```bash
+nerve run agent -i
 ```
-
-In this mode, you will have access to the following commands at each step:
-
-* **help** (alias `h`): show the help menu.
-* **quit** (alias `q` or `exit`): stop the execution and exit.
-* **step** (alias `s` or just hit enter with no command): execute a single step.
-* **continue** (alias `c`, `cont`, or `go`): continue the execution until completion.
-* **view** (alias `v`): inspect the current state.
-
-Anything else will be interpreted and used as a chat message for the current agent.
+Available commands:
+- `step`, `s`, or `Enter`: one step
+- `continue`, `c`: run till done
+- `view`, `v`: view current state
+- `quit`, `q`, `exit`: exit
 
 ### 🎥 Record & Replay
-
-Nerve sessions can be recorded to a JSONL file by specifying the `--trace` argument:
-
-```sh
-nerve run new-agent --trace agent-trace.jsonl
+Record sessions:
+```bash
+nerve run agent --trace trace.jsonl
+```
+Replay sessions:
+```bash
+nerve play trace.jsonl
+nerve play trace.jsonl -f  # fast-forward
 ```
 
-The session can then be replayed at any time:
+### 🛠 Adding Tools
+See [concepts.md](concepts.md#tools) for details.
 
-```sh
-nerve play agent-trace.jsonl # this plays the session at the original speed
-```
-
-Add `-f` to replay in fast forward mode:
-
-```sh
-nerve play agent-trace.jsonl -f # much faster
-```
-
-### 🛠️ Adding Tools
-
-Since version 1.5.0 Nerve is integrated with [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction), you can refer to the [MCP section](mcp.md) of the documentation to use MCP tools.
-
-When a tool can be represented as a shell command, you can conveniently extend the agent capabilites in the YAML:
+Add shell tools:
 
 ```yaml
 agent: You are a helpful assistant.
@@ -301,7 +196,7 @@ tools:
     tool: curl wttr.in/{{ place }}
 ```
 
-If the tool requires more advanced capabilities, you can implement it in Python, by adding a `tools.py` file in the same folder of the agent with annotated functions:
+Python tools go in a `tools.py` file next to the agent YAML:
 
 ```python
 # new-agent/tools.py
@@ -321,29 +216,46 @@ def read_webcam_image(foo: t.Annotated[str, "Describe arguments to the model lik
 ```
 
 ### 💬 Conversation Window
-
-An agent will continue running in a loop execute tools at each step until one of the following conditions is met:
-
-- The task status has been set as complete (either by the agent itself if using the `task` namespace, or by one of the tools if its `complete_task` field is `true`).
-- The task status has been set as failed (by the agent itself if using the `task` namespace)
-- The task times out.
-
-During this loop the chat history the model has access to is defined by the conversation window, default to `full`, determined by the `--conversation/c` argument.
-
-Full conversation window (the default behaviour, the model receives the entire conversation history):
+Controls how much history the model sees:
+- `full` (default): entire history
+- `-c 5`: last 5 messages
+- `-c strip-5`: full history, but only last 5 messages have content
 
 ```bash
 nerve run agent -c full
-```
-
-Only receive the last N messages (with N=5 in this example):
-
-```bash
 nerve run agent -c 5
-```
-
-Receive the entire conversation, but strip the contents of every message before the last N (with N=5 in this example):
-
-```bash
 nerve run agent -c strip-5
 ```
+
+### 🔌 MCP Integration
+Nerve supports MCP (Model Context Protocol).
+- As a **client** to use remote tools or memory
+- As a **server** to expose agents and tools
+
+See full details in [mcp.md](mcp.md).
+
+### 📊 Evaluation Mode
+Test agent performance on predefined test sets:
+```bash
+nerve eval path/to/eval --output results.json
+```
+Supports YAML, Parquet, or directory-based formats.
+See [evaluation.md](evaluation.md).
+
+### 🔄 Workflows
+Workflows let you chain agents sequentially. Each agent receives inputs and contributes to shared state.
+```bash
+nerve run examples/recipe-workflow --food pizza
+```
+
+See [workflows.md](workflows.md) for a full breakdown.
+
+For more complex orchestrations, see [concepts.md](concepts.md#workflows).
+
+### 🧭 More
+- [concepts.md](concepts.md): Core architecture & mental model
+- [evaluation.md](evaluation.md): Agent testing & benchmarking
+- [mcp.md](mcp.md): Advanced agent integration with MCP
+- `namespaces.md`: (Coming soon)
+
+Run `nerve -h` to explore all commands and flags.

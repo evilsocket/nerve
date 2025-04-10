@@ -1,62 +1,94 @@
 # Evaluation Mode
 
-Nerve provides an evaluation mode that allows you to test your agent's performance against a set of predefined test cases. This is useful for:
+Nerve's **evaluation mode** is a strategic feature designed to make benchmarking and validating agents easy, reproducible, and formalized.
 
-- Validating agent behavior during development
-- Regression testing after making changes
-- Benchmarking different models
-- Collecting metrics on agent performance
+> ⚡ Unlike most tools in the LLM ecosystem, Nerve offers a built-in framework to **test agents against structured cases**, log results, and compare performance across models. It introduces a standard formalism for agent evaluation that does not exist elsewhere.
 
-An evaluation consists of an agent and a corresponding set of test cases. These cases can be defined in a `cases.yml` file, stored in a `cases.parquet` file, or organized as individual entries within separate folders.
 
-Regardless of how you organize the evaluation cases, the agent will be executed for each one, with a specified number of runs per case. Task completion data and runtime statistics will be collected and saved to an output file.
+## 🎯 Why Use It?
+Evaluation mode is useful for:
+- Verifying agent correctness during development
+- Regression testing when updating prompts, tools, or models
+- Comparing different model backends
+- Collecting structured performance metrics
 
+
+## 🧪 Running an Evaluation
+You run evaluations using:
 ```bash
 nerve eval path/to/evaluation --output results.json
 ```
+Each case is passed to the agent, and results (e.g., completion, duration, output) are saved.
 
-## YAML
 
-You can place a `cases.yml` file in the agent folder with the different test cases. For instance, this is used in the [ab evaluation](https://github.com/evilsocket/eval-ab), where the evaluation cases look like:
+## 🗂 Case Formats
+Nerve supports three evaluation case formats:
 
+### 1. `cases.yml`
+For small test suites. Example:
 ```yaml
 - level1:
     program: "A# #A"
 - level2:
     program: "A# #B B# #A"
-# ... and so on
 ```
-
-These cases are interpolated in the agent prompt:
-
+Used like this in the agent:
 ```yaml
 task: >
-  ## Problem
-
-  Now, consider the following program:
+  Consider this program:
 
   {{ program }}
 
-  Fully compute it, step by step and then submit the final result.
+  Compute it step-by-step and submit the result.
 ```
 
-## Parquet
+Used in [eval-ab](https://github.com/evilsocket/eval-ab).
 
-For more complex test suite you can use a `cases.parquet` file. An example of this is [this MMLU evaluation](https://github.com/evilsocket/eval-mmlu) that is loading data from the [MMLU (dev) dataset](https://huggingface.co/datasets/cais/mmlu) and using it in the agent prompt:
-
+### 2. `cases.parquet`
+For large, structured datasets. Example from [eval-mmlu](https://github.com/evilsocket/eval-mmlu):
 ```yaml
 task: >
   ## Question
 
   {{ question }}
 
-  Use the select_choice tool to select the correct answer from this list of possible answers:
-
+  Use the `select_choice` tool to pick the right answer:
   {% for choice in choices %}
   - [{{ loop.index0 }}] {{ choice }}
   {% endfor %}
 ```
 
-## Folders
+Can use HuggingFace datasets (e.g., MMLU) directly.
 
-You can also divide your cases in a `cases` folder in order like in [the regex evaluation](https://github.com/evilsocket/eval-regex) where each input file is organized in `ccases/level0`, `cases/level1`, etc and [read at runtime](https://github.com/evilsocket/eval-regex/blob/main/tools.py#L11) by the tools.
+### 3. Folder-Based `cases/`
+Organize each case in its own folder:
+```
+cases/
+  level0/
+    input.txt
+  level1/
+    input.txt
+```
+Useful when tools/scripts dynamically load inputs.
+See [eval-regex](https://github.com/evilsocket/eval-regex).
+
+
+## 🧪 Output
+Results are written to a `.json` file with details like:
+- Case identifier
+- Task outcome (success/failure)
+- Runtime duration
+- Agent/tool outputs
+
+
+## 📎 Notes
+- You can define multiple runs per case for robustness
+- Compatible with any agent setup (tools, MCP, workflows, etc.)
+- All variables from each case are injected via `{{ ... }}`
+
+
+## 🧭 Related Docs
+- [concepts.md](concepts.md#evaluation)
+- [index.md](index.md): CLI usage
+- [mcp.md](mcp.md): when using remote agents or tools in evaluation
+

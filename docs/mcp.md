@@ -1,20 +1,19 @@
-# Model Context Protocol
+## Model Context Protocol (MCP)
 
-Nerve supports [MCP](https://modelcontextprotocol.io/introduction) both as a client and as a server:
+Nerve has **first-class support** for [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction), enabling agents to:
 
-* [Client](#mcp-client)
-* [Server](#mcp-server)
-    - [Serving an Agent](#serving-an-agent)
-    - [Serving an Agent and its Tools](#serving-an-agent-and-its-tools)
-    - [Tools Only](#tools-only)
+- 🔌 **Act as MCP clients** — consuming tools, memory, and capabilities exposed by external MCP servers.
+- 🧩 **Act as MCP servers** — exposing their own tools or full agent behavior to be consumed by other agents.
 
-## MCP Client
+🚀 Nerve is the **first tool** to offer YAML-based definition of MCP servers with seamless support for both client and server modes. This enables advanced **agent orchestration**, team-based delegation, and interoperability with the broader MCP ecosystem.
 
-An agent can use any server from [the multitude of publicly available MPC servers](https://github.com/punkpeye/awesome-mcp-servers) with:
+## ✅ MCP Client
+
+An agent can use external tools, memory systems, or filesystems by defining `mcp:` in its YAML:
 
 ```yaml
 agent: You are a helpful assistant.
-task: Write something to your knowledge graph, then read it back, save it to output.txt and set your task as complete.
+task: Write something to your knowledge graph, then read it back, save it to output.txt, and mark the task complete.
 
 using:
   - task
@@ -29,20 +28,25 @@ mcp:
     args: ["-y", "@modelcontextprotocol/server-filesystem", "."]
 ```
 
-## MCP Server
+You can connect to any of the [publicly available MCP servers](https://github.com/punkpeye/awesome-mcp-servers), or define your own custom tools.
 
-Nerve can also act as a MCP server via the `nerve serve <agent>` command. In this mode you can turn an agent into a tool for other agents to use.
+## 🖧 MCP Server
 
-### Serving an Agent
+You can expose a Nerve agent **as a tool or agent** for other systems (or other agents) to call.
+This enables:
+- Modular pipelines
+- Reusable agent services
+- Team-like delegation structures
 
-For instance this command line will serve the [code-audit](https://github.com/evilsocket/code-audit) agent as an MCP server:
-
+### Serve an Agent
+To expose an agent via MCP:
 ```bash
 nerve serve code-audit --mcp
 ```
+Now other agents can use this as a remote tool.
 
-This means that agents can use other agents as tools, for instance:
-
+### Use a Served Agent as Tool
+Here’s how to use a served agent (`code-audit`) as a tool:
 ```yaml
 agent: You are a helpful assistant.
 task: Perform a code audit of {{ path }}.
@@ -56,35 +60,50 @@ mcp:
     args: ["serve", "code-audit", "--mcp"]
 ```
 
-You can find a full [example here](https://github.com/evilsocket/nerve/tree/main/examples/mcp-recipe).
+This will spin up the `code-audit` agent as a background server and allow your current agent to call it like a regular tool.
 
-### Serving an Agent and its Tools
-
-Additionally you can also serve the agent tools:
-
+### Serve Tools + Agent
+To expose both the agent and its tools:
 ```bash
 nerve serve code-audit --mcp -t
 ```
+This lets the remote caller decide whether to use the agent loop or call individual tools.
 
-This will export both the agent itself and its tools via MCP.
-
-### Tools Only
-
-You can use this mechanism to serve simple tools via MCP as well. For instance if you create a `tools.yml` like this:
-
+### Serve Tools Only
+You can expose just a `tools.yml` file:
 ```yaml
 tools:
   - name: get_weather
     description: Get the current weather in a given place.
     arguments:
-        - name: place
-          description: The place to get the weather of.
-          example: Rome
+      - name: place
+        description: The place to get the weather of.
+        example: Rome
     tool: curl wttr.in/{{ place }}
 ```
 
-You can serve it via MCP with:
-
+Then serve it via:
 ```bash
 nerve serve tools.yml --mcp
 ```
+
+## 🔁 Combining Client and Server
+Nerve can run **as both a client and a server** in the same project. This means:
+- You can define an agent that uses MCP tools, while being itself served as a tool.
+- You can build hierarchical agent architectures, where a main agent delegates to sub-agents exposed via MCP.
+
+This opens the door to **modular agent systems** and **secure service isolation**, where agents can be reused across workflows or teams.
+
+## 🌐 Use Cases
+- Local memory or filesystem integration for stateful agents
+- Reusable audit/code/analysis agents callable by other teams
+- Building team-like behaviors where each agent specializes in one task
+- Sandboxing tools behind a network interface
+
+For full examples, see the [mcp-recipe](https://github.com/evilsocket/nerve/tree/main/examples/mcp-recipe).
+
+## 🧭 Related Docs
+- [concepts.md](concepts.md#mcp-model-context-protocol) — overview of how MCP fits into Nerve's architecture
+- [index.md](index.md) — quick usage examples
+- [workflows.md](workflows.md) — for linear pipelines (MCP enables more complex ones)
+

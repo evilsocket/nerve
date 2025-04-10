@@ -1,22 +1,23 @@
 # Workflows
 
-Workflows allow you to orchestrate multiple agents in a sequence of steps. Each agent can be executed by a different model, if desired, and the "state" data is passed between them. Each agent will have its own prompt and tools, acting as an independent functional unit.
+Workflows in Nerve allow you to **chain multiple agents in a simple, linear sequence**. Each agent in a workflow executes in order, passing shared state (variables) to the next. This is ideal for tasks that can be split into clear, sequential steps.
 
-For instance, the [recipe workflow example](https://github.com/evilsocket/nerve/tree/main/examples/recipe-workflow) shows how to orchestrate four different agents to:
+> 📌 For more advanced orchestration (parallel execution, sub-agents, branching logic), it's recommended to use [MCP](mcp.md) and expose agents as tools to a primary orchestrator.
 
-- Create a list of ingredients.
-- Describe the preparation steps.
-- Estimate the preparation time.
-- Rewrite the recipe in a more engaging and interesting way.
+## 📋 Example: Recipe Workflow
 
-You can execute it with:
+In this example, a workflow chains four agents to:
+1. Generate a list of ingredients
+2. Describe preparation steps
+3. Estimate prep time
+4. Rewrite the result in an engaging way
 
+You can run it with:
 ```bash
 nerve run examples/recipe-workflow --food pizza
 ```
 
-Its YAML definition is:
-
+### YAML Definition
 ```yaml
 name: "Write a Recipe"
 description: "A workflow for writing a recipe."
@@ -34,123 +35,94 @@ actors:
   rewrite_nicely:
     generator: openai://gpt-4o
 ```
+Each key in `actors` defines an agent in the pipeline, executed in sequence.
 
-Each element in the `actors` array represents an agent that will be executed sequentially in the specified order.
+## 🧠 Agent Files
+Each agent is a standalone YAML with a task and tools. These are simplified below:
 
-**create_list_of_ingredients.yml**
-
-This first agent will create a list of ingredients that will be saved in the `ingredients` variable. Once the tool is executed, the task will be marked as complete and the next tasklet will execute.
-
+### `create_list_of_ingredients.yml`
 ```yaml
 agent: You are a talented chef.
-
 task: prepare a list of ingredients for {{ food }}
-
 using:
   - reasoning
 
 tools:
   - name: create_list_of_ingredients
-    description: "To provide the ingredients one per line as an organized list:"
-    complete_task: true # sets the task as complete when this tool is executed
+    description: Provide ingredients, one per line.
+    complete_task: true
     arguments:
       - name: ingredients
-        description: The ingredients to create a list of.
+        description: Ingredients list.
         example: >
-          - 1 cup of flour
-          - 1 cup of sugar
-          - 1 cup of eggs
-          - 1 cup of milk
-          - 1 cup of butter
+          - 1 cup flour
+          - 2 eggs
 ```
 
-**describe_preparation_steps.yml**
-
-This tasklet will use the `ingredients` variable, by interpolating it in the prompt with the `$` symbol, to describe the preparation steps.
-
+### `describe_preparation_steps.yml`
 ```yaml
-agent: You are a talented and creative chef.
-
-task: describe the preparation steps for {{ food }}. The ingredients at your disposal are {{ ingredients }}.
-
+agent: You are a creative chef.
+task: describe the preparation steps for {{ food }} using {{ ingredients }}
 using:
   - reasoning
 
 tools:
   - name: describe_preparation_steps
-    description: "To provide the preparation steps one per line as an organized list:"
+    description: Preparation steps.
     complete_task: true
     arguments:
       - name: steps
-        description: The steps to describe.
         example: >
-          - Preheat the oven to 350 degrees F (175 degrees C)
-          - In a large bowl, mix together flour, sugar, eggs, and milk.
-          - Pour the mixture into a pie crust.
-          - Bake in the preheated oven for 20 minutes, or until a knife inserted into the center comes out clean.
+          - Mix ingredients
+          - Bake for 20 minutes
 ```
 
-**estimate_time.yml**
-
-This tasklet will use the `steps` and `ingredients` variables to estimate the preparation time:
-
+### `estimate_time.yml`
 ```yaml
-agent: You are a talented chef. You are given a list of ingredients and a list of preparation steps. You need to estimate the time it will take to prepare the food.
-
-task: >
-  Estimate the time it will take to prepare {{ food }}. 
-
-  The ingredients at your disposal are:
-
-    {{ ingredients }}
- 
-  The preparation steps are: 
- 
-    {{ steps }}
-
+agent: Estimate total prep time using the given ingredients and steps.
+task: Estimate time to prepare {{ food }} using:
+  {{ ingredients }}
+  {{ steps }}
 using:
   - reasoning
 
 tools:
   - name: estimate_time
-    description: "To provide the time it will take to prepare the food:"
+    description: Estimated preparation time
     complete_task: true
     arguments:
       - name: preparation_time
-        description: The time it will take to prepare the food.
         example: 25 minutes
 ```
 
-**rewrite_nicely.yml**
-
-Finally, this tasklet will use all the variables defined so far to rewrite the recipe in a more engaging and interesting way:
-
+### `rewrite_nicely.yml`
 ```yaml
-agent: You are a talented copywriter specialized in food recipes and food blogging. You are given with a basic food recipe and you need to rewrite it in a more engaging and interesting way.
+agent: You are a food blogger.
+task: Rewrite the recipe for {{ food }} in an engaging way.
 
-task: >
-  Rewrite the following recipe in a more engaging and interesting way:
-
-  Recipe for {{ food }} ({{ preparation_time }})
-
-  Ingredients:
-
-    {{ ingredients }}
-
-  Preparation steps:
-
-    {{ steps }}
+Includes:
+  - {{ preparation_time }}
+  - {{ ingredients }}
+  - {{ steps }}
 
 tools:
   - name: rewrite
-    description: "To confirm your version of the recipe:"
+    description: Final blog-ready recipe
     complete_task: true
     arguments:
       - name: recipe
-        description: The recipe to rewrite.
         example: >
           # **Epic Lazy Day Pancakes**
-
-# ... snippet ...
+          [ ... ]
 ```
+
+## 📎 Notes
+- Agents receive inputs from previous agents via templating variables (e.g., `{{ ingredients }}`)
+- Each tool must call `complete_task: true` to advance the workflow
+- All agents can define their own generators, tools, and prompts independently
+
+## 🧭 Related Docs
+- [concepts.md](concepts.md#workflows)
+- [mcp.md](mcp.md): for building advanced orchestrations
+- [index.md](index.md): CLI usage overview
 

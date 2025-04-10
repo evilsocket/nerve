@@ -19,16 +19,33 @@
 
 </div>
 
-Nerve is an ADK ( _Agent Development Kit_ ) designed to be a simple yet powerful platform for creating and executing LLM-based agents.
+Nerve is a simple yet powerful Agent Development Kit (ADK) to build, run, evaluate, and orchestrate LLM-based agents using just YAML and a CLI. It’s designed for technical users who want programmable, auditable, and reproducible automation using large language models.
 
-## Main Features
+## ✨ Key Features
 
-- Define agents as simple YAML files.
-- Simple CLI for creating, installing, and running agents with step-by-step guidance.
-- Comes with a library of predefined, built-in tools for common tasks.
-- Seamlessly [integrated with MCP](https://github.com/evilsocket/nerve/blob/main/docs/mcp.md).
-- Support for [any model provider](https://docs.litellm.ai/docs/providers).
-- Benchmark and [evaluate different models](https://github.com/evilsocket/nerve/blob/main/docs/evaluation.md).
+**📝 Declarative Agents**
+
+Define agents using a clean YAML format: system prompt, task, tools, and variables — all in one file.
+
+**🔧 Built-in Tools & Extensibility**
+
+Use shell commands, Python functions, or remote tools to power your agents. Tools are fully typed and annotated.
+
+**🌐 Native MCP Support (Client & Server)**  
+
+Nerve is the first framework to let you define **MCP servers in YAML** — and act as both **client and server**, enabling agent teams and [deep orchestration](https://github.com/evilsocket/nerve/blob/main/docs/mcp.md).
+
+**📊 Evaluation Mode**  
+
+[Benchmark your agents](https://github.com/evilsocket/nerve/blob/main/docs/evaluation.md) with YAML, Parquet, or folder-based test cases. Run reproducible tests, log structured outputs, and track regression or progress. 
+
+**🔁 Workflows**  
+
+Compose agents into simple, linear pipelines to create multi-step automations with shared context.
+
+**🧪 LLM-Agnostic**  
+
+Built on [LiteLLM](https://docs.litellm.ai/), Nerve supports OpenAI, Anthropic, Ollama, [and dozens more](https://docs.litellm.ai/docs/providers) — switch models in one line.
 
 ## Quick Start
 
@@ -46,18 +63,7 @@ nerve create new-agent
 nerve run new-agent
 ```
 
-Agents are simple YAML files that can use a set of built-in tools such as a bash shell, file system primitives [and others](https://github.com/evilsocket/nerve/blob/main/docs/namespaces.md):
-
-```yaml
-# who
-agent: You are an helpful assistant using pragmatism and shell commands to perform tasks.
-# what
-task: Find which running process is using more RAM.
-# how
-using: [shell]
-```
-
-Read [this introductory blog post](https://www.evilsocket.net/2025/03/13/How-To-Write-An-Agent/), see the [documentation](https://github.com/evilsocket/nerve/blob/main/docs/index.md) and the [examples](https://github.com/evilsocket/nerve/tree/main/examples) for more.
+Read the [documentation](https://github.com/evilsocket/nerve/blob/main/docs/index.md) and the [examples](https://github.com/evilsocket/nerve/tree/main/examples) for more.
 
 ## Contributing
 
