@@ -208,6 +208,7 @@ class Runner:
         )
         self._stdout_fn: t.Callable[[str], t.Awaitable[None]] = _default_stdout_fn
         self._stderr_fn: t.Callable[[str], t.Awaitable[None]] = _default_stderr_fn
+        self._process: asyncio.subprocess.Process | None = None
 
         if clean_at_exit:
             atexit.register(self._clean_up)
@@ -215,6 +216,9 @@ class Runner:
     def _clean_up(self) -> None:
         if self.events_file.exists():
             logger.debug(f"removing events file {self.events_file}")
+            if self._process is not None:
+                self._process.kill()
+                self._process = None
             self.events_file.unlink()
 
     def set_stdout_fn(self, fn: t.Callable[[str], t.Awaitable[None]]) -> None:
@@ -247,20 +251,20 @@ class Runner:
 
                 outerr[name].append(line.decode().rstrip())
 
-        process = await asyncio.create_subprocess_exec(
+        self._process = await asyncio.create_subprocess_exec(
             *self.command_line,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             env=os.environ.copy(),
         )
-        stdout_task = asyncio.create_task(read_stream(process.stdout, "stdout"))
-        stderr_task = asyncio.create_task(read_stream(process.stderr, "stderr"))
+        stdout_task = asyncio.create_task(read_stream(self._process.stdout, "stdout"))
+        stderr_task = asyncio.create_task(read_stream(self._process.stderr, "stderr"))
 
         # wait for the process and stdout/stderr readers to complete
-        await process.wait()
+        await self._process.wait()
         await asyncio.gather(stdout_task, stderr_task)
 
-        logger.debug(f"process exited with code {process.returncode}, reading events ...")
+        logger.debug(f"process exited with code {self._process.returncode}, reading events ...")
 
         # read the events file
         events = []
@@ -285,10 +289,13 @@ class Runner:
 
         logger.debug(f"output value: {parsed.output_object}")
 
+        exit_code = self._process.returncode or 0
+        self._process = None
+
         return Output(
             generated_at=generated_at,
             command_line=self.command_line,
-            exit_code=process.returncode or 0,
+            exit_code=exit_code,
             stdout=outerr["stdout"],
             stderr=outerr["stderr"],
             events=events,

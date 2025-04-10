@@ -77,7 +77,7 @@ def eval(
             args.timeout = config.limits.timeout
 
     eval_name = colored(args.input_path.name, "green", attrs=["bold"])
-    logger.info(f"📊 {args.generator} vs {eval_name} | cases: {len(cases)} | runs: {runs}")
+    logger.info(f"📊 {args.generator} / {eval_name} / cases: {len(cases)} / runs: {runs}")
 
     if output.exists():
         logger.info(f"📊 loading evaluation results from {output}")
@@ -106,7 +106,7 @@ def eval(
                 run_output = asyncio.run(_run_case(args, case))
                 evaluation.add_run(case.name, run_output)
 
-            _show_run(run_output, run + 1, runs, eval_name, case.name)
+            _show_run(args, run_output, runs, run, case.name, do_run)
 
             if evaluation.needs_flush():
                 # save at each run so we can restore later
@@ -122,16 +122,17 @@ def eval(
     _show_results(evaluation)
 
 
-def _show_run(output: Output, run: int, runs: int, eval_name: str, case_name: str) -> None:
+def _show_run(args: Arguments, output: Output, runs: int, run: int, case_name: str, live: bool) -> None:
     usage = output.usage
+    one_of = f"[{run + 1}/{runs}]" if live else f"({run + 1}/{runs})"
+    subject = f"{one_of} {args.generator} / {args.input_path.name} / {case_name}"
+    stats = (
+        f"{output.steps} steps, {output.time:.1f} s, {usage.get('total_tokens', 0)} tokens, {usage.get('cost', 0.0)} $"
+    )
     if output.task_success:
-        logger.success(
-            f"   [{run + 1}/{runs}] {eval_name} / {case_name} : {output.steps} steps | {output.time:.1f} s | {usage.get('total_tokens', 0)} tokens | {usage.get('cost', 0.0)} $"
-        )
+        logger.success(f"   {subject} : {stats}")
     else:
-        logger.error(
-            f"     [{run + 1}/{runs}] {eval_name} / {case_name} : {output.steps} steps | {output.time:.1f} s | {usage.get('total_tokens', 0)} tokens | {usage.get('cost', 0.0)} $"
-        )
+        logger.error(f"     {subject} : {stats}")
 
 
 def _show_results(eval: Evaluation) -> None:

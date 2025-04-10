@@ -78,7 +78,7 @@ class Evaluation(BaseModel):
         self._flush = True
 
     def num_runs(self, case_name: str) -> int:
-        return len(self.runs[case_name])
+        return len(self.runs[case_name]) if case_name in self.runs else 0
 
     def num_run_steps(self, case_name: str, run_idx: int) -> int:
         return self.runs[case_name][run_idx].steps

@@ -1,6 +1,7 @@
 import pathlib
 import typing as t
 
+import natsort
 import requests
 import typer
 from termcolor import colored
@@ -74,7 +75,11 @@ def _show_installed_agents(path: pathlib.Path) -> None:
         print()
         print(f"📁 Installed in {path.absolute()}:\n")
 
+        items = []
         for item in path.iterdir():
+            items.append(item)
+
+        for item in natsort.natsorted(items):
             if Workflow.is_workflow(item):
                 workflow = Workflow.from_path(item)
                 print(
