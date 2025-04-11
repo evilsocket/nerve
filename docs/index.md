@@ -259,10 +259,15 @@ Nerve supports tracing via LiteLLM supported observability providers such as [la
 In order to enable tracing with one of these providers, set the relevant environment variables and then pass the provider name via the `--litellm-tracing` command line argument:
 
 ```bash
+# install tracing dependencies
+pip install langfuse
+
+# set environment variables
 export LANGFUSE_PUBLIC_KEY="..."
 export LANGFUSE_SECRET_KEY="..."
 export LANGFUSE_HOST="..."
 
+# execute an agent with tracing
 nerve run <agent-name> --litellm-tracing langfuse
 ```
 
