@@ -31,6 +31,7 @@ def run(
         args.log_path,
         level="DEBUG" if args.debug else "SUCCESS" if args.quiet else "INFO",
         litellm_debug=args.litellm_debug,
+        litellm_tracing=args.litellm_tracing,
     )
     logger.info(f"🧠 nerve v{nerve.__version__}")
 

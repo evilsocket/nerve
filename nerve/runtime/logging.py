@@ -14,6 +14,7 @@ def init(
     log_path: pathlib.Path | None = None,
     level: str = "INFO",
     litellm_debug: bool = False,
+    litellm_tracing: str | None = None,
     target: t.TextIO = sys.stderr,
 ) -> None:
     """
@@ -23,6 +24,7 @@ def init(
         log_path: The path to the log file.
         level: The log level to use.
         litellm_debug: Whether to enable litellm debug logging.
+        litellm_tracing: The callback to set for litellm tracing.        
     """
 
     if level != "DEBUG":
@@ -39,6 +41,9 @@ def init(
     else:
         # https://github.com/BerriAI/litellm/issues/4825
         litellm.suppress_debug_info = True
+
+    if litellm_tracing:
+        litellm.callbacks = [litellm_tracing]
 
     if log_path:
         logger.add(log_path, format=format, level=level)
