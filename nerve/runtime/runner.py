@@ -23,6 +23,7 @@ class Arguments(BaseModel):
     interactive: bool
     debug: bool
     litellm_debug: bool
+    litellm_tracing: str | None
     quiet: bool
     max_steps: int
     max_cost: float
@@ -71,6 +72,10 @@ def _create_command_line(
 
     # if run_args.litellm_debug:
     #     command_line.append("--litellm-debug")
+
+    if run_args.litellm_tracing:
+        command_line.append("--litellm-tracing")
+        command_line.append(run_args.litellm_tracing)
 
     # if the task is set, add it to the command line
     if "task" in input_state:

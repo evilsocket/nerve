@@ -70,6 +70,10 @@ def _get_run_args(
         bool,
         typer.Option("--litellm-debug", help="Enable litellm debug logging"),
     ] = False,
+    litellm_tracing: t.Annotated[
+        str | None,
+        typer.Option("--litellm-tracing", help="Set litellm callbacks for tracing"),
+    ] = None,
     quiet: t.Annotated[
         bool,
         typer.Option("--quiet", "-q", help="Quiet mode"),
@@ -112,6 +116,7 @@ def _get_run_args(
         interactive=interactive,
         debug=debug,
         litellm_debug=litellm_debug,
+        litellm_tracing=litellm_tracing,
         quiet=quiet,
         max_steps=max_steps,
         max_cost=max_cost,
