@@ -77,7 +77,7 @@ Supports [Jinja2](https://jinja.palletsprojects.com/) templating. You can:
 - Use built-in vars: `{{ CURRENT_DATE }}`, `{{ LOCAL_IP }}`, etc.
 - Run tools inline: `{{ get_logs_tool() }}`
 
-### Bbuilt-in Variables
+### Built-in Variables
 
 ```yaml
 task: The current date is {{ CURRENT_DATE }} and the local IP is {{ LOCAL_IP }}.
@@ -251,6 +251,20 @@ nerve run examples/recipe-workflow --food pizza
 See [workflows.md](workflows.md) for a full breakdown.
 
 For more complex orchestrations, see [concepts.md](concepts.md#workflows).
+
+### 🕵️‍♂️ Observability / Tracing
+
+Nerve supports tracing via LiteLLM supported observability providers such as [langfuse](https://docs.litellm.ai/docs/observability/langfuse_integration), [OpenTelemetry](https://docs.litellm.ai/docs/observability/opentelemetry_integration) and more.
+
+In order to enable tracing with one of these providers, set the relevant environment variables and then pass the provider name via the `--litellm-tracing` command line argument:
+
+```bash
+export LANGFUSE_PUBLIC_KEY="..."
+export LANGFUSE_SECRET_KEY="..."
+export LANGFUSE_HOST="..."
+
+nerve run <agent-name> --litellm-tracing langfuse
+```
 
 ### 🧭 More
 - [concepts.md](concepts.md): Core architecture & mental model
