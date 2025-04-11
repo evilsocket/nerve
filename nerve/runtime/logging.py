@@ -24,7 +24,7 @@ def init(
         log_path: The path to the log file.
         level: The log level to use.
         litellm_debug: Whether to enable litellm debug logging.
-        litellm_tracing: The callback to set for litellm tracing.        
+        litellm_tracing: The callback to set for litellm tracing.
     """
 
     if level != "DEBUG":
@@ -43,7 +43,7 @@ def init(
         litellm.suppress_debug_info = True
 
     if litellm_tracing:
-        litellm.callbacks = [litellm_tracing]
+        litellm.callbacks = [litellm_tracing]  # type: ignore
 
     if log_path:
         logger.add(log_path, format=format, level=level)
