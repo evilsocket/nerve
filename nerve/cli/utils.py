@@ -70,6 +70,7 @@ def _get_run_args(
         bool,
         typer.Option("--litellm-debug", help="Enable litellm debug logging"),
     ] = False,
+    # TODO: document this
     litellm_tracing: t.Annotated[
         str | None,
         typer.Option("--litellm-tracing", help="Set litellm callbacks for tracing"),
