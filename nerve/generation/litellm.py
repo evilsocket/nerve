@@ -44,8 +44,6 @@ class LiteLLMEngine(Engine):
         self.is_ollama = "ollama" in self.generator_id
         self.reduced_window_size = 25
 
-        litellm.drop_params = True
-
         if not self.is_ollama:
             if self.tools and not litellm.supports_function_calling(model=self.generator_id):  # type: ignore
                 logger.warning(
