@@ -144,6 +144,13 @@ Or pass it directly:
 ```bash
 nerve run -g "ollama/llama3.2?temperature=0.9" agent
 ```
+
+To use a local ollama server running on a specific host by setting the `api_base` parameter:
+
+```bash
+nerve run -g "ollama/llama3.2?api_base=http://1.2.3.4:11434" agent
+```
+
 Set generator in YAML too:
 ```yaml
 generator: "anthropic/claude"
