@@ -31,6 +31,8 @@ class Runtime:
         name: str,
         configuration: Configuration,
         debug: bool = False,
+        paginate: bool = False,
+        max_output: int = 4096,
     ) -> "Runtime":
         logger.debug(
             f"building runtime for {name} with generator {configuration.generator} and working dir {working_dir}"
@@ -38,7 +40,7 @@ class Runtime:
         runtime = cls(name=name, generator=configuration.generator or "", working_dir=working_dir)
 
         # import tools from builtin namespaces
-        ns_tools = compiler.get_tools_from_namespaces(configuration.using, configuration.jail)
+        ns_tools = compiler.get_tools_from_namespaces(configuration.using, configuration.jail, paginate=paginate, max_output=max_output)
         if ns_tools:
             logger.debug(f"🧰 importing {len(ns_tools)} tools from: {configuration.using}")
             runtime.tools.extend(ns_tools)
@@ -47,6 +49,8 @@ class Runtime:
         yml_tools = compiler.get_tools_from_yml(
             working_dir,
             [tool for tool in configuration.tools if isinstance(tool, Tool) and not tool.path],
+            paginate=paginate,
+            max_output=max_output,
         )
         if yml_tools:
             logger.debug(f"🧰 importing {len(yml_tools)} tools from: {working_dir}")
@@ -56,13 +60,15 @@ class Runtime:
         py_tools = compiler.get_tools_from_files(
             working_dir,
             [tool.path for tool in configuration.tools if isinstance(tool, Tool) and tool.path],
+            paginate=paginate,
+            max_output=max_output,
         )
         if py_tools:
             logger.debug(f"🧰 importing {len(py_tools)} tools from: {working_dir}")
             runtime.tools.extend(py_tools)
 
         # import custom tools from functions (when used as sdk)
-        funcs = [compiler.wrap_tool_function(tool) for tool in configuration.tools if callable(tool)]
+        funcs = [compiler.wrap_tool_function(tool, paginate=paginate, max_output=max_output) for tool in configuration.tools if callable(tool)]
         if funcs:
             logger.debug(f"🧰 importing {len(funcs)} custom tools")
             runtime.tools.extend(funcs)

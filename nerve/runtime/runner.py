@@ -31,6 +31,8 @@ class Arguments(BaseModel):
     log_path: pathlib.Path | None
     trace: pathlib.Path | None
     start_state: dict[str, t.Any]
+    paginate: bool = False
+    max_output: int = 4096
 
     def to_serializable(self) -> dict[str, t.Any]:
         return {
@@ -63,6 +65,13 @@ def _create_command_line(
     if run_args.timeout:
         command_line.append("--timeout")
         command_line.append(str(run_args.timeout))
+
+    if run_args.paginate:
+        command_line.append("--paginate")
+
+    if run_args.max_output:
+        command_line.append("--max-output")
+        command_line.append(str(run_args.max_output))
 
     # if run_args.quiet:
     #     command_line.append("--quiet")

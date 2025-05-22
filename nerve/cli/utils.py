@@ -105,6 +105,14 @@ def _get_run_args(
         str,
         typer.Option("--start-state", help="Pass the initial input state as a JSON string."),
     ] = "{}",
+    paginate: t.Annotated[
+        bool,
+        typer.Option("--paginate", help="Enable pagination of tool output."),
+    ] = False,
+    max_output: t.Annotated[
+        int,
+        typer.Option("--max-output", help="Maximum output size for tool pagination."),
+    ] = 4096,
 ) -> Arguments:
     return Arguments(
         input_path=_resolve_input_path(input_path),
@@ -125,4 +133,6 @@ def _get_run_args(
         trace=trace,
         # parse the start_state JSON string into a dictionary
         start_state=json.loads(start_state),
+        paginate=paginate,
+        max_output=max_output,
     )

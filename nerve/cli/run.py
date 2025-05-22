@@ -75,12 +75,14 @@ async def _run(extra_args: list[str], args: Arguments) -> None:
             max_cost=args.max_cost,
             timeout=args.timeout,
             start_state=start_state,
+            paginate=args.paginate,
+            max_output=args.max_output,
         )
 
     elif Configuration.is_agent_config(args.input_path):
         # single agent
         flow = await Flow.build(
-            actors=[await Agent.create_from_file(args.generator, args.input_path, args.conversation_strategy)],
+            actors=[await Agent.create_from_file(args.generator, args.input_path, args.conversation_strategy, paginate=args.paginate, max_output=args.max_output)],
             max_steps=args.max_steps,
             max_cost=args.max_cost,
             timeout=args.timeout,

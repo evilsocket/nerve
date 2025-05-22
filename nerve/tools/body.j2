@@ -13,7 +13,12 @@ from nerve.tools.namespaces.shell import shell
 {% set func_ret_type = "None" %}
 {% endif %}
 
-def {{ tool.name }}({% for arg in tool.arguments %}{{ arg.name }}: Annotated[str, Field(description="""{{ arg.description }}""", examples=["""{{ arg.example }}"""])]{% if not loop.last %}, {% endif %}{% endfor %}) -> {{ func_ret_type }}:
+def {{ tool.name }}(
+    {%- for arg in tool.arguments %}
+        {{ arg.name }}: Annotated[str, Field(description="""{{ arg.description }}""", examples=["""{{ arg.example }}"""])]{% if not loop.last or paginate %}, {% endif %}
+    {%- endfor %}
+    {%- if paginate %}page: Annotated[int, Field(description="Page number for paginated output. Optional.")] = 1{% endif %}
+) -> {{ func_ret_type }}:
     """{{ tool.description }}"""
 
 {% if tool.tool is none %}

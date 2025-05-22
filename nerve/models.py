@@ -124,6 +124,7 @@ class Configuration(BaseModel):
         max_steps: int | None = None
         max_cost: float | None = None
         timeout: int | None = None
+        max_output: int = 4096
 
     # legacy field used to detect if the user is loading a legacy file
     system_prompt: str | None = Field(default=None, exclude=True)

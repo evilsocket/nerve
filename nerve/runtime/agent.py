@@ -41,6 +41,8 @@ class Agent:
         window_strategy: WindowStrategy = FullHistoryStrategy(),
         working_dir: pathlib.Path = pathlib.Path.cwd(),
         name: str = "agent",
+        paginate: bool = False,
+        max_output: int = 4096,
     ) -> "Agent":
         """
         Create an agent from a generator and configuration.
@@ -52,6 +54,8 @@ class Agent:
             window_strategy: How to handle conversation history.
             working_dir: The working directory to use.
             name: The name of the agent.
+            paginate: Enable pagination of tool output.
+            max_output: Maximum output size for tool pagination.
         """
 
         if start_state:
@@ -75,6 +79,8 @@ class Agent:
             working_dir=working_dir,
             name=name,
             configuration=configuration,
+            paginate=paginate,
+            max_output=max_output,
         )
 
         return cls(
@@ -91,6 +97,8 @@ class Agent:
         config_file_path: pathlib.Path,
         window_strategy: WindowStrategy = FullHistoryStrategy(),
         start_state: dict[str, str] | None = None,
+        paginate: bool = False,
+        max_output: int = 4096,
     ) -> "Agent":
         config = Configuration.from_path(config_file_path)
         if config.is_legacy:
@@ -106,6 +114,8 @@ class Agent:
             window_strategy,
             working_dir,
             stem if stem not in ("task", "agent") else working_dir.stem,
+            paginate=paginate,
+            max_output=max_output,
         )
 
     def _get_system_prompt(self) -> str | None:

@@ -72,6 +72,8 @@ class Flow:
         max_cost: float = 10.0,
         timeout: int | None = None,
         start_state: dict[str, str] | None = None,
+        paginate: bool = False,
+        max_output: int = 4096,
     ) -> "Flow":
         workflow = Workflow.from_path(input_path)
         root_path = input_path if input_path.is_dir() else input_path.parent
@@ -83,7 +85,7 @@ class Flow:
             if not task_file_path.exists():
                 task_file_path = root_path / actor_name
 
-            actors.append(await Agent.create_from_file(actor.generator, task_file_path, window_strategy))
+            actors.append(await Agent.create_from_file(actor.generator, task_file_path, window_strategy, paginate=paginate, max_output=max_output))
 
         if start_state:
             state.update_variables(start_state)

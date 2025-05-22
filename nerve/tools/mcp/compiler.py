@@ -83,7 +83,7 @@ def _get_python_type(
         return None, type_mapping.get(schema_type, t.Any)  # type: ignore
 
 
-async def create_function_body(client: Client, mcp_tool: Tool) -> tuple[str, dict[str, t.Any]]:
+async def create_function_body(client: Client, mcp_tool: Tool, paginate: bool = False) -> tuple[str, dict[str, t.Any]]:
     typed_args = []
     client_name = f"nerve_mcp_{client.name}_client"
     type_defs = {client_name: client}
@@ -106,16 +106,19 @@ async def create_function_body(client: Client, mcp_tool: Tool) -> tuple[str, dic
     with open(template_path) as f:
         template_content = f.read()
 
+    import logging
+    logging.getLogger("nerve.tools.mcp.compiler").debug(f"create_function_body: tool={mcp_tool.name}, paginate={paginate}")
+
     return (
         jinja2.Environment()
         .from_string(template_content)
-        .render(client_name=client_name, tool=mcp_tool, arguments=typed_args),
+        .render(client_name=client_name, tool=mcp_tool, arguments=typed_args, paginate=paginate),
         type_defs,
     )
 
 
 async def get_tools_from_mcp(
-    name: str, server: Configuration.MCPServer, working_dir: pathlib.Path
+    name: str, server: Configuration.MCPServer, working_dir: pathlib.Path, paginate: bool = False, max_output: int = 4096
 ) -> list[t.Callable[..., t.Any]]:
     # connect and list tools
     client = Client(name, server, working_dir)
@@ -123,11 +126,8 @@ async def get_tools_from_mcp(
     compiled_tools = []
 
     for mcp_tool in mpc_tools:
-        func_body, type_defs = await create_function_body(client, mcp_tool)
-
-        # print(func_body)
+        func_body, type_defs = await create_function_body(client, mcp_tool, paginate=paginate)
         exec(func_body, type_defs)
-
-        tool_fn = wrap_tool_function(type_defs[mcp_tool.name])
+        tool_fn = wrap_tool_function(type_defs[mcp_tool.name], paginate=paginate, max_output=max_output)
         compiled_tools.append(tool_fn)
     return compiled_tools

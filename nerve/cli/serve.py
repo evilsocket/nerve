@@ -121,6 +121,8 @@ async def _serve(
             name=agent_name,
             configuration=config,
             debug=run_args.debug,
+            paginate=run_args.paginate,
+            max_output=run_args.max_output,
         )
 
     if mcp or mcp_sse:
