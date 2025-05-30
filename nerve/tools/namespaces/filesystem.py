@@ -13,6 +13,8 @@ EMOJI = "📂"
 # if set, the agent will only have access to these paths
 jail: list[str] = []
 
+# TODO: fix this missed interpolation:
+# "\u001b[31m\u001b[1m[04-17-25 14:04:03] ERROR\u001b[0m list_folder_contents: access to path /Users/evilsocket/.nerve/agents/eval-regex/cases is not allowed, only allowed paths are: ['{{ CASE_PATH }}']",
 
 def list_folder_contents(
     path: Annotated[str, "The path to the folder to list"],
