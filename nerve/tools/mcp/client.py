@@ -44,16 +44,38 @@ class Client:
         self._exit_stack = AsyncExitStack()
         self._tools: list[Tool] = []
         self._client_context: t.Any = None
+        # Check if this MCP server should run in quiet mode
+        self._is_quiet = "--quiet" in (server.args or [])
 
     async def _logging_callback(
         self,
         params: mcp_types.LoggingMessageNotificationParams,
     ) -> None:
         line = str(params.data)
-        # parts = line.split("]", 2)
-        # line = parts[1].strip() if len(parts) > 1 else line  # remove timestamp
-        # line = line.replace(str(params.level).upper(), "").strip()  # remove level
-        getattr(logger, str(params.level))(f"<{self.name}> {line}")
+        
+        # In quiet mode, suppress verbose output but still show errors/warnings
+        if self._is_quiet:
+            # Parse the actual log level from nerve-formatted log lines
+            if "] ERROR " in line or "] WARNING " in line:
+                # Show errors and warnings even in quiet mode
+                pass
+            elif "] INFO " in line or "] DEBUG " in line or "🧠" in line or "📊" in line or "🛠️" in line:
+                # Suppress informational logs and tool output in quiet mode
+                return
+            else:
+                # For unstructured output (like tool results), suppress in quiet mode
+                return
+        
+        # Determine appropriate log level based on content
+        if "] ERROR " in line:
+            logger.error(f"<{self.name}> {line}")
+        elif "] WARNING " in line:
+            logger.warning(f"<{self.name}> {line}")
+        elif "] INFO " in line:
+            logger.info(f"<{self.name}> {line}")
+        else:
+            # Default to the level provided by MCP protocol
+            getattr(logger, str(params.level))(f"<{self.name}> {line}")
 
     @asynccontextmanager
     async def _safe_stdio_context(
