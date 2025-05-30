@@ -117,7 +117,7 @@ class Configuration(BaseModel):
         url: str | None = None
         headers: dict[str, t.Any] | None = None
         timeout: float = 5
-        sse_read_timeout: float = 60 * 5
+        read_timeout: float = 60 * 5
 
     class Limits(BaseModel):
         runs: int | None = None

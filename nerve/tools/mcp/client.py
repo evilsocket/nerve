@@ -4,12 +4,14 @@ import pathlib
 import sys
 import typing as t
 from contextlib import AsyncExitStack, asynccontextmanager
+from datetime import timedelta
 
 import mcp.types as mcp_types
 from loguru import logger
 from mcp import ClientSession, StdioServerParameters, Tool
 from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
+from mcp.client.streamable_http import streamablehttp_client
 from mcp.types import EmbeddedResource, ImageContent, TextContent
 
 from nerve.models import Configuration
@@ -79,13 +81,22 @@ class Client:
 
         self._client_context = None
         if self.server.url:
-            logger.debug("connecting to SSE MCP server {}", self.name)
-            self._client_context = sse_client(
-                url=self.server.url or "http://localhost:8080",
-                headers=self.server.headers,
-                timeout=self.server.timeout,
-                sse_read_timeout=self.server.sse_read_timeout,
-            )
+            if self.server.url.startswith("stream://"):
+                logger.debug("connecting to streamable http MCP server {}", self.name)
+                self._client_context = streamablehttp_client(
+                    url=self.server.url.replace("stream://", "http://"),
+                    headers=self.server.headers,
+                    timeout=timedelta(seconds=self.server.timeout),
+                    sse_read_timeout=timedelta(seconds=self.server.read_timeout),
+                )
+            else:
+                logger.debug("connecting to SSE MCP server {}", self.name)
+                self._client_context = sse_client(
+                    url=self.server.url or "http://localhost:8080",
+                    headers=self.server.headers,
+                    timeout=self.server.timeout,
+                    sse_read_timeout=self.server.read_timeout,
+                )
         else:
             logger.debug("connecting to stdio MCP server {}", self.name)
             self._client_context = self._safe_stdio_context()
