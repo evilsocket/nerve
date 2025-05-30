@@ -278,7 +278,10 @@ Let the agent execute shell commands.
 
 ### `shell`
 
-<pre>Execute a shell command on the local computer and return the output. Non interactive shell with a timeout of 30 seconds.</pre>
+<pre>Execute a shell command on the local computer and return the output. Non interactive shell with a timeout of 60 seconds.</pre>
+
+> [!TIP]  
+> The default timeout for shell commands is 60 seconds. You can override this value by setting the `NERVE_SHELL_TIMEOUT` environment variable.
 
 **Parameters**
 

@@ -7,6 +7,7 @@ DEFAULT_SERVE_PORT: int = int(os.getenv("NERVE_SERVE_PORT", 8667))
 DEFAULT_MAX_STEPS: int = int(os.getenv("NERVE_MAX_STEPS", 100))
 DEFAULT_MAX_COST: float = float(os.getenv("NERVE_MAX_COST", 10.0))
 DEFAULT_TIMEOUT: int | None = int(os.getenv("NERVE_TIMEOUT", 0)) or None
+DEFAULT_SHELL_TIMEOUT: int = int(os.getenv("NERVE_SHELL_TIMEOUT", "60"))
 DEFAULT_CONVERSATION_STRATEGY: str = os.getenv("NERVE_CONVERSATION_STRATEGY", "full")
 
 DEFAULT_NERVE_HOME: pathlib.Path = pathlib.Path.home() / ".nerve"

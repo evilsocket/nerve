@@ -8,6 +8,7 @@ Let the agent execute shell commands.
 import subprocess
 from typing import Annotated
 
+from nerve.defaults import DEFAULT_SHELL_TIMEOUT
 from nerve.tools.utils import maybe_text
 
 # for docs
@@ -19,7 +20,7 @@ def shell(
 ) -> str | bytes:
     """Execute a shell command on the local computer and return the output. Non interactive shell with a timeout of 30 seconds."""
 
-    result = subprocess.run(command, shell=True, capture_output=True, timeout=30)
+    result = subprocess.run(command, shell=True, capture_output=True, timeout=DEFAULT_SHELL_TIMEOUT)
 
     raw_output = result.stdout or b""
 
