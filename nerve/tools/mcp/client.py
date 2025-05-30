@@ -52,7 +52,7 @@ class Client:
         params: mcp_types.LoggingMessageNotificationParams,
     ) -> None:
         line = str(params.data)
-        
+
         # In quiet mode, suppress verbose output but still show errors/warnings
         if self._is_quiet:
             # Parse the actual log level from nerve-formatted log lines
@@ -65,7 +65,7 @@ class Client:
             else:
                 # For unstructured output (like tool results), suppress in quiet mode
                 return
-        
+
         # Determine appropriate log level based on content
         if "] ERROR " in line:
             logger.error(f"<{self.name}> {line}")
