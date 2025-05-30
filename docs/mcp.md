@@ -19,6 +19,7 @@ using:
   - task
 
 mcp:
+  # for stdio based mcp servers
   memory:
     command: npx
     args: ["-y", "@modelcontextprotocol/server-memory"]
@@ -26,6 +27,14 @@ mcp:
   filesystem:
     command: npx
     args: ["-y", "@modelcontextprotocol/server-filesystem", "."]
+
+  # SSE
+  example_sse:
+    url: http://localhost:9090/
+
+  # Streamable HTTP
+  example_streamable_http:
+    url: stream://localhost:8080/example
 ```
 
 You can connect to any of the [publicly available MCP servers](https://github.com/punkpeye/awesome-mcp-servers), or define your own custom tools.
