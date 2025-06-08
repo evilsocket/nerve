@@ -116,6 +116,32 @@ async def calculate(operation: Annotated[str, "The operation to perform"], value
 '''.strip(),
             func_body,
         )
+    
+    async def test_create_function_body_with_string_default_colliding_with_builtin(self) -> None:
+        client = MagicMock(spec=Client)
+
+        mock_tool = Tool(
+            name="test_state_tool",
+            description="A tool to test default string handling.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "state": {
+                        "type": "string",
+                        "description": "The state of the entity.",
+                        "default": "open",  # This default value could be misinterpreted as the 'open' function.
+                    },
+                },
+            },
+        )
+
+        func_body, type_defs = await create_function_body(client, mock_tool)
+
+        # Default value to be correctly quoted as a string literal: 'open'
+        self.assertIn(
+            """async def test_state_tool(state: Annotated[str, "The state of the entity."] = 'open') -> Any:""",
+            func_body,
+        )
 
     async def test_create_function_body_with_complex_nested_arguments(self) -> None:
         # Mock the client
