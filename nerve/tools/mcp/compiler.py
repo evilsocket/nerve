@@ -97,9 +97,11 @@ async def create_function_body(client: Client, mcp_tool: Tool) -> tuple[str, dic
             type_defs.update(args_def)
 
         if "default" in arg_props:
-            arg["default"] = arg_props["default"]
+            arg["default"] = repr(arg_props["default"])
 
         typed_args.append(arg)
+    
+    typed_args.sort(key=lambda arg: 'default' in arg)
 
     # load the template from the same directory as this script
     template_path = os.path.join(os.path.dirname(__file__), "body.j2")

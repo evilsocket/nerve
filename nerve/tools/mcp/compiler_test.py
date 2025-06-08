@@ -89,6 +89,34 @@ async def calculate(operation: Annotated[str, "The operation to perform"], value
             func_body,
         )
 
+    async def test_create_function_body_with_unsorted_string_and_int_arguments_with_default(self) -> None:
+        # Mock the client
+        client = MagicMock(spec=Client)
+
+        # Create a mock tool with string and int arguments
+        mock_tool = Tool(
+            name="calculate",
+            description="A function that performs a calculation",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "value": {"type": "integer", "description": "The value to calculate with", "default": 10},
+                    "operation": {"type": "string", "description": "The operation to perform"},
+                },
+                "required": ["operation"],
+            },
+        )
+
+        func_body, type_defs = await create_function_body(client, mock_tool)
+
+        self.assertIn(
+            '''
+async def calculate(operation: Annotated[str, "The operation to perform"], value: Annotated[int, "The value to calculate with"] = 10) -> Any:
+    """A function that performs a calculation"""
+'''.strip(),
+            func_body,
+        )
+
     async def test_create_function_body_with_complex_nested_arguments(self) -> None:
         # Mock the client
         client = MagicMock(spec=Client)
