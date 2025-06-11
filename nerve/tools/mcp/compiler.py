@@ -100,7 +100,7 @@ async def create_function_body(client: Client, mcp_tool: Tool) -> tuple[str, dic
             arg["default"] = repr(arg_props["default"])
 
         typed_args.append(arg)
-    
+
     typed_args.sort(key=lambda arg: 'default' in arg)
 
     # load the template from the same directory as this script

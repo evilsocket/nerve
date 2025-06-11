@@ -116,7 +116,7 @@ async def calculate(operation: Annotated[str, "The operation to perform"], value
 '''.strip(),
             func_body,
         )
-    
+
     async def test_create_function_body_with_string_default_colliding_with_builtin(self) -> None:
         client = MagicMock(spec=Client)
 
