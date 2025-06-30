@@ -1,8 +1,8 @@
 # ruff: noqa: B010
+import json
 import os
 import pathlib
 import typing as t
-import json
 
 import jinja2
 from mcp import Tool
