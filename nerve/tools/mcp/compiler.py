@@ -91,7 +91,11 @@ async def create_function_body(client: Client, mcp_tool: Tool) -> tuple[str, dic
     for name, arg_props in mcp_tool.inputSchema.get("properties", {}).items():
         # print(name, arg_props)
         args_def, arg_type = _get_python_type(name, arg_props)
-        arg = {"name": name, "type": _stringify_type(arg_type), "description": arg_props.get("description", "")}
+        arg = {
+            "name": name,
+            "type": _stringify_type(arg_type),
+            "description": arg_props.get("description", "").replace('\\', '\\\\').replace('"', '\\"'),
+        }
 
         if args_def:
             type_defs.update(args_def)
