@@ -2,6 +2,7 @@
 import os
 import pathlib
 import typing as t
+import json
 
 import jinja2
 from mcp import Tool
@@ -94,7 +95,7 @@ async def create_function_body(client: Client, mcp_tool: Tool) -> tuple[str, dic
         arg = {
             "name": name,
             "type": _stringify_type(arg_type),
-            "description": arg_props.get("description", "").replace('\\', '\\\\').replace('"', '\\"'),
+            "description": json.dumps(arg_props.get("description", "")).strip('"'),
         }
 
         if args_def:
