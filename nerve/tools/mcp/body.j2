@@ -2,7 +2,7 @@ from typing import *
 from pydantic import Field
 from loguru import logger
 
-async def {{ tool.name }}({% for arg in arguments %}{{ arg.name }}: Annotated[{{ arg.type }}, "{{ arg.description }}"]{% if 'default' in arg %} = {{ arg.default }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}) -> Any:
+async def {{ tool.name }}({% for arg in arguments %}{{ arg.name }}: Annotated[{{ arg.type }}, "{{ arg.description }}"]{% if 'default' in arg %} = {% if arg.type == "str" %}"{{ arg.default }}"{% else %}{{ arg.default >
     """{{ tool.description }}"""
 
     return await globals().get("{{ client_name }}", None).call_tool("{{ tool.name }}", **locals())
