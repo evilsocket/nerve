@@ -144,7 +144,7 @@ async def create_agent(path: pathlib.Path, task: str | None = None, default: boo
         ]
 
         answers = inquirer.prompt(questions)
-        answers["tools"] = [tool.split(" - ")[0] for tool in answers["tools"]]  # type: ignore
+        answers["tools"] = [tool.split(" - ")[0] for tool in answers["tools"]]
 
         if user_prompts:
             answer = str(answers["system_prompt"])
