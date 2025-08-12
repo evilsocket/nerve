@@ -7,7 +7,7 @@ import uuid
 import litellm
 from loguru import logger
 
-from nerve.generation import Engine, GenerationConfig, WindowStrategy
+from nerve.generation import Engine, GenerationConfig
 from nerve.generation.conversation import SlidingWindowStrategy
 from nerve.generation.ollama import OllamaGlue
 from nerve.models import Usage
