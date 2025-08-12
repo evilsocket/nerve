@@ -69,6 +69,10 @@ Read the [documentation](https://github.com/evilsocket/nerve/blob/main/docs/inde
 
 We welcome contributions! Check out our [contributing guidelines](https://github.com/evilsocket/nerve/blob/main/CONTRIBUTING.md) to get started and join our [Discord community](https://discord.gg/btZpkp45gQ) for help and discussion.
 
+<a href="https://github.com/evilsocket/nerve/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=evilsocket/nerve" alt="Nerve project contributors" />
+</a>
+
 ## License
 
 Nerve is released under the GPL 3 license.
