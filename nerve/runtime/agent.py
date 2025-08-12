@@ -4,7 +4,7 @@ import click
 from loguru import logger
 
 import nerve.runtime.state as state
-from nerve.generation import Engine, WindowStrategy
+from nerve.generation import Engine, GenerationConfig, WindowStrategy
 from nerve.generation.conversation import FullHistoryStrategy
 from nerve.generation.litellm import LiteLLMEngine
 from nerve.models import Configuration, Tool, Usage
@@ -77,10 +77,17 @@ class Agent:
             configuration=configuration,
         )
 
+        engine_config = GenerationConfig(
+            generator_id=configuration.generator,
+            window_strategy=window_strategy,
+            tools=runtime.tools,
+            reasoning_effort=configuration.reasoning,
+        )
+
         return cls(
             runtime=runtime,
             configuration=configuration,
-            generation_engine=LiteLLMEngine(configuration.generator, window_strategy, runtime.tools),
+            generation_engine=LiteLLMEngine(engine_config),
             conv_window_strategy=window_strategy,
         )
 

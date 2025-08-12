@@ -4,6 +4,8 @@ import os
 import typing as t
 from abc import ABC, abstractmethod
 
+from litellm import ConfigDict
+from pydantic import BaseModel
 from loguru import logger
 
 from nerve.models import Usage
@@ -11,7 +13,7 @@ from nerve.runtime import state
 from nerve.tools.protocol import get_tool_response, get_tool_schema
 
 
-class WindowStrategy(ABC):
+class WindowStrategy(ABC, BaseModel):
     @abstractmethod
     async def get_window(self, history: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
         pass
@@ -20,23 +22,28 @@ class WindowStrategy(ABC):
     def __str__(self) -> str:
         pass
 
+class GenerationConfig(BaseModel):
+    generator_id: str
+    reasoning_effort: str | None = None
+    window_strategy: WindowStrategy
+    tools: list[t.Callable[..., t.Any]] | None = None
+
 
 class Engine(ABC):
     def __init__(
         self,
-        generator_id: str,
-        window_strategy: WindowStrategy,
-        tools: list[t.Callable[..., t.Any]] | None = None,
+        config: GenerationConfig,
     ):
-        self.generator_id = generator_id
+        self.config = config
+        self.generator_id = config.generator_id
         self.generator_params: dict[str, t.Any] = {}
 
         self._parse_generator_params()
 
         self.history: list[dict[str, t.Any]] = []
-        self.window_strategy = window_strategy
+        self.window_strategy = config.window_strategy
 
-        self.tools = {fn.__name__: fn for fn in (tools or [])}
+        self.tools = {fn.__name__: fn for fn in (config.tools or [])}
         self.tools_schemas = []
         for tool_name, tool_fn in self.tools.items():
             if not tool_fn.__doc__:

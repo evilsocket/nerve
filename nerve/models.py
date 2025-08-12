@@ -74,7 +74,7 @@ class Tool(BaseModel):
     tool: str | None = None
 
 
-def _check_required_version(required: str | None) -> str | None:
+def _validate_required_version(required: str | None) -> str | None:
     if required:
         from packaging.requirements import Requirement
 
@@ -96,6 +96,12 @@ def _check_required_version(required: str | None) -> str | None:
             raise ValueError(msg)
 
     return required
+
+
+def _validate_reasoning_effort(effort: str | None) -> str | None:
+    if effort not in [None, "low", "medium", "high"]:
+        raise ValueError(f"invalid reasoning effort: {effort}")
+    return effort
 
 
 class Configuration(BaseModel):
@@ -127,13 +133,14 @@ class Configuration(BaseModel):
 
     # legacy field used to detect if the user is loading a legacy file
     system_prompt: str | None = Field(default=None, exclude=True)
-
     # optional generator
     generator: str | None = None
+    # thinking effort for models supporting reasoning
+    reasoning: t.Annotated[str | None, AfterValidator(_validate_reasoning_effort)] = None
     # optional agent description
     description: str = ""
     # optional nerve version requirement
-    requires: t.Annotated[str | None, AfterValidator(_check_required_version)] = None
+    requires: t.Annotated[str | None, AfterValidator(_validate_required_version)] = None
     # used for versioning the agents
     version: str = "1.0.0"
     # the system prompt, the agent identity

@@ -95,9 +95,14 @@ def log_event_to_terminal(event: Event) -> None:
             data["agent"] = DictWrapper(data["agent"])
 
         generator = data["agent"].runtime.generator
+        reasoning = data["agent"].configuration.reasoning
         name = data["agent"].runtime.name
         version = data["agent"].configuration.version
         tools = len(data["agent"].runtime.tools)
+
+        if reasoning:
+            generator = f"{generator} (reasoning={reasoning})"
+
         logger.info(f"🤖 {generator} | {name} v{version} with {tools} tools")
 
     elif event.name == "before_tool_called":

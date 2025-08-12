@@ -23,6 +23,10 @@ using:
   - shell
 ```
 
+#### Enable Reasoning
+
+For models supporting reasoning, you can add a `reasoning` field to enable it, with a value that can either be `low`, `medium` or `high`.
+
 ### Prompt Interpolation and Variables
 Nerve supports [Jinja2](https://jinja.palletsprojects.com/) templating for dynamic prompt construction. You can:
 - Inject command line arguments (`{{ target }}`)

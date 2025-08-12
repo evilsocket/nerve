@@ -70,6 +70,10 @@ Run it with:
 nerve run new-agent --url cnn.com
 ```
 
+#### Enable Reasoning
+
+For models supporting reasoning, you can add a `reasoning` field to enable it, with a value that can either be `low`, `medium` or `high`.
+
 ### Prompting & Variables
 Supports [Jinja2](https://jinja.palletsprojects.com/) templating. You can:
 - Include files: `{% include 'filename.md' %}`

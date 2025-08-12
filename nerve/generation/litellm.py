@@ -7,7 +7,7 @@ import uuid
 import litellm
 from loguru import logger
 
-from nerve.generation import Engine, WindowStrategy
+from nerve.generation import Engine, GenerationConfig, WindowStrategy
 from nerve.generation.conversation import SlidingWindowStrategy
 from nerve.generation.ollama import OllamaGlue
 from nerve.models import Usage
@@ -34,11 +34,9 @@ def _convert_to_serializable(obj: t.Any) -> t.Any:
 class LiteLLMEngine(Engine):
     def __init__(
         self,
-        generator_id: str,
-        window_strategy: WindowStrategy,
-        tools: list[t.Callable[..., t.Any]] | None = None,
+        config: GenerationConfig,
     ):
-        super().__init__(generator_id, window_strategy, tools)
+        super().__init__(config)
 
         # until this is not fixed, ollama needs special treatment: https://github.com/BerriAI/litellm/issues/6353
         self.is_ollama = "ollama" in self.generator_id
@@ -60,6 +58,12 @@ class LiteLLMEngine(Engine):
             logger.debug(f"litellm.conversation: {json.dumps(conversation, indent=2)}")
 
             # litellm.set_verbose = True
+
+            #if self.config.reasoning_effort:
+            #    # if the model does not support reasoning, avoid raising litellm.UnsupportedParamsError
+            #    # by dropping the unsupported parameter
+            #    litellm.drop_params = True
+
             response = litellm.completion(
                 model=self.generator_id,
                 messages=conversation,
@@ -67,6 +71,7 @@ class LiteLLMEngine(Engine):
                 tool_choice="auto" if tools_schema else None,
                 verbose=False,
                 api_base=self.api_base,
+                reasoning_effort=self.config.reasoning_effort,
                 **self.generator_params,
             )
 
