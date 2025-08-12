@@ -5,14 +5,14 @@ import typing as t
 from abc import ABC, abstractmethod
 
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from nerve.models import Usage
 from nerve.runtime import state
 from nerve.tools.protocol import get_tool_response, get_tool_schema
 
 
-class WindowStrategy(ABC, BaseModel):
+class WindowStrategy(ABC):
     @abstractmethod
     async def get_window(self, history: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
         pass
@@ -22,6 +22,8 @@ class WindowStrategy(ABC, BaseModel):
         pass
 
 class GenerationConfig(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     generator_id: str
     reasoning_effort: str | None = None
     window_strategy: WindowStrategy
