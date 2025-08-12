@@ -20,6 +20,13 @@ nerve eval path/to/evaluation --output results.json
 ```
 Each case is passed to the agent, and results (e.g., completion, duration, output) are saved.
 
+### Trace Integration
+Evaluation runs can automatically generate trace files for debugging:
+```bash
+nerve eval path/to/evaluation --output results.json --trace eval-trace.jsonl
+```
+This captures all events during evaluation for analysis, including tool calls, variable changes, and execution flow.
+
 
 ## 🗂 Case Formats
 Nerve supports three evaluation case formats:
@@ -91,4 +98,3 @@ Results are written to a `.json` file with details like:
 - [concepts.md](concepts.md#evaluation)
 - [index.md](index.md): CLI usage
 - [mcp.md](mcp.md): when using remote agents or tools in evaluation
-

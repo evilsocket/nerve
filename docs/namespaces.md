@@ -2,6 +2,15 @@
 
 Nerve offers a rich set of predefined tools, organized in namespaces, that the agent can import [via the `using` directive](index.md#usage). This page contains the list of namespaces available in Nerve, with the descriptive prompt that will be provided to the model.
 
+> [!NOTE]
+> The `jail` directive can restrict filesystem and filesystem_w namespaces to specific paths:
+> ```yaml
+> jail:
+>   filesystem: ["/allowed/path", "/another/allowed/path"]
+>   filesystem_w: ["/writable/path", "{{ dynamic_path }}"]
+> ```
+> Variables can be used in jail paths for dynamic configuration.
+
 ## 🔧 anytool
 
 Let the agent create its own tools in Python.
@@ -334,4 +343,3 @@ Provides tools for getting the current date and time and waiting for a given num
 * `seconds` <i>(<class 'int'>)</i>: The number of seconds to wait
 
 </details>
-

@@ -70,6 +70,39 @@ Run it with:
 nerve run new-agent --url cnn.com
 ```
 
+#### Full Configuration Example
+```yaml
+# Complete agent configuration with all available fields
+agent: You are a helpful assistant.
+task: Make an HTTP request to {{ url }}
+generator: openai/gpt-4o  # optional, override default generator
+reasoning: medium  # optional: low, medium, or high for reasoning models
+description: "This agent makes HTTP requests"  # optional description
+version: "1.0.0"  # optional version string
+requires: ">=1.2.0"  # optional minimum Nerve version requirement
+
+# Set default values for variables
+defaults:
+  url: "https://example.com"
+  timeout: 30
+
+# Restrict namespace access to specific paths
+jail:
+  filesystem:
+    - "/allowed/path"
+    - "{{ target_dir }}"
+
+# Set execution limits
+limits:
+  max_steps: 100
+  max_cost: 5.0
+  timeout: 300  # seconds
+
+using:
+  - shell
+  - task
+```
+
 #### Enable Reasoning
 
 For models supporting reasoning, you can add a `reasoning` field to enable it, with a value that can either be `low`, `medium` or `high`.
@@ -168,10 +201,10 @@ Run in interactive step-by-step mode:
 nerve run agent -i
 ```
 Available commands:
-- `step`, `s`, or `Enter`: one step
-- `continue`, `c`: run till done
-- `view`, `v`: view current state
-- `quit`, `q`, `exit`: exit
+- `step`, `s`, or `Enter`: Execute one step
+- `continue`, `c`: Run until task completion
+- `view`, `v`: View current state and variables
+- `quit`, `q`, `exit`: Exit the agent
 
 ### 🎥 Record & Replay
 Record sessions:
@@ -183,6 +216,13 @@ Replay sessions:
 nerve play trace.jsonl
 nerve play trace.jsonl -f  # fast-forward
 ```
+
+### 📊 Trace Files
+Trace files are JSONL (JSON Lines) format with one event per line:
+```bash
+nerve run agent --trace trace.jsonl
+```
+Events include: `task_started`, `step_started`, `tool_called`, `variable_change`, `task_complete`, and more. This is useful for debugging agent behavior and analyzing execution flow.
 
 ### 🛠 Adding Tools
 See [concepts.md](concepts.md#tools) for details.

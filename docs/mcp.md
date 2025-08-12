@@ -37,6 +37,47 @@ mcp:
     url: stream://localhost:8080/example
 ```
 
+### MCP Server Configuration Options
+
+Full configuration options for MCP servers:
+
+```yaml
+mcp:
+  my_server:
+    # For stdio-based servers (process communication)
+    command: python  # Command to execute
+    args: ["server.py"]  # Arguments for the command
+    env:  # Environment variables
+      API_KEY: "secret"
+      DEBUG: "true"
+    session_timeout: 5  # Connection timeout in seconds (default: 5)
+    
+  # For SSE (Server-Sent Events)
+  sse_server:
+    url: http://localhost:9090/  # SSE endpoint
+    headers:  # Optional HTTP headers
+      Authorization: "Bearer token"
+      X-Custom-Header: "value"
+    timeout: 5  # Connection timeout (default: 5)
+    read_timeout: 300  # Read timeout in seconds (default: 5 minutes)
+    
+  # For Streamable HTTP
+  stream_server:
+    url: stream://localhost:8080/example  # Prefix with stream://
+    headers:  # Optional HTTP headers
+      Authorization: "Bearer token"
+    timeout: 5  # Connection timeout
+    read_timeout: 300  # Read timeout
+```
+
+### Transport Mechanisms
+
+Nerve supports three transport mechanisms for MCP:
+
+- **stdio**: Process-based communication (default). The MCP server runs as a subprocess and communicates via standard input/output.
+- **SSE**: Server-Sent Events over HTTP. Connect to an HTTP endpoint that streams events.
+- **Streamable HTTP**: HTTP with streaming responses. Similar to SSE but uses a different protocol (prefix URL with `stream://`).
+
 You can connect to any of the [publicly available MCP servers](https://github.com/punkpeye/awesome-mcp-servers), or define your own custom tools.
 
 ## 🖧 MCP Server
@@ -115,4 +156,3 @@ For full examples, see the [mcp-recipe](https://github.com/evilsocket/nerve/tree
 - [concepts.md](concepts.md#mcp-model-context-protocol) — overview of how MCP fits into Nerve's architecture
 - [index.md](index.md) — quick usage examples
 - [workflows.md](workflows.md) — for linear pipelines (MCP enables more complex ones)
-

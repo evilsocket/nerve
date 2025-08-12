@@ -116,6 +116,28 @@ tools:
           [ ... ]
 ```
 
+## 🔄 State and Variables
+
+### Variable Passing
+Variables are shared across all agents in a workflow. Each agent can:
+- Read variables set by previous agents
+- Set new variables for subsequent agents
+- Override existing variables
+
+### Default Values
+Each agent can define defaults that apply when variables aren't set:
+```yaml
+defaults:
+  temperature: 0.7
+  max_tokens: 1000
+```
+
+### Variable Interpolation
+All text fields support Jinja2 templating:
+```yaml
+task: Process {{ food }} with {{ ingredients }}
+```
+
 ## 📎 Notes
 - Agents receive inputs from previous agents via templating variables (e.g., `{{ ingredients }}`)
 - Each tool must call `complete_task: true` to advance the workflow
@@ -125,4 +147,3 @@ tools:
 - [concepts.md](concepts.md#workflows)
 - [mcp.md](mcp.md): for building advanced orchestrations
 - [index.md](index.md): CLI usage overview
-

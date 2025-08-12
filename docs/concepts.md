@@ -23,6 +23,25 @@ using:
   - shell
 ```
 
+#### Agent Configuration Fields
+
+- **`agent`**: The system prompt defining the agent's role
+- **`task`**: The objective or behavior (can use Jinja2 templating)
+- **`generator`**: Override the default LLM model
+- **`reasoning`**: Enable reasoning for supported models (`low`, `medium`, or `high`)
+- **`description`**: Human-readable description of the agent
+- **`version`**: Version string for your agent
+- **`requires`**: Minimum Nerve version requirement (e.g., `">=1.2.0"`)
+- **`defaults`**: Pre-set values for variables that can be overridden via CLI
+- **`limits`**: Execution constraints:
+  - `max_steps`: Maximum number of steps
+  - `max_cost`: Maximum cost in USD
+  - `timeout`: Timeout in seconds
+- **`jail`**: Restrict namespace access to specific filesystem paths
+- **`using`**: List of built-in namespaces to import
+- **`mcp`**: MCP server configurations
+- **`tools`**: Custom tool definitions
+
 #### Enable Reasoning
 
 For models supporting reasoning, you can add a `reasoning` field to enable it, with a value that can either be `low`, `medium` or `high`.
@@ -35,7 +54,7 @@ Nerve supports [Jinja2](https://jinja.palletsprojects.com/) templating for dynam
 - Reference built-in variables like `{{ CURRENT_DATE }}` or `{{ LOCAL_IP }}`
 
 ### Tools
-Tools extend the agent’s capabilities. They can be:
+Tools extend the agent's capabilities. They can be:
 - **Shell commands** (interpolated into a shell script)
 - **Python functions** (via annotated `tools.py` files)
 - **Remote tools via MCP** (from another Nerve instance or a compatible server)
@@ -50,6 +69,34 @@ tools:
         description: Name of the city.
         example: Rome
     tool: curl wttr.in/{{ city }}
+```
+
+#### Tool Configuration Properties
+
+Tools can have additional properties:
+```yaml
+tools:
+  - name: process_data
+    description: Process the input data
+    complete_task: true  # Marks task as complete when this tool returns
+    print: true  # Print tool output to console  
+    mime: "application/json"  # Specify output format
+    arguments:
+      - name: data
+        description: Input data
+    tool: |  # For shell-based tools, the command template
+      echo "Processing: {{ data }}"
+```
+
+#### Auto-loading Tools
+If a `tools.py` file exists in the agent's directory, it's automatically loaded without needing to specify it in the YAML configuration.
+
+#### Tools in Templates
+You can call tools directly from Jinja2 templates in prompts:
+```yaml
+task: |
+  Process this data: {{ get_data_tool() }}
+  And analyze the results.
 ```
 
 ### Workflows
@@ -107,4 +154,3 @@ graph TD
 ```
 
 This loop continues until the task is complete, failed, or times out.
-
