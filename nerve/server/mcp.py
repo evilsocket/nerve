@@ -43,7 +43,7 @@ async def _handle_agent_call(
     run_args: Arguments,
     inputs: dict[str, str | None],
     agent_name: str,
-    mcp_server: Server,  # type: ignore
+    mcp_server: Server,
     arguments: dict[str, t.Any],
 ) -> Output:
     input_state = _get_input_state_from_request(inputs, arguments)
@@ -86,7 +86,7 @@ def _create_call_handler(
     run_args: Arguments,
     inputs: dict[str, str | None],
     agent_name: str,
-    mcp_server: Server,  # type: ignore
+    mcp_server: Server,
     runtime: Runtime | None,
 ) -> t.Callable[[mcp_types.CallToolRequest], t.Coroutine[t.Any, t.Any, mcp_types.ServerResult]]:
     tools_dict = {tool.__name__: tool for tool in runtime.tools} if runtime else {}
@@ -127,8 +127,8 @@ def create_mcp_server(
     runtime: Runtime | None,
     serve_tools: bool = False,
     tools_only: bool = False,
-) -> Server:  # type: ignore
-    server = Server(agent_name)  # type: ignore
+) -> Server:
+    server = Server(agent_name)
     tools: list[mcp_types.Tool] = []
 
     # create a tool for the agent itself
@@ -180,7 +180,7 @@ def create_mcp_server(
     return server
 
 
-def create_sse_app(debug: bool, server: Server) -> Starlette:  # type: ignore
+def create_sse_app(debug: bool, server: Server) -> Starlette:
     sse = SseServerTransport("/messages/")
 
     async def handle_sse(request: t.Any) -> t.Any:
@@ -196,7 +196,7 @@ def create_sse_app(debug: bool, server: Server) -> Starlette:  # type: ignore
     )
 
 
-async def serve_stdio_app(server: Server, agent_name: str) -> None:  # type: ignore
+async def serve_stdio_app(server: Server, agent_name: str) -> None:
     async with stdio_server() as streams:
         logger.info(f"🌐 serving {agent_name} on stdout ...")
         await server.run(streams[0], streams[1], server.create_initialization_options())
